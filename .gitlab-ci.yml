@@ -1,0 +1,18 @@
+# A pipeline for uploading the project as a package to GitLab's private PyPI repository.
+# (This allows the project to be installed from Poetry as a URL dependency with a deployment token
+# which has `read_package_registry` scope.)
+
+# References:
+#  <https://github.com/python-poetry/poetry/issues/2062#issuecomment-1056793536>
+#  <https://docs.gitlab.com/ee/user/packages/pypi_repository/index.html#authenticate-with-a-ci-job-token>
+#  <https://github.com/python-poetry/poetry/issues/2062>
+
+# Adapted to upload data in a specified base git repository.
+
+build-wheel:
+  when: manual
+  image: python:latest
+  script:
+    - pip install twine
+    - pip wheel --no-deps .
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_API_V4_URL}/projects/42232103/packages/pypi *.whl

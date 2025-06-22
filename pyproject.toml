@@ -1,0 +1,26 @@
+[project]
+name = "agents7"
+version = "0.0.1"
+description = "LLM Agents Management."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "cpinto>=0.4.6",
+    "ollama>=0.5.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.12.0",
+]
+
+[tool.ruff]
+line-length = 78
+
+[tool.uv.sources]
+cpinto = { index = "gitlab_cpinto" }
+
+[[tool.uv.index]]
+name = "gitlab_cpinto"
+url = "https://gitlab.com/api/v4/projects/42232103/packages/pypi/simple"
+authenticate = "always"
