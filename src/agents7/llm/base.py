@@ -11,6 +11,7 @@ class LLMEngine:
         provider (str): The provider of the LLM engine (e.g., "ollama").
         model_name (str): The name of the model being used.
     """
+
     def __init__(self, provider: str, model_name: str):
         provider = provider.lower()
         self.provider = provider
@@ -28,7 +29,7 @@ class LLMEngine:
         max_tokens: int = -1,
         output_format: str | dict = None,
         think: bool = False,
-        seed: int | None = None
+        seed: int | None = None,
     ) -> dict:
         """
         Generate text based on the provided prompt using the Ollama API.
@@ -67,7 +68,7 @@ class LLMEngine:
             max_tokens=max_tokens,
             output_format=output_format,
             think=think,
-            seed=seed
+            seed=seed,
         )
 
     async def generate_async(
@@ -77,7 +78,7 @@ class LLMEngine:
         max_tokens: int = -1,
         output_format: str | dict = None,
         think: bool = False,
-        seed: int | None = None
+        seed: int | None = None,
     ) -> dict:
         """
         Asynchronously generate text based on the provided prompt using the
@@ -117,7 +118,7 @@ class LLMEngine:
             max_tokens=max_tokens,
             output_format=output_format,
             think=think,
-            seed=seed
+            seed=seed,
         )
 
     def get_model_info(self) -> dict:
@@ -152,7 +153,7 @@ class LLMProvider(ABC):
         max_tokens: int = -1,
         output_format: str | dict = None,
         think: bool = False,
-        seed: int | None = None
+        seed: int | None = None,
     ) -> dict:
         """
         Generate text based on the provided prompt using the Ollama API.
@@ -185,8 +186,9 @@ class LLMProvider(ABC):
             - thinking: The thinking part of the response, if any.
             - total_duration: The total duration of the response, in seconds.
         """
-        raise NotImplementedError("This method should be overridden "
-                                  "by subclasses.")
+        raise NotImplementedError(
+            "This method should be overridden by subclasses."
+        )
 
     @abstractmethod
     async def generate_async(
@@ -196,7 +198,7 @@ class LLMProvider(ABC):
         max_tokens: int = -1,
         output_format: str | dict = None,
         think: bool = False,
-        seed: int | None = None
+        seed: int | None = None,
     ) -> dict:
         """
         Asynchronously generate text based on the provided prompt using the
@@ -230,8 +232,9 @@ class LLMProvider(ABC):
             - thinking: The thinking part of the response, if any.
             - total_duration: The total duration of the response, in seconds.
         """
-        raise NotImplementedError("This method should be overridden "
-                                  "by subclasses.")
+        raise NotImplementedError(
+            "This method should be overridden by subclasses."
+        )
 
     def get_model_info(self) -> dict:
         """
@@ -239,7 +242,4 @@ class LLMProvider(ABC):
             - provider: The provider of the LLM engine (e.g., "ollama").
             - model_name: The name of the model being used.
         """
-        return {
-            "provider": self.provider,
-            "model_name": self.model_name
-        }
+        return {"provider": self.provider, "model_name": self.model_name}

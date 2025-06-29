@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 
 from cpinto.settings import load_env

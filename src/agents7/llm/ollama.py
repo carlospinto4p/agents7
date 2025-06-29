@@ -1,4 +1,3 @@
-
 """
 See https://www.youtube.com/watch?v=d0o89z134CQ
 (The video uses langchain, but the concepts are similar)
@@ -13,6 +12,7 @@ listening at http://localhost:11434.
 
 See the docs at https://github.com/ollama/ollama/blob/main/docs/api.md.
 """
+
 from ollama import AsyncClient, GenerateResponse, generate
 
 from agents7.llm.base import LLMProvider
@@ -29,8 +29,9 @@ def parse_ollama_response(response: GenerateResponse) -> dict:
     """
     return {
         "response": response.response.split("</think>")[-1].strip(),
-        "thinking": response.response.split("<think>")[-1].split(
-            "</think>")[0].strip(),
+        "thinking": response.response.split("<think>")[-1]
+        .split("</think>")[0]
+        .strip(),
         "total_duration": response.total_duration / 10**9,
     }
 
@@ -50,7 +51,7 @@ class OllamaProvider(LLMProvider):
         max_tokens: int = -1,
         output_format: str | dict = None,
         think: bool = False,
-        seed: int | None = None
+        seed: int | None = None,
     ) -> dict:
         """
         Generate text based on the provided prompt using the Ollama API.
@@ -95,7 +96,7 @@ class OllamaProvider(LLMProvider):
             prompt=prompt,
             options=options,
             think=think,
-            format=output_format
+            format=output_format,
         )
         return parse_ollama_response(response)
 
@@ -106,7 +107,7 @@ class OllamaProvider(LLMProvider):
         max_tokens: int = -1,
         output_format: str | dict = None,
         think: bool = False,
-        seed: int | None = None
+        seed: int | None = None,
     ) -> dict:
         """
         Asynchronously generate text based on the provided prompt using the
@@ -152,6 +153,6 @@ class OllamaProvider(LLMProvider):
             prompt=prompt,
             options=options,
             think=think,
-            format=output_format
+            format=output_format,
         )
         return parse_ollama_response(response)

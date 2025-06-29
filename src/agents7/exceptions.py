@@ -1,4 +1,3 @@
-
 class Agents7Exception(Exception):
     """Base exception for Agents7."""
 
