@@ -15,4 +15,4 @@ build-wheel:
   script:
     - pip install twine
     - pip wheel --no-deps .
-    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_API_V4_URL}/projects/42232103/packages/pypi *.whl
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_API_V4_URL}/projects/42232103/packages/pypi *.whl --verbose
