@@ -7,8 +7,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "cpinto>=0.4.6",
-    "ollama-python>=0.1.2",
-    "requests>=2.32.4",
+    "ollama>=0.5.1",
 ]
 
 [project.optional-dependencies]
