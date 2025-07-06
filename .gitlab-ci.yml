@@ -5,7 +5,6 @@
 # References:
 #  <https://github.com/python-poetry/poetry/issues/2062#issuecomment-1056793536>
 #  <https://docs.gitlab.com/ee/user/packages/pypi_repository/index.html#authenticate-with-a-ci-job-token>
-#  <https://github.com/python-poetry/poetry/issues/2062>
 
 # Adapted to upload data in a specified base git repository.
 
