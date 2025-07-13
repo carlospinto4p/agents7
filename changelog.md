@@ -1,9 +1,20 @@
 
 ## Changelog - Agents7
 
+### v0.0.3 - 13th July 2025
+
+- Added the module `agents`, with:
+  - The type `Agent` and the class `Labeler` in `__init__`.
+  - Added the submodule `base` with the class `BaseAgent`.
+  - Added the submodule `labeler` with the class `Labeler`.
+- Added the module `logs`.
+- Fix in `llm.ollama.parse_ollama_chat_response`.
+- Added a dependency to `pydantic` and `tqdm` in `pyproject.toml`.
+
+
 ### v0.0.2 - 6th July 2025
 
-- MNodule `llm`:
+- Module `llm`:
   - Submodule `ollama`:
     - Added methods `chat` and `chat_async` to the `OllamaProvider` class.
     - Better parsing of the response for the `generate` method.

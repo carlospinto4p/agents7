@@ -313,7 +313,9 @@ def parse_ollama_chat_response(chat_response: ChatResponse) -> dict:
     return {
         "response": chat_response.message.content.strip(),
         "role": chat_response.message.role,
-        "thinking": chat_response.message.thinking.strip(),
+        "thinking": chat_response.message.thinking.strip()
+        if chat_response.message.thinking
+        else None,
         "metrics": {
             "tokens": chat_response.eval_count,
             "prompt_tokens": chat_response.prompt_eval_count,
