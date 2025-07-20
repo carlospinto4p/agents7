@@ -1,42 +1,102 @@
+import importlib
+from dataclasses import dataclass
+
 from pydantic import BaseModel
+
+from cpinto.files import load_yaml
 
 from agents7.agents.base import BaseAgent
 from agents7.llm import LLMEngine
 from agents7.logs import logger
 
 
+@dataclass(frozen=True)
 class Labeler(BaseAgent):
     """
     Labeler agent for processing and labeling data.
     This agent is designed to analyze and label data based on predefined rules.
 
     Attributes:
-        - name (str): The name of the agent.
-        - engine (LLMEngine): The LLM engine used by the agent.
-        - system_prompt (str): The system prompt for the agent.
-        - output_model (BaseModel): The model used to validate and
+        name (str): The name of the agent.
+        version (int): The version of the agent.
+        engine (LLMEngine): The LLM engine used by the agent.
+        system_prompt (str): The system prompt for the agent.
+        output_model (BaseModel): The model used to validate and
             structure the output.
     """
 
-    def __init__(
-        self,
-        name: str,
-        engine: LLMEngine,
-        system_prompt: str,
-        output_model: type[BaseModel],
-    ):
+    output_model: type[BaseModel]
+
+    @classmethod
+    def from_yaml(cls, file_path: str) -> "Labeler":
         """
-        Initialize the Labeler agent with the given parameters.
-        :param name: The name of the agent.
-        :param engine: The LLM engine used by the agent.
-        :param system_prompt: The system prompt for the agent.
-        :param output_model: The model used to validate and structure the
-            output.
+        Create an instance of the agent from a YAML file configuration.
+        This method should be overridden by subclasses to provide specific
+        YAML loading logic.
+
+        :param file_path: The path to the YAML file containing the agent
+            configuration. Schema:
+            ```yaml
+            name: <name of the agent>
+            version: <version of the agent>
+            engine:
+                provider: <llm provider>
+                model: <llm model>
+            system_prompt: <system prompt for the agent>
+            system_examples:
+                - <example 1>
+                - <example 2>
+                ...
+            output_model: <path to the pydantic model class, e.g.
+                "agents7.models.MyOutputModel">
+            ```
+            The field `system_examples` is optional and can be used to
+            provide examples to the agent. It will be added to the
+            system prompt as examples for the agent to follow.
+        :return: An instance of the agent.
         """
-        super().__init__(
-            name=name, engine=engine, system_prompt=system_prompt
+        config = load_yaml(file_path)
+
+        mandatory_keys = [
+            "name",
+            "version",
+            "engine",
+            "system_prompt",
+            "output_model",
+        ]
+        for key in mandatory_keys:
+            if key not in config:
+                raise ValueError(
+                    f"Missing mandatory key `{key}` in the "
+                    f"configuration yaml `{file_path}`"
+                )
+        engine = config["engine"]
+        mandatory_keys = ["provider", "model"]
+        for key in mandatory_keys:
+            if key not in engine:
+                raise ValueError(
+                    f"Missing mandatory key `{key}` in the engine "
+                    f"configuration yaml `{file_path}`"
+                )
+
+        system_prompt = config["system_prompt"].strip()
+        if examples := config.get("system_examples"):
+            if not isinstance(examples, list):
+                raise ValueError(
+                    f"Field `system_examples` must be a list in the "
+                    f"configuration yaml `{file_path}`"
+                )
+            system_prompt = config["system_prompt"] + "\n\nExamples:\n"
+            for example in examples:
+                system_prompt += f"- {example}\n"
+
+        return Labeler(
+            name=config["name"],
+            version=config["version"],
+            engine=LLMEngine(engine["provider"], engine["model"]),
+            system_prompt=system_prompt,
+            output_model=import_from_path(config["output_model"]),
         )
-        self.output_model = output_model
 
     def act(
         self, input_data: dict | list[dict], chat_kwargs: dict = None
@@ -141,3 +201,15 @@ class Labeler(BaseAgent):
             if response["model"] is not None:
                 agent_response.append(response["model"])
         return agent_response
+
+
+def import_from_path(path: str) -> type[BaseModel]:
+    """
+    Import a class from a given module path.
+    :param path: Path to the module and class, e.g.
+        "module.submodule.ClassName".
+    :return: The class object imported from the specified path.
+    """
+    module_path, class_name = path.rsplit(".", 1)
+    module = importlib.import_module(module_path)
+    return getattr(module, class_name)

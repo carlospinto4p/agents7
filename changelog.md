@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v0.0.4 - 20th July 2025 - Not yet released, test it!
+
+- Module `agents`:
+  - Class `base.BaseAgent`:
+    - Added the parameter `version`.
+    - Added the class method `from_yaml`.
+    - It is now a `frozen` dataclass.
+  - Class `labeler.Labeler`:
+    - Implemented the class method `from_yaml`.
+    - It is now a `frozen` dataclass.
+- Added a dependency to `pyyaml`.
+
+
 ### v0.0.3 - 13th July 2025
 
 - Added the module `agents`, with:
@@ -9,7 +22,7 @@
   - Added the submodule `labeler` with the class `Labeler`.
 - Added the module `logs`.
 - Fix in `llm.ollama.parse_ollama_chat_response`.
-- Added a dependency to `pydantic` and `tqdm` in `pyproject.toml`.
+- Added a dependency to `pydantic` and `tqdm`.
 
 
 ### v0.0.2 - 6th July 2025
