@@ -44,8 +44,14 @@ class Labeler(BaseAgent):
                 model: <llm model>
             system_prompt: <system prompt for the agent>
             system_examples:
-                - <example 1>
-                - <example 2>
+                - input:
+                    <example 1 input, a dictionary or a list of dictionaries>
+                  output:
+                    <example 1 output, a dictionary or a list of dictionaries>
+                - input:
+                    <example 2 input, a dictionary or a list of dictionaries>
+                  output:
+                    <example 2 output, a dictionary or a list of dictionaries>
                 ...
             output_model: <path to the pydantic model class, e.g.
                 "agents7.models.MyOutputModel">
@@ -86,15 +92,31 @@ class Labeler(BaseAgent):
                     f"Field `system_examples` must be a list in the "
                     f"configuration yaml `{file_path}`"
                 )
-            system_prompt = config["system_prompt"] + "\n\nExamples:\n"
+
+            system_prompt = config["system_prompt"].strip() + "\n\nExamples:"
+
             for example in examples:
-                system_prompt += f"- {example}\n"
+                if not isinstance(example, dict):
+                    raise ValueError(
+                        f"Each example in `system_examples` must be a "
+                        f"dictionary in the configuration yaml `{file_path}`"
+                    )
+                if set(example.keys()) != {"input", "output"}:
+                    raise ValueError(
+                        f"Each example in `system_examples` must contain "
+                        f"`input` and `output` keys in the configuration "
+                        f"yaml `{file_path}`"
+                    )
+                system_prompt += (
+                    f"\n\n- Input: {example['input']}"
+                    f"\n- Output: {example['output']}"
+                )
 
         return Labeler(
             name=config["name"],
             version=config["version"],
             engine=LLMEngine(engine["provider"], engine["model"]),
-            system_prompt=system_prompt,
+            system_prompt=system_prompt.strip(),
             output_model=import_from_path(config["output_model"]),
         )
 

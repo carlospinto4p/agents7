@@ -1,7 +1,7 @@
 
 ## Changelog - Agents7
 
-### v0.0.4 - 20th July 2025 - Not yet released, test it!
+### v0.0.4 - 20th July 2025
 
 - Module `agents`:
   - Class `base.BaseAgent`:
@@ -11,6 +11,7 @@
   - Class `labeler.Labeler`:
     - Implemented the class method `from_yaml`.
     - It is now a `frozen` dataclass.
+- Added the module `models` with just `demo.DemoModel`.
 - Added a dependency to `pyyaml`.
 
 
