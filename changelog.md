@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v0.0.5 - 27th July 2025
+
+- Added the module `models.base` with the classes `Property` and
+  `PropertyReason`. Added to `models.__init__.py`.
+
+
 ### v0.0.4 - 20th July 2025
 
 - Module `agents`:
