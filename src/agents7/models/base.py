@@ -1,16 +1,23 @@
-from enum import Enum
 from typing import Any, get_origin
 
 from pydantic import BaseModel, Field
 
 
-class PropertyReason(Enum):
+class PropertyReason:
     """
     Enum for the reasons of a property value.
     This class has to be extended to create specific reasons.
     """
 
     NOT_APPLICABLE = "no_applicable"
+
+    @classmethod
+    def values(cls) -> list[str]:
+        return [
+            v
+            for k, v in vars(cls).items()
+            if not k.startswith("__") and isinstance(v, str)
+        ]
 
 
 class Property(BaseModel):

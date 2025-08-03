@@ -1,10 +1,13 @@
 
 ## Changelog - Agents7
 
-### v0.0.7 - 3rd August 2025 - Not released!
+### v0.0.7 - 3rd August 2025
 
-- Class `models.Property`: logic of the method 
-  `__init_subclass__` improved.
+- Module `models.base`:
+  - Class `PropertyReason`: It is not an `Enum` anymore.
+  - Class `Property`: logic of the method `__init_subclass__` improved.
+- Function `agents.labeler.Labeler.act_in_batch` receives the
+  parameter `iter_func`, which defaults to `tqdm.tqdm`.
 
 
 ### v0.0.6 - 3rd August 2025
