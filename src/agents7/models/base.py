@@ -10,7 +10,7 @@ class PropertyReason(Enum):
     This class has to be extended to create specific reasons.
     """
 
-    ...
+    NOT_APPLICABLE = "no_applicable"
 
 
 class Property(BaseModel):

@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+
+### v0.0.6 - 3rd August 2025
+
+- Class `models.PropertyReason`: added a field `NOT_APPLICABLE`.
+  All properties should have a reason, and this is the default
+  when no property-reason is applicable.
+
+
 ### v0.0.5 - 27th July 2025
 
 - Added the module `models.base` with the classes `Property` and
