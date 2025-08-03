@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v0.0.7 - 3rd August 2025 - Not released!
+
+- Class `models.Property`: logic of the method 
+  `__init_subclass__` improved.
+
 
 ### v0.0.6 - 3rd August 2025
 

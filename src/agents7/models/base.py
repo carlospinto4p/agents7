@@ -30,38 +30,30 @@ class Property(BaseModel):
     )
 
     def __init_subclass__(cls, **kwargs):
-        # Ensure that subclasses of Property override the required fields.
         super().__init_subclass__(**kwargs)
 
-        # Skip check for the base class itself
+        # Skip base class
         if cls is Property:
             return
 
         required_fields = {"name", "value", "reason"}
-        overridden_fields = {
-            name
-            for name, value in cls.__dict__.items()
-            if isinstance(value, (property, Field))
-            or name in cls.__annotations__
-        }
-        missing = required_fields - overridden_fields
+        declared_fields = set(cls.__annotations__)
+
+        missing = required_fields - declared_fields
         if missing:
             raise TypeError(
-                f"Subclasses of Property must override the following fields: "
+                f"`{cls.__name__}` must re-declare the fields: "
                 f"`{'`, `'.join(missing)}`"
             )
 
-        # Enforce that `reason` annotation is a subclass of PropertyReason
+        # Check that 'reason' is annotated with a subclass of PropertyReason
         reason_type = cls.__annotations__.get("reason")
-        if reason_type is None:
-            raise TypeError("Subclasses must define a 'reason' annotation.")
-
-        # Handle direct subclass or Annotated/etc
         origin = get_origin(reason_type) or reason_type
+
         if not isinstance(origin, type) or not issubclass(
             origin, PropertyReason
         ):
             raise TypeError(
-                f"The 'reason' field must be annotated with a subclass of "
-                f"`PropertyReason`, got: `{reason_type}`"
+                f"The 'reason' field in `{cls.__name__}` must be a subclass "
+                f"of `PropertyReason`, got: `{reason_type}`"
             )
