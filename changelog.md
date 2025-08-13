@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v0.0.8 - 13th August 2025
+
+- Added the class `agents.detector.Detector`, which is a simple 
+  `Labeler` with a defined output model.
+- Module `models`
+  - Submodule `base`:
+    - Just the class `Property` remains, with simplified logic. 
+      No need for `PropertyReason` anymore.
+  - Submodule `demo`:
+    - Added the classes `Temperature` and `TemperaturePropertyReason`.
+- Added a folder for `examples`, showcasing the usage of a `labeler` 
+  and a `detector` agents.
+
+
 ### v0.0.7 - 3rd August 2025
 
 - Module `models.base`:

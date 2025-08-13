@@ -1,0 +1,13 @@
+name: DemoLabeler
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+system_prompt: |
+  Fill the output model with randomly generated data.
+system_examples:
+    - input: Generate a random number between 1 and 100.
+      output: 42
+    - input: Create a random string of length 10.
+      output: abcdefghij
+output_model: agents7.models.demo.DemoModel

@@ -1,7 +1,6 @@
-from agents7.models.base import Property, PropertyReason
+from agents7.models.base import Property
 
 
 __all__ = [
     "Property",
-    "PropertyReason",
 ]

@@ -1,0 +1,19 @@
+name: DemoTemperatureDetector
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+system_prompt: |
+  Detect the temperature the input text is referring to, in degrees Celsius.
+  If you can not determine an exact temperature, you can estimate it.
+  "Comfortable" is around 20 degrees Celsius.
+  "Hot" is around 30 degrees Celsius or more.
+  "Cold" is around 10 degrees Celsius or less.
+  Use the context of the text to determine the temperature, it has not to be
+  explicitly mentioned.
+output_model: agents7.models.demo.Temperature
+system_examples:
+    - input: Water could get frozen here.
+      output:
+        value: -10
+        reason: "Water freezes at 0 degrees Celsius, so the temperature is below that."
