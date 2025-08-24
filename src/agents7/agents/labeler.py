@@ -1,9 +1,11 @@
 import importlib
+from asyncio import as_completed
 from dataclasses import dataclass
 from typing import Callable
 
-from pydantic import BaseModel
 from tqdm import tqdm
+from tqdm.asyncio import tqdm as async_tqdm
+from pydantic import BaseModel
 
 from cpinto.files import load_yaml
 from cpinto.functions import identity_func
@@ -30,6 +32,8 @@ class Labeler(BaseAgent):
 
     output_model: type[BaseModel]
 
+    # TODO 2025.08.17 How can I include parameters in the prompts,
+    #  like the current date?
     @classmethod
     def from_yaml(cls, file_path: str) -> "Labeler":
         """
@@ -158,8 +162,9 @@ class Labeler(BaseAgent):
         for k in ["messages", "temperature", "output_format"]:
             chat_kwargs.pop(k, None)
 
-        agent_str = f"Agent `{self.name}`:"
-        logger.debug(f"{agent_str} processing input data:\n{input_data}")
+        logger.debug(
+            f"Agent `{self.name}`: processing input data:\n{input_data}"
+        )
         response = self.engine.chat(
             messages=[
                 {"role": "system", "content": self.system_prompt},
@@ -173,21 +178,69 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        try:
-            response["model"] = self.output_model.model_validate_json(
-                response["response"]
-            )
-        except Exception:
-            try:
-                # Ad-hoc way to handle ollama's structured response
-                response["model"] = self.output_model.model_validate_json(
-                    response["response"][2:]
-                )
-            except Exception as e:
-                logger.error(
-                    f"{agent_str}: error parsing structured response:\n{e}"
-                )
-                response["model"] = None
+        response["model"] = self._parse_model_response(response["response"])
+        return response
+
+    async def act_async(
+        self,
+        input_data: dict | list[dict],
+        chat_kwargs: dict = None,
+        _idx: int = 0,
+    ) -> dict:
+        """
+        Perform the labeling action based on the provided input.
+        :param input_data: The input data to be processed. The system prompt
+            should specify the expected format of this data.
+        :param chat_kwargs: Dictionary with extra keyword arguments to
+            send to the `self.engine.chat` method. Note that:
+            - The parameter `temperature` is set to 0 for agents, and
+              won't be overridden by this parameter.
+            - The parameter `think` is set to True by default, unless
+              specified otherwise.
+            - Available parameters:
+                - max_tokens: The maximum number of tokens to generate in the
+                    response.
+                - think: If True, the model will think before generating the
+                    response.
+                - seed: Seed for random number generation. Default to None.
+        :param _idx: Internal parameter to keep track of the index of the
+            input data when processing in batch mode. Default to 0.
+            This parameter should not be set by the user.
+        :return: A dictionary containing the response from the agent:
+            - response: The generated text response.
+            - model: The structured output validated by the output model.
+            - thinking: The thinking part of the response, if any.
+            - metrics: A dictionary containing the following metrics:
+             - tokens: The number of tokens in the response.
+             - prompt_tokens: The number of tokens in the prompt.
+             - total_duration: The total duration of the response,
+                 in seconds.
+            - _idx: The index of the input data when processing in batch mode.
+        """
+        # Set default `chat_kwargs`
+        chat_kwargs = chat_kwargs or {"think": True}
+        # Ensure certain parameters are set correctly
+        for k in ["messages", "temperature", "output_format"]:
+            chat_kwargs.pop(k, None)
+
+        logger.debug(
+            f"Agent `{self.name}`: processing input data:\n{input_data}"
+        )
+        response = await self.engine.chat_async(
+            messages=[
+                {"role": "system", "content": self.system_prompt},
+                {
+                    "role": "user",
+                    "content": f"Process the following:\n{input_data}",
+                },
+            ],
+            temperature=0,
+            output_format=self.output_model.model_json_schema(),
+            **chat_kwargs,
+        )
+        response.pop("role")
+        response["model"] = self._parse_model_response(response["response"])
+        response["_idx"] = _idx
         return response
 
     def act_in_batch(
@@ -233,6 +286,86 @@ class Labeler(BaseAgent):
             if response["model"] is not None:
                 agent_response.append(response["model"])
         return agent_response
+
+    async def act_in_batch_async(
+        self,
+        input_list: list[dict | list[dict]],
+        chat_kwargs: dict = None,
+        print_tqdm: bool = True,
+    ) -> list[dict]:
+        """
+        Perform the labeling action based on the provided input, in batch mode.
+        :param input_list: List of input data to be processed.
+            The system prompt should specify the expected format of
+            each element of this data.
+        :param chat_kwargs: Dictionary with extra keyword arguments to
+            send to the `self.engine.chat` method. Note that:
+            - The parameter `temperature` is set to 0 for agents, and
+              won't be overridden by this parameter.
+            - The parameter `think` is set to True by default, unless
+              specified otherwise.
+            - Available parameters:
+                - max_tokens: The maximum number of tokens to generate in the
+                    response.
+                - think: If True, the model will think before generating the
+                    response.
+                - seed: Seed for random number generation. Default to None.
+        :param print_tqdm: Whether to use `tqdm.asyncio` to keep track of the
+            iterations.
+        :return: A list of dictionaries containing the response from the agent:
+            - response: The generated text response.
+            - model: The structured output validated by the output model.
+            - thinking: The thinking part of the response, if any.
+            - metrics: A dictionary containing the following metrics:
+             - tokens: The number of tokens in the response.
+             - prompt_tokens: The number of tokens in the prompt.
+             - total_duration: The total duration of the response,
+                 in seconds.
+        """
+        tasks = [
+            self.act_async(input_data, chat_kwargs=chat_kwargs, _idx=idx)
+            for idx, input_data in enumerate(input_list)
+        ]
+
+        agent_response: list[dict | None] = [None] * len(input_list)
+        if print_tqdm:
+            for coro in async_tqdm.as_completed(
+                tasks,
+                total=len(tasks),
+                desc=f"Agent `{self.name}`: acting in batch",
+            ):
+                response = await coro
+                if (model := response["model"]) is not None:
+                    agent_response[response.pop("_idx")] = model
+        else:
+            for coro in as_completed(tasks):
+                response = await coro
+                if (model := response["model"]) is not None:
+                    agent_response[response.pop("_idx")] = model
+
+        return agent_response
+
+    def _parse_model_response(self, response: str) -> BaseModel | None:
+        """
+        Parse the response from the agent and validate it against the output
+        model.
+        :param response: The response string from the agent.
+        :return: The structured output validated by the output model.
+            Will return `None` if the response cannot be parsed.
+        """
+        model = None
+        try:
+            model = self.output_model.model_validate_json(response)
+        except Exception:
+            try:
+                # Ad-hoc way to handle ollama's structured response
+                model = self.output_model.model_validate_json(response[2:])
+            except Exception as e:
+                logger.error(
+                    f"Agent `{self.name}`: error parsing structured "
+                    f"response:\n{e}"
+                )
+        return model
 
 
 def import_from_path(path: str) -> type[BaseModel]:

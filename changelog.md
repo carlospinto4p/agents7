@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v0.0.9 - 24th August 2025
+
+- Module `agents`:
+  - Added `detector.Detector` into `__init__`.
+  - Class `labeler.Labeler`:
+    - Added async methods `act_async` and `act_in_batch_async`.
+    - Added the method `_parse_model_response`.
+
+
 ### v0.0.8 - 13th August 2025
 
 - Added the class `agents.detector.Detector`, which is a simple 
