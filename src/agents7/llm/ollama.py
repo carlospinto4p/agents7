@@ -336,11 +336,19 @@ def parse_ollama_response(response: GenerateResponse) -> dict:
             - prompt_tokens: The number of tokens in the prompt.
             - total_duration: The total duration of the response, in seconds.
     """
+    thinking = None
+    if hasattr(response, "thinking") and response.thinking:
+        thinking = response.thinking.strip()
+    if "<think>" in response.response and "</think>" in response.response:
+        thinking = (
+            response.response.split("<think>")[-1]
+            .split("</think>")[0]
+            .strip()
+        )
+
     return {
         "response": response.response.split("</think>")[-1].strip(),
-        "thinking": response.response.split("<think>")[-1]
-        .split("</think>")[0]
-        .strip(),
+        "thinking": thinking,
         "metrics": {
             "tokens": response.eval_count,
             "prompt_tokens": response.prompt_eval_count,

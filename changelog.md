@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v0.0.10 - 31st August 2025
+
+- Fix in the function `llm.ollama.parse_ollama_response`,
+  was not properly parsing the `thinking` response from different
+  models.
+- Dependency on `ollama` updated to `0.5.3`.
+
+
 ### v0.0.9 - 24th August 2025
 
 - Module `agents`:
