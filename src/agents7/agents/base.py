@@ -8,7 +8,7 @@ from agents7.llm import LLMEngine
 Agent = TypeVar("Agent", bound="BaseAgent")
 
 
-@dataclass(frozen=True)
+@dataclass
 class BaseAgent(ABC):
     """
     Base class for all agents.

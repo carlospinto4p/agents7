@@ -1,6 +1,21 @@
 
 ## Changelog - Agents7
 
+### v0.0.11 - 7th September 2025 - Not yet released!
+
+- Module `agents`:
+  - `BaseAgent` is not a frozen dataclass anymore.
+  - Class `Labeler`:
+    - It's not a frozen dataclass anymore.
+    - Added the `classmethod` `_load_yaml_settings`.
+    - Generated prompt, when using `from_yaml`, improved.
+  - Class `Detector`:
+    - Fix in the method `from_yaml`.
+      - It wasn't returning a `Detector` instance.
+      - Added the possible reasons for the properties in the prompt.
+    - Added the method `get_possible_reasons`.
+
+
 ### v0.0.10 - 31st August 2025
 
 - Fix in the function `llm.ollama.parse_ollama_response`,

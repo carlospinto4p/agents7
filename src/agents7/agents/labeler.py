@@ -15,7 +15,7 @@ from agents7.llm import LLMEngine
 from agents7.logs import logger
 
 
-@dataclass(frozen=True)
+@dataclass
 class Labeler(BaseAgent):
     """
     Labeler agent for processing and labeling data.
@@ -68,6 +68,45 @@ class Labeler(BaseAgent):
             system prompt as examples for the agent to follow.
         :return: An instance of the agent.
         """
+        config = cls._load_yaml_settings(file_path)
+        return Labeler(**config)
+
+    @classmethod
+    def _load_yaml_settings(cls, file_path: str) -> dict:
+        """
+        Load settings from a YAML file.
+        :param file_path: The path to the YAML file. Schema:
+            ```yaml
+            name: <name of the agent>
+            version: <version of the agent>
+            engine:
+                provider: <llm provider>
+                model: <llm model>
+            system_prompt: <system prompt for the agent>
+            system_examples:
+                - input:
+                    <example 1 input, a dictionary or a list of dictionaries>
+                  output:
+                    <example 1 output, a dictionary or a list of dictionaries>
+                - input:
+                    <example 2 input, a dictionary or a list of dictionaries>
+                  output:
+                    <example 2 output, a dictionary or a list of dictionaries>
+                ...
+            output_model: <path to the pydantic model class, e.g.
+                "agents7.models.MyOutputModel">
+            ```
+            The field `system_examples` is optional and can be used to
+            provide examples to the agent. It will be added to the
+            system prompt as examples for the agent to follow.
+        :return: Loaded configuration, as a dictionary. Keys:
+            - name (str): The name of the agent.
+            - version (int): The version of the agent.
+            - engine (str): The LLM engine used by the agent.
+            - system_prompt (str): The system prompt for the agent.
+            - output_model (BaseModel): The model used to validate and
+                structure the output.
+        """
         config = load_yaml(file_path)
 
         mandatory_keys = [
@@ -100,8 +139,9 @@ class Labeler(BaseAgent):
                     f"configuration yaml `{file_path}`"
                 )
 
-            system_prompt = config["system_prompt"].strip() + "\n\nExamples:"
-
+            system_prompt = (
+                config["system_prompt"].strip() + "\n\n## Examples:"
+            )
             for example in examples:
                 if not isinstance(example, dict):
                     raise ValueError(
@@ -119,13 +159,41 @@ class Labeler(BaseAgent):
                     f"\n- Output: {example['output']}"
                 )
 
-        return Labeler(
-            name=config["name"],
-            version=config["version"],
-            engine=LLMEngine(engine["provider"], engine["model"]),
-            system_prompt=system_prompt.strip(),
-            output_model=import_from_path(config["output_model"]),
-        )
+            # TODO 2025.09.07 If `output_model`, add its schema to the prompt.
+            # something like:
+            # def model_to_class_string(model_cls: type[BaseModel]) -> str:
+            #     lines = [f"class {model_cls.__name__}:"]
+            #     for field_name, field_info in model_cls.model_fields.items():
+            #         # annotation type
+            #         ann = (
+            #             field_info.annotation.__name__
+            #             if hasattr(field_info.annotation, "__name__")
+            #             else str(field_info.annotation)
+            #         )
+            #
+            #         # default value
+            #         default_repr = ""
+            #         if field_info.default is not None:
+            #             default_repr = f" = {field_info.default!r}"
+            #
+            #         # description (from Field or comment)
+            #         description = ""
+            #         if field_info.description:
+            #             description = f"  # {field_info.description}"
+            #
+            #         # append line
+            #         lines.append(
+            #             f"    {field_name}: {ann}{default_repr}{description}")
+            #
+            #     return "\n".join(lines)
+
+        return {
+            "name": config["name"],
+            "version": config["version"],
+            "engine": LLMEngine(engine["provider"], engine["model"]),
+            "system_prompt": system_prompt.strip(),
+            "output_model": import_from_path(config["output_model"]),
+        }
 
     def act(
         self, input_data: dict | list[dict], chat_kwargs: dict = None
