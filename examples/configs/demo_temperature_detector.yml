@@ -4,16 +4,34 @@ engine:
     provider: ollama
     model: qwen3
 system_prompt: |
-  Detect the temperature the input text is referring to, in degrees Celsius.
-  If you can not determine an exact temperature, you can estimate it.
-  "Comfortable" is around 20 degrees Celsius.
-  "Hot" is around 30 degrees Celsius or more.
-  "Cold" is around 10 degrees Celsius or less.
-  Use the context of the text to determine the temperature, it has not to be
-  explicitly mentioned.
+  Analyze the input text and detect the temperature it refers to, expressed in degrees Celsius.
+  
+  ## Rules
+  
+  1. If an exact temperature is explicitly stated, return that value.
+  2. If only descriptive terms are used, estimate the temperature using these defaults:
+    - “Comfortable” → ~20 °C
+    - “Hot” → ≥30 °C
+    - “Cold” → ≤10 °C
+  3. Use contextual clues; the temperature does not need to be explicitly mentioned.
+  4. If no temperature-related context exists, output "Not Applicable".
+  
+  If the text contains no temperature-related meaning, return: Not Applicable.
 output_model: agents7.models.demo.Temperature
 system_examples:
     - input: Water could get frozen here.
       output:
-        value: -10
-        reason: "Water freezes at 0 degrees Celsius, so the temperature is below that."
+        value': -10
+        reason': TOO_COLD
+    - input: The weather feels perfect for a walk.
+      output:
+        value: 20
+        reason: COMFORTABLE
+    - input: We’re in the desert at noon.
+      output:
+        value: 35
+        reason: TOO_HOT
+    - input: She bought a new car.
+      output:
+        value: None
+        reason: NOT_APPLICABLE

@@ -1,4 +1,3 @@
-import importlib
 from asyncio import as_completed
 from dataclasses import dataclass
 from typing import Callable
@@ -11,11 +10,16 @@ from cpinto.files import load_yaml
 from cpinto.functions import identity_func
 
 from agents7.agents.base import BaseAgent
+from agents7.agents.utils import (
+    import_from_path,
+    get_examples_str,
+    model_class_to_string,
+)
 from agents7.llm import LLMEngine
 from agents7.logs import logger
 
 
-@dataclass
+@dataclass(frozen=True)
 class Labeler(BaseAgent):
     """
     Labeler agent for processing and labeling data.
@@ -28,9 +32,24 @@ class Labeler(BaseAgent):
         system_prompt (str): The system prompt for the agent.
         output_model (BaseModel): The model used to validate and
             structure the output.
+        examples (list[dict], optional): List of examples to include in the
+            system prompt. Each example should be a dictionary with 'input'
+            and 'output' keys. Defaults to None.
     """
 
     output_model: type[BaseModel]
+    examples: list[dict] = None
+
+    def __post_init__(self):
+        """
+        Post-initialization method to validate the agent.
+        This method is called after the agent is initialized.
+        """
+        super().__post_init__()
+        if not issubclass(self.output_model, BaseModel):
+            raise TypeError(
+                "`output_model` must be a subclass of `pydantic.BaseModel`"
+            )
 
     # TODO 2025.08.17 How can I include parameters in the prompts,
     #  like the current date?
@@ -106,6 +125,9 @@ class Labeler(BaseAgent):
             - system_prompt (str): The system prompt for the agent.
             - output_model (BaseModel): The model used to validate and
                 structure the output.
+            - examples (list[dict], optional): List of examples to include in
+                the system prompt. Each example is a dictionary with 'input'
+                and 'output' keys. Defaults to None.
         """
         config = load_yaml(file_path)
 
@@ -133,67 +155,37 @@ class Labeler(BaseAgent):
 
         system_prompt = config["system_prompt"].strip()
         if examples := config.get("system_examples"):
-            if not isinstance(examples, list):
+            try:
+                get_examples_str(examples)
+            except ValueError as e:
                 raise ValueError(
-                    f"Field `system_examples` must be a list in the "
-                    f"configuration yaml `{file_path}`"
-                )
-
-            system_prompt = (
-                config["system_prompt"].strip() + "\n\n## Examples:"
-            )
-            for example in examples:
-                if not isinstance(example, dict):
-                    raise ValueError(
-                        f"Each example in `system_examples` must be a "
-                        f"dictionary in the configuration yaml `{file_path}`"
-                    )
-                if set(example.keys()) != {"input", "output"}:
-                    raise ValueError(
-                        f"Each example in `system_examples` must contain "
-                        f"`input` and `output` keys in the configuration "
-                        f"yaml `{file_path}`"
-                    )
-                system_prompt += (
-                    f"\n\n- Input: {example['input']}"
-                    f"\n- Output: {example['output']}"
-                )
-
-            # TODO 2025.09.07 If `output_model`, add its schema to the prompt.
-            # something like:
-            # def model_to_class_string(model_cls: type[BaseModel]) -> str:
-            #     lines = [f"class {model_cls.__name__}:"]
-            #     for field_name, field_info in model_cls.model_fields.items():
-            #         # annotation type
-            #         ann = (
-            #             field_info.annotation.__name__
-            #             if hasattr(field_info.annotation, "__name__")
-            #             else str(field_info.annotation)
-            #         )
-            #
-            #         # default value
-            #         default_repr = ""
-            #         if field_info.default is not None:
-            #             default_repr = f" = {field_info.default!r}"
-            #
-            #         # description (from Field or comment)
-            #         description = ""
-            #         if field_info.description:
-            #             description = f"  # {field_info.description}"
-            #
-            #         # append line
-            #         lines.append(
-            #             f"    {field_name}: {ann}{default_repr}{description}")
-            #
-            #     return "\n".join(lines)
-
+                    f"{e} in the configuration file `{file_path}`"
+                ) from e
         return {
             "name": config["name"],
             "version": config["version"],
             "engine": LLMEngine(engine["provider"], engine["model"]),
             "system_prompt": system_prompt.strip(),
             "output_model": import_from_path(config["output_model"]),
+            "examples": examples,
         }
+
+    @property
+    def prompt(self) -> str:
+        """
+        Get the full prompt used by the agent, including the system prompt,
+        :return: Full prompt string.
+        """
+        full_prompt = (
+            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{model_class_to_string(self.output_model)}"
+        ).strip()
+
+        if self.examples:
+            examples_str = get_examples_str(self.examples)
+            full_prompt = f"{full_prompt}\n\n{examples_str}"
+
+        return full_prompt
 
     def act(
         self, input_data: dict | list[dict], chat_kwargs: dict = None
@@ -235,7 +227,7 @@ class Labeler(BaseAgent):
         )
         response = self.engine.chat(
             messages=[
-                {"role": "system", "content": self.system_prompt},
+                {"role": "system", "content": self.prompt},
                 {
                     "role": "user",
                     "content": f"Process the following:\n{input_data}",
@@ -296,7 +288,7 @@ class Labeler(BaseAgent):
         )
         response = await self.engine.chat_async(
             messages=[
-                {"role": "system", "content": self.system_prompt},
+                {"role": "system", "content": self.prompt},
                 {
                     "role": "user",
                     "content": f"Process the following:\n{input_data}",
@@ -434,15 +426,3 @@ class Labeler(BaseAgent):
                     f"response:\n{e}"
                 )
         return model
-
-
-def import_from_path(path: str) -> type[BaseModel]:
-    """
-    Import a class from a given module path.
-    :param path: Path to the module and class, e.g.
-        "module.submodule.ClassName".
-    :return: The class object imported from the specified path.
-    """
-    module_path, class_name = path.rsplit(".", 1)
-    module = importlib.import_module(module_path)
-    return getattr(module, class_name)

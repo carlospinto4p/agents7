@@ -1,9 +1,12 @@
+from dataclasses import dataclass
 from enum import StrEnum
 
 from agents7.agents.labeler import Labeler
+from agents7.agents.utils import get_examples_str, model_class_to_string
 from agents7.models.base import Property
 
 
+@dataclass(frozen=True)
 class Detector(Labeler):
     """
     Agent for detecting properties in data.
@@ -19,6 +22,9 @@ class Detector(Labeler):
         system_prompt (str): The system prompt for the agent.
         output_model (BaseModel): The model used to validate and
             structure the output.
+        examples (list[dict], optional): List of examples to include in the
+            system prompt. Each example should be a dictionary with 'input'
+            and 'output' keys. Defaults to None.
     """
 
     output_model: type[Property]
@@ -31,8 +37,8 @@ class Detector(Labeler):
         super().__post_init__()
         if not issubclass(self.output_model, Property):
             raise TypeError(
-                "`output_model` must be a subclass of `Property` for the "
-                "Detector agents."
+                "`output_model` must be a subclass of "
+                "`agents7.models.Property` for the `Detector` agents."
             )
 
     @classmethod
@@ -49,18 +55,10 @@ class Detector(Labeler):
             Detector: An instance of the Detector agent.
         """
         config = cls._load_yaml_settings(file_path)
+        return Detector(**config)
 
-        detector = Detector(**config)
-        reasons_str = "\n".join(
-            f"- {k}: {v}" for k, v in detector.get_possible_reasons().items()
-        )
-        detector.system_prompt += (
-            "\n\nReturn only valid JSON, no explanations, no extra text."
-            f"\n\n## Reasons\n\n{reasons_str}"
-        )
-        return detector
-
-    def get_possible_reasons(self) -> dict[str, str]:
+    @property
+    def possible_reasons(self) -> dict[str, str]:
         """
         Get the possible reasons for the output model.
         This method retrieves the possible reasons defined in the
@@ -76,3 +74,26 @@ class Detector(Labeler):
                 f"Got `{reasons_enum}` instead."
             )
         return {k: str(v) for k, v in reasons_enum.__members__.items()}
+
+    @property
+    def prompt(self) -> str:
+        """
+        Get the full prompt used by the agent, including the system prompt,
+        :return: Full prompt string.
+        """
+        reasons_str = "\n".join(
+            f"- {k}: {v}" for k, v in self.possible_reasons.items()
+        )
+
+        full_prompt = (
+            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{model_class_to_string(self.output_model)}\n\n"
+            f"These are the possible reasons you need to stick to:\n\n"
+            f"## Reasons\n\n{reasons_str}"
+        ).strip()
+
+        if self.examples:
+            examples_str = get_examples_str(self.examples)
+            full_prompt = f"{full_prompt}\n\n{examples_str}"
+
+        return full_prompt

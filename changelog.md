@@ -1,19 +1,25 @@
 
 ## Changelog - Agents7
 
-### v0.0.11 - 7th September 2025 - Not yet released!
+### v0.0.11 - 14th September 2025
 
 - Module `agents`:
-  - `BaseAgent` is not a frozen dataclass anymore.
   - Class `Labeler`:
-    - It's not a frozen dataclass anymore.
+    - Added the parameter `examples`.
+    - Added the property `prompt`.
     - Added the `classmethod` `_load_yaml_settings`.
-    - Generated prompt, when using `from_yaml`, improved.
+    - Added the `__posrt_init__` method.
+    - With these changes, the prompt will better include 
+      instructions, examples, and the output schema description.
   - Class `Detector`:
-    - Fix in the method `from_yaml`.
-      - It wasn't returning a `Detector` instance.
-      - Added the possible reasons for the properties in the prompt.
-    - Added the method `get_possible_reasons`.
+    - Added the properties `prompt` and `possible_reasons`.
+    - Fix in the method `from_yaml`, it wasn't returning a 
+      `Detector` instance.
+  - Added the scrip `utils` with functions:
+    - `get_examples_str`.
+    - `import_from_path`.
+    - `model_class_to_string`.
+- `detector` example improved.
 
 
 ### v0.0.10 - 31st August 2025
