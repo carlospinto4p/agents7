@@ -16,7 +16,8 @@ if __name__ == "__main__":
         {"text": "She just bought a new pair of shoes."},
         {"text": "The snow on the mountains hasn't melted yet."},
         {
-            "text": "Perfect weather for a picnic: neither too hot nor too cold."
+            "text": "Perfect weather for a picnic: neither too hot nor "
+            "too cold."
         },
     ]
 

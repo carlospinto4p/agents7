@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v0.0.12 - 14th September 2025
+
+- Module `agents`:
+  - Class `Detector`: removed the "Reasons" part of the `prompt`.
+  - Function `utils.model_class_to_string`:
+    - Fix a bad rendering of the default values of the fields when 
+      they are not defined.
+    - Improved strings for descriptions.
+    - Added a "Possible values" section for Enum fields.
+
+
 ### v0.0.11 - 14th September 2025
 
 - Module `agents`:

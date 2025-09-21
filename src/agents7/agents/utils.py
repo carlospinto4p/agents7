@@ -1,4 +1,5 @@
 import importlib
+from enum import Enum
 
 from pydantic import BaseModel
 
@@ -58,12 +59,20 @@ def model_class_to_string(model_cls: type[BaseModel]) -> str:
         )
 
         default_repr = ""
-        if field_info.default is not None:
+        if str(field_info.default) != "PydanticUndefined":
             default_repr = f" = {field_info.default!r}"
 
         description = ""
         if field_info.description:
-            description = f"  # {field_info.description}"
+            description = f"\n\t\tDescription: {field_info.description}"
+
+        if isinstance(field_info.annotation, type) and issubclass(
+            field_info.annotation, Enum
+        ):
+            possible_values = "\n\t\t- ".join(
+                [f"{e.name}: {e.value}" for e in field_info.annotation]
+            )
+            description += f". Possible values:\n\t\t- {possible_values}"
 
         lines.append(
             f"    {field_name}: {annotation}{default_repr}{description}"

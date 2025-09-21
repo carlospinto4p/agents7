@@ -14,9 +14,9 @@ system_prompt: |
     - “Hot” → ≥30 °C
     - “Cold” → ≤10 °C
   3. Use contextual clues; the temperature does not need to be explicitly mentioned.
-  4. If no temperature-related context exists, output "Not Applicable".
+  4. If no temperature-related context exists, output NOT_APPLICABLE.
   
-  If the text contains no temperature-related meaning, return: Not Applicable.
+  If the text contains no temperature-related meaning, return: NOT_APPLICABLE.
 output_model: agents7.models.demo.Temperature
 system_examples:
     - input: Water could get frozen here.

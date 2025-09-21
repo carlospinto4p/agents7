@@ -78,18 +78,14 @@ class Detector(Labeler):
     @property
     def prompt(self) -> str:
         """
-        Get the full prompt used by the agent, including the system prompt,
+        Get the full prompt used by the agent, including the system prompt.
         :return: Full prompt string.
         """
-        reasons_str = "\n".join(
-            f"- {k}: {v}" for k, v in self.possible_reasons.items()
-        )
-
         full_prompt = (
             f"{self.system_prompt}\n\n## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
-            f"These are the possible reasons you need to stick to:\n\n"
-            f"## Reasons\n\n{reasons_str}"
+            f"You need to stick to the reasons defined in the "
+            f"output model schema above."
         ).strip()
 
         if self.examples:
