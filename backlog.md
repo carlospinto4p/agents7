@@ -3,8 +3,9 @@
 
 ## Improvements
 
-- Add response models for the agents.
-- Add proper batch support.
+- Add proper batch support by changing the prompts.
+- I think I should create different Detector types: for classification,
+  or for inference.
 - Add possibility to add prompt parameters in all agents.
   I have to think how to do it properly.
 - Check `pydantic_aio` library, it seems interesting.
