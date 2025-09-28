@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v0.0.13 - 28th September 2025
+
+- Module `agents`:
+  - Classes `Labeler` and `Detector`: fixed a bug in the method 
+    `act_in_batch`: was returning a list with the output models
+    instead of a list of the full responses.
+- Added tests for the `Detector` class.
+
+
 ### v0.0.12 - 14th September 2025
 
 - Module `agents`:

@@ -343,8 +343,7 @@ class Labeler(BaseAgent):
         agent_response = []
         for input_data in iter_func(input_list):
             response = self.act(input_data, chat_kwargs=chat_kwargs)
-            if response["model"] is not None:
-                agent_response.append(response["model"])
+            agent_response.append(response)
         return agent_response
 
     async def act_in_batch_async(
@@ -395,14 +394,11 @@ class Labeler(BaseAgent):
                 desc=f"Agent `{self.name}`: acting in batch",
             ):
                 response = await coro
-                if (model := response["model"]) is not None:
-                    agent_response[response.pop("_idx")] = model
+                agent_response[response.pop("_idx")] = response
         else:
             for coro in as_completed(tasks):
                 response = await coro
-                if (model := response["model"]) is not None:
-                    agent_response[response.pop("_idx")] = model
-
+                agent_response[response.pop("_idx")] = response
         return agent_response
 
     def _parse_model_response(self, response: str) -> BaseModel | None:

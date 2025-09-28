@@ -3,6 +3,8 @@
 
 ## Improvements
 
+- Add response models for the agents.
+- Add proper batch support.
 - Add possibility to add prompt parameters in all agents.
   I have to think how to do it properly.
 - Check `pydantic_aio` library, it seems interesting.

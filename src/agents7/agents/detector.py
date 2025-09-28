@@ -65,7 +65,8 @@ class Detector(Labeler):
         `output_model.reason` StrEnum class values.
 
         Returns:
-            dict[str, str]: A dictionary of possible reasons.
+            dict[str, str]: A dictionary of possible reasons,
+                <reason name>: <description>.
         """
         reasons_enum = self.output_model.model_fields["reason"].annotation
         if not issubclass(reasons_enum, StrEnum):
