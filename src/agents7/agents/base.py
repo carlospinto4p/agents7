@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 from agents7.llm import LLMEngine
-
+from agents7.models import AgentResponse
 
 Agent = TypeVar("Agent", bound="BaseAgent")
 
@@ -44,21 +44,22 @@ class BaseAgent(ABC):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def act(self, *args, **kwargs) -> dict:
+    def act(self, *args, **kwargs) -> AgentResponse:
         """
         Perform an action based on the current state and input.
         This method should be overridden by subclasses.
 
         :param args: Positional arguments for the action.
         :param kwargs: Keyword arguments for the action.
-        :return: A dictionary containing the response from the agent:
+        :return: An AgentResponse model, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
             - thinking: The thinking part of the response, if any.
-            - metrics: A dictionary containing the following metrics:
-             - tokens: The number of tokens in the response.
-             - prompt_tokens: The number of tokens in the prompt.
-             - total_duration: The total duration of the response,
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
                  in seconds.
+            - idx: Optional index for tracking purposes.
         """
         raise NotImplementedError("Subclasses must implement this method.")

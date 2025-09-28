@@ -17,6 +17,7 @@ from agents7.agents.utils import (
 )
 from agents7.llm import LLMEngine
 from agents7.logs import logger
+from agents7.models import AgentResponse
 
 
 @dataclass(frozen=True)
@@ -189,7 +190,7 @@ class Labeler(BaseAgent):
 
     def act(
         self, input_data: dict | list[dict], chat_kwargs: dict = None
-    ) -> dict:
+    ) -> AgentResponse:
         """
         Perform the labeling action based on the provided input.
         :param input_data: The input data to be processed. The system prompt
@@ -206,15 +207,16 @@ class Labeler(BaseAgent):
                 - think: If True, the model will think before generating the
                     response.
                 - seed: Seed for random number generation. Default to None.
-        :return: A dictionary containing the response from the agent:
+        :return: An AgentResponse model, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
             - thinking: The thinking part of the response, if any.
-            - metrics: A dictionary containing the following metrics:
-             - tokens: The number of tokens in the response.
-             - prompt_tokens: The number of tokens in the prompt.
-             - total_duration: The total duration of the response,
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
                  in seconds.
+            - idx: Optional index for tracking purposes.
         """
         # Set default `chat_kwargs`
         chat_kwargs = chat_kwargs or {"think": True}
@@ -239,14 +241,14 @@ class Labeler(BaseAgent):
         )
         response.pop("role")
         response["model"] = self._parse_model_response(response["response"])
-        return response
+        return AgentResponse(**response)
 
     async def act_async(
         self,
         input_data: dict | list[dict],
         chat_kwargs: dict = None,
         _idx: int = 0,
-    ) -> dict:
+    ) -> AgentResponse:
         """
         Perform the labeling action based on the provided input.
         :param input_data: The input data to be processed. The system prompt
@@ -266,16 +268,16 @@ class Labeler(BaseAgent):
         :param _idx: Internal parameter to keep track of the index of the
             input data when processing in batch mode. Default to 0.
             This parameter should not be set by the user.
-        :return: A dictionary containing the response from the agent:
+        :return: An AgentResponse model, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
             - thinking: The thinking part of the response, if any.
-            - metrics: A dictionary containing the following metrics:
-             - tokens: The number of tokens in the response.
-             - prompt_tokens: The number of tokens in the prompt.
-             - total_duration: The total duration of the response,
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
                  in seconds.
-            - _idx: The index of the input data when processing in batch mode.
+            - idx: Optional index for tracking purposes.
         """
         # Set default `chat_kwargs`
         chat_kwargs = chat_kwargs or {"think": True}
@@ -300,15 +302,15 @@ class Labeler(BaseAgent):
         )
         response.pop("role")
         response["model"] = self._parse_model_response(response["response"])
-        response["_idx"] = _idx
-        return response
+        response["idx"] = _idx
+        return AgentResponse(**response)
 
     def act_in_batch(
         self,
         input_list: list[dict | list[dict]],
         chat_kwargs: dict = None,
         iter_func: Callable = tqdm,
-    ) -> list[dict]:
+    ) -> list[AgentResponse]:
         """
         Perform the labeling action based on the provided input, in batch mode.
         :param input_list: List of input data to be processed.
@@ -328,15 +330,16 @@ class Labeler(BaseAgent):
                 - seed: Seed for random number generation. Default to None.
         :param iter_func: Function to keep track of the iterations.
             Defaults to `tqdm.tqdm`. If `None`, no function will be used.
-        :return: A list of dictionaries containing the response from the agent:
+        :return: A list of AgentResponse models, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
             - thinking: The thinking part of the response, if any.
-            - metrics: A dictionary containing the following metrics:
-             - tokens: The number of tokens in the response.
-             - prompt_tokens: The number of tokens in the prompt.
-             - total_duration: The total duration of the response,
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
                  in seconds.
+            - idx: Optional index for tracking purposes.
         """
         if iter_func is None:
             iter_func = identity_func
@@ -351,7 +354,7 @@ class Labeler(BaseAgent):
         input_list: list[dict | list[dict]],
         chat_kwargs: dict = None,
         print_tqdm: bool = True,
-    ) -> list[dict]:
+    ) -> list[AgentResponse]:
         """
         Perform the labeling action based on the provided input, in batch mode.
         :param input_list: List of input data to be processed.
@@ -371,22 +374,23 @@ class Labeler(BaseAgent):
                 - seed: Seed for random number generation. Default to None.
         :param print_tqdm: Whether to use `tqdm.asyncio` to keep track of the
             iterations.
-        :return: A list of dictionaries containing the response from the agent:
+        :return: A list of AgentResponse models, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
             - thinking: The thinking part of the response, if any.
-            - metrics: A dictionary containing the following metrics:
-             - tokens: The number of tokens in the response.
-             - prompt_tokens: The number of tokens in the prompt.
-             - total_duration: The total duration of the response,
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
                  in seconds.
+            - idx: Optional index for tracking purposes.
         """
         tasks = [
             self.act_async(input_data, chat_kwargs=chat_kwargs, _idx=idx)
             for idx, input_data in enumerate(input_list)
         ]
 
-        agent_response: list[dict | None] = [None] * len(input_list)
+        agent_response: list[AgentResponse | None] = [None] * len(input_list)
         if print_tqdm:
             for coro in async_tqdm.as_completed(
                 tasks,
@@ -394,11 +398,11 @@ class Labeler(BaseAgent):
                 desc=f"Agent `{self.name}`: acting in batch",
             ):
                 response = await coro
-                agent_response[response.pop("_idx")] = response
+                agent_response[response.idx] = response
         else:
             for coro in as_completed(tasks):
                 response = await coro
-                agent_response[response.pop("_idx")] = response
+                agent_response[response.idx] = response
         return agent_response
 
     def _parse_model_response(self, response: str) -> BaseModel | None:

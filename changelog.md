@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v0.0.14 - 28th September 2025
+
+- Module `agents`:
+  - Class `BaseAgent`: methods `act` response type changed to
+    `models.AgentResponse`.
+- Module `models`:
+  - Submodule `base`: Added the models:
+    - `AgentResponse`.
+    - `LLMMetrics`.
+  - Models also added to `__init__.py`.
+
+
 ### v0.0.13 - 28th September 2025
 
 - Module `agents`:

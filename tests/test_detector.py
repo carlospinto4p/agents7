@@ -99,8 +99,7 @@ def test_single_temperature_detection(
     input_data = {"text": test_case["text"]}
     response = temperature_detector.act(input_data)
 
-    response_model = response["model"]
-    actual_reason = response_model.reason.name
+    actual_reason = response.model.reason.name
 
     assert actual_reason == test_case["expected_reason"], (
         f"Expected reason '{test_case['expected_reason']}' but got "
@@ -121,10 +120,9 @@ def test_batch_temperature_detection(temperature_detector: Detector) -> None:
     for i, (test_case, output) in enumerate(
         zip(demo_temperature_data, response)
     ):
-        actual_model = output["model"]
-        assert test_case["expected_reason"] == actual_model.reason.name, (
+        assert test_case["expected_reason"] == output.model.reason.name, (
             f"Expected reason '{test_case['expected_reason']}' but got "
-            f"'{actual_model.reason.name}' for case {i}:"
+            f"'{output.model.reason.name}' for case {i}:"
             f" '{test_case['text']}'"
         )
 
