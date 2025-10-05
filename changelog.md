@@ -1,6 +1,26 @@
 
 ## Changelog - Agents7
 
+### v0.0.15 - 5th October 2025
+
+- Module `agents`:
+  - Class `Labeler`:
+    - Added the properties:
+      - `prompt_for_batch`.
+      - `output_model_list`.
+    - Methods `act_in_batch` and `act_in_batch_async`:
+      - Now they use the `prompt_for_batch` property.
+      - Added the parameter `requests_per_prompt`.
+    - Method `act_in_batch_async`:
+      - Renamed the parameter `print_tqdm` to `with_tqdm`.
+    - Added the methods:
+      - `_act_in_batch_async_request`.
+      - `_act_in_batch_request`.
+  - Class `Detector`:
+    - Added the properties:
+      - `prompt_for_batch`.
+
+
 ### v0.0.14 - 28th September 2025
 
 - Module `agents`:

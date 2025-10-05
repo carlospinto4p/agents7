@@ -3,7 +3,12 @@
 
 ## Improvements
 
-- Add proper batch support by changing the prompts.
+- [Doing] Add proper batch support by changing the prompts.
+  - Added functionality to get a list of models as output in the 
+    batch methods.
+  - [TODO]
+  - Add better output models for the batch methods.
+  - Add tests!
 - I think I should create different Detector types: for classification,
   or for inference.
 - Add possibility to add prompt parameters in all agents.

@@ -94,3 +94,24 @@ class Detector(Labeler):
             full_prompt = f"{full_prompt}\n\n{examples_str}"
 
         return full_prompt
+
+    @property
+    def prompt_for_batch(self) -> str:
+        """
+        Get the full prompt used by the agent, including the system prompt
+        and examples if provided. This prompt is used for batch processing.
+        :return: Full prompt string.
+        """
+        full_prompt = (
+            f"{self.system_prompt}\n\n## Output Models Schema\n\n"
+            f"{model_class_to_string(self.output_model)}\n\n"
+            f"You need to stick to the reasons defined in the output "
+            f"model schema above. Respond with a JSON array of "
+            f"objects, each one matching the schema above."
+        ).strip()
+
+        if self.examples:
+            examples_str = get_examples_str(self.examples)
+            full_prompt = f"{full_prompt}\n\n{examples_str}"
+
+        return full_prompt

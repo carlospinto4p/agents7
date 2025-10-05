@@ -1,10 +1,11 @@
 from asyncio import as_completed
 from dataclasses import dataclass
+from math import ceil
 from typing import Callable
 
 from tqdm import tqdm
 from tqdm.asyncio import tqdm as async_tqdm
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 
 from cpinto.files import load_yaml
 from cpinto.functions import identity_func
@@ -91,6 +92,418 @@ class Labeler(BaseAgent):
         config = cls._load_yaml_settings(file_path)
         return Labeler(**config)
 
+    @property
+    def prompt(self) -> str:
+        """
+        Get the full prompt used by the agent, including the system prompt
+        and examples if provided.
+        :return: Full prompt string.
+        """
+        full_prompt = (
+            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{model_class_to_string(self.output_model)}"
+        ).strip()
+
+        if self.examples:
+            examples_str = get_examples_str(self.examples)
+            full_prompt = f"{full_prompt}\n\n{examples_str}"
+
+        return full_prompt
+
+    @property
+    def prompt_for_batch(self) -> str:
+        """
+        Get the full prompt used by the agent, including the system prompt
+        and examples if provided. This prompt is used for batch processing.
+        :return: Full prompt string.
+        """
+        full_prompt = (
+            f"{self.system_prompt}\n\n## Output Models Schema\n\n"
+            f"{model_class_to_string(self.output_model)}\n\n"
+            f"Respond with a JSON array of objects, each one matching the "
+            f"schema above."
+        ).strip()
+
+        if self.examples:
+            examples_str = get_examples_str(self.examples)
+            full_prompt = f"{full_prompt}\n\n{examples_str}"
+
+        return full_prompt
+
+    @property
+    def output_model_list(self) -> type[BaseModel]:
+        """
+        Get a dynamic model that wraps the output_model in a list.
+        :return: A dynamic pydantic model class with a single field `items`
+            which is a list of `self.output_model`.
+        """
+        # Create a dynamic model that wraps the output_model in a list
+        return create_model(
+            f"{self.output_model.__name__}List",
+            items=(list[self.output_model], ...),
+            __base__=BaseModel,
+        )
+
+    def act(
+        self, input_data: dict | list[dict], chat_kwargs: dict = None
+    ) -> AgentResponse:
+        """
+        Perform the labeling action based on the provided input.
+        :param input_data: The input data to be processed.
+        :param chat_kwargs: Dictionary with extra keyword arguments to
+            send to the `self.engine.chat` method. Note that:
+            - The parameter `temperature` is set to 0 for agents, and
+              won't be overridden by this parameter.
+            - The parameter `think` is set to True by default, unless
+              specified otherwise.
+            - Available parameters:
+                - max_tokens: The maximum number of tokens to generate in the
+                    response.
+                - think: If True, the model will think before generating the
+                    response.
+                - seed: Seed for random number generation. Default to None.
+        :return: An AgentResponse model, containing:
+            - response: The generated text response.
+            - model: The structured output validated by the output model.
+            - thinking: The thinking part of the response, if any.
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
+                 in seconds.
+            - idx: Optional index for tracking purposes.
+        """
+        # Set default `chat_kwargs`
+        chat_kwargs = chat_kwargs or {"think": True}
+        # Ensure certain parameters are set correctly
+        for k in ["messages", "temperature", "output_format"]:
+            chat_kwargs.pop(k, None)
+
+        logger.debug(
+            f"Agent `{self.name}`: processing input data:\n{input_data}"
+        )
+        response = self.engine.chat(
+            messages=[
+                {"role": "system", "content": self.prompt},
+                {
+                    "role": "user",
+                    "content": f"Process the following:\n{input_data}",
+                },
+            ],
+            temperature=0,
+            output_format=self.output_model.model_json_schema(),
+            **chat_kwargs,
+        )
+        response.pop("role")
+        response["model"] = self._parse_model_response(response["response"])
+        return AgentResponse(**response)
+
+    async def act_async(
+        self,
+        input_data: dict | list[dict],
+        chat_kwargs: dict = None,
+        _idx: int = 0,
+    ) -> AgentResponse:
+        """
+        Perform the labeling action based on the provided input.
+        :param input_data: The input data to be processed.
+        :param chat_kwargs: Dictionary with extra keyword arguments to
+            send to the `self.engine.chat` method. Note that:
+            - The parameter `temperature` is set to 0 for agents, and
+              won't be overridden by this parameter.
+            - The parameter `think` is set to True by default, unless
+              specified otherwise.
+            - Available parameters:
+                - max_tokens: The maximum number of tokens to generate in the
+                    response.
+                - think: If True, the model will think before generating the
+                    response.
+                - seed: Seed for random number generation. Default to None.
+        :param _idx: Internal parameter to keep track of the index of the
+            input data when processing in batch mode. Default to 0.
+            This parameter should not be set by the user.
+        :return: An AgentResponse model, containing:
+            - response: The generated text response.
+            - model: The structured output validated by the output model.
+            - thinking: The thinking part of the response, if any.
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
+                 in seconds.
+            - idx: Optional index for tracking purposes.
+        """
+        # Set default `chat_kwargs`
+        chat_kwargs = chat_kwargs or {"think": True}
+        # Ensure certain parameters are set correctly
+        for k in ["messages", "temperature", "output_format"]:
+            chat_kwargs.pop(k, None)
+
+        logger.debug(
+            f"Agent `{self.name}`: processing input data:\n{input_data}"
+        )
+        response = await self.engine.chat_async(
+            messages=[
+                {"role": "system", "content": self.prompt},
+                {
+                    "role": "user",
+                    "content": f"Process the following:\n{input_data}",
+                },
+            ],
+            temperature=0,
+            output_format=self.output_model.model_json_schema(),
+            **chat_kwargs,
+        )
+        response.pop("role")
+        response["model"] = self._parse_model_response(response["response"])
+        response["idx"] = _idx
+        return AgentResponse(**response)
+
+    def act_in_batch(
+        self,
+        input_list: list[dict | list[dict]],
+        chat_kwargs: dict = None,
+        requests_per_prompt: int = 10,
+        iter_func: Callable = tqdm,
+    ) -> list[AgentResponse]:
+        """
+        Perform the labeling action based on the provided input, in batch mode.
+        :param input_list: List of input data to be processed.
+        :param chat_kwargs: Dictionary with extra keyword arguments to
+            send to the `self.engine.chat` method. Note that:
+            - The parameter `temperature` is set to 0 for agents, and
+              won't be overridden by this parameter.
+            - The parameter `think` is set to True by default, unless
+              specified otherwise.
+            - Available parameters:
+                - max_tokens: The maximum number of tokens to generate in the
+                    response.
+                - think: If True, the model will think before generating the
+                    response.
+                - seed: Seed for random number generation. Default to None.
+        :param requests_per_prompt: Number of requests to send per prompt.
+            Number of LLM calls will be
+                `ceil(len(input_list) / requests_per_prompt)`.
+            Defaults to 10.
+        :param iter_func: Function to keep track of the iterations.
+            Defaults to `tqdm.tqdm`. If `None`, no function will be used.
+        :return: A list of AgentResponse models, containing:
+            - response: The generated text response.
+            - model: The structured output validated by the output model.
+            - thinking: The thinking part of the response, if any.
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
+                 in seconds.
+            - idx: Optional index for tracking purposes.
+        """
+        if iter_func is None:
+            iter_func = identity_func
+        input_chunks = [
+            input_list[
+                i * requests_per_prompt : (i + 1) + requests_per_prompt
+            ]
+            for i in range(ceil(len(input_list) / requests_per_prompt))
+        ]
+        agent_response = []
+        for input_data in iter_func(input_chunks):
+            response = self._act_in_batch_request(
+                input_data, chat_kwargs=chat_kwargs
+            )
+            agent_response.append(response)
+        return agent_response
+
+    async def act_in_batch_async(
+        self,
+        input_list: list[dict | list[dict]],
+        chat_kwargs: dict = None,
+        requests_per_prompt: int = 10,
+        with_tqdm: bool = True,
+    ) -> list[AgentResponse]:
+        """
+        Perform the labeling action based on the provided input, in batch mode.
+        :param input_list: List of input data to be processed.
+        :param chat_kwargs: Dictionary with extra keyword arguments to
+            send to the `self.engine.chat` method. Note that:
+            - The parameter `temperature` is set to 0 for agents, and
+              won't be overridden by this parameter.
+            - The parameter `think` is set to True by default, unless
+              specified otherwise.
+            - Available parameters:
+                - max_tokens: The maximum number of tokens to generate in the
+                    response.
+                - think: If True, the model will think before generating the
+                    response.
+                - seed: Seed for random number generation. Default to None.
+        :param requests_per_prompt: Number of requests to send per prompt.
+            Number of LLM calls will be
+                `ceil(len(input_list) / requests_per_prompt)`.
+            Defaults to 10.
+        :param with_tqdm: Whether to use `tqdm.asyncio` to keep track of the
+            iterations.
+        :return: A list of AgentResponse models, containing:
+            - response: The generated text response.
+            - model: The structured output validated by the output model.
+            - thinking: The thinking part of the response, if any.
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
+                 in seconds.
+            - idx: Optional index for tracking purposes.
+        """
+        input_chunks = [
+            input_list[
+                i * requests_per_prompt : (i + 1) + requests_per_prompt
+            ]
+            for i in range(ceil(len(input_list) / requests_per_prompt))
+        ]
+        tasks = [
+            self._act_in_batch_async_request(
+                input_data, chat_kwargs=chat_kwargs, _idx=idx
+            )
+            for idx, input_data in enumerate(input_chunks)
+        ]
+
+        agent_response: list[AgentResponse | None] = [None] * len(input_list)
+        if with_tqdm:
+            for coro in async_tqdm.as_completed(
+                tasks,
+                total=len(tasks),
+                desc=f"Agent `{self.name}`: acting in batch",
+            ):
+                response = await coro
+                agent_response[response.idx] = response
+        else:
+            for coro in as_completed(tasks):
+                response = await coro
+                agent_response[response.idx] = response
+        return agent_response
+
+    async def _act_in_batch_async_request(
+        self,
+        input_list: list[dict | list[dict]],
+        chat_kwargs: dict = None,
+        _idx: int = 0,
+    ) -> AgentResponse:
+        """
+        Perform the labeling action based on the provided input, in batch mode.
+        Will send a single request to the LLM with a list of inputs.
+        :param input_list: List of input data to be processed.
+        :param chat_kwargs: Dictionary with extra keyword arguments to
+            send to the `self.engine.chat` method. Note that:
+            - The parameter `temperature` is set to 0 for agents, and
+              won't be overridden by this parameter.
+            - The parameter `think` is set to True by default, unless
+              specified otherwise.
+            - Available parameters:
+                - max_tokens: The maximum number of tokens to generate in the
+                    response.
+                - think: If True, the model will think before generating the
+                    response.
+                - seed: Seed for random number generation. Default to None.
+        :param _idx: Internal parameter to keep track of the index of the
+            input data when processing in batch mode. Default to 0.
+            This parameter should not be set by the user.
+        :return: A list of AgentResponse models, containing:
+            - response: The generated text response.
+            - model: The structured output validated by the output model.
+            - thinking: The thinking part of the response, if any.
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
+                 in seconds.
+            - idx: Optional index for tracking purposes.
+        """
+        # Set default `chat_kwargs`
+        chat_kwargs = chat_kwargs or {"think": True}
+        # Ensure certain parameters are set correctly
+        for k in ["messages", "temperature", "output_format"]:
+            chat_kwargs.pop(k, None)
+
+        logger.debug(
+            f"Agent `{self.name}`: processing batch input data:\n{input_list}"
+        )
+        response = await self.engine.chat_async(
+            messages=[
+                {"role": "system", "content": self.prompt_for_batch},
+                {
+                    "role": "user",
+                    "content": f"Process the following:\n{input_list}",
+                },
+            ],
+            temperature=0,
+            output_format=self.output_model_list.model_json_schema(),
+            **chat_kwargs,
+        )
+        response.pop("role")
+        response["model"] = self._parse_model_response(
+            response["response"], for_batch=True
+        )
+        response["idx"] = _idx
+        return AgentResponse(**response)
+
+    def _act_in_batch_request(
+        self,
+        input_list: list[dict | list[dict]],
+        chat_kwargs: dict = None,
+    ) -> AgentResponse:
+        """
+        Perform the labeling action based on the provided input, in batch mode.
+        Will send a single request to the LLM with a list of inputs.
+        :param input_list: List of input data to be processed.
+        :param chat_kwargs: Dictionary with extra keyword arguments to
+            send to the `self.engine.chat` method. Note that:
+            - The parameter `temperature` is set to 0 for agents, and
+              won't be overridden by this parameter.
+            - The parameter `think` is set to True by default, unless
+              specified otherwise.
+            - Available parameters:
+                - max_tokens: The maximum number of tokens to generate in the
+                    response.
+                - think: If True, the model will think before generating the
+                    response.
+                - seed: Seed for random number generation. Default to None.
+        :return: An AgentResponse model, containing:
+            - response: The generated text response.
+            - model: The structured output validated by the output model.
+            - thinking: The thinking part of the response, if any.
+            - metrics: LLMMetrics model, containing:
+                - tokens: The number of tokens in the response.
+                - prompt_tokens: The number of tokens in the prompt.
+                - total_duration: The total duration of the response,
+                 in seconds.
+            - idx: Optional index for tracking purposes.
+        """
+        # Set default `chat_kwargs`
+        chat_kwargs = chat_kwargs or {"think": True}
+        # Ensure certain parameters are set correctly
+        for k in ["messages", "temperature", "output_format"]:
+            chat_kwargs.pop(k, None)
+
+        logger.debug(
+            f"Agent `{self.name}`: processing batch input data:\n{input_list}"
+        )
+        response = self.engine.chat(
+            messages=[
+                {"role": "system", "content": self.prompt_for_batch},
+                {
+                    "role": "user",
+                    "content": f"Process the following:\n{input_list}",
+                },
+            ],
+            temperature=0,
+            output_format=self.output_model_list.model_json_schema(),
+            **chat_kwargs,
+        )
+        response.pop("role")
+        response["model"] = self._parse_model_response(
+            response["response"], for_batch=True
+        )
+        return AgentResponse(**response)
+
     @classmethod
     def _load_yaml_settings(cls, file_path: str) -> dict:
         """
@@ -171,255 +584,31 @@ class Labeler(BaseAgent):
             "examples": examples,
         }
 
-    @property
-    def prompt(self) -> str:
-        """
-        Get the full prompt used by the agent, including the system prompt,
-        :return: Full prompt string.
-        """
-        full_prompt = (
-            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
-            f"{model_class_to_string(self.output_model)}"
-        ).strip()
-
-        if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
-
-        return full_prompt
-
-    def act(
-        self, input_data: dict | list[dict], chat_kwargs: dict = None
-    ) -> AgentResponse:
-        """
-        Perform the labeling action based on the provided input.
-        :param input_data: The input data to be processed. The system prompt
-            should specify the expected format of this data.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :return: An AgentResponse model, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
-        """
-        # Set default `chat_kwargs`
-        chat_kwargs = chat_kwargs or {"think": True}
-        # Ensure certain parameters are set correctly
-        for k in ["messages", "temperature", "output_format"]:
-            chat_kwargs.pop(k, None)
-
-        logger.debug(
-            f"Agent `{self.name}`: processing input data:\n{input_data}"
-        )
-        response = self.engine.chat(
-            messages=[
-                {"role": "system", "content": self.prompt},
-                {
-                    "role": "user",
-                    "content": f"Process the following:\n{input_data}",
-                },
-            ],
-            temperature=0,
-            output_format=self.output_model.model_json_schema(),
-            **chat_kwargs,
-        )
-        response.pop("role")
-        response["model"] = self._parse_model_response(response["response"])
-        return AgentResponse(**response)
-
-    async def act_async(
-        self,
-        input_data: dict | list[dict],
-        chat_kwargs: dict = None,
-        _idx: int = 0,
-    ) -> AgentResponse:
-        """
-        Perform the labeling action based on the provided input.
-        :param input_data: The input data to be processed. The system prompt
-            should specify the expected format of this data.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :param _idx: Internal parameter to keep track of the index of the
-            input data when processing in batch mode. Default to 0.
-            This parameter should not be set by the user.
-        :return: An AgentResponse model, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
-        """
-        # Set default `chat_kwargs`
-        chat_kwargs = chat_kwargs or {"think": True}
-        # Ensure certain parameters are set correctly
-        for k in ["messages", "temperature", "output_format"]:
-            chat_kwargs.pop(k, None)
-
-        logger.debug(
-            f"Agent `{self.name}`: processing input data:\n{input_data}"
-        )
-        response = await self.engine.chat_async(
-            messages=[
-                {"role": "system", "content": self.prompt},
-                {
-                    "role": "user",
-                    "content": f"Process the following:\n{input_data}",
-                },
-            ],
-            temperature=0,
-            output_format=self.output_model.model_json_schema(),
-            **chat_kwargs,
-        )
-        response.pop("role")
-        response["model"] = self._parse_model_response(response["response"])
-        response["idx"] = _idx
-        return AgentResponse(**response)
-
-    def act_in_batch(
-        self,
-        input_list: list[dict | list[dict]],
-        chat_kwargs: dict = None,
-        iter_func: Callable = tqdm,
-    ) -> list[AgentResponse]:
-        """
-        Perform the labeling action based on the provided input, in batch mode.
-        :param input_list: List of input data to be processed.
-            The system prompt should specify the expected format of
-            each element of this data.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :param iter_func: Function to keep track of the iterations.
-            Defaults to `tqdm.tqdm`. If `None`, no function will be used.
-        :return: A list of AgentResponse models, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
-        """
-        if iter_func is None:
-            iter_func = identity_func
-        agent_response = []
-        for input_data in iter_func(input_list):
-            response = self.act(input_data, chat_kwargs=chat_kwargs)
-            agent_response.append(response)
-        return agent_response
-
-    async def act_in_batch_async(
-        self,
-        input_list: list[dict | list[dict]],
-        chat_kwargs: dict = None,
-        print_tqdm: bool = True,
-    ) -> list[AgentResponse]:
-        """
-        Perform the labeling action based on the provided input, in batch mode.
-        :param input_list: List of input data to be processed.
-            The system prompt should specify the expected format of
-            each element of this data.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :param print_tqdm: Whether to use `tqdm.asyncio` to keep track of the
-            iterations.
-        :return: A list of AgentResponse models, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
-        """
-        tasks = [
-            self.act_async(input_data, chat_kwargs=chat_kwargs, _idx=idx)
-            for idx, input_data in enumerate(input_list)
-        ]
-
-        agent_response: list[AgentResponse | None] = [None] * len(input_list)
-        if print_tqdm:
-            for coro in async_tqdm.as_completed(
-                tasks,
-                total=len(tasks),
-                desc=f"Agent `{self.name}`: acting in batch",
-            ):
-                response = await coro
-                agent_response[response.idx] = response
-        else:
-            for coro in as_completed(tasks):
-                response = await coro
-                agent_response[response.idx] = response
-        return agent_response
-
-    def _parse_model_response(self, response: str) -> BaseModel | None:
+    def _parse_model_response(
+        self, response: str, for_batch: bool = False
+    ) -> BaseModel | None:
         """
         Parse the response from the agent and validate it against the output
         model.
         :param response: The response string from the agent.
+        :param for_batch: Whether the response is for batch processing.
+            If True, will use `self.output_model_list`,
+            instead of `self.output_model`, to parse the response.
+            Defaults to False.
         :return: The structured output validated by the output model.
             Will return `None` if the response cannot be parsed.
         """
+        if for_batch:
+            model_cls = self.output_model_list
+        else:
+            model_cls = self.output_model
         model = None
         try:
-            model = self.output_model.model_validate_json(response)
+            model = model_cls.model_validate_json(response)
         except Exception:
             try:
                 # Ad-hoc way to handle ollama's structured response
-                model = self.output_model.model_validate_json(response[2:])
+                model = model_cls.model_validate_json(response[2:])
             except Exception as e:
                 logger.error(
                     f"Agent `{self.name}`: error parsing structured "

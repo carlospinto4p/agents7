@@ -23,6 +23,8 @@ if __name__ == "__main__":
 
     print(f"Detector prompt:\n\n{detector.prompt}\n")
 
+    print(f"Detector prompt for batch:\n\n{detector.prompt_for_batch}")
+
     response = detector.act_in_batch(input_list)
 
     for _input, output in zip(input_list, response):
