@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v0.3.1 - 25th January 2026
+
+- Examples:
+  - Updated `classifier.py` and `labeler.py` to use `act_in_batch` for
+    efficient batch processing instead of looping with `act()`.
+
+
 ### v0.3.0 - 25th January 2026
 
 - Module `models`:
