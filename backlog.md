@@ -3,9 +3,8 @@
 
 ## Improvements
 
-- I think I should create different Detector types: one for classification
-  tasks and other for inference.
-- Add possibility to add prompt parameters in all agents.
+- Add possibility to parameterize parts of the prompt 
+  in all agents, e.g., current date, custom values, etc. 
   I have to think how to do it properly.
 - Check `pydantic_aio` library, it seems interesting.
 
