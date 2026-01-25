@@ -6,6 +6,11 @@
 - Examples:
   - Updated `classifier.py` and `labeler.py` to use `act_in_batch` for
     efficient batch processing instead of looping with `act()`.
+- `.claude/`:
+  - Added lesson learned: prefer batch methods for list inputs.
+  - Added lesson learned: include `.claude/` changes in changelog.
+  - Added `rm *.tmp*` permission to settings.json.
+  - Updated workflow: auto-push committed changes to origin.
 
 
 ### v0.3.0 - 25th January 2026
