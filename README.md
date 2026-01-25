@@ -190,6 +190,20 @@ system_examples:
 - Ollama running locally (default: `http://localhost:11434`)
 - Dependencies: `pydantic`, `ollama`, `tqdm`, `pyyaml`, `cpinto`
 
+## Model Compatibility
+
+The library includes automatic fallback handling for models with varying
+levels of structured output support:
+
+- **Full support** (e.g., `qwen3`): Uses Ollama's native JSON schema format
+- **Partial support** (e.g., `gpt-oss:20b`): Falls back to prompt-based JSON
+  generation with automatic parsing fixes
+
+Common LLM output issues are handled automatically:
+- Markdown code blocks in responses
+- Malformed JSON (double braces, etc.)
+- Enum names vs values mismatch
+
 ## Development
 
 ```bash

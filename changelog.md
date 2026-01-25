@@ -8,6 +8,10 @@
     - Made `_fix_malformed_json` a static method.
     - Extracted `_get_enum_mappings`, `_apply_enum_mappings` methods.
     - Moved imports to module level.
+- Documentation:
+  - Added Model Compatibility section to README.
+- `.claude/`:
+  - Added code style guidelines (static methods, imports, no nested functions).
 
 
 ### v0.3.3 - 25th January 2026
