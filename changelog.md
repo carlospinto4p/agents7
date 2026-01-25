@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v0.0.19 - 25th January 2026
+
+- Examples:
+  - Labeler example improved with entity extraction use case.
+  - Added `PersonInfo` model for clear person data extraction demo.
+  - Updated `demo_labeler.yml` with extraction rules and examples.
+  - Rewritten `labeler.py` with diverse test cases.
+- Tests:
+  - Replaced ambiguous COMFORTABLE temperature test case with explicit statement.
+
+
 ### v0.0.18 - 25th January 2026
 
 - Module `agents`:
