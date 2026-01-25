@@ -5,18 +5,16 @@ engine:
     model: qwen3
 system_prompt: |
   Analyze the input text and detect the temperature it refers to, expressed in degrees Celsius.
-  
+
   ## Rules
-  
+
   1. If an exact temperature is explicitly stated, return that value.
-  2. If only descriptive terms are used, estimate the temperature using these defaults:
-    - “Comfortable” → ~20 °C
-    - “Hot” → ≥30 °C
-    - “Cold” → ≤10 °C
-  3. Use contextual clues; the temperature does not need to be explicitly mentioned.
-  4. If no temperature-related context exists, output NOT_APPLICABLE.
-  
-  If the text contains no temperature-related meaning, return: NOT_APPLICABLE.
+  2. Estimate temperature from descriptive terms or context:
+    - Cold contexts (freezing, shivering, snow, ice) → ≤10 °C, reason: TOO_COLD
+    - Comfortable contexts (pleasant, perfect, ideal, balanced, "not too hot/cold") → ~20 °C, reason: COMFORTABLE
+    - Hot contexts (scorching, sweating, burning, desert heat) → ≥30 °C, reason: TOO_HOT
+  3. Any mention of weather comfort, temperature extremes, or thermal sensations is temperature-related.
+  4. Only use NOT_APPLICABLE when the text has absolutely no connection to temperature or weather.
 output_model: agents7.models.demo.Temperature
 system_examples:
     - input: Water could get frozen here.
@@ -24,10 +22,6 @@ system_examples:
         value: -10
         reason: TOO_COLD
     - input: The weather feels perfect for a walk.
-      output:
-        value: 20
-        reason: COMFORTABLE
-    - input: It's neither too hot nor too cold outside.
       output:
         value: 20
         reason: COMFORTABLE
