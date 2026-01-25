@@ -9,12 +9,12 @@ system_prompt: |
   ## Rules
 
   1. If an exact temperature is explicitly stated, return that value.
-  2. Estimate temperature from descriptive terms or context:
-    - Cold contexts (freezing, shivering, snow, ice) → ≤10 °C, reason: TOO_COLD
-    - Comfortable contexts (pleasant, perfect, ideal, balanced, "not too hot/cold") → ~20 °C, reason: COMFORTABLE
-    - Hot contexts (scorching, sweating, burning, desert heat) → ≥30 °C, reason: TOO_HOT
-  3. Any mention of weather comfort, temperature extremes, or thermal sensations is temperature-related.
-  4. Only use NOT_APPLICABLE when the text has absolutely no connection to temperature or weather.
+  2. Infer temperature from context - consider what the situation implies:
+    - TOO_COLD (≤10 °C): cold weather, freezing conditions, heating needed
+    - COMFORTABLE (~20 °C): pleasant weather, balanced temperature, neither extreme
+    - TOO_HOT (≥30 °C): hot weather, cooling needed, excessive heat
+  3. Consider indirect indicators: appliances (heaters, AC), clothing choices, physical reactions, seasonal/location cues.
+  4. Only use NOT_APPLICABLE when the text has no connection to temperature whatsoever.
 output_model: agents7.models.demo.Temperature
 system_examples:
     - input: Water could get frozen here.
