@@ -3,12 +3,17 @@
 
 ### v0.3.1 - 25th January 2026
 
+- Documentation:
+  - Updated `README.md` with current architecture (Classifier, Regressor,
+    ClassificationProperty, Property[T]), examples using batch processing,
+    and custom model definitions.
 - Examples:
   - Updated `classifier.py` and `labeler.py` to use `act_in_batch` for
     efficient batch processing instead of looping with `act()`.
 - `.claude/`:
   - Added lesson learned: prefer batch methods for list inputs.
   - Added lesson learned: include `.claude/` changes in changelog.
+  - Added lesson learned: keep README aligned with changes.
   - Added `rm *.tmp*` permission to settings.json.
   - Updated workflow: auto-push committed changes to origin.
 
