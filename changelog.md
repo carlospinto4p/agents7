@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v0.0.17 - 25th January 2026
+
+- Module `agents`:
+  - Class `Labeler`:
+    - Fixed chunking bug in `act_in_batch` and `act_in_batch_async`:
+      slice was `(i+1)+n` instead of `(i+1)*n`.
+    - Methods `act_in_batch` and `act_in_batch_async` now return one
+      `AgentResponse` per input item (flattened), instead of one per chunk.
+- Tests:
+  - Updated `test_batch_temperature_detection` to verify structure rather
+    than LLM-dependent content.
+
+
 ### v0.0.16 - 25th January 2026
 
 - Documentation:
