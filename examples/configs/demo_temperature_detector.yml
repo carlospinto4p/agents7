@@ -27,6 +27,10 @@ system_examples:
       output:
         value: 20
         reason: COMFORTABLE
+    - input: It's neither too hot nor too cold outside.
+      output:
+        value: 20
+        reason: COMFORTABLE
     - input: We’re in the desert at noon.
       output:
         value: 35
