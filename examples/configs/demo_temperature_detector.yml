@@ -21,8 +21,8 @@ output_model: agents7.models.demo.Temperature
 system_examples:
     - input: Water could get frozen here.
       output:
-        value': -10
-        reason': TOO_COLD
+        value: -10
+        reason: TOO_COLD
     - input: The weather feels perfect for a walk.
       output:
         value: 20
