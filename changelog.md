@@ -11,6 +11,8 @@
     - Handles markdown code blocks (```json...```)
     - Handles double-brace malformation ({"{"...)
     - Converts enum names to values when models return names instead
+- Tests:
+  - Added `test_multi_model.py` with 9 tests for multi-model support.
 
 
 ### v0.3.2 - 25th January 2026
