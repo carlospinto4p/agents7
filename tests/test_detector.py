@@ -62,9 +62,9 @@ demo_temperature_data = [
         "expected_reason": "TOO_COLD",
     },
     {
-        "text": "Perfect weather for a picnic: neither too hot nor too cold.",
-        "expected_value_min": 15,
-        "expected_value_max": 25,
+        "text": "The room temperature is set to 22 degrees Celsius.",
+        "expected_value_min": 20,
+        "expected_value_max": 24,
         "expected_reason": "COMFORTABLE",
     },
 ]

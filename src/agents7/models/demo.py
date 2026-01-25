@@ -5,16 +5,16 @@ from pydantic import BaseModel
 from agents7.models import Property
 
 
-class DemoModel(BaseModel):
+class PersonInfo(BaseModel):
     """
-    A simple demo model for testing purposes.
-    This model can be used to demonstrate the functionality of an agent
-    without requiring a complex setup.
+    Structured information about a person extracted from text.
+    Used to demonstrate the Labeler's entity extraction capability.
     """
 
-    name: str
-    description: str
-    value: int
+    name: str | None = None
+    age: int | None = None
+    occupation: str | None = None
+    location: str | None = None
 
 
 class TemperaturePropertyReason(StrEnum):

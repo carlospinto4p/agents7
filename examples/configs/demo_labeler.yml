@@ -1,13 +1,35 @@
-name: DemoLabeler
+name: PersonExtractor
 version: 1
 engine:
     provider: ollama
     model: qwen3
 system_prompt: |
-  Fill the output model with randomly generated data.
+  Extract information about people from the given text.
+
+  ## Rules
+
+  1. Extract only information that is explicitly stated or clearly implied.
+  2. If a field cannot be determined from the text, leave it as null.
+  3. For age, extract the numeric value only.
+  4. For occupation, use a concise job title.
+  5. For location, extract city, country, or region as mentioned.
+output_model: agents7.models.demo.PersonInfo
 system_examples:
-    - input: Generate a random number between 1 and 100.
-      output: 42
-    - input: Create a random string of length 10.
-      output: abcdefghij
-output_model: agents7.models.demo.DemoModel
+    - input: "John is a 35-year-old software engineer living in Berlin."
+      output:
+        name: John
+        age: 35
+        occupation: software engineer
+        location: Berlin
+    - input: "The CEO, Maria, recently moved to Tokyo."
+      output:
+        name: Maria
+        age: null
+        occupation: CEO
+        location: Tokyo
+    - input: "Yesterday I saw a movie about robots."
+      output:
+        name: null
+        age: null
+        occupation: null
+        location: null
