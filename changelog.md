@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v0.0.16 - 25th January 2026
+
+- Documentation:
+  - `README.md`: Added comprehensive documentation with architecture overview,
+    quick start examples, and development instructions.
+  - `.claude/CLAUDE.md`: Added Claude Code guidelines with workflow,
+    versioning, commit conventions, and lessons learned sections.
+  - `.claude/settings.json`: Added permission settings for git, python,
+    and bash commands.
+
+
 ### v0.0.15 - 5th October 2025
 
 - Module `agents`:
