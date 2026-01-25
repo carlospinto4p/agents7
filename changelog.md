@@ -1,6 +1,23 @@
 
 ## Changelog - Agents7
 
+### v0.1.0 - 25th January 2026
+
+- Module `models`:
+  - Class `Property`:
+    - Now a generic class `Property[T]` for type-safe value extraction.
+    - Improved documentation with usage examples.
+- Module `agents`:
+  - Class `Detector`:
+    - Now validates that the reason enum has a `NOT_APPLICABLE` member.
+    - Raises `ValueError` if the reason enum lacks this fallback.
+- Module `models.demo`:
+  - Class `Temperature`: Updated to use `Property[float]`.
+- Tests:
+  - Added test for `NOT_APPLICABLE` enforcement in Detector.
+  - Updated COMFORTABLE test case for batch consistency.
+
+
 ### v0.0.19 - 25th January 2026
 
 - Examples:

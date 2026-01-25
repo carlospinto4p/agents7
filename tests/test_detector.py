@@ -1,5 +1,10 @@
+from enum import StrEnum
+
 import pytest
+
 from agents7.agents.detector import Detector
+from agents7.llm import LLMEngine
+from agents7.models import Property
 from agents7.models.demo import TemperaturePropertyReason
 
 
@@ -62,9 +67,9 @@ demo_temperature_data = [
         "expected_reason": "TOO_COLD",
     },
     {
-        "text": "The room temperature is set to 22 degrees Celsius.",
-        "expected_value_min": 20,
-        "expected_value_max": 24,
+        "text": "At 21 degrees, the room feels perfectly comfortable for working.",
+        "expected_value_min": 19,
+        "expected_value_max": 23,
         "expected_reason": "COMFORTABLE",
     },
 ]
@@ -139,3 +144,25 @@ def test_possible_reasons(temperature_detector: Detector) -> None:
         k: v for k, v in TemperaturePropertyReason.__members__.items()
     }
     assert temperature_detector.possible_reasons == expected_reasons
+
+
+def test_detector_requires_not_applicable_reason() -> None:
+    """Test that Detector raises ValueError if reason enum lacks NOT_APPLICABLE."""
+
+    class InvalidReason(StrEnum):
+        GOOD = "Good result."
+        BAD = "Bad result."
+
+    class InvalidProperty(Property[str]):
+        reason: InvalidReason
+
+    engine = LLMEngine(provider="ollama", model_name="qwen3")
+
+    with pytest.raises(ValueError, match="NOT_APPLICABLE"):
+        Detector(
+            name="InvalidDetector",
+            version=1,
+            engine=engine,
+            system_prompt="Test prompt.",
+            output_model=InvalidProperty,
+        )

@@ -29,6 +29,11 @@ class TemperaturePropertyReason(StrEnum):
     NOT_APPLICABLE = "No reference nor context for any temperature detection."
 
 
-class Temperature(Property):
-    value: float | None = None
+class Temperature(Property[float]):
+    """
+    Temperature property for detecting temperature-related content.
+    Extracts a numeric temperature value (in Celsius) and classifies
+    the reason based on predefined categories.
+    """
+
     reason: TemperaturePropertyReason

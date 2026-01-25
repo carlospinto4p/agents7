@@ -1,7 +1,10 @@
 from enum import StrEnum
-from typing import Any
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel, Field
+
+
+T = TypeVar("T")
 
 
 class LLMMetrics(BaseModel):
@@ -36,13 +39,22 @@ class AgentResponse(BaseModel):
     )
 
 
-class Property(BaseModel):
+class Property(BaseModel, Generic[T]):
     """
-    A base class for properties that can be used in agents.
-    This class has to be extended to create specific properties.
+    A generic base class for properties used by Detector agents.
+
+    Subclasses should specify the type parameter T for type-safe value
+    extraction. The reason field must be a StrEnum with a NOT_APPLICABLE
+    member for cases where the property cannot be detected.
+
+    Example:
+        class Temperature(Property[float]):
+            reason: TemperaturePropertyReason
     """
 
-    value: Any = Field(description="The value of the property.")
+    value: T | None = Field(
+        default=None, description="The extracted value of the property."
+    )
     reason: StrEnum = Field(
-        description="Reasons for the value of the property."
+        description="The categorical reason for the classification."
     )
