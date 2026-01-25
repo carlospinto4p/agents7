@@ -302,17 +302,27 @@ class Labeler(BaseAgent):
             iter_func = identity_func
         input_chunks = [
             input_list[
-                i * requests_per_prompt : (i + 1) + requests_per_prompt
+                i * requests_per_prompt : (i + 1) * requests_per_prompt
             ]
             for i in range(ceil(len(input_list) / requests_per_prompt))
         ]
-        agent_response = []
+        agent_responses = []
         for input_data in iter_func(input_chunks):
-            response = self._act_in_batch_request(
+            chunk_response = self._act_in_batch_request(
                 input_data, chat_kwargs=chat_kwargs
             )
-            agent_response.append(response)
-        return agent_response
+            # Flatten: create individual AgentResponse for each item
+            for item in chunk_response.model.items:
+                agent_responses.append(
+                    AgentResponse(
+                        response=chunk_response.response,
+                        model=item,
+                        thinking=chunk_response.thinking,
+                        metrics=chunk_response.metrics,
+                        idx=len(agent_responses),
+                    )
+                )
+        return agent_responses
 
     async def act_in_batch_async(
         self,
@@ -355,7 +365,7 @@ class Labeler(BaseAgent):
         """
         input_chunks = [
             input_list[
-                i * requests_per_prompt : (i + 1) + requests_per_prompt
+                i * requests_per_prompt : (i + 1) * requests_per_prompt
             ]
             for i in range(ceil(len(input_list) / requests_per_prompt))
         ]
@@ -366,7 +376,8 @@ class Labeler(BaseAgent):
             for idx, input_data in enumerate(input_chunks)
         ]
 
-        agent_response: list[AgentResponse | None] = [None] * len(input_list)
+        # Collect chunk responses in order
+        chunk_responses: list[AgentResponse | None] = [None] * len(tasks)
         if with_tqdm:
             for coro in async_tqdm.as_completed(
                 tasks,
@@ -374,12 +385,26 @@ class Labeler(BaseAgent):
                 desc=f"Agent `{self.name}`: acting in batch",
             ):
                 response = await coro
-                agent_response[response.idx] = response
+                chunk_responses[response.idx] = response
         else:
             for coro in as_completed(tasks):
                 response = await coro
-                agent_response[response.idx] = response
-        return agent_response
+                chunk_responses[response.idx] = response
+
+        # Flatten: create individual AgentResponse for each item
+        agent_responses = []
+        for chunk_response in chunk_responses:
+            for item in chunk_response.model.items:
+                agent_responses.append(
+                    AgentResponse(
+                        response=chunk_response.response,
+                        model=item,
+                        thinking=chunk_response.thinking,
+                        metrics=chunk_response.metrics,
+                        idx=len(agent_responses),
+                    )
+                )
+        return agent_responses
 
     async def _act_in_batch_async_request(
         self,
