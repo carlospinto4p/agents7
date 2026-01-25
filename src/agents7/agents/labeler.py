@@ -1,5 +1,7 @@
+import json
 from asyncio import as_completed
 from dataclasses import dataclass
+from enum import StrEnum
 from math import ceil
 from typing import Callable
 
@@ -647,7 +649,8 @@ class Labeler(BaseAgent):
                 )
         return model
 
-    def _fix_malformed_json(self, response: str) -> str:
+    @staticmethod
+    def _fix_malformed_json(response: str) -> str:
         """
         Fix common JSON malformations from LLM outputs.
         Some models return malformed JSON like '{"{"reason":...' instead
@@ -675,22 +678,11 @@ class Labeler(BaseAgent):
 
         return response
 
-    def _convert_enum_names_to_values(self, response: str) -> str:
+    def _get_enum_mappings(self) -> dict[str, dict[str, str]]:
         """
-        Convert enum names to values in a JSON response string.
-        Some models return enum names (e.g., 'TOO_COLD') instead of
-        values (e.g., 'The temperature is too cold.').
-        This method converts names to values for proper Pydantic parsing.
+        Get enum name-to-value mappings for all StrEnum fields in output_model.
+        :return: Dict mapping field names to their enum name->value dicts.
         """
-        import json
-        from enum import StrEnum
-
-        try:
-            data = json.loads(response)
-        except json.JSONDecodeError:
-            return response
-
-        # Get all StrEnum fields from the output model
         enum_mappings = {}
         for field_name, field_info in self.output_model.model_fields.items():
             field_type = field_info.annotation
@@ -704,23 +696,49 @@ class Labeler(BaseAgent):
             if isinstance(field_type, type) and issubclass(
                 field_type, StrEnum
             ):
-                # Create name -> value mapping
                 enum_mappings[field_name] = {
                     member.name: member.value for member in field_type
                 }
+        return enum_mappings
 
-        # Convert data (handles both single objects and lists)
-        def convert_item(item):
-            if not isinstance(item, dict):
-                return item
-            for field_name, mapping in enum_mappings.items():
-                if field_name in item and item[field_name] in mapping:
-                    item[field_name] = mapping[item[field_name]]
-            return item
+    def _convert_enum_names_to_values(self, response: str) -> str:
+        """
+        Convert enum names to values in a JSON response string.
+        Some models return enum names (e.g., 'TOO_COLD') instead of
+        values (e.g., 'The temperature is too cold.').
+        """
+        try:
+            data = json.loads(response)
+        except json.JSONDecodeError:
+            return response
 
-        if isinstance(data, list):
-            data = [convert_item(item) for item in data]
-        else:
-            data = convert_item(data)
-
+        enum_mappings = self._get_enum_mappings()
+        data = self._apply_enum_mappings(data, enum_mappings)
         return json.dumps(data)
+
+    @staticmethod
+    def _apply_enum_mappings(
+        data: dict | list, mappings: dict[str, dict[str, str]]
+    ) -> dict | list:
+        """
+        Apply enum name-to-value mappings to data.
+        Handles both single objects and lists.
+        """
+        if isinstance(data, list):
+            return [
+                Labeler._apply_enum_mappings_to_item(item, mappings)
+                for item in data
+            ]
+        return Labeler._apply_enum_mappings_to_item(data, mappings)
+
+    @staticmethod
+    def _apply_enum_mappings_to_item(
+        item: dict, mappings: dict[str, dict[str, str]]
+    ) -> dict:
+        """Apply enum name-to-value mappings to a single item."""
+        if not isinstance(item, dict):
+            return item
+        for field_name, mapping in mappings.items():
+            if field_name in item and item[field_name] in mapping:
+                item[field_name] = mapping[item[field_name]]
+        return item
