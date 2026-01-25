@@ -1,6 +1,23 @@
 
 ## Changelog - Agents7
 
+### v0.2.0 - 25th January 2026
+
+- Module `exceptions`:
+  - Added `PropertyConfigurationError` for Property/Detector configuration errors.
+- Module `models`:
+  - Class `Property`:
+    - Automatically adds `NOT_APPLICABLE` member to reason enums if not present.
+    - Uses `__init_subclass__` to extend reason enum before Pydantic processes it.
+- Module `agents`:
+  - Class `Detector`:
+    - Now uses `PropertyConfigurationError` instead of `TypeError`.
+    - Removed explicit `NOT_APPLICABLE` validation (now automatic).
+- Tests:
+  - Added tests for automatic `NOT_APPLICABLE` addition.
+  - Added test for `PropertyConfigurationError`.
+
+
 ### v0.1.0 - 25th January 2026
 
 - Module `models`:

@@ -1,8 +1,10 @@
 from enum import StrEnum
 
 import pytest
+from pydantic import BaseModel
 
 from agents7.agents.detector import Detector
+from agents7.exceptions import PropertyConfigurationError
 from agents7.llm import LLMEngine
 from agents7.models import Property
 from agents7.models.demo import TemperaturePropertyReason
@@ -146,23 +148,57 @@ def test_possible_reasons(temperature_detector: Detector) -> None:
     assert temperature_detector.possible_reasons == expected_reasons
 
 
-def test_detector_requires_not_applicable_reason() -> None:
-    """Test that Detector raises ValueError if reason enum lacks NOT_APPLICABLE."""
+def test_not_applicable_added_automatically() -> None:
+    """Test that NOT_APPLICABLE is automatically added to reason enums."""
 
-    class InvalidReason(StrEnum):
+    class SimpleReason(StrEnum):
         GOOD = "Good result."
         BAD = "Bad result."
 
-    class InvalidProperty(Property[str]):
-        reason: InvalidReason
+    class SimpleProperty(Property[str]):
+        reason: SimpleReason
+
+    # Verify NOT_APPLICABLE was added to the annotation
+    reason_enum = SimpleProperty.__annotations__["reason"]
+    assert hasattr(reason_enum, "NOT_APPLICABLE")
+    assert (
+        reason_enum.NOT_APPLICABLE
+        == "No applicable reason for this classification."
+    )
+
+    # Verify original members are preserved
+    assert hasattr(reason_enum, "GOOD")
+    assert hasattr(reason_enum, "BAD")
+
+
+def test_explicit_not_applicable_preserved() -> None:
+    """Test that explicit NOT_APPLICABLE is preserved and not overwritten."""
+
+    class ExplicitReason(StrEnum):
+        YES = "Affirmative."
+        NO = "Negative."
+        NOT_APPLICABLE = "Custom N/A message."
+
+    class ExplicitProperty(Property[bool]):
+        reason: ExplicitReason
+
+    reason_enum = ExplicitProperty.__annotations__["reason"]
+    assert reason_enum.NOT_APPLICABLE == "Custom N/A message."
+
+
+def test_detector_requires_property_subclass() -> None:
+    """Test that Detector raises PropertyConfigurationError for non-Property models."""
+
+    class NotAProperty(BaseModel):
+        value: str
 
     engine = LLMEngine(provider="ollama", model_name="qwen3")
 
-    with pytest.raises(ValueError, match="NOT_APPLICABLE"):
+    with pytest.raises(PropertyConfigurationError):
         Detector(
             name="InvalidDetector",
             version=1,
             engine=engine,
             system_prompt="Test prompt.",
-            output_model=InvalidProperty,
+            output_model=NotAProperty,
         )

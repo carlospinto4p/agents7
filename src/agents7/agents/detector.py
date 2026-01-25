@@ -3,6 +3,7 @@ from enum import StrEnum
 
 from agents7.agents.labeler import Labeler
 from agents7.agents.utils import get_examples_str, model_class_to_string
+from agents7.exceptions import PropertyConfigurationError
 from agents7.models.base import Property
 
 
@@ -25,6 +26,10 @@ class Detector(Labeler):
         examples (list[dict], optional): List of examples to include in the
             system prompt. Each example should be a dictionary with 'input'
             and 'output' keys. Defaults to None.
+
+    Note:
+        The reason enum will automatically include a NOT_APPLICABLE member
+        for fallback classification, even if not explicitly declared.
     """
 
     output_model: type[Property]
@@ -34,23 +39,13 @@ class Detector(Labeler):
         Post-initialization method to validate the agent.
         This method is called after the agent is initialized.
 
-        Validates that:
-        - output_model is a subclass of Property
-        - The reason enum has a NOT_APPLICABLE member for fallback cases
+        Validates that output_model is a subclass of Property.
         """
         super().__post_init__()
         if not issubclass(self.output_model, Property):
-            raise TypeError(
+            raise PropertyConfigurationError(
                 "`output_model` must be a subclass of "
                 "`agents7.models.Property` for the `Detector` agents."
-            )
-
-        # Validate that the reason enum has NOT_APPLICABLE
-        reasons_enum = self.output_model.model_fields["reason"].annotation
-        if not hasattr(reasons_enum, "NOT_APPLICABLE"):
-            raise ValueError(
-                f"The reason enum `{reasons_enum.__name__}` must have a "
-                f"`NOT_APPLICABLE` member for fallback classification."
             )
 
     @classmethod
