@@ -21,6 +21,8 @@ credentials/
 # Sketches
 sketches/
 notebooks/
+*.local.*
+*.tmp.*
 
 # AWS / Cloud
 .aws-sam/
