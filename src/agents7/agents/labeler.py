@@ -628,15 +628,99 @@ class Labeler(BaseAgent):
         else:
             model_cls = self.output_model
         model = None
+
+        # Fix common JSON malformations from some models
+        response = self._fix_malformed_json(response)
+
         try:
             model = model_cls.model_validate_json(response)
         except Exception:
             try:
-                # Ad-hoc way to handle ollama's structured response
-                model = model_cls.model_validate_json(response[2:])
+                # Try converting enum names to values for models that
+                # return enum names instead of values
+                converted = self._convert_enum_names_to_values(response)
+                model = model_cls.model_validate_json(converted)
             except Exception as e:
                 logger.error(
                     f"Agent `{self.name}`: error parsing structured "
                     f"response:\n{e}"
                 )
         return model
+
+    def _fix_malformed_json(self, response: str) -> str:
+        """
+        Fix common JSON malformations from LLM outputs.
+        Some models return malformed JSON like '{"{"reason":...' instead
+        of '{"reason":...'.
+        """
+        response = response.strip()
+
+        # Remove markdown code blocks: ```json ... ``` or ``` ... ```
+        if response.startswith("```"):
+            lines = response.split("\n")
+            # Remove first line (```json or ```)
+            lines = lines[1:]
+            # Remove last line if it's closing ```
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            response = "\n".join(lines).strip()
+
+        # Fix double opening brace: {"{ -> {
+        if response.startswith('{"{'):
+            response = response[2:]
+
+        # Fix double opening bracket for arrays: ["[ -> [
+        if response.startswith('["['):
+            response = response[2:]
+
+        return response
+
+    def _convert_enum_names_to_values(self, response: str) -> str:
+        """
+        Convert enum names to values in a JSON response string.
+        Some models return enum names (e.g., 'TOO_COLD') instead of
+        values (e.g., 'The temperature is too cold.').
+        This method converts names to values for proper Pydantic parsing.
+        """
+        import json
+        from enum import StrEnum
+
+        try:
+            data = json.loads(response)
+        except json.JSONDecodeError:
+            return response
+
+        # Get all StrEnum fields from the output model
+        enum_mappings = {}
+        for field_name, field_info in self.output_model.model_fields.items():
+            field_type = field_info.annotation
+            # Handle Optional types
+            if hasattr(field_type, "__origin__"):
+                args = getattr(field_type, "__args__", ())
+                for arg in args:
+                    if isinstance(arg, type) and issubclass(arg, StrEnum):
+                        field_type = arg
+                        break
+            if isinstance(field_type, type) and issubclass(
+                field_type, StrEnum
+            ):
+                # Create name -> value mapping
+                enum_mappings[field_name] = {
+                    member.name: member.value for member in field_type
+                }
+
+        # Convert data (handles both single objects and lists)
+        def convert_item(item):
+            if not isinstance(item, dict):
+                return item
+            for field_name, mapping in enum_mappings.items():
+                if field_name in item and item[field_name] in mapping:
+                    item[field_name] = mapping[item[field_name]]
+            return item
+
+        if isinstance(data, list):
+            data = [convert_item(item) for item in data]
+        else:
+            data = convert_item(data)
+
+        return json.dumps(data)

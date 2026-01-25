@@ -11,6 +11,5 @@
 
 ## Fixes
 
-- Interface for the model `gpt-oss:20b` in `ollama` is not working.
-  I have to check if the library `ollama` is updated, or if the model
-  has changed the interface. It returns empty responses.
+- [Fixed in v0.3.3] Model `gpt-oss:20b` was returning empty responses with
+  structured output. Added fallback and JSON parsing fixes.

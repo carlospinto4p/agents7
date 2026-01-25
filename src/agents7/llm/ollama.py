@@ -97,7 +97,21 @@ class OllamaProvider(LLMProvider):
             think=think,
             format=output_format,
         )
-        return parse_ollama_chat_response(response)
+        parsed = parse_ollama_chat_response(response)
+
+        # Fallback: if response is empty and format was provided,
+        # retry without format (some models don't support structured output)
+        if not parsed["response"] and output_format is not None:
+            response = chat(
+                model=self.model_name,
+                messages=messages,
+                options=options,
+                think=think,
+                format=None,
+            )
+            parsed = parse_ollama_chat_response(response)
+
+        return parsed
 
     async def chat_async(
         self,
@@ -167,7 +181,21 @@ class OllamaProvider(LLMProvider):
             think=think,
             format=output_format,
         )
-        return parse_ollama_chat_response(response)
+        parsed = parse_ollama_chat_response(response)
+
+        # Fallback: if response is empty and format was provided,
+        # retry without format (some models don't support structured output)
+        if not parsed["response"] and output_format is not None:
+            response = await AsyncClient().chat(
+                model=self.model_name,
+                messages=messages,
+                options=options,
+                think=think,
+                format=None,
+            )
+            parsed = parse_ollama_chat_response(response)
+
+        return parsed
 
     def generate(
         self,

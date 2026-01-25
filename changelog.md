@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v0.3.3 - 25th January 2026
+
+- Module `llm`:
+  - `OllamaProvider`: Added fallback for models that don't support
+    structured output format (retries without format parameter).
+- Module `agents`:
+  - `Labeler`: Added JSON parsing fixes for common LLM output issues:
+    - Handles markdown code blocks (```json...```)
+    - Handles double-brace malformation ({"{"...)
+    - Converts enum names to values when models return names instead
+
+
 ### v0.3.2 - 25th January 2026
 
 - Examples:
