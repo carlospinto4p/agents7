@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v0.3.4 - 25th January 2026
+
+- Module `agents`:
+  - `Labeler`: Refactored JSON parsing helpers for cleaner code:
+    - Made `_fix_malformed_json` a static method.
+    - Extracted `_get_enum_mappings`, `_apply_enum_mappings` methods.
+    - Moved imports to module level.
+
+
 ### v0.3.3 - 25th January 2026
 
 - Module `llm`:
