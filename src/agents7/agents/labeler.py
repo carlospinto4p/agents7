@@ -118,10 +118,10 @@ class Labeler(BaseAgent):
         :return: Full prompt string.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Models Schema\n\n"
+            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
-            f"Respond with a JSON array of objects, each one matching the "
-            f"schema above."
+            f"You will receive multiple inputs. Process each one independently "
+            f"and return an array of outputs in the same order as the inputs."
         ).strip()
 
         if self.examples:
