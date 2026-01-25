@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v0.3.2 - 25th January 2026
+
+- Examples:
+  - Fixed YAML syntax in `demo_temperature_detector.yml` (typo in keys).
+  - Improved temperature detector prompt to reason conceptually instead of
+    matching keywords, with better indirect indicator handling.
+  - Improved `detector.py` with human-readable output format.
+- `.claude/`:
+  - Added lesson: always read `rules/committing.md` before commits.
+
+
 ### v0.3.1 - 25th January 2026
 
 - Documentation:
