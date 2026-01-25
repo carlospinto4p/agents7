@@ -3,6 +3,7 @@ Example: Entity Extraction with Labeler
 
 Demonstrates how to use a Labeler to extract structured information
 (person details) from unstructured text descriptions.
+Uses batch processing for efficient handling of multiple inputs.
 """
 
 from agents7.agents.labeler import Labeler
@@ -24,8 +25,11 @@ if __name__ == "__main__":
     print(f"Agent: {extractor.name} (v{extractor.version})")
     print("=" * 60)
 
-    for text in test_texts:
-        response = extractor.act({"text": text})
+    # Use batch processing for multiple inputs
+    inputs = [{"text": text} for text in test_texts]
+    responses = extractor.act_in_batch(inputs)
+
+    for text, response in zip(test_texts, responses):
         person = response.model
 
         print(f"\nInput: {text}")
