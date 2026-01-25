@@ -2,7 +2,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
-from agents7.models import Property
+from agents7.models import ClassificationProperty, Property
 
 
 class PersonInfo(BaseModel):
@@ -37,3 +37,59 @@ class Temperature(Property[float]):
     """
 
     reason: TemperaturePropertyReason
+
+
+# Sentiment Classification Example
+
+
+class SentimentCategory(StrEnum):
+    """Categories for sentiment classification."""
+
+    POSITIVE = "Positive sentiment expressed."
+    NEGATIVE = "Negative sentiment expressed."
+    NEUTRAL = "Neutral or objective tone."
+
+
+class SentimentReason(StrEnum):
+    """Reasons justifying the sentiment classification."""
+
+    # Positive reasons
+    ENTHUSIASTIC = "Expresses enthusiasm or excitement."
+    GRATEFUL = "Shows gratitude or appreciation."
+    HOPEFUL = "Conveys hope or optimism."
+    # Negative reasons
+    FRUSTRATED = "Expresses frustration or annoyance."
+    DISAPPOINTED = "Shows disappointment or sadness."
+    ANGRY = "Conveys anger or hostility."
+    # Neutral reasons
+    FACTUAL = "Primarily factual, objective tone."
+    INFORMATIVE = "Provides information without emotion."
+    DESCRIPTIVE = "Describes without judgment."
+
+
+class Sentiment(ClassificationProperty):
+    """
+    Sentiment classification property for text analysis.
+    Classifies text into sentiment categories with justification.
+    """
+
+    category: SentimentCategory
+    reason: SentimentReason
+
+    CATEGORY_REASONS = {
+        SentimentCategory.POSITIVE: [
+            SentimentReason.ENTHUSIASTIC,
+            SentimentReason.GRATEFUL,
+            SentimentReason.HOPEFUL,
+        ],
+        SentimentCategory.NEGATIVE: [
+            SentimentReason.FRUSTRATED,
+            SentimentReason.DISAPPOINTED,
+            SentimentReason.ANGRY,
+        ],
+        SentimentCategory.NEUTRAL: [
+            SentimentReason.FACTUAL,
+            SentimentReason.INFORMATIVE,
+            SentimentReason.DESCRIPTIVE,
+        ],
+    }

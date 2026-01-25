@@ -1,6 +1,30 @@
 
 ## Changelog - Agents7
 
+### v0.3.0 - 25th January 2026
+
+- Module `models`:
+  - Added `ClassificationProperty` base class for classification tasks.
+    - Supports `category` and `reason` StrEnum fields.
+    - Validates category-reason relationships via `CATEGORY_REASONS` mapping.
+    - Auto-adds `NOT_APPLICABLE` to both enums.
+  - Added `Sentiment` demo model with category-reason constraints.
+- Module `agents`:
+  - Added `Classifier` agent for categorical classification tasks.
+    - Requires `ClassificationProperty` output model.
+    - Includes `possible_categories` and `category_reasons_constraints` properties.
+    - Prompts include category-reason mapping for LLM guidance.
+  - Added `Regressor` agent for numeric value extraction tasks.
+    - Uses existing `Property[T]` output model.
+    - Specialized prompts for value extraction.
+- Examples:
+  - Added `classifier.py` example with sentiment analysis.
+  - Added `demo_sentiment_classifier.yml` configuration.
+- Tests:
+  - Added `test_classifier.py` with 14 tests.
+  - Added `test_regressor.py` with 11 tests.
+
+
 ### v0.2.0 - 25th January 2026
 
 - Module `exceptions`:

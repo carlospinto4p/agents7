@@ -1,0 +1,33 @@
+name: DemoSentimentClassifier
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+system_prompt: |
+  Analyze the input text and classify its sentiment.
+
+  ## Rules
+
+  1. Determine the overall sentiment of the text: positive, negative, or neutral.
+  2. Select the most appropriate category based on the dominant tone.
+  3. Provide a reason that justifies your classification.
+  4. If the text has no clear sentiment, use NOT_APPLICABLE.
+
+output_model: agents7.models.demo.Sentiment
+system_examples:
+    - input: "I absolutely love this product! Best purchase ever!"
+      output:
+        category: POSITIVE
+        reason: ENTHUSIASTIC
+    - input: "The service was terrible and I want my money back."
+      output:
+        category: NEGATIVE
+        reason: FRUSTRATED
+    - input: "The meeting is scheduled for 3 PM tomorrow."
+      output:
+        category: NEUTRAL
+        reason: INFORMATIVE
+    - input: "Thank you so much for your help, I really appreciate it."
+      output:
+        category: POSITIVE
+        reason: GRATEFUL

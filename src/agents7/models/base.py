@@ -1,7 +1,7 @@
 from enum import StrEnum
-from typing import Generic, TypeVar
+from typing import ClassVar, Generic, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 T = TypeVar("T")
@@ -103,3 +103,101 @@ class Property(BaseModel, Generic[T]):
 
         # Replace the annotation with the extended enum
         cls.__annotations__["reason"] = extended_enum
+
+
+class ClassificationProperty(BaseModel):
+    """
+    A base class for classification outputs used by Classifier agents.
+
+    Subclasses should define category and reason StrEnums, plus a
+    CATEGORY_REASONS mapping that links valid reasons to each category.
+
+    A NOT_APPLICABLE member is automatically added to both category and
+    reason enums for cases where the input cannot be classified.
+
+    Example:
+        class SentimentCategory(StrEnum):
+            POSITIVE = "Positive sentiment."
+            NEGATIVE = "Negative sentiment."
+
+        class SentimentReason(StrEnum):
+            ENTHUSIASTIC = "Expresses enthusiasm."
+            FRUSTRATED = "Expresses frustration."
+
+        class Sentiment(ClassificationProperty):
+            category: SentimentCategory
+            reason: SentimentReason
+
+            CATEGORY_REASONS = {
+                SentimentCategory.POSITIVE: [SentimentReason.ENTHUSIASTIC],
+                SentimentCategory.NEGATIVE: [SentimentReason.FRUSTRATED],
+            }
+    """
+
+    category: StrEnum = Field(description="The classification category.")
+    reason: StrEnum = Field(
+        description="The justification for the classification."
+    )
+
+    # Subclasses define mapping of valid reasons per category
+    CATEGORY_REASONS: ClassVar[dict[StrEnum, list[StrEnum]]] = {}
+
+    def __init_subclass__(cls, **kwargs):
+        """
+        Automatically extend category and reason enums with NOT_APPLICABLE.
+
+        This hook runs before Pydantic processes the class, allowing us to
+        modify the annotations to include the fallback members.
+        """
+        super().__init_subclass__(**kwargs)
+
+        # Extend category enum
+        if "category" in cls.__annotations__:
+            category_enum = cls.__annotations__["category"]
+            if (
+                isinstance(category_enum, type)
+                and issubclass(category_enum, StrEnum)
+                and not hasattr(category_enum, "NOT_APPLICABLE")
+            ):
+                members = [(m.name, m.value) for m in category_enum]
+                members.append(("NOT_APPLICABLE", NOT_APPLICABLE_DESCRIPTION))
+                extended_enum = StrEnum(category_enum.__name__, members)
+                cls.__annotations__["category"] = extended_enum
+
+        # Extend reason enum
+        if "reason" in cls.__annotations__:
+            reason_enum = cls.__annotations__["reason"]
+            if (
+                isinstance(reason_enum, type)
+                and issubclass(reason_enum, StrEnum)
+                and not hasattr(reason_enum, "NOT_APPLICABLE")
+            ):
+                members = [(m.name, m.value) for m in reason_enum]
+                members.append(("NOT_APPLICABLE", NOT_APPLICABLE_DESCRIPTION))
+                extended_enum = StrEnum(reason_enum.__name__, members)
+                cls.__annotations__["reason"] = extended_enum
+
+    @model_validator(mode="after")
+    def validate_category_reason_link(self):
+        """Ensure reason is valid for the selected category."""
+        from agents7.exceptions import PropertyConfigurationError
+
+        if not self.CATEGORY_REASONS:
+            return self  # No validation if mapping not defined
+
+        # NOT_APPLICABLE category can have any reason
+        if self.category.name == "NOT_APPLICABLE":
+            return self
+
+        valid_reasons = self.CATEGORY_REASONS.get(self.category, [])
+        # Allow NOT_APPLICABLE reason for any category
+        if self.reason.name == "NOT_APPLICABLE":
+            return self
+
+        if valid_reasons and self.reason not in valid_reasons:
+            raise PropertyConfigurationError(
+                f"Reason '{self.reason.name}' is not valid for "
+                f"category '{self.category.name}'. "
+                f"Valid reasons: {[r.name for r in valid_reasons]}"
+            )
+        return self
