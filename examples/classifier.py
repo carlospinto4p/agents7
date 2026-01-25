@@ -3,6 +3,7 @@ Example: Sentiment Classification with Classifier
 
 Demonstrates how to use a Classifier to analyze text sentiment
 and classify it into predefined categories with justifications.
+Uses batch processing for efficient handling of multiple inputs.
 """
 
 from agents7.agents.classifier import Classifier
@@ -26,8 +27,11 @@ if __name__ == "__main__":
     print(f"Agent: {classifier.name} (v{classifier.version})")
     print("=" * 60)
 
-    for text in test_texts:
-        response = classifier.act({"text": text})
+    # Use batch processing for multiple inputs
+    inputs = [{"text": text} for text in test_texts]
+    responses = classifier.act_in_batch(inputs)
+
+    for text, response in zip(test_texts, responses):
         sentiment = response.model
 
         print(f"\nInput: {text}")
