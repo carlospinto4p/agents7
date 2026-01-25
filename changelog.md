@@ -10,6 +10,7 @@
 - Examples:
   - Updated `classifier.py` and `labeler.py` to use `act_in_batch` for
     efficient batch processing instead of looping with `act()`.
+  - Improved `detector.py` with human-readable output format.
 - `.claude/`:
   - Added lesson learned: prefer batch methods for list inputs.
   - Added lesson learned: include `.claude/` changes in changelog.

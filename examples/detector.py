@@ -1,33 +1,45 @@
+"""
+Example: Temperature Detection with Detector
+
+Demonstrates how to use a Detector to extract temperature-related
+properties from text descriptions.
+Uses batch processing for efficient handling of multiple inputs.
+"""
+
 from agents7.agents.detector import Detector
 
 
 if __name__ == "__main__":
+    # Load the temperature detector from config
     detector = Detector.from_yaml("configs/demo_temperature_detector.yml")
 
-    input_list = [
-        {"text": "This is a test text."},
-        {"text": "The water in the lake is starting to freeze."},
-        {"text": "It's scorching outside; I can barely stay in the sun."},
-        {"text": "A light breeze makes the evening feel very pleasant."},
-        {"text": "The heater is on full blast in the room."},
-        {"text": "I walked outside and shivered immediately."},
-        {"text": "The coffee was lukewarm when I drank it."},
-        {"text": "Summer in this city often exceeds 35 degrees."},
-        {"text": "She just bought a new pair of shoes."},
-        {"text": "The snow on the mountains hasn't melted yet."},
-        {
-            "text": "Perfect weather for a picnic: neither too hot nor "
-            "too cold."
-        },
+    # Test cases demonstrating different temperature scenarios
+    test_texts = [
+        "This is a test text.",
+        "The water in the lake is starting to freeze.",
+        "It's scorching outside; I can barely stay in the sun.",
+        "A light breeze makes the evening feel very pleasant.",
+        "The heater is on full blast in the room.",
+        "I walked outside and shivered immediately.",
+        "The coffee was lukewarm when I drank it.",
+        "Summer in this city often exceeds 35 degrees.",
+        "She just bought a new pair of shoes.",
+        "The snow on the mountains hasn't melted yet.",
+        "Perfect weather for a picnic: neither too hot nor too cold.",
     ]
 
-    print(f"Detector prompt:\n\n{detector.prompt}\n")
+    print(f"Agent: {detector.name} (v{detector.version})")
+    print("=" * 60)
 
-    print(f"Detector prompt for batch:\n\n{detector.prompt_for_batch}")
+    # Use batch processing for multiple inputs
+    inputs = [{"text": text} for text in test_texts]
+    responses = detector.act_in_batch(inputs)
 
-    response = detector.act_in_batch(input_list)
+    for text, response in zip(test_texts, responses):
+        temp = response.model
 
-    for _input, output in zip(input_list, response):
-        print(f"Input: {_input['text']}")
-        print(f"Output: {output}")
-        print("-" * 40)
+        print(f"\nInput: {text}")
+        print("Detected:")
+        print(f"  Value: {temp.value}")
+        print(f"  Reason: {temp.reason.name}")
+        print("-" * 60)
