@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v0.4.6 - 1st February 2026
+
+- `.claude/`: Added `README.md` update step to the
+  "After Every Change" workflow in `CLAUDE.md`.
+
+
 ### v0.4.5 - 1st February 2026
 
 - `.claude/`: Added Ollama and full test suite steps to the
