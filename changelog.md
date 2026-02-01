@@ -1,6 +1,34 @@
 
 ## Changelog - Agents7
 
+### v0.8.0 - 1st February 2026
+
+- Module `agents`:
+  - Class `Labeler`:
+    - New `validators` field: optional list of callables that run
+      after the LLM response is parsed. Each receives a BaseModel
+      and returns it (possibly modified); raising rejects the model
+      (sets it to `None`). Pipeline runs in list order; first
+      failure short-circuits.
+    - New `_run_validators` method applies the validator pipeline.
+    - `act()`, `act_async()`, `act_in_batch()`, and
+      `act_in_batch_async()` now pass parsed models through
+      validators. In batch mode, validators run per individual item.
+    - `_load_yaml_settings` parses optional `validators:` list of
+      dotted import paths.
+  - Subclasses `Detector`, `Classifier`, `Regressor` inherit
+    validators for free via `Labeler`.
+- Module `models`:
+  - Class `AgentResponse`:
+    - `model` field type changed from `BaseModel` to
+      `BaseModel | None` (fixes pre-existing type mismatch with
+      `_parse_model_response` returning `None`).
+- New file `tests/test_validators.py`:
+  - 14 unit tests (all mocked, no LLM) covering `_run_validators`
+    pipeline, `act`/`act_async` integration, batch validation,
+    partial rejection, and YAML config parsing.
+- `README.md`: Added "Validation Hooks" documentation section.
+
 ### v0.7.0 - 1st February 2026
 
 - Module `llm`:
