@@ -338,6 +338,61 @@ engine = LLMEngine(
 |-----------|---------|-------------|
 | `max_size` | `128` | Maximum cached entries (0 = unlimited) |
 
+### Validation Hooks
+
+Validators are optional callables that run after the LLM response is parsed into a Pydantic model. Each validator receives the model, can transform it (return modified), or reject it (raise an exception, which sets the model to `None`). Validators run in list order; the output of one feeds into the next, and the first failure short-circuits the pipeline.
+
+Since `Detector`, `Classifier`, and `Regressor` all inherit from `Labeler`, they get validators for free.
+
+In batch mode, validators run on each individual item (not the batch wrapper).
+
+**Python configuration:**
+
+```python
+from pydantic import BaseModel
+from agents7.agents import Labeler
+
+
+def require_non_empty(model: BaseModel) -> BaseModel:
+    """Reject models with empty name."""
+    if not model.name:
+        raise ValueError("Name must not be empty")
+    return model
+
+
+def normalize_name(model: BaseModel) -> BaseModel:
+    """Title-case the name field."""
+    model = model.model_copy(update={"name": model.name.title()})
+    return model
+
+
+agent = Labeler(
+    name="ValidatedExtractor",
+    version=1,
+    engine=engine,
+    system_prompt="Extract person info.",
+    output_model=PersonInfo,
+    validators=[require_non_empty, normalize_name],
+)
+```
+
+**YAML configuration:**
+
+```yaml
+name: ValidatedExtractor
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+system_prompt: Extract person info.
+output_model: mymodule.PersonInfo
+validators:
+    - mymodule.require_non_empty
+    - mymodule.normalize_name
+```
+
+YAML `validators` is a list of dotted import paths, resolved the same way as `output_model`.
+
 ## Requirements
 
 - Ollama running locally (default: `http://localhost:11434`)

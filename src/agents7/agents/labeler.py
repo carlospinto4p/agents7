@@ -41,10 +41,15 @@ class Labeler(BaseAgent):
         examples (list[dict], optional): List of examples to include in the
             system prompt. Each example should be a dictionary with 'input'
             and 'output' keys. Defaults to None.
+        validators (list[Callable], optional): List of callables that
+            run after the LLM response is parsed. Each receives a
+            BaseModel and returns it (possibly modified). Raising
+            rejects the model (sets it to None). Defaults to None.
     """
 
     output_model: type[BaseModel]
     examples: list[dict] = None
+    validators: list[Callable[[BaseModel], BaseModel]] | None = None
 
     def __post_init__(self):
         """
@@ -196,7 +201,9 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        response["model"] = self._parse_model_response(response["response"])
+        response["model"] = self._run_validators(
+            self._parse_model_response(response["response"])
+        )
         return AgentResponse(**response)
 
     async def act_async(
@@ -256,7 +263,9 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        response["model"] = self._parse_model_response(response["response"])
+        response["model"] = self._run_validators(
+            self._parse_model_response(response["response"])
+        )
         response["idx"] = _idx
         return AgentResponse(**response)
 
@@ -317,7 +326,7 @@ class Labeler(BaseAgent):
                 agent_responses.append(
                     AgentResponse(
                         response=chunk_response.response,
-                        model=item,
+                        model=self._run_validators(item),
                         thinking=chunk_response.thinking,
                         metrics=chunk_response.metrics,
                         idx=len(agent_responses),
@@ -399,7 +408,7 @@ class Labeler(BaseAgent):
                 agent_responses.append(
                     AgentResponse(
                         response=chunk_response.response,
-                        model=item,
+                        model=self._run_validators(item),
                         thinking=chunk_response.thinking,
                         metrics=chunk_response.metrics,
                         idx=len(agent_responses),
@@ -613,6 +622,10 @@ class Labeler(BaseAgent):
         if raw_params := config.get("prompt_params"):
             prompt_params = {str(k): str(v) for k, v in raw_params.items()}
 
+        validators = None
+        if validator_paths := config.get("validators"):
+            validators = [import_from_path(path) for path in validator_paths]
+
         return {
             "name": config["name"],
             "version": config["version"],
@@ -626,6 +639,7 @@ class Labeler(BaseAgent):
             "prompt_params": prompt_params,
             "output_model": import_from_path(config["output_model"]),
             "examples": examples,
+            "validators": validators,
         }
 
     def _parse_model_response(
@@ -664,6 +678,31 @@ class Labeler(BaseAgent):
                     f"Agent `{self.name}`: error parsing structured "
                     f"response:\n{e}"
                 )
+        return model
+
+    def _run_validators(
+        self,
+        model: BaseModel | None,
+    ) -> BaseModel | None:
+        """
+        Run the validator pipeline on a parsed model.
+        Each validator receives the model and returns it (possibly
+        modified). If a validator raises, the model is rejected
+        (returns None) and remaining validators are skipped.
+        :param model: The parsed model instance, or None.
+        :return: The validated (possibly transformed) model, or None.
+        """
+        if model is None or not self.validators:
+            return model
+        for validator in self.validators:
+            try:
+                model = validator(model)
+            except Exception as e:
+                logger.error(
+                    f"Agent `{self.name}`: validator "
+                    f"`{validator.__name__}` failed: {e}"
+                )
+                return None
         return model
 
     @staticmethod

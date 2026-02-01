@@ -27,7 +27,7 @@ class AgentResponse(BaseModel):
     """
 
     response: str = Field(description="The generated text response.")
-    model: BaseModel = Field(
+    model: BaseModel | None = Field(
         description="The structured output validated by the output model."
     )
     thinking: str | None = Field(
