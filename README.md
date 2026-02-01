@@ -19,9 +19,9 @@ Requires Python >= 3.11.
 - `LLMProvider`: Abstract base class defining the interface
 - `OllamaProvider`: Concrete implementation using Ollama (local LLM server)
 
-Supports both sync and async methods: `chat`, `chat_async`, `generate`, `generate_async`.
+Supports both sync and async methods: `chat`, `chat_async`, `generate`, `generate_async`, plus streaming variants: `chat_stream`, `chat_stream_async`, `generate_stream`, `generate_stream_async`.
 
-Features: temperature control, structured output via JSON schema, "thinking" mode, seed for reproducibility.
+Features: temperature control, structured output via JSON schema, "thinking" mode, seed for reproducibility, streaming responses.
 
 ### Agents Layer (`agents7.agents`)
 
@@ -255,6 +255,48 @@ engine = LLMEngine(
 | `backoff_factor` | `2.0` | Multiplier applied after each retry |
 
 Delay formula: `min(base_delay * backoff_factor ^ attempt, max_delay)`.
+
+### Streaming
+
+LLM responses can be streamed token-by-token using the `_stream` methods. Streaming bypasses retry logic (a connection drop mid-stream cannot be retried meaningfully).
+
+**Sync streaming:**
+
+```python
+from agents7.llm import LLMEngine
+
+engine = LLMEngine(provider="ollama", model_name="qwen3")
+
+stream = engine.chat_stream(
+    messages=[{"role": "user", "content": "Tell me a story."}],
+)
+for chunk in stream:
+    print(chunk, end="", flush=True)
+
+print()
+print(f"Tokens: {stream.metrics['tokens']}")
+print(f"Full response: {stream.response}")
+```
+
+**Async streaming:**
+
+```python
+stream = await engine.chat_stream_async(
+    messages=[{"role": "user", "content": "Tell me a story."}],
+)
+async for chunk in stream:
+    print(chunk, end="", flush=True)
+
+print(stream.response)
+```
+
+After iteration, `StreamResult` / `AsyncStreamResult` expose:
+- `.response` — full accumulated text
+- `.thinking` — accumulated thinking text (not yielded as chunks), or `None`
+- `.role` — message role (chat only), or `None`
+- `.metrics` — dict with `tokens`, `prompt_tokens`, `total_duration`
+
+The `generate_stream` and `generate_stream_async` methods work identically but accept a `prompt` string instead of `messages`.
 
 ## Requirements
 

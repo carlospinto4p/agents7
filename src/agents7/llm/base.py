@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from agents7.llm.retry import RetryConfig, retry_async, retry_sync
+from agents7.llm.streaming import AsyncStreamResult, StreamResult
 
 
 class LLMEngine:
@@ -281,6 +282,98 @@ class LLMEngine:
             seed=seed,
         )
 
+    def chat_stream(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> StreamResult:
+        """Stream a chat response, yielding text chunks.
+
+        Bypasses retry logic — streaming calls cannot be retried
+        mid-stream.
+        """
+        return self.llm_provider.chat_stream(
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+            seed=seed,
+        )
+
+    async def chat_stream_async(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> AsyncStreamResult:
+        """Stream a chat response asynchronously.
+
+        Bypasses retry logic — streaming calls cannot be retried
+        mid-stream.
+        """
+        return await self.llm_provider.chat_stream_async(
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+            seed=seed,
+        )
+
+    def generate_stream(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> StreamResult:
+        """Stream a generate response, yielding text chunks.
+
+        Bypasses retry logic — streaming calls cannot be retried
+        mid-stream.
+        """
+        return self.llm_provider.generate_stream(
+            prompt=prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+            seed=seed,
+        )
+
+    async def generate_stream_async(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> AsyncStreamResult:
+        """Stream a generate response asynchronously.
+
+        Bypasses retry logic — streaming calls cannot be retried
+        mid-stream.
+        """
+        return await self.llm_provider.generate_stream_async(
+            prompt=prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+            seed=seed,
+        )
+
     def get_model_info(self) -> dict:
         """
         Get information about the model. Keys:
@@ -527,6 +620,66 @@ class LLMProvider(ABC):
                 - total_duration: The total duration of the response,
                     in seconds.
         """
+        raise NotImplementedError(
+            "This method should be overridden by subclasses."
+        )
+
+    @abstractmethod
+    def chat_stream(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> StreamResult:
+        """Stream a chat response, yielding text chunks."""
+        raise NotImplementedError(
+            "This method should be overridden by subclasses."
+        )
+
+    @abstractmethod
+    async def chat_stream_async(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> AsyncStreamResult:
+        """Stream a chat response asynchronously."""
+        raise NotImplementedError(
+            "This method should be overridden by subclasses."
+        )
+
+    @abstractmethod
+    def generate_stream(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> StreamResult:
+        """Stream a generate response, yielding text chunks."""
+        raise NotImplementedError(
+            "This method should be overridden by subclasses."
+        )
+
+    @abstractmethod
+    async def generate_stream_async(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> AsyncStreamResult:
+        """Stream a generate response asynchronously."""
         raise NotImplementedError(
             "This method should be overridden by subclasses."
         )

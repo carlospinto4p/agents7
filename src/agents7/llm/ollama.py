@@ -19,6 +19,7 @@ https://www.gpu-mart.com/blog/custom-llm-models-with-ollama-modelfile
 from ollama import AsyncClient, ChatResponse, GenerateResponse, generate, chat
 
 from agents7.llm.base import LLMProvider
+from agents7.llm.streaming import AsyncStreamResult, StreamResult
 
 
 class OllamaProvider(LLMProvider):
@@ -323,6 +324,114 @@ class OllamaProvider(LLMProvider):
             format=output_format,
         )
         return parse_ollama_response(response)
+
+    def chat_stream(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> StreamResult:
+        """Stream a chat response, yielding text chunks."""
+        options = {
+            "temperature": temperature,
+            "num_predict": max_tokens,
+        }
+        if seed is not None:
+            options["seed"] = seed
+
+        iterator = chat(
+            model=self.model_name,
+            messages=messages,
+            options=options,
+            think=think,
+            format=output_format,
+            stream=True,
+        )
+        return StreamResult(iterator, "chat")
+
+    async def chat_stream_async(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> AsyncStreamResult:
+        """Stream a chat response asynchronously."""
+        options = {
+            "temperature": temperature,
+            "num_predict": max_tokens,
+        }
+        if seed is not None:
+            options["seed"] = seed
+
+        iterator = await AsyncClient().chat(
+            model=self.model_name,
+            messages=messages,
+            options=options,
+            think=think,
+            format=output_format,
+            stream=True,
+        )
+        return AsyncStreamResult(iterator, "chat")
+
+    def generate_stream(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> StreamResult:
+        """Stream a generate response, yielding text chunks."""
+        options = {
+            "temperature": temperature,
+            "num_predict": max_tokens,
+        }
+        if seed is not None:
+            options["seed"] = seed
+
+        iterator = generate(
+            model=self.model_name,
+            prompt=prompt,
+            options=options,
+            think=think,
+            format=output_format,
+            stream=True,
+        )
+        return StreamResult(iterator, "generate")
+
+    async def generate_stream_async(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = -1,
+        output_format: str | dict = None,
+        think: bool = False,
+        seed: int | None = None,
+    ) -> AsyncStreamResult:
+        """Stream a generate response asynchronously."""
+        options = {
+            "temperature": temperature,
+            "num_predict": max_tokens,
+        }
+        if seed is not None:
+            options["seed"] = seed
+
+        iterator = await AsyncClient().generate(
+            model=self.model_name,
+            prompt=prompt,
+            options=options,
+            think=think,
+            format=output_format,
+            stream=True,
+        )
+        return AsyncStreamResult(iterator, "generate")
 
 
 def parse_ollama_chat_response(chat_response: ChatResponse) -> dict:
