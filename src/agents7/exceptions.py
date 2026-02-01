@@ -12,3 +12,7 @@ class PropertyConfigurationError(Agents7Exception):
 
 class PromptParameterError(Agents7Exception):
     """Exception raised when prompt_params values are invalid."""
+
+
+class PipelineConfigurationError(Agents7Exception):
+    """Exception raised when a Pipeline is misconfigured."""

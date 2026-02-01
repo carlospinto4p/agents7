@@ -30,7 +30,7 @@ def get_examples_str(examples: list[dict]) -> str:
     return examples_str
 
 
-def import_from_path(path: str) -> type[BaseModel]:
+def import_from_path(path: str) -> type:
     """
     Import a class from a given module path.
     :param path: Path to the module and class, e.g.

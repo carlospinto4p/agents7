@@ -31,6 +31,8 @@ BaseAgent
         └── Detector (Property outputs)
               ├── Classifier (ClassificationProperty)
               └── Regressor (Property[T])
+
+Pipeline (chains multiple agents sequentially)
 ```
 
 - `BaseAgent`: Abstract base defining common interface (`name`, `version`, `engine`, `system_prompt`, `prompt_params`)
@@ -41,6 +43,7 @@ BaseAgent
 - `Detector`: Specialized `Labeler` for property extraction (value + reason)
 - `Classifier`: For categorical classification with category + reason enums
 - `Regressor`: For numeric value extraction with reason enum
+- `Pipeline`: Chains multiple agents sequentially with optional custom mappers between steps
 
 ### Models Layer (`agents7.models`)
 
@@ -392,6 +395,77 @@ validators:
 ```
 
 YAML `validators` is a list of dotted import paths, resolved the same way as `output_model`.
+
+### Agent Pipelines
+
+A `Pipeline` chains multiple agents sequentially. The output of each step is mapped into the input for the next step via an optional custom mapper function. Pipelines support single and batch modes, both sync and async.
+
+Use cases:
+- Multi-stage extraction (extract entities, then classify them)
+- Enrichment chains (extract data, then augment with computed fields)
+- Validation pipelines (extract, then verify with a second agent)
+
+If any step produces `model=None` (parse failure or validator rejection) or a mapper raises, remaining steps are skipped and the pipeline returns `success=False`.
+
+**Python configuration:**
+
+```python
+from pydantic import BaseModel
+from agents7.agents import Labeler, Pipeline, PipelineStep
+from agents7.models import AgentResponse
+
+class StepOneOutput(BaseModel):
+    name: str
+
+class StepTwoOutput(BaseModel):
+    greeting: str
+
+def name_to_greeting(response: AgentResponse) -> dict:
+    return {"text": f"Hello, {response.model.name}!"}
+
+agent1 = Labeler(
+    name="Extractor", version=1, engine=engine,
+    system_prompt="Extract the person's name.",
+    output_model=StepOneOutput,
+)
+agent2 = Labeler(
+    name="Greeter", version=1, engine=engine,
+    system_prompt="Generate a greeting.",
+    output_model=StepTwoOutput,
+)
+
+pipeline = Pipeline(steps=[
+    PipelineStep(agent=agent1, mapper=name_to_greeting),
+    PipelineStep(agent=agent2),
+])
+
+# Single input
+result = pipeline.act({"text": "Sarah from London"})
+print(result.model.greeting)  # "Hello, Sarah!"
+print(result.success)         # True
+
+# Batch input
+results = pipeline.act_in_batch([
+    {"text": "Sarah from London"},
+    {"text": "Dr. Chen from Singapore"},
+])
+for r in results:
+    print(r.model.greeting if r.success else "Failed")
+```
+
+**YAML configuration:**
+
+```yaml
+steps:
+  - agent: configs/extractor.yml
+    mapper: mymodule.name_to_greeting
+  - agent: configs/greeter.yml
+    agent_type: agents7.agents.labeler.Labeler
+```
+
+- `agent`: Path to the agent's YAML config file (required)
+- `agent_type`: Dotted import path to the agent class (optional, defaults to `Labeler`)
+- `mapper`: Dotted import path to a mapper function (optional, defaults to `model.model_dump()`)
 
 ## Requirements
 
