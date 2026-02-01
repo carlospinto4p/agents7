@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v0.9.1 - 1st February 2026
+
+- Module `models.demo`:
+  - New `PersonBio` model for bio generation demo.
+- Examples:
+  - New `pipeline.py` example demonstrating a two-step pipeline
+    (PersonExtractor → BioGenerator) with custom mapper, single
+    and batch modes.
+  - New `configs/demo_bio_generator.yml` agent configuration.
+
 ### v0.9.0 - 1st February 2026
 
 - Module `exceptions`:
