@@ -121,11 +121,13 @@ class Classifier(Detector):
         The prompt emphasizes category selection and reason justification.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{self.resolved_system_prompt}\n\n"
+            f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
-            f"Classify the input into one of the categories defined above. "
-            f"Then provide a reason that justifies your classification. "
-            f"Use NOT_APPLICABLE if the input cannot be classified."
+            f"Classify the input into one of the categories defined "
+            f"above. Then provide a reason that justifies your "
+            f"classification. Use NOT_APPLICABLE if the input cannot "
+            f"be classified."
         ).strip()
 
         constraints = self.category_reasons_constraints
@@ -144,7 +146,8 @@ class Classifier(Detector):
         Get the full prompt for batch processing.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{self.resolved_system_prompt}\n\n"
+            f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
             f"Classify each input into one of the categories defined above. "
             f"Provide a reason that justifies each classification. "

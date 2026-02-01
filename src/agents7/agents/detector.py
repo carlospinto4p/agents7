@@ -90,7 +90,8 @@ class Detector(Labeler):
         :return: Full prompt string.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{self.resolved_system_prompt}\n\n"
+            f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
             f"You need to stick to the reasons defined in the "
             f"output model schema above."
@@ -110,7 +111,8 @@ class Detector(Labeler):
         :return: Full prompt string.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Models Schema\n\n"
+            f"{self.resolved_system_prompt}\n\n"
+            f"## Output Models Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
             f"You need to stick to the reasons defined in the output "
             f"model schema above. Respond with a JSON array of "

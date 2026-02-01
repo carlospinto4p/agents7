@@ -55,8 +55,6 @@ class Labeler(BaseAgent):
                 "`output_model` must be a subclass of `pydantic.BaseModel`"
             )
 
-    # TODO 2025.08.17 How can I include parameters in the prompts,
-    #  like the current date?
     @classmethod
     def from_yaml(cls, file_path: str) -> "Labeler":
         """
@@ -73,22 +71,19 @@ class Labeler(BaseAgent):
                 provider: <llm provider>
                 model: <llm model>
             system_prompt: <system prompt for the agent>
+            prompt_params:
+                <key>: <value to substitute $key in system_prompt>
+                ...
             system_examples:
                 - input:
-                    <example 1 input, a dictionary or a list of dictionaries>
+                    <example 1 input>
                   output:
-                    <example 1 output, a dictionary or a list of dictionaries>
-                - input:
-                    <example 2 input, a dictionary or a list of dictionaries>
-                  output:
-                    <example 2 output, a dictionary or a list of dictionaries>
+                    <example 1 output>
                 ...
             output_model: <path to the pydantic model class, e.g.
                 "agents7.models.MyOutputModel">
             ```
-            The field `system_examples` is optional and can be used to
-            provide examples to the agent. It will be added to the
-            system prompt as examples for the agent to follow.
+            The fields `prompt_params` and `system_examples` are optional.
         :return: An instance of the agent.
         """
         config = cls._load_yaml_settings(file_path)
@@ -102,7 +97,8 @@ class Labeler(BaseAgent):
         :return: Full prompt string.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{self.resolved_system_prompt}\n\n"
+            f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}"
         ).strip()
 
@@ -120,7 +116,8 @@ class Labeler(BaseAgent):
         :return: Full prompt string.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{self.resolved_system_prompt}\n\n"
+            f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
             f"You will receive multiple inputs. Process each one independently "
             f"and return an array of outputs in the same order as the inputs."
@@ -543,32 +540,30 @@ class Labeler(BaseAgent):
                 provider: <llm provider>
                 model: <llm model>
             system_prompt: <system prompt for the agent>
+            prompt_params:
+                <key>: <value to substitute $key in system_prompt>
+                ...
             system_examples:
                 - input:
-                    <example 1 input, a dictionary or a list of dictionaries>
+                    <example 1 input>
                   output:
-                    <example 1 output, a dictionary or a list of dictionaries>
-                - input:
-                    <example 2 input, a dictionary or a list of dictionaries>
-                  output:
-                    <example 2 output, a dictionary or a list of dictionaries>
+                    <example 1 output>
                 ...
             output_model: <path to the pydantic model class, e.g.
                 "agents7.models.MyOutputModel">
             ```
-            The field `system_examples` is optional and can be used to
-            provide examples to the agent. It will be added to the
-            system prompt as examples for the agent to follow.
+            The fields `prompt_params` and `system_examples` are
+            optional.
         :return: Loaded configuration, as a dictionary. Keys:
             - name (str): The name of the agent.
             - version (int): The version of the agent.
             - engine (str): The LLM engine used by the agent.
             - system_prompt (str): The system prompt for the agent.
+            - prompt_params (dict, optional): Dictionary of parameters
+                to substitute into system_prompt.
             - output_model (BaseModel): The model used to validate and
                 structure the output.
-            - examples (list[dict], optional): List of examples to include in
-                the system prompt. Each example is a dictionary with 'input'
-                and 'output' keys. Defaults to None.
+            - examples (list[dict], optional): List of examples.
         """
         config = load_yaml(file_path)
 
@@ -602,11 +597,17 @@ class Labeler(BaseAgent):
                 raise ValueError(
                     f"{e} in the configuration file `{file_path}`"
                 ) from e
+
+        prompt_params = None
+        if raw_params := config.get("prompt_params"):
+            prompt_params = {str(k): str(v) for k, v in raw_params.items()}
+
         return {
             "name": config["name"],
             "version": config["version"],
             "engine": LLMEngine(engine["provider"], engine["model"]),
             "system_prompt": system_prompt.strip(),
+            "prompt_params": prompt_params,
             "output_model": import_from_path(config["output_model"]),
             "examples": examples,
         }

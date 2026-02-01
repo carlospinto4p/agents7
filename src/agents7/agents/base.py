@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from string import Template
 from typing import TypeVar
 
+from agents7.exceptions import PromptParameterError
 from agents7.llm import LLMEngine
 from agents7.models import AgentResponse
 
@@ -19,15 +22,48 @@ class BaseAgent(ABC):
         version (int): The version of the agent.
         engine (LLMEngine): The LLM engine used by the agent.
         system_prompt (str): The system prompt for the agent.
+        prompt_params (dict, optional): Dictionary of parameters to
+            substitute into the system_prompt using
+            $variable placeholders. Values can be strings or
+            callables returning strings. Defaults to None.
     """
 
     name: str
     version: int
     engine: LLMEngine
     system_prompt: str
+    prompt_params: dict[str, str | Callable[[], str]] | None = field(
+        default=None, kw_only=True
+    )
 
     def __post_init__(self):
-        pass
+        if self.prompt_params is not None:
+            if not isinstance(self.prompt_params, dict):
+                raise PromptParameterError(
+                    "`prompt_params` must be a dict or None."
+                )
+            for key, value in self.prompt_params.items():
+                if not isinstance(value, str) and not callable(value):
+                    raise PromptParameterError(
+                        f"prompt_params['{key}'] must be a str "
+                        f"or callable, got {type(value).__name__}."
+                    )
+
+    @property
+    def resolved_system_prompt(self) -> str:
+        """
+        Get the system prompt with $variable placeholders resolved
+        using prompt_params. Callable values are evaluated each time.
+        Unmatched placeholders are left as-is.
+        :return: The resolved system prompt string.
+        """
+        if not self.prompt_params:
+            return self.system_prompt
+        resolved = {
+            k: v() if callable(v) else v
+            for k, v in self.prompt_params.items()
+        }
+        return Template(self.system_prompt).safe_substitute(resolved)
 
     @classmethod
     @abstractmethod

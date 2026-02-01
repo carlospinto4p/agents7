@@ -53,11 +53,13 @@ class Regressor(Detector):
         The prompt emphasizes value extraction and reason classification.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{self.resolved_system_prompt}\n\n"
+            f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
             f"Extract the numeric value from the input. "
-            f"Then classify the extracted value using one of the reasons "
-            f"defined above. Use NOT_APPLICABLE if no value can be extracted."
+            f"Then classify the extracted value using one of the "
+            f"reasons defined above. Use NOT_APPLICABLE if no value "
+            f"can be extracted."
         ).strip()
 
         if self.examples:
@@ -72,7 +74,8 @@ class Regressor(Detector):
         Get the full prompt for batch processing.
         """
         full_prompt = (
-            f"{self.system_prompt}\n\n## Output Model Schema\n\n"
+            f"{self.resolved_system_prompt}\n\n"
+            f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
             f"Extract the numeric value from each input. "
             f"Classify each extracted value using the reasons defined above. "

@@ -8,3 +8,7 @@ class LLMException(Agents7Exception):
 
 class PropertyConfigurationError(Agents7Exception):
     """Exception raised when a Property subclass is misconfigured."""
+
+
+class PromptParameterError(Agents7Exception):
+    """Exception raised when prompt_params values are invalid."""
