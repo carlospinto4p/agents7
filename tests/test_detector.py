@@ -81,7 +81,7 @@ demo_temperature_data = [
 def temperature_detector():
     """Fixture to create a temperature detector instance."""
     return Detector.from_yaml(
-        "../examples/configs/demo_temperature_detector.yml"
+        "examples/configs/demo_temperature_detector.yml"
     )
 
 

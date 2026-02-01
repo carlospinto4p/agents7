@@ -38,7 +38,7 @@ demo_sentiment_data = [
 def sentiment_classifier():
     """Fixture to create a sentiment classifier instance."""
     return Classifier.from_yaml(
-        "../examples/configs/demo_sentiment_classifier.yml"
+        "examples/configs/demo_sentiment_classifier.yml"
     )
 
 

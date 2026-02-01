@@ -32,7 +32,7 @@ demo_temperature_data = [
 def temperature_regressor():
     """Fixture to create a temperature regressor instance."""
     return Regressor.from_yaml(
-        "../examples/configs/demo_temperature_detector.yml"
+        "examples/configs/demo_temperature_detector.yml"
     )
 
 
