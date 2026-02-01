@@ -1,6 +1,26 @@
 
 ## Changelog - Agents7
 
+### v0.5.0 - 1st February 2026
+
+- Module `llm`:
+  - New file `retry.py`:
+    - `RetryConfig` frozen dataclass for configuring exponential backoff.
+    - `retry_sync` and `retry_async` helpers that wrap LLM calls.
+  - Class `LLMEngine`:
+    - New `retry` parameter for optional `RetryConfig`.
+    - All 4 delegation methods (`chat`, `chat_async`, `generate`,
+      `generate_async`) now route through retry helpers.
+  - `RetryConfig` exported from `agents7.llm`.
+- Module `agents`:
+  - Class `Labeler`:
+    - `_load_yaml_settings` parses optional `retry:` section in
+      engine config.
+- New file `tests/test_retry.py`:
+  - 15 unit tests covering RetryConfig validation, sync/async retry
+    logic, and YAML config parsing.
+- `README.md`: Added "Retry / Resilience" documentation section.
+
 ### v0.4.8 - 1st February 2026
 
 - New file `tests/test_async.py`:
