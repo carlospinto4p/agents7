@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v0.4.7 - 1st February 2026
+
+- Tests: Fixed YAML fixture paths in `test_detector.py`,
+  `test_classifier.py`, and `test_regressor.py` to use
+  project-root-relative paths instead of `../examples/`.
+
+
 ### v0.4.6 - 1st February 2026
 
 - `.claude/`: Added `README.md` update step to the
