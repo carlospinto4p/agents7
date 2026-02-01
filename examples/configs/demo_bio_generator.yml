@@ -1,0 +1,31 @@
+name: BioGenerator
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+system_prompt: |
+  Generate a short biography (1-2 sentences) for a person based on
+  the provided details.
+
+  ## Rules
+
+  1. Use only the information provided; do not invent facts.
+  2. If a field is null or missing, skip it naturally.
+  3. Write in third person.
+  4. Keep it concise and professional.
+output_model: agents7.models.demo.PersonBio
+system_examples:
+    - input:
+        name: John
+        age: 35
+        occupation: software engineer
+        location: Berlin
+      output:
+        bio: "John is a 35-year-old software engineer based in Berlin."
+    - input:
+        name: Maria
+        age: null
+        occupation: CEO
+        location: Tokyo
+      output:
+        bio: "Maria is a CEO based in Tokyo."

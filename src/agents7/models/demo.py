@@ -17,6 +17,15 @@ class PersonInfo(BaseModel):
     location: str | None = None
 
 
+class PersonBio(BaseModel):
+    """
+    A short biography generated from extracted person information.
+    Used to demonstrate the Pipeline's multi-step chaining.
+    """
+
+    bio: str
+
+
 class TemperaturePropertyReason(StrEnum):
     """
     Reasons for the temperature property.
