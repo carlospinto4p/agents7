@@ -3,7 +3,7 @@
 
 - [x] Check `pydantic_aio` library, it seems interesting.
 - [x] Add tests for Labeler agent directly (currently untested).
-- [ ] Add explicit async tests for `act_async` and
+- [x] Add explicit async tests for `act_async` and
   `act_in_batch_async`.
 - [x] Add unit tests for JSON parsing fixes
   (`_fix_malformed_json`, `_apply_enum_mappings`,
