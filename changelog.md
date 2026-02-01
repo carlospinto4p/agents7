@@ -1,6 +1,30 @@
 
 ## Changelog - Agents7
 
+### v0.6.0 - 1st February 2026
+
+- Module `llm`:
+  - New file `streaming.py`:
+    - `StreamResult` wrapper that yields `str` content chunks from a
+      sync ollama streaming iterator. Exposes `.response`, `.thinking`,
+      `.role`, and `.metrics` after iteration.
+    - `AsyncStreamResult` async counterpart using `__aiter__`.
+  - Class `LLMProvider`:
+    - 4 new abstract methods: `chat_stream`, `chat_stream_async`,
+      `generate_stream`, `generate_stream_async`.
+  - Class `LLMEngine`:
+    - 4 new delegation methods that bypass retry logic (streaming
+      calls cannot be retried mid-stream).
+  - `StreamResult` and `AsyncStreamResult` exported from `agents7.llm`.
+- Module `llm.ollama`:
+  - Class `OllamaProvider`:
+    - 4 new concrete streaming methods using `stream=True`.
+- New file `tests/test_streaming.py`:
+  - 15 unit tests (all mocked, no LLM) covering `StreamResult`,
+    `AsyncStreamResult`, and `LLMEngine` delegation.
+- `README.md`: Added "Streaming" documentation section, updated
+  architecture line.
+
 ### v0.5.0 - 1st February 2026
 
 - Module `llm`:
