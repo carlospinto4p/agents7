@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v0.4.8 - 1st February 2026
+
+- New file `tests/test_async.py`:
+  - 7 async integration tests for `act_async` and
+    `act_in_batch_async` across Detector, Classifier, and Regressor.
+- Added `pytest-asyncio` dev dependency and `asyncio_mode = "auto"`
+  pytest config in `pyproject.toml`.
+
+
 ### v0.4.7 - 1st February 2026
 
 - Tests: Fixed YAML fixture paths in `test_detector.py`,
