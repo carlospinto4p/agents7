@@ -1,0 +1,37 @@
+name: CompanyPersonExtractor
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+system_prompt: |
+  You are an HR assistant for $company.
+  Today's date is $current_date.
+
+  Extract information about people from the given text.
+  Only extract people who are relevant to $company.
+
+  ## Rules
+
+  1. Extract only information that is explicitly stated or clearly implied.
+  2. If a field cannot be determined from the text, leave it as null.
+  3. For age, extract the numeric value only.
+  4. For occupation, use a concise job title.
+  5. For location, extract city, country, or region as mentioned.
+  6. If the person is not related to $company, return all fields as null.
+prompt_params:
+    company: "Acme Corp"
+    current_date: "2026-02-01"
+output_model: agents7.models.demo.PersonInfo
+system_examples:
+    - input: "John is a 35-year-old engineer at Acme Corp in Berlin."
+      output:
+        name: John
+        age: 35
+        occupation: engineer
+        location: Berlin
+    - input: "Maria works at a different company as a designer."
+      output:
+        name: null
+        age: null
+        occupation: null
+        location: null
