@@ -33,7 +33,7 @@ BaseAgent
               └── Regressor (Property[T])
 ```
 
-- `BaseAgent`: Abstract base defining common interface (`name`, `version`, `engine`, `system_prompt`)
+- `BaseAgent`: Abstract base defining common interface (`name`, `version`, `engine`, `system_prompt`, `prompt_params`)
 - `Labeler`: General-purpose agent that outputs structured data via a Pydantic `output_model`
   - Single processing: `act()`, `act_async()`
   - Batch processing: `act_in_batch()`, `act_in_batch_async()`
@@ -167,6 +167,29 @@ class Temperature(Property[float]):
     reason: TemperatureReason
 ```
 
+### Prompt Parameterization
+
+Use `$variable` placeholders in `system_prompt` and resolve them with `prompt_params`:
+
+```python
+from datetime import date
+from agents7.agents import Labeler
+
+agent = Labeler(
+    name="DailyAnalyzer",
+    version=1,
+    engine=engine,
+    system_prompt="Today is $today. Analyze data for $company.",
+    output_model=MyOutput,
+    prompt_params={
+        "today": lambda: str(date.today()),  # evaluated each call
+        "company": "Acme Corp",              # static value
+    },
+)
+```
+
+Unmatched `$placeholders` are left as-is (safe_substitute). Callable values are evaluated fresh each time the prompt is accessed.
+
 ### YAML Configuration
 
 ```yaml
@@ -176,7 +199,9 @@ engine:
     provider: ollama
     model: qwen3
 system_prompt: |
-  Analyze the sentiment of the given text.
+  Analyze the sentiment of text collected on $date.
+prompt_params:
+    date: "2026-02-01"
 output_model: mymodule.Sentiment
 system_examples:
     - input: "This is fantastic!"
@@ -184,6 +209,8 @@ system_examples:
         category: POSITIVE
         reason: ENTHUSIASTIC
 ```
+
+Note: YAML `prompt_params` only supports static values (cast to strings). For callable values, use Python code instantiation.
 
 ## Requirements
 

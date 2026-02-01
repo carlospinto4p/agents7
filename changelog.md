@@ -1,6 +1,29 @@
 
 ## Changelog - Agents7
 
+### v0.4.0 - 1st February 2026
+
+- Module `exceptions`:
+  - New `PromptParameterError` exception class.
+- Module `agents`:
+  - `BaseAgent`:
+    - New `prompt_params` field for `$variable` placeholders in
+      `system_prompt`.
+    - New `resolved_system_prompt` property that resolves placeholders
+      using `string.Template.safe_substitute()`.
+    - Supports static strings and callables (evaluated each access).
+    - Validation in `__post_init__` raises `PromptParameterError` for
+      invalid values.
+  - `Labeler`:
+    - `prompt` and `prompt_for_batch` now use `resolved_system_prompt`.
+    - `_load_yaml_settings()` parses optional `prompt_params` key,
+      casting values to `str`.
+    - Removed TODO comment about prompt parameterization.
+  - `Detector`, `Classifier`, `Regressor`:
+    - `prompt` and `prompt_for_batch` now use `resolved_system_prompt`.
+- New test file `tests/test_prompt_params.py` with 19 unit tests.
+
+
 ### v0.3.5 - 1st February 2026
 
 - `CLAUDE.md`: Moved from `.claude/CLAUDE.md` to project root.
