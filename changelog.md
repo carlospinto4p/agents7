@@ -1,6 +1,34 @@
 
 ## Changelog - Agents7
 
+### v0.9.0 - 1st February 2026
+
+- Module `exceptions`:
+  - New `PipelineConfigurationError` exception class.
+- Module `agents`:
+  - New file `pipeline.py`:
+    - `PipelineStep` frozen dataclass: wraps an agent and an
+      optional mapper function (`Callable[[AgentResponse], dict]`,
+      defaults to `model.model_dump()`).
+    - `PipelineResponse` Pydantic model: contains the list of
+      step responses, the final model, and a `success` flag.
+    - `Pipeline` frozen dataclass: chains multiple agents
+      sequentially. Supports `act()`, `act_async()`,
+      `act_in_batch()`, `act_in_batch_async()`, and
+      `from_yaml()`. Short-circuits on parse failure or mapper
+      error.
+  - `Pipeline`, `PipelineResponse`, `PipelineStep` exported
+    from `agents7.agents`.
+  - `import_from_path` return type widened from
+    `type[BaseModel]` to `type`.
+- New file `tests/test_pipeline.py`:
+  - 21 unit tests (all mocked, no LLM) covering `PipelineStep`
+    validation, `Pipeline` init, default mapper, sync/async
+    single and batch execution, short-circuit behaviour, and
+    YAML configuration parsing.
+- `README.md`: Added "Agent Pipelines" documentation section,
+  updated architecture diagram and agent list.
+
 ### v0.8.0 - 1st February 2026
 
 - Module `agents`:
