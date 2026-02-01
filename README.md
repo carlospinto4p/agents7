@@ -212,6 +212,50 @@ system_examples:
 
 Note: YAML `prompt_params` only supports static values (cast to strings). For callable values, use Python code instantiation.
 
+### Retry / Resilience
+
+LLM transport errors (connection failures, server 5xx) can be retried automatically with exponential backoff. Client errors (4xx) and parse failures are **not** retried.
+
+**YAML configuration:**
+
+```yaml
+name: MyAgent
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+    retry:
+        max_retries: 3
+        base_delay: 1.0
+        max_delay: 30.0
+        backoff_factor: 2.0
+system_prompt: Analyze this text.
+output_model: mymodule.MyOutput
+```
+
+All `retry` fields are optional and fall back to sensible defaults. An empty `retry: {}` enables retries with defaults. Omitting the `retry` key entirely disables retries (backward compatible).
+
+**Python configuration:**
+
+```python
+from agents7.llm import LLMEngine, RetryConfig
+
+engine = LLMEngine(
+    provider="ollama",
+    model_name="qwen3",
+    retry=RetryConfig(max_retries=3, base_delay=1.0),
+)
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `max_retries` | `3` | Maximum retry attempts (0 = disabled) |
+| `base_delay` | `1.0` | Initial delay in seconds |
+| `max_delay` | `30.0` | Delay cap in seconds |
+| `backoff_factor` | `2.0` | Multiplier applied after each retry |
+
+Delay formula: `min(base_delay * backoff_factor ^ attempt, max_delay)`.
+
 ## Requirements
 
 - Ollama running locally (default: `http://localhost:11434`)

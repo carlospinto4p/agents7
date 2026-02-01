@@ -19,6 +19,7 @@ from agents7.agents.utils import (
     model_class_to_string,
 )
 from agents7.llm import LLMEngine
+from agents7.llm.retry import RetryConfig
 from agents7.logs import logger
 from agents7.models import AgentResponse
 
@@ -589,6 +590,10 @@ class Labeler(BaseAgent):
                     f"configuration yaml `{file_path}`"
                 )
 
+        retry_config = None
+        if retry_settings := engine.get("retry"):
+            retry_config = RetryConfig(**retry_settings)
+
         system_prompt = config["system_prompt"].strip()
         if examples := config.get("system_examples"):
             try:
@@ -605,7 +610,11 @@ class Labeler(BaseAgent):
         return {
             "name": config["name"],
             "version": config["version"],
-            "engine": LLMEngine(engine["provider"], engine["model"]),
+            "engine": LLMEngine(
+                engine["provider"],
+                engine["model"],
+                retry=retry_config,
+            ),
             "system_prompt": system_prompt.strip(),
             "prompt_params": prompt_params,
             "output_model": import_from_path(config["output_model"]),

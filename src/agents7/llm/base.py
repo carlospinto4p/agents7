@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+
+from agents7.llm.retry import RetryConfig, retry_async, retry_sync
 
 
 class LLMEngine:
@@ -10,13 +14,20 @@ class LLMEngine:
     Attributes:
         provider (str): The provider of the LLM engine (e.g., "ollama").
         model_name (str): The name of the model being used.
+        retry_config (RetryConfig | None): Optional retry configuration.
     """
 
-    def __init__(self, provider: str, model_name: str):
+    def __init__(
+        self,
+        provider: str,
+        model_name: str,
+        retry: RetryConfig | None = None,
+    ):
         provider = provider.lower()
         self.provider = provider
         self.model_name = model_name
         self.model_id: str = f"{provider}::{model_name}"
+        self.retry_config = retry
 
         if provider == "ollama":
             from agents7.llm.ollama import OllamaProvider
@@ -77,8 +88,10 @@ class LLMEngine:
                  - total_duration: The total duration of the response,
                      in seconds.
         """
-        return self.llm_provider.chat(
-            messages,
+        return retry_sync(
+            self.llm_provider.chat,
+            self.retry_config,
+            messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
             output_format=output_format,
@@ -140,8 +153,10 @@ class LLMEngine:
                  - total_duration: The total duration of the response,
                      in seconds.
         """
-        return await self.llm_provider.chat_async(
-            messages,
+        return await retry_async(
+            self.llm_provider.chat_async,
+            self.retry_config,
+            messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
             output_format=output_format,
@@ -196,8 +211,10 @@ class LLMEngine:
                 - total_duration: The total duration of the response,
                     in seconds.
         """
-        return self.llm_provider.generate(
-            prompt,
+        return retry_sync(
+            self.llm_provider.generate,
+            self.retry_config,
+            prompt=prompt,
             temperature=temperature,
             max_tokens=max_tokens,
             output_format=output_format,
@@ -253,8 +270,10 @@ class LLMEngine:
                 - total_duration: The total duration of the response,
                     in seconds.
         """
-        return await self.llm_provider.generate_async(
-            prompt,
+        return await retry_async(
+            self.llm_provider.generate_async,
+            self.retry_config,
+            prompt=prompt,
             temperature=temperature,
             max_tokens=max_tokens,
             output_format=output_format,
