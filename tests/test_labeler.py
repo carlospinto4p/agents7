@@ -1,0 +1,338 @@
+"""Unit tests for the Labeler agent (no LLM required)."""
+
+import json
+from enum import StrEnum
+
+import pytest
+from pydantic import BaseModel
+
+from agents7.agents.labeler import Labeler
+from agents7.llm import LLMEngine
+
+
+# --- Helper models ---
+
+
+class DummyOutput(BaseModel):
+    value: str
+
+
+class DummyReason(StrEnum):
+    GOOD = "Good result."
+    BAD = "Bad result."
+
+
+class DummyOutputWithEnum(BaseModel):
+    label: str
+    reason: DummyReason
+
+
+ENGINE = LLMEngine(provider="ollama", model_name="qwen3")
+
+
+def _make_labeler(**kwargs) -> Labeler:
+    defaults = {
+        "name": "test",
+        "version": 1,
+        "engine": ENGINE,
+        "system_prompt": "Test prompt.",
+        "output_model": DummyOutput,
+    }
+    defaults.update(kwargs)
+    return Labeler(**defaults)
+
+
+# ===================================================================
+# 1. Initialization & validation
+# ===================================================================
+
+
+class TestInitialization:
+    def test_valid_output_model(self):
+        """Valid BaseModel subclass is stored correctly."""
+        agent = _make_labeler()
+        assert agent.output_model is DummyOutput
+        assert agent.name == "test"
+        assert agent.version == 1
+
+    def test_non_basemodel_raises_type_error(self):
+        """Non-BaseModel output_model raises TypeError."""
+        with pytest.raises(TypeError, match="output_model"):
+            _make_labeler(output_model=dict)
+
+
+# ===================================================================
+# 2. YAML loading
+# ===================================================================
+
+
+class TestYAMLLoading:
+    def test_valid_config(self, tmp_path):
+        """Valid YAML config produces correct Labeler attributes."""
+        yaml_content = (
+            "name: MyLabeler\n"
+            "version: 2\n"
+            "engine:\n"
+            "    provider: ollama\n"
+            "    model: qwen3\n"
+            "system_prompt: |\n"
+            "  Analyze this text.\n"
+            "output_model: agents7.models.demo.PersonInfo\n"
+        )
+        yaml_file = tmp_path / "config.yml"
+        yaml_file.write_text(yaml_content)
+
+        agent = Labeler.from_yaml(str(yaml_file))
+        assert agent.name == "MyLabeler"
+        assert agent.version == 2
+        assert "Analyze this text." in agent.system_prompt
+
+    def test_config_with_examples(self, tmp_path):
+        """Config with system_examples populates agent.examples."""
+        yaml_content = (
+            "name: ExLabeler\n"
+            "version: 1\n"
+            "engine:\n"
+            "    provider: ollama\n"
+            "    model: qwen3\n"
+            "system_prompt: |\n"
+            "  Extract info.\n"
+            "output_model: agents7.models.demo.PersonInfo\n"
+            "system_examples:\n"
+            "    - input: Hello\n"
+            "      output:\n"
+            "        name: World\n"
+        )
+        yaml_file = tmp_path / "config.yml"
+        yaml_file.write_text(yaml_content)
+
+        agent = Labeler.from_yaml(str(yaml_file))
+        assert agent.examples is not None
+        assert len(agent.examples) == 1
+        assert agent.examples[0]["input"] == "Hello"
+
+    def test_missing_name_raises_value_error(self, tmp_path):
+        """Missing mandatory key 'name' raises ValueError."""
+        yaml_content = (
+            "version: 1\n"
+            "engine:\n"
+            "    provider: ollama\n"
+            "    model: qwen3\n"
+            "system_prompt: Test.\n"
+            "output_model: agents7.models.demo.PersonInfo\n"
+        )
+        yaml_file = tmp_path / "config.yml"
+        yaml_file.write_text(yaml_content)
+
+        with pytest.raises(ValueError, match="name"):
+            Labeler.from_yaml(str(yaml_file))
+
+    def test_missing_engine_model_raises_value_error(self, tmp_path):
+        """Missing engine key 'model' raises ValueError."""
+        yaml_content = (
+            "name: Test\n"
+            "version: 1\n"
+            "engine:\n"
+            "    provider: ollama\n"
+            "system_prompt: Test.\n"
+            "output_model: agents7.models.demo.PersonInfo\n"
+        )
+        yaml_file = tmp_path / "config.yml"
+        yaml_file.write_text(yaml_content)
+
+        with pytest.raises(ValueError, match="model"):
+            Labeler.from_yaml(str(yaml_file))
+
+    def test_invalid_examples_format_raises_value_error(self, tmp_path):
+        """Non-list system_examples raises ValueError."""
+        yaml_content = (
+            "name: Test\n"
+            "version: 1\n"
+            "engine:\n"
+            "    provider: ollama\n"
+            "    model: qwen3\n"
+            "system_prompt: Test.\n"
+            "output_model: agents7.models.demo.PersonInfo\n"
+            "system_examples: not a list\n"
+        )
+        yaml_file = tmp_path / "config.yml"
+        yaml_file.write_text(yaml_content)
+
+        with pytest.raises(ValueError, match="system_examples"):
+            Labeler.from_yaml(str(yaml_file))
+
+
+# ===================================================================
+# 3. Prompt generation
+# ===================================================================
+
+
+class TestPromptGeneration:
+    def test_prompt_contains_system_prompt_and_schema(self):
+        """Prompt contains system_prompt text and Output Model Schema."""
+        agent = _make_labeler(system_prompt="Analyze this data.")
+        assert "Analyze this data." in agent.prompt
+        assert "Output Model Schema" in agent.prompt
+
+    def test_prompt_includes_examples(self):
+        """Prompt includes examples section when examples provided."""
+        examples = [
+            {"input": "foo", "output": "bar"},
+        ]
+        agent = _make_labeler(examples=examples)
+        assert "Examples" in agent.prompt
+        assert "foo" in agent.prompt
+        assert "bar" in agent.prompt
+
+    def test_prompt_no_examples_section(self):
+        """Prompt has no Examples section when examples is None."""
+        agent = _make_labeler(examples=None)
+        assert "Examples" not in agent.prompt
+
+    def test_prompt_for_batch_contains_batch_instruction(self):
+        """Batch prompt contains batch processing instructions."""
+        agent = _make_labeler()
+        batch = agent.prompt_for_batch
+        assert "multiple inputs" in batch
+        assert "array of outputs" in batch
+
+    def test_prompt_for_batch_includes_examples(self):
+        """Batch prompt includes examples when provided."""
+        examples = [
+            {"input": "x", "output": "y"},
+        ]
+        agent = _make_labeler(examples=examples)
+        batch = agent.prompt_for_batch
+        assert "Examples" in batch
+        assert "x" in batch
+
+
+# ===================================================================
+# 4. Output model list
+# ===================================================================
+
+
+class TestOutputModelList:
+    def test_output_model_list_structure(self):
+        """output_model_list is a BaseModel with items field."""
+        agent = _make_labeler()
+        list_model = agent.output_model_list
+        assert issubclass(list_model, BaseModel)
+        assert list_model.__name__ == "DummyOutputList"
+        assert "items" in list_model.model_fields
+
+    def test_output_model_list_validates(self):
+        """Instantiating output_model_list with valid data works."""
+        agent = _make_labeler()
+        list_model = agent.output_model_list
+        instance = list_model(
+            items=[DummyOutput(value="a"), DummyOutput(value="b")]
+        )
+        assert len(instance.items) == 2
+        assert instance.items[0].value == "a"
+
+
+# ===================================================================
+# 5. JSON parsing
+# ===================================================================
+
+
+class TestFixMalformedJson:
+    def test_strips_markdown_code_block(self):
+        """Strips ```json ... ``` markdown blocks."""
+        raw = '```json\n{"value": "ok"}\n```'
+        assert Labeler._fix_malformed_json(raw) == '{"value": "ok"}'
+
+    def test_fixes_double_brace(self):
+        """Fixes {\"{ double-brace malformation."""
+        raw = '{"{"value": "ok"}'
+        result = Labeler._fix_malformed_json(raw)
+        assert result == '{"value": "ok"}'
+
+    def test_fixes_double_bracket(self):
+        """Fixes [\"[ double-bracket malformation."""
+        raw = '["[{"value": "ok"}]'
+        result = Labeler._fix_malformed_json(raw)
+        assert result == '[{"value": "ok"}]'
+
+    def test_clean_input_unchanged(self):
+        """Clean JSON input is returned unchanged."""
+        clean = '{"value": "ok"}'
+        assert Labeler._fix_malformed_json(clean) == clean
+
+
+class TestParseModelResponse:
+    def test_valid_json_returns_model(self):
+        """Valid JSON string is parsed into DummyOutput instance."""
+        agent = _make_labeler()
+        result = agent._parse_model_response('{"value": "hello"}')
+        assert isinstance(result, DummyOutput)
+        assert result.value == "hello"
+
+    def test_invalid_json_returns_none(self):
+        """Invalid JSON returns None."""
+        agent = _make_labeler()
+        result = agent._parse_model_response("not json at all")
+        assert result is None
+
+    def test_batch_parse(self):
+        """Batch mode parses list wrapper correctly."""
+        agent = _make_labeler()
+        payload = json.dumps({"items": [{"value": "a"}, {"value": "b"}]})
+        result = agent._parse_model_response(payload, for_batch=True)
+        assert result is not None
+        assert len(result.items) == 2
+        assert result.items[0].value == "a"
+
+
+# ===================================================================
+# 6. Enum mapping
+# ===================================================================
+
+
+class TestEnumMapping:
+    def test_get_enum_mappings_no_enums(self):
+        """Returns empty dict for model without StrEnum fields."""
+        agent = _make_labeler(output_model=DummyOutput)
+        assert agent._get_enum_mappings() == {}
+
+    def test_get_enum_mappings_with_enum(self):
+        """Returns correct mapping for DummyOutputWithEnum."""
+        agent = _make_labeler(output_model=DummyOutputWithEnum)
+        mappings = agent._get_enum_mappings()
+        assert "reason" in mappings
+        assert mappings["reason"]["GOOD"] == "Good result."
+        assert mappings["reason"]["BAD"] == "Bad result."
+
+    def test_convert_enum_names_to_values(self):
+        """Converts enum name to value in JSON string."""
+        agent = _make_labeler(output_model=DummyOutputWithEnum)
+        raw = json.dumps({"label": "test", "reason": "GOOD"})
+        converted = agent._convert_enum_names_to_values(raw)
+        data = json.loads(converted)
+        assert data["reason"] == "Good result."
+
+    def test_convert_enum_names_invalid_json(self):
+        """Invalid JSON is returned unchanged."""
+        agent = _make_labeler(output_model=DummyOutputWithEnum)
+        raw = "not json"
+        assert agent._convert_enum_names_to_values(raw) == raw
+
+    def test_apply_enum_mappings_list(self):
+        """Handles list of dicts correctly."""
+        mappings = {"reason": {"GOOD": "Good result."}}
+        data = [
+            {"label": "a", "reason": "GOOD"},
+            {"label": "b", "reason": "other"},
+        ]
+        result = Labeler._apply_enum_mappings(data, mappings)
+        assert result[0]["reason"] == "Good result."
+        assert result[1]["reason"] == "other"
+
+    def test_apply_enum_mappings_to_item_non_dict(self):
+        """Non-dict input is returned unchanged."""
+        mappings = {"reason": {"GOOD": "Good result."}}
+        assert (
+            Labeler._apply_enum_mappings_to_item("string", mappings)
+            == "string"
+        )
