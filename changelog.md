@@ -1,17 +1,7 @@
 
 ## Changelog - Agents7
 
-### v0.9.1 - 1st February 2026
-
-- Module `models.demo`:
-  - New `PersonBio` model for bio generation demo.
-- Examples:
-  - New `pipeline.py` example demonstrating a two-step pipeline
-    (PersonExtractor → BioGenerator) with custom mapper, single
-    and batch modes.
-  - New `configs/demo_bio_generator.yml` agent configuration.
-
-### v0.9.0 - 1st February 2026
+### v1.0.0 - 1st February 2026
 
 - Module `exceptions`:
   - New `PipelineConfigurationError` exception class.
@@ -31,11 +21,18 @@
     from `agents7.agents`.
   - `import_from_path` return type widened from
     `type[BaseModel]` to `type`.
+- Module `models.demo`:
+  - New `PersonBio` model for bio generation demo.
 - New file `tests/test_pipeline.py`:
   - 21 unit tests (all mocked, no LLM) covering `PipelineStep`
     validation, `Pipeline` init, default mapper, sync/async
     single and batch execution, short-circuit behaviour, and
     YAML configuration parsing.
+- Examples:
+  - New `pipeline.py` example demonstrating a two-step pipeline
+    (PersonExtractor → BioGenerator) with custom mapper, single
+    and batch modes.
+  - New `configs/demo_bio_generator.yml` agent configuration.
 - `README.md`: Added "Agent Pipelines" documentation section,
   updated architecture diagram and agent list.
 
