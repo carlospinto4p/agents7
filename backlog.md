@@ -1,15 +1,24 @@
 
 # Backlog - Agents7
 
-## Improvements
-
-- Add possibility to parameterize parts of the prompt 
-  in all agents, e.g., current date, custom values, etc. 
-  I have to think how to do it properly.
-- Check `pydantic_aio` library, it seems interesting.
-
-
-## Fixes
-
-- [Fixed in v0.3.3] Model `gpt-oss:20b` was returning empty responses with
-  structured output. Added fallback and JSON parsing fixes.
+- [x] Check `pydantic_aio` library, it seems interesting.
+- [x] Add tests for Labeler agent directly (currently untested).
+- [ ] Add explicit async tests for `act_async` and
+  `act_in_batch_async`.
+- [x] Add unit tests for JSON parsing fixes
+  (`_fix_malformed_json`, `_apply_enum_mappings`,
+  markdown block removal) without needing an LLM.
+- [ ] Add error path tests (invalid YAML configs, wrong model
+  types, network failures).
+- [ ] Add retry/resilience mechanism with configurable backoff
+  at the engine or agent level.
+- [ ] Consider agent chaining / pipelines (composing agents
+  sequentially).
+- [ ] Add streaming support (Ollama already supports it).
+- [ ] Add response caching for deterministic calls (same input +
+  seed + temperature=0).
+- [ ] Add validation hooks (post-processing step for custom
+  business logic on parsed models).
+- [ ] Evaluate extracting `cpinto` utilities (YAML loading,
+  logging) to reduce private dependency.
+- [ ] Clean up sketches folder (remove or move to docs/examples).

@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v0.4.3 - 1st February 2026
+
+- New file `tests/test_labeler.py`:
+  - 27 pure unit tests for the `Labeler` agent (no LLM required).
+  - Covers initialization, YAML loading, prompt generation,
+    output model list, JSON parsing, and enum mapping.
+
+
 ### v0.4.2 - 1st February 2026
 
 - `.claude/`: Added cleanup lesson for `.tmp` files to `CLAUDE.md`.
