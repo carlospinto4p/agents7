@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v0.4.5 - 1st February 2026
+
+- `.claude/`: Added Ollama and full test suite steps to the
+  "After Every Change" workflow in `CLAUDE.md`.
+
+
 ### v0.4.4 - 1st February 2026
 
 - `.claude/`: Added `uv pip install -e .` + `git add uv.lock` step
