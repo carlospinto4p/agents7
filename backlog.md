@@ -10,15 +10,14 @@
   markdown block removal) without needing an LLM.
 - [x] Add error path tests (invalid YAML configs, wrong model
   types, network failures).
-- [ ] Add retry/resilience mechanism with configurable backoff
+- [x] Add retry/resilience mechanism with configurable backoff
   at the engine or agent level.
-- [ ] Consider agent chaining / pipelines (composing agents
-  sequentially).
-- [ ] Add streaming support (Ollama already supports it).
-- [ ] Add response caching for deterministic calls (same input +
+- [x] Add streaming support (Ollama already supports it).
+- [x] Add response caching for deterministic calls (same input +
   seed + temperature=0).
-- [ ] Add validation hooks (post-processing step for custom
+- [x] Add validation hooks (post-processing step for custom
   business logic on parsed models).
-- [ ] Evaluate extracting `cpinto` utilities (YAML loading,
-  logging) to reduce private dependency.
-- [ ] Clean up sketches folder (remove or move to docs/examples).
+- [x] ~~Evaluate extracting `cpinto` utilities~~ (discarded).
+- [x] ~~Clean up sketches folder~~ (discarded).
+- [x] Consider agent chaining / pipelines (composing agents
+  sequentially).
