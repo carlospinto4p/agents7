@@ -7,7 +7,7 @@ role, and metrics are available as attributes.
 
 from __future__ import annotations
 
-from typing import AsyncIterator, Iterator
+from typing import AsyncIterator, Callable, Iterator
 
 
 class StreamResult:
@@ -26,6 +26,7 @@ class StreamResult:
         self,
         iterator: Iterator,
         extractor: str,
+        _on_complete: Callable[[dict], None] | None = None,
     ):
         self._iterator = iterator
         self._extractor = extractor
@@ -34,6 +35,7 @@ class StreamResult:
         self._role: str | None = None
         self._metrics: dict = {}
         self._done = False
+        self._on_complete = _on_complete
 
     @property
     def response(self) -> str:
@@ -57,6 +59,8 @@ class StreamResult:
         return self._metrics
 
     def __iter__(self) -> Iterator[str]:
+        if self._done:
+            return iter(self._response_parts)
         return self._iterate()
 
     def _iterate(self) -> Iterator[str]:
@@ -73,6 +77,32 @@ class StreamResult:
             self._read_final(chunk)
 
         self._done = True
+        if self._on_complete is not None:
+            self._on_complete(self._as_dict())
+
+    def _as_dict(self) -> dict:
+        """Serialize accumulated state for caching."""
+        return {
+            "response": self.response,
+            "thinking": self.thinking,
+            "role": self._role,
+            "metrics": dict(self._metrics),
+        }
+
+    @classmethod
+    def from_cached(cls, cached: dict) -> StreamResult:
+        """Create a pre-filled instance from cached data."""
+        obj = cls.__new__(cls)
+        obj._iterator = iter(())
+        obj._extractor = ""
+        obj._response_parts = [cached["response"]]
+        thinking = cached.get("thinking")
+        obj._thinking_parts = [thinking] if thinking else []
+        obj._role = cached.get("role")
+        obj._metrics = cached.get("metrics", {})
+        obj._done = True
+        obj._on_complete = None
+        return obj
 
     def _extract(self, chunk) -> tuple[str, str]:
         """Extract content and thinking from a chunk."""
@@ -125,6 +155,7 @@ class AsyncStreamResult:
         self,
         iterator: AsyncIterator,
         extractor: str,
+        _on_complete: Callable[[dict], None] | None = None,
     ):
         self._iterator = iterator
         self._extractor = extractor
@@ -133,6 +164,7 @@ class AsyncStreamResult:
         self._role: str | None = None
         self._metrics: dict = {}
         self._done = False
+        self._on_complete = _on_complete
 
     @property
     def response(self) -> str:
@@ -156,7 +188,14 @@ class AsyncStreamResult:
         return self._metrics
 
     def __aiter__(self) -> AsyncIterator[str]:
+        if self._done:
+            return self._replay()
         return self._iterate()
+
+    async def _replay(self) -> AsyncIterator[str]:
+        """Yield cached response parts without touching the iterator."""
+        for part in self._response_parts:
+            yield part
 
     async def _iterate(self) -> AsyncIterator[str]:
         async for chunk in self._iterator:
@@ -172,6 +211,32 @@ class AsyncStreamResult:
             self._read_final(chunk)
 
         self._done = True
+        if self._on_complete is not None:
+            self._on_complete(self._as_dict())
+
+    def _as_dict(self) -> dict:
+        """Serialize accumulated state for caching."""
+        return {
+            "response": self.response,
+            "thinking": self.thinking,
+            "role": self._role,
+            "metrics": dict(self._metrics),
+        }
+
+    @classmethod
+    def from_cached(cls, cached: dict) -> AsyncStreamResult:
+        """Create a pre-filled instance from cached data."""
+        obj = cls.__new__(cls)
+        obj._iterator = None
+        obj._extractor = ""
+        obj._response_parts = [cached["response"]]
+        thinking = cached.get("thinking")
+        obj._thinking_parts = [thinking] if thinking else []
+        obj._role = cached.get("role")
+        obj._metrics = cached.get("metrics", {})
+        obj._done = True
+        obj._on_complete = None
+        return obj
 
     def _extract(self, chunk) -> tuple[str, str]:
         """Extract content and thinking from a chunk."""

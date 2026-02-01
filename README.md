@@ -21,7 +21,7 @@ Requires Python >= 3.11.
 
 Supports both sync and async methods: `chat`, `chat_async`, `generate`, `generate_async`, plus streaming variants: `chat_stream`, `chat_stream_async`, `generate_stream`, `generate_stream_async`.
 
-Features: temperature control, structured output via JSON schema, "thinking" mode, seed for reproducibility, streaming responses.
+Features: temperature control, structured output via JSON schema, "thinking" mode, seed for reproducibility, streaming responses, in-memory LRU caching.
 
 ### Agents Layer (`agents7.agents`)
 
@@ -297,6 +297,46 @@ After iteration, `StreamResult` / `AsyncStreamResult` expose:
 - `.metrics` — dict with `tokens`, `prompt_tokens`, `total_duration`
 
 The `generate_stream` and `generate_stream_async` methods work identically but accept a `prompt` string instead of `messages`.
+
+### Caching
+
+Deterministic LLM calls (`temperature=0`) can be cached in memory with an LRU eviction policy. Cached responses are returned instantly without hitting the LLM. When `temperature != 0`, caching is bypassed automatically.
+
+Streaming responses are also cached: on a miss the result is stored after the stream is fully consumed; on a hit the full response is returned as a single chunk.
+
+The cache is in-memory only and lost on process restart.
+
+**YAML configuration:**
+
+```yaml
+name: MyAgent
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+    cache:
+        max_size: 128
+system_prompt: Analyze this text.
+output_model: mymodule.MyOutput
+```
+
+All `cache` fields are optional and fall back to defaults. An empty `cache: {}` enables caching with defaults. Omitting the `cache` key entirely disables caching (backward compatible).
+
+**Python configuration:**
+
+```python
+from agents7.llm import LLMEngine, CacheConfig
+
+engine = LLMEngine(
+    provider="ollama",
+    model_name="qwen3",
+    cache=CacheConfig(max_size=256),
+)
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `max_size` | `128` | Maximum cached entries (0 = unlimited) |
 
 ## Requirements
 

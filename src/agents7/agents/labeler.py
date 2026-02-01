@@ -19,6 +19,7 @@ from agents7.agents.utils import (
     model_class_to_string,
 )
 from agents7.llm import LLMEngine
+from agents7.llm.cache import CacheConfig
 from agents7.llm.retry import RetryConfig
 from agents7.logs import logger
 from agents7.models import AgentResponse
@@ -594,6 +595,11 @@ class Labeler(BaseAgent):
         if retry_settings := engine.get("retry"):
             retry_config = RetryConfig(**retry_settings)
 
+        cache_config = None
+        cache_settings = engine.get("cache")
+        if cache_settings is not None:
+            cache_config = CacheConfig(**cache_settings)
+
         system_prompt = config["system_prompt"].strip()
         if examples := config.get("system_examples"):
             try:
@@ -614,6 +620,7 @@ class Labeler(BaseAgent):
                 engine["provider"],
                 engine["model"],
                 retry=retry_config,
+                cache=cache_config,
             ),
             "system_prompt": system_prompt.strip(),
             "prompt_params": prompt_params,

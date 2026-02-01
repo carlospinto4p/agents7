@@ -266,6 +266,7 @@ class TestEngineStreamDelegation:
         engine.model_name = "test-model"
         engine.model_id = "ollama::test-model"
         engine.retry_config = None
+        engine._cache = None
         engine.llm_provider = Mock()
         return engine
 
