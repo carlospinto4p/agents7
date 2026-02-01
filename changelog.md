@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v0.4.2 - 1st February 2026
+
+- `.claude/`: Added cleanup lesson for `.tmp` files to `CLAUDE.md`.
+
+
 ### v0.4.1 - 1st February 2026
 
 - New example `examples/labeler_params.py` demonstrating `prompt_params`
