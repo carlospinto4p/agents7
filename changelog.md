@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v0.3.5 - 1st February 2026
+
+- `CLAUDE.md`: Moved from `.claude/CLAUDE.md` to project root.
+  - Updated internal links to reference `.claude/rules/` paths.
+  - Fixed lesson learned about file location.
+
+
 ### v0.3.4 - 25th January 2026
 
 - Module `agents`:
