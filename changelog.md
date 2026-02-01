@@ -1,6 +1,41 @@
 
 ## Changelog - Agents7
 
+### v0.7.0 - 1st February 2026
+
+- Module `llm`:
+  - New file `cache.py`:
+    - `CacheConfig` frozen dataclass for configuring in-memory LRU cache
+      (`max_size`, default 128, 0 = unlimited).
+    - `ResponseCache` thread-safe LRU store with `make_key`, `get`,
+      `put`, `size`, and `clear`.
+  - Class `LLMEngine`:
+    - New `cache` parameter for optional `CacheConfig`.
+    - All 8 call methods (`chat`, `chat_async`, `generate`,
+      `generate_async`, plus 4 streaming variants) check the cache
+      when `temperature == 0`.
+    - Module-level `_cache_store_callback` used with
+      `functools.partial` to store streaming results after iteration.
+  - `CacheConfig` exported from `agents7.llm`.
+  - `StreamResult` and `AsyncStreamResult`:
+    - New `_on_complete` callback invoked after iteration finishes.
+    - New `_as_dict()` method to serialize state for caching.
+    - New `from_cached()` classmethod to create pre-filled instances
+      from cached data.
+    - `__iter__` / `__aiter__` return cached parts when `_done` is True.
+- Module `agents`:
+  - Class `Labeler`:
+    - `_load_yaml_settings` parses optional `cache:` section in
+      engine config.
+- New file `tests/test_cache.py`:
+  - 27 unit tests (all mocked, no LLM) covering `CacheConfig`,
+    `ResponseCache`, `make_key`, engine integration, streaming cache,
+    `from_cached`, and YAML config parsing.
+- `tests/test_streaming.py`: Added `_cache = None` to mock engine
+  helper for compatibility.
+- `README.md`: Added "Caching" documentation section, updated
+  architecture features line.
+
 ### v0.6.0 - 1st February 2026
 
 - Module `llm`:
