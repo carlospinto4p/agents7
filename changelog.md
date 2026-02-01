@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v0.4.1 - 1st February 2026
+
+- New example `examples/labeler_params.py` demonstrating `prompt_params`
+  usage with both YAML static values and Python callable params.
+- New YAML config `examples/configs/demo_labeler_params.yml`.
+
+
 ### v0.4.0 - 1st February 2026
 
 - Module `exceptions`:
@@ -18,7 +25,6 @@
     - `prompt` and `prompt_for_batch` now use `resolved_system_prompt`.
     - `_load_yaml_settings()` parses optional `prompt_params` key,
       casting values to `str`.
-    - Removed TODO comment about prompt parameterization.
   - `Detector`, `Classifier`, `Regressor`:
     - `prompt` and `prompt_for_batch` now use `resolved_system_prompt`.
 - New test file `tests/test_prompt_params.py` with 19 unit tests.
