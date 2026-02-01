@@ -8,7 +8,7 @@
 - [x] Add unit tests for JSON parsing fixes
   (`_fix_malformed_json`, `_apply_enum_mappings`,
   markdown block removal) without needing an LLM.
-- [ ] Add error path tests (invalid YAML configs, wrong model
+- [x] Add error path tests (invalid YAML configs, wrong model
   types, network failures).
 - [ ] Add retry/resilience mechanism with configurable backoff
   at the engine or agent level.
