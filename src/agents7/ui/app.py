@@ -2,11 +2,55 @@
 
 from __future__ import annotations
 
+import argparse
 import importlib
 
 
 def main():
-    """Launch the multi-page Streamlit app."""
+    """Launch the multi-page Streamlit app.
+
+    When invoked from the console entry point, parses ``--host``
+    and ``--port`` arguments and re-launches Streamlit with the
+    corresponding server flags.  When already running inside a
+    Streamlit process, renders the app directly.
+    """
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
+
+    if get_script_run_ctx() is not None:
+        _render_app()
+        return
+
+    parser = argparse.ArgumentParser(
+        description="agents7 Agent Builder UI",
+    )
+    parser.add_argument(
+        "--host",
+        default="localhost",
+        help="Server address (default: localhost).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8501,
+        help="Server port (default: 8501).",
+    )
+    args = parser.parse_args()
+
+    from streamlit.web.cli import main_run
+
+    main_run(
+        [
+            __file__,
+            "--server.address",
+            args.host,
+            "--server.port",
+            str(args.port),
+        ]
+    )
+
+
+def _render_app():
+    """Render the multi-page Streamlit application."""
     import streamlit as st
 
     st.set_page_config(

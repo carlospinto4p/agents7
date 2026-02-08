@@ -517,11 +517,18 @@ Launch the UI:
 agents7-ui
 ```
 
+Custom host and port (useful for Docker / remote environments):
+
+```bash
+agents7-ui --host 0.0.0.0 --port 9000
+```
+
 Or from Python:
 
 ```python
 from agents7.ui import launch
-launch()
+launch()                                  # defaults
+launch(host="0.0.0.0", port=9000)        # custom
 ```
 
 The wizard guides you through 5 steps:
