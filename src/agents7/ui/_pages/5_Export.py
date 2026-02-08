@@ -53,6 +53,11 @@ def render():
             if eval_data:
                 _write_csv(workspace_dir, eval_data)
 
+            # Eval results CSV + JSONL
+            eval_results = st.session_state.get("eval_results", [])
+            if eval_results:
+                _write_eval_results(workspace_dir, eval_results, state)
+
             st.success(f"Exported to `{workspace_dir}/`")
         except Exception as e:
             st.error(f"Export failed: {e}")
@@ -78,6 +83,36 @@ def _write_csv(directory: str, data: list[dict]):
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(data)
+
+
+def _write_eval_results(directory: str, eval_results, state):
+    import os
+
+    from agents7.ui.evaluation.export import (
+        format_results_csv,
+        format_results_jsonl,
+    )
+
+    expected_fields = _get_expected_fields(state)
+
+    csv_content = format_results_csv(eval_results, expected_fields)
+    path_csv = os.path.join(directory, "eval_results.csv")
+    with open(path_csv, "w", encoding="utf-8") as f:
+        f.write(csv_content)
+
+    jsonl_content = format_results_jsonl(eval_results)
+    path_jsonl = os.path.join(directory, "eval_results.jsonl")
+    with open(path_jsonl, "w", encoding="utf-8") as f:
+        f.write(jsonl_content)
+
+
+def _get_expected_fields(state) -> list[str]:
+    """Determine which fields to compare."""
+    if state.agent_type == "classifier":
+        return ["category", "reason"]
+    if state.agent_type in ("detector", "regressor"):
+        return ["reason"]
+    return [f.name for f in state.fields]
 
 
 def _generate_usage_example(state) -> str:

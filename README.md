@@ -538,8 +538,8 @@ The wizard guides you through 5 steps:
 | **Define** | Choose agent type (Classifier, Detector, Regressor, Labeler) and define the output model |
 | **Configure** | Select LLM model (auto-detected from Ollama), write the system prompt, add examples |
 | **Test** | Quick-test with single or batch inputs, view structured output and metrics |
-| **Evaluate** | Upload CSV or add labeled rows, run the agent, see accuracy, per-field metrics, and confusion matrix |
-| **Export** | Save generated `models.py`, `config.yml`, `eval_data.csv`, and `usage_example.py` to `workspace/<agent_name>/` |
+| **Evaluate** | Upload CSV or add labeled rows, run the agent, see accuracy, per-field metrics, and confusion matrix. Download results as CSV or JSONL |
+| **Export** | Save generated `models.py`, `config.yml`, `eval_data.csv`, `eval_results.csv`, `eval_results.jsonl`, and `usage_example.py` to `workspace/<agent_name>/` |
 
 The UI constructs agents in-memory during Test/Evaluate (no files written until Export). This enables fast prompt iteration without import path issues.
 

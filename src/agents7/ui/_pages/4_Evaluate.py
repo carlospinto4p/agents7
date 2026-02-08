@@ -125,6 +125,30 @@ def render():
                 if r.error:
                     st.error(r.error)
 
+        # Download results
+        st.subheader("Download Results")
+        from agents7.ui.evaluation.export import (
+            format_results_csv,
+            format_results_jsonl,
+        )
+
+        agent_name = state.agent_name or "agent"
+        col_csv, col_jsonl = st.columns(2)
+        with col_csv:
+            st.download_button(
+                label="Download CSV",
+                data=format_results_csv(results, expected_fields),
+                file_name=f"{agent_name}_eval_results.csv",
+                mime="text/csv",
+            )
+        with col_jsonl:
+            st.download_button(
+                label="Download JSONL",
+                data=format_results_jsonl(results),
+                file_name=f"{agent_name}_eval_results.jsonl",
+                mime="application/jsonl",
+            )
+
 
 def _get_expected_fields(state) -> list[str]:
     """Determine which fields to compare."""
