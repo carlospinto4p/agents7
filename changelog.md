@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v1.0.4 - 8th February 2026
+
+- `integration_tests/`:
+  - Trimmed parametrized test data for faster execution: detector
+    11 → 4 cases, classifier 5 → 3 cases, regressor 5 → 4 cases
+    (one per category/reason). Multi-model tests unchanged.
+
+
 ### v1.0.3 - 8th February 2026
 
 - `integration_tests/`:
