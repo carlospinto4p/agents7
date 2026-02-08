@@ -11,7 +11,7 @@ from agents7.agents.utils import import_from_path
 from agents7.exceptions import PipelineConfigurationError
 from agents7.logs import logger
 from agents7.models import AgentResponse
-from agents7.settings import DEFAULT_MAX_CONCURRENT
+from agents7.settings import BatchSettings
 
 
 def _default_mapper(response: AgentResponse) -> dict:
@@ -271,7 +271,7 @@ class Pipeline:
         self,
         input_list: list[dict],
         chat_kwargs: dict = None,
-        max_concurrent: int | None = DEFAULT_MAX_CONCURRENT,
+        batch_settings: BatchSettings | None = None,
     ) -> list[PipelineResponse]:
         """
         Execute the pipeline asynchronously on a batch of
@@ -281,14 +281,19 @@ class Pipeline:
         :param input_list: List of input dicts.
         :param chat_kwargs: Extra kwargs passed to each agent's
             ``act_async()`` method.
-        :param max_concurrent: Maximum number of concurrent LLM
-            requests within each step. Defaults to
-            ``DEFAULT_MAX_CONCURRENT`` (5). ``None`` means
-            unlimited.
+        :param batch_settings: Optional ``BatchSettings``
+            instance controlling concurrency. Defaults to
+            ``None`` which uses ``BatchSettings()``
+            (max_concurrent=5).
         :return: List of PipelineResponse, one per input, in
             original order.
         """
-        sem = asyncio.Semaphore(max_concurrent) if max_concurrent else None
+        settings = batch_settings or BatchSettings()
+        sem = (
+            asyncio.Semaphore(settings.max_concurrent)
+            if settings.max_concurrent
+            else None
+        )
 
         async def _limited(coro):
             if sem:

@@ -24,7 +24,7 @@ from agents7.llm.cache import CacheConfig
 from agents7.llm.retry import RetryConfig
 from agents7.logs import logger
 from agents7.models import AgentResponse
-from agents7.settings import DEFAULT_MAX_CONCURRENT
+from agents7.settings import BatchSettings
 
 
 @dataclass(frozen=True)
@@ -342,7 +342,7 @@ class Labeler(BaseAgent):
         chat_kwargs: dict = None,
         requests_per_prompt: int = 10,
         with_tqdm: bool = True,
-        max_concurrent: int | None = DEFAULT_MAX_CONCURRENT,
+        batch_settings: BatchSettings | None = None,
     ) -> list[AgentResponse]:
         """
         Perform the labeling action based on the provided input, in batch mode.
@@ -365,9 +365,9 @@ class Labeler(BaseAgent):
             Defaults to 10.
         :param with_tqdm: Whether to use `tqdm.asyncio` to keep track of the
             iterations.
-        :param max_concurrent: Maximum number of concurrent LLM
-            requests. Defaults to ``DEFAULT_MAX_CONCURRENT`` (5).
-            ``None`` means unlimited.
+        :param batch_settings: Optional ``BatchSettings`` instance
+            controlling concurrency. Defaults to ``None`` which
+            uses ``BatchSettings()`` (max_concurrent=5).
         :return: A list of AgentResponse models, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
@@ -379,7 +379,12 @@ class Labeler(BaseAgent):
                  in seconds.
             - idx: Optional index for tracking purposes.
         """
-        sem = asyncio.Semaphore(max_concurrent) if max_concurrent else None
+        settings = batch_settings or BatchSettings()
+        sem = (
+            asyncio.Semaphore(settings.max_concurrent)
+            if settings.max_concurrent
+            else None
+        )
 
         async def _limited(coro):
             if sem:

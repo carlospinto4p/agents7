@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
 from agents7.llm import LLMEngine
+from agents7.settings import BatchSettings
 
 
 # --- Helper models ---
@@ -391,7 +392,7 @@ class TestBatchAsyncConcurrency:
             [{"a": 1}, {"a": 2}, {"a": 3}],
             requests_per_prompt=1,
             with_tqdm=False,
-            max_concurrent=None,
+            batch_settings=BatchSettings(max_concurrent=None),
         )
         assert peak == 3
 
@@ -422,7 +423,7 @@ class TestBatchAsyncConcurrency:
             [{"a": i} for i in range(5)],
             requests_per_prompt=1,
             with_tqdm=False,
-            max_concurrent=2,
+            batch_settings=BatchSettings(max_concurrent=2),
         )
         assert peak <= 2
 
@@ -453,6 +454,6 @@ class TestBatchAsyncConcurrency:
             [{"a": i} for i in range(4)],
             requests_per_prompt=1,
             with_tqdm=False,
-            max_concurrent=1,
+            batch_settings=BatchSettings(max_concurrent=1),
         )
         assert peak == 1

@@ -38,12 +38,12 @@ Pipeline (chains multiple agents sequentially)
 - `BaseAgent`: Abstract base defining common interface (`name`, `version`, `engine`, `system_prompt`, `prompt_params`)
 - `Labeler`: General-purpose agent that outputs structured data via a Pydantic `output_model`
   - Single processing: `act()`, `act_async()`
-  - Batch processing: `act_in_batch()`, `act_in_batch_async()` (with optional `max_concurrent` concurrency control)
+  - Batch processing: `act_in_batch()`, `act_in_batch_async()` (with optional `BatchSettings` concurrency control)
   - YAML configuration support via `from_yaml()`
 - `Detector`: Specialized `Labeler` for property extraction (value + reason)
 - `Classifier`: For categorical classification with category + reason enums
 - `Regressor`: For numeric value extraction with reason enum
-- `Pipeline`: Chains multiple agents sequentially with optional custom mappers between steps (async batch supports `max_concurrent`)
+- `Pipeline`: Chains multiple agents sequentially with optional custom mappers between steps (async batch supports `BatchSettings`)
 
 ### Models Layer (`agents7.models`)
 
@@ -469,29 +469,37 @@ steps:
 
 ### Batch Concurrency Control
 
-When using `act_in_batch_async`, you can limit the number of concurrent LLM requests with the `max_concurrent` parameter. This prevents overwhelming the LLM server with large input lists.
+When using `act_in_batch_async`, you can limit the number of concurrent LLM requests via a `BatchSettings` instance. This prevents overwhelming the LLM server with large input lists.
 
 ```python
+from agents7.settings import BatchSettings
+
 # Labeler: limit to 3 concurrent chunk requests
 responses = await agent.act_in_batch_async(
     inputs,
-    max_concurrent=3,
+    batch_settings=BatchSettings(max_concurrent=3),
 )
 
 # Pipeline: limit to 2 concurrent requests per step
 results = await pipeline.act_in_batch_async(
     inputs,
-    max_concurrent=2,
+    batch_settings=BatchSettings(max_concurrent=2),
+)
+
+# Unlimited concurrency
+results = await pipeline.act_in_batch_async(
+    inputs,
+    batch_settings=BatchSettings(max_concurrent=None),
 )
 ```
 
-| Value | Behavior |
-|-------|----------|
-| `DEFAULT_MAX_CONCURRENT` (default: `5`) | Sensible throttling out of the box |
-| `None` | Unlimited concurrency |
-| Positive `int` | Caps concurrent LLM requests via `asyncio.Semaphore` |
+| `batch_settings` | `max_concurrent` | Behavior |
+|-------------------|------------------|----------|
+| `None` (default) | `5` | Sensible throttling out of the box |
+| `BatchSettings(max_concurrent=None)` | `None` | Unlimited concurrency |
+| `BatchSettings(max_concurrent=N)` | Positive `int` | Caps concurrent LLM requests via `asyncio.Semaphore` |
 
-The library-level default is defined in `agents7.settings.DEFAULT_MAX_CONCURRENT`.
+The default `max_concurrent` value can be overridden via the `BATCH_MAX_CONCURRENT` environment variable.
 
 The semaphore is created per call (not stored on the instance), so different calls can use different limits.
 

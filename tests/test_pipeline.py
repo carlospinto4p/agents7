@@ -16,6 +16,7 @@ from agents7.agents.pipeline import (
 from agents7.exceptions import PipelineConfigurationError
 from agents7.llm import LLMEngine
 from agents7.models import AgentResponse
+from agents7.settings import BatchSettings
 
 
 # --- Helper models & fixtures ---
@@ -600,7 +601,7 @@ class TestPipelineBatchAsyncConcurrency:
 
         await pipeline.act_in_batch_async(
             [{"text": "a"}, {"text": "b"}, {"text": "c"}],
-            max_concurrent=None,
+            batch_settings=BatchSettings(max_concurrent=None),
         )
         # All 3 items should have been in-flight simultaneously
         assert peak == 3
@@ -641,6 +642,6 @@ class TestPipelineBatchAsyncConcurrency:
                 {"text": "d"},
                 {"text": "e"},
             ],
-            max_concurrent=2,
+            batch_settings=BatchSettings(max_concurrent=2),
         )
         assert peak <= 2

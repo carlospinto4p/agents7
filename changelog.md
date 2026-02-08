@@ -1,6 +1,25 @@
 
 ## Changelog - Agents7
 
+### v1.2.2 - 8th February 2026
+
+- Module `settings`:
+  - Replaced bare `DEFAULT_MAX_CONCURRENT` constant with
+    `BatchSettings` dataclass using `load_setting` pattern.
+    Default `max_concurrent` is now overridable via the
+    `BATCH_MAX_CONCURRENT` environment variable.
+- Module `agents`:
+  - Class `Labeler`:
+    - `act_in_batch_async`: Replaced `max_concurrent` parameter
+      with `batch_settings: BatchSettings | None`.
+  - Class `Pipeline`:
+    - `act_in_batch_async`: Replaced `max_concurrent` parameter
+      with `batch_settings: BatchSettings | None`.
+- Tests updated to use `BatchSettings` instances.
+- `README.md`: Updated "Batch Concurrency Control" section with
+  `BatchSettings` usage.
+
+
 ### v1.2.1 - 8th February 2026
 
 - Module `settings`:
