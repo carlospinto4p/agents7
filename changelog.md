@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v1.0.3 - 8th February 2026
+
+- `integration_tests/`:
+  - New `conftest.py` with session-scoped fixture to `chdir` to the
+    project root, so YAML config paths resolve correctly.
+- `CLAUDE.md`: Updated "After Every Change" workflow to require running
+  both unit tests and integration tests before committing.
+
+
 ### v1.0.2 - 8th February 2026
 
 - Tests:
