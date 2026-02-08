@@ -500,6 +500,28 @@ The wizard guides you through 5 steps:
 
 The UI constructs agents in-memory during Test/Evaluate (no files written until Export). This enables fast prompt iteration without import path issues.
 
+## Docker
+
+Run the Agent Builder UI and Ollama together with Docker Compose:
+
+```bash
+# 1. Copy and fill in your GitLab token
+cp .env.example .env
+
+# 2. Build and start both services
+docker compose up --build
+```
+
+The Streamlit UI will be available at `http://localhost:8501`.
+Ollama runs on port 11434 and automatically pulls the `qwen3` model
+on first start. Model data is persisted in a Docker volume.
+
+To stop the services:
+
+```bash
+docker compose down
+```
+
 ## Requirements
 
 - Ollama running locally (default: `http://localhost:11434`)

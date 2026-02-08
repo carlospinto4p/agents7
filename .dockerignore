@@ -1,0 +1,13 @@
+.git
+__pycache__
+.venv
+venv
+*.egg-info
+.pytest_cache
+integration_tests
+workspace
+sketches
+notebooks
+.env
+nul
+.idea
