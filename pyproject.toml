@@ -20,6 +20,14 @@ dev = [
     "ruff>=0.13.0",
     "pytest>=8.4.2",
 ]
+ui = [
+    "streamlit>=1.45.0",
+    "pandas>=2.2.0",
+    "plotly>=6.0.0",
+]
+
+[project.scripts]
+agents7-ui = "agents7.ui.app:main"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

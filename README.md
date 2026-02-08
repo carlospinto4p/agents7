@@ -467,6 +467,39 @@ steps:
 - `agent_type`: Dotted import path to the agent class (optional, defaults to `Labeler`)
 - `mapper`: Dotted import path to a mapper function (optional, defaults to `model.model_dump()`)
 
+### Agent Builder UI
+
+An optional Streamlit-based UI for creating, testing, and evaluating agents interactively. Install with:
+
+```bash
+pip install agents7[ui]
+```
+
+Launch the UI:
+
+```bash
+agents7-ui
+```
+
+Or from Python:
+
+```python
+from agents7.ui import launch
+launch()
+```
+
+The wizard guides you through 5 steps:
+
+| Step | Description |
+|------|-------------|
+| **Define** | Choose agent type (Classifier, Detector, Regressor, Labeler) and define the output model |
+| **Configure** | Select LLM model (auto-detected from Ollama), write the system prompt, add examples |
+| **Test** | Quick-test with single or batch inputs, view structured output and metrics |
+| **Evaluate** | Upload CSV or add labeled rows, run the agent, see accuracy, per-field metrics, and confusion matrix |
+| **Export** | Save generated `models.py`, `config.yml`, `eval_data.csv`, and `usage_example.py` to `workspace/<agent_name>/` |
+
+The UI constructs agents in-memory during Test/Evaluate (no files written until Export). This enables fast prompt iteration without import path issues.
+
 ## Requirements
 
 - Ollama running locally (default: `http://localhost:11434`)
