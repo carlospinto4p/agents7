@@ -9,7 +9,7 @@ def render():
     from agents7.ui.codegen.model_generator import (
         generate_model_code,
     )
-    from agents7.ui.pages import _state_from_dict
+    from agents7.ui._pages import _state_from_dict
 
     st.header("1. Define the Output Model")
 

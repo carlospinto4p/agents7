@@ -27,11 +27,11 @@ def main():
 
     _PAGES = [
         ("Home", _home_page),
-        ("1. Define", "agents7.ui.pages.1_Define"),
-        ("2. Configure", "agents7.ui.pages.2_Configure"),
-        ("3. Test", "agents7.ui.pages.3_Test"),
-        ("4. Evaluate", "agents7.ui.pages.4_Evaluate"),
-        ("5. Export", "agents7.ui.pages.5_Export"),
+        ("1. Define", "agents7.ui._pages.1_Define"),
+        ("2. Configure", "agents7.ui._pages.2_Configure"),
+        ("3. Test", "agents7.ui._pages.3_Test"),
+        ("4. Evaluate", "agents7.ui._pages.4_Evaluate"),
+        ("5. Export", "agents7.ui._pages.5_Export"),
     ]
 
     # Sidebar navigation

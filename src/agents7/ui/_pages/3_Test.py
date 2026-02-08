@@ -7,7 +7,7 @@ def render():
     import streamlit as st
 
     from agents7.ui.helpers import build_agent_from_state
-    from agents7.ui.pages import _state_from_dict
+    from agents7.ui._pages import _state_from_dict
 
     st.header("3. Quick Test")
 

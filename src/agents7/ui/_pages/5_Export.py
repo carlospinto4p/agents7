@@ -12,7 +12,7 @@ def render():
         generate_model_code,
     )
     from agents7.ui.codegen.yaml_generator import generate_yaml
-    from agents7.ui.pages import _state_from_dict
+    from agents7.ui._pages import _state_from_dict
 
     st.header("5. Export")
 

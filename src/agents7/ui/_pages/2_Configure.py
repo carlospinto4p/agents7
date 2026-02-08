@@ -80,7 +80,7 @@ def render():
 
     # --- YAML preview ---
     st.subheader("YAML Config Preview")
-    from agents7.ui.pages import _state_from_dict
+    from agents7.ui._pages import _state_from_dict
 
     state = _state_from_dict(sd)
     yml = generate_yaml(state)

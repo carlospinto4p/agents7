@@ -9,7 +9,7 @@ def render():
     from agents7.ui.helpers import build_agent_from_state
     from agents7.ui.evaluation.runner import run_evaluation
     from agents7.ui.evaluation.metrics import compute_metrics
-    from agents7.ui.pages import _state_from_dict
+    from agents7.ui._pages import _state_from_dict
 
     st.header("4. Evaluate")
 
