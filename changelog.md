@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v1.2.3 - 8th February 2026
+
+- Module `ui`:
+  - `app.py`: Added `--host` and `--port` CLI flags to the
+    `agents7-ui` entry point. Refactored `main()` into a CLI
+    launcher and `_render_app()` for the Streamlit rendering.
+  - `__init__.py`: `launch()` now accepts optional `host` and
+    `port` parameters forwarded to the CLI.
+- `README.md`: Documented `--host` / `--port` usage in the
+  Agent Builder UI section.
+- `backlog.md`: Removed completed item.
+
+
 ### v1.2.2 - 8th February 2026
 
 - Module `settings`:
