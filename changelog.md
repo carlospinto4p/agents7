@@ -1,6 +1,44 @@
 
 ## Changelog - Agents7
 
+### v1.1.0 - 8th February 2026
+
+- Module `ui` (new, optional dependency `agents7[ui]`):
+  - New file `state.py`: `AgentBuilderState`, `EnumMember`,
+    `FieldDefinition` dataclasses capturing the full wizard state.
+  - New submodule `codegen/`:
+    - `model_generator.py`: `generate_model_code()` produces `.py`
+      source; `create_model_class()` builds live Pydantic classes
+      in-memory for all 4 agent types (Classifier, Detector,
+      Regressor, Labeler).
+    - `yaml_generator.py`: `generate_yaml()` produces YAML config.
+  - New submodule `evaluation/`:
+    - `runner.py`: `run_evaluation()` executes an agent against
+      labeled data, returns `EvalResult` per row.
+    - `metrics.py`: `compute_metrics()` for accuracy/per-field
+      stats; `build_confusion_matrix()` for classifiers.
+  - `ollama_utils.py`: `check_connection()` and
+    `list_available_models()` for Ollama auto-detection.
+  - `helpers.py`: `build_agent_from_state()` constructs a live
+    agent from UI state without writing files.
+  - `app.py`: Streamlit entry point with sidebar navigation.
+  - `pages/`: 5-step wizard (Define, Configure, Test, Evaluate,
+    Export) with live code preview, batch testing, CSV upload,
+    and workspace export.
+- `pyproject.toml`:
+  - Added `[project.optional-dependencies] ui` group
+    (streamlit, pandas, plotly).
+  - Added `agents7-ui` script entry point.
+- `.gitignore`: Added `workspace/`.
+- `CLAUDE.md`: Noted optional UI module in project overview.
+- `README.md`: Added "Agent Builder UI" documentation section.
+- New test files:
+  - `tests/test_ui_codegen.py`: 25 unit tests for state,
+    code generation, dynamic class creation, YAML generation.
+  - `tests/test_ui_evaluation.py`: 19 unit tests for evaluation
+    runner, metrics, and confusion matrix.
+
+
 ### v1.0.4 - 8th February 2026
 
 - `integration_tests/`:
