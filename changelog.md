@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v1.2.0 - 8th February 2026
+
+- Module `agents`:
+  - Class `Labeler`:
+    - `act_in_batch_async`: New `max_concurrent` parameter
+      (`int | None`, default `None`) to limit concurrent LLM
+      requests via `asyncio.Semaphore`.
+  - Class `Pipeline`:
+    - `act_in_batch_async`: New `max_concurrent` parameter
+      with the same semantics. Items within each step now run
+      concurrently via `asyncio.gather` (previously sequential).
+- `tests/test_labeler.py`: 3 new tests for semaphore behavior
+  (unlimited, limited, sequential).
+- `tests/test_pipeline.py`: 2 new tests for concurrent pipeline
+  batch processing with semaphore.
+- `README.md`: Added "Batch Concurrency Control" section.
+
+
 ### v1.1.1 - 8th February 2026
 
 - Docker support:
