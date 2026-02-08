@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v1.0.1 - 8th February 2026
+
+- `changelog.md`: Fixed inconsistent spacing between version entries
+  (v1.0.0 through v0.5.0 had one blank line instead of two).
+- `.claude/rules/versioning.md`: Documented the two-blank-lines rule
+  for changelog entries.
+
+
 ### v1.0.0 - 1st February 2026
 
 - Module `exceptions`:
@@ -36,6 +44,7 @@
 - `README.md`: Added "Agent Pipelines" documentation section,
   updated architecture diagram and agent list.
 
+
 ### v0.8.0 - 1st February 2026
 
 - Module `agents`:
@@ -63,6 +72,7 @@
     pipeline, `act`/`act_async` integration, batch validation,
     partial rejection, and YAML config parsing.
 - `README.md`: Added "Validation Hooks" documentation section.
+
 
 ### v0.7.0 - 1st February 2026
 
@@ -99,6 +109,7 @@
 - `README.md`: Added "Caching" documentation section, updated
   architecture features line.
 
+
 ### v0.6.0 - 1st February 2026
 
 - Module `llm`:
@@ -123,6 +134,7 @@
 - `README.md`: Added "Streaming" documentation section, updated
   architecture line.
 
+
 ### v0.5.0 - 1st February 2026
 
 - Module `llm`:
@@ -142,6 +154,7 @@
   - 15 unit tests covering RetryConfig validation, sync/async retry
     logic, and YAML config parsing.
 - `README.md`: Added "Retry / Resilience" documentation section.
+
 
 ### v0.4.8 - 1st February 2026
 
