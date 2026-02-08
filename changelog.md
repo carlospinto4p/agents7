@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v1.0.2 - 8th February 2026
+
+- Tests:
+  - Separated integration tests (LLM-calling) from unit tests.
+  - New `integration_tests/` standalone project with its own
+    `pyproject.toml`, containing tests extracted from
+    `test_detector.py`, `test_classifier.py`, `test_regressor.py`,
+    and moved `test_async.py`, `test_multi_model.py`.
+  - `tests/` now contains only fast unit tests (no Ollama required).
+- `README.md`: Updated development section with both test suites.
+- `CLAUDE.md`: Clarified unit test workflow in "After Every Change".
+
+
 ### v1.0.1 - 8th February 2026
 
 - `changelog.md`: Fixed inconsistent spacing between version entries
