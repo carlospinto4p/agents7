@@ -7,24 +7,6 @@ services:
     ports:
       - "8501:8501"
     environment:
-      - OLLAMA_HOST=http://ollama:11434
-    depends_on:
-      ollama:
-        condition: service_healthy
-
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    entrypoint: ["/bin/bash", "/ollama-entrypoint.sh"]
-    volumes:
-      - ollama_data:/root/.ollama
-      - ./docker/ollama-entrypoint.sh:/ollama-entrypoint.sh:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-volumes:
-  ollama_data:
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

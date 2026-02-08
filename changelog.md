@@ -6,10 +6,8 @@
 - Docker support:
   - New `Dockerfile` for the Streamlit Agent Builder UI
     (Python 3.12-slim, installs `agents7[ui]` via uv).
-  - New `docker-compose.yml` orchestrating `app` (Streamlit)
-    and `ollama` (Ollama server) services.
-  - New `docker/ollama-entrypoint.sh` that starts Ollama and
-    pre-pulls the `qwen3` model on first boot.
+  - New `docker-compose.yml` running the app container and
+    connecting to Ollama on the host via `host.docker.internal`.
   - New `.env.example` documenting required `GITLAB_TOKEN`.
   - New `.dockerignore` to keep the build context small.
 - `README.md`: Added "Docker" section with usage instructions.
