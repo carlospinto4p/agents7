@@ -1,6 +1,10 @@
 
 # Backlog - Agents7
 
+Pending manual testing:
+
+- Test prompt versioning and A/B comparison UI (v1.2.5): save/load/delete versions, run A/B comparison, verify side-by-side results. Confirm Single Input, Batch Test, and History tabs still work.
+
 Low priority:
 
 - Add more LLM providers (e.g., OpenAI, Anthropic) beyond Ollama.
