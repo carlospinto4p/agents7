@@ -285,8 +285,9 @@ class Pipeline:
             instance controlling concurrency. Defaults to
             `None` which uses `BatchSettings()`. Fields:
             - max_concurrent (int | None): Maximum number
-              of concurrent LLM requests. Defaults to 5.
-              `None` means unlimited concurrency.
+              of concurrent LLM requests. Overridable via
+              the `BATCH_MAX_CONCURRENT` env var. Defaults
+              to 5. `None` means unlimited concurrency.
         :return: List of PipelineResponse, one per input, in
             original order.
         """

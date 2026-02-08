@@ -369,7 +369,8 @@ class Labeler(BaseAgent):
             controlling concurrency. Defaults to `None` which
             uses `BatchSettings()`. Fields:
             - max_concurrent (int | None): Maximum number of
-              concurrent LLM requests. Defaults to 5.
+              concurrent LLM requests. Overridable via the
+              `BATCH_MAX_CONCURRENT` env var. Defaults to 5.
               `None` means unlimited concurrency.
         :return: A list of AgentResponse models, containing:
             - response: The generated text response.
