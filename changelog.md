@@ -1,6 +1,28 @@
 
 ## Changelog - Agents7
 
+### v1.2.4 - 8th February 2026
+
+- Module `ui`:
+  - New file `evaluation/export.py`:
+    - `format_results_csv()`: Converts evaluation results to a
+      flat CSV string with per-field expected/actual/passed
+      columns.
+    - `format_results_jsonl()`: Converts evaluation results to
+      JSONL (one JSON object per line, excludes heavy `response`).
+  - Page `4_Evaluate.py`: Added "Download Results" section with
+    CSV and JSONL download buttons after per-case results.
+  - Page `5_Export.py`: Exports `eval_results.csv` and
+    `eval_results.jsonl` to the workspace when evaluation results
+    exist in session state.
+  - `evaluation/__init__.py`: Exported `format_results_csv` and
+    `format_results_jsonl`.
+- New file `tests/test_ui_export.py`: 20 unit tests for CSV and
+  JSONL formatters.
+- `README.md`: Updated Evaluate and Export step descriptions.
+- `backlog.md`: Removed completed item.
+
+
 ### v1.2.3 - 8th February 2026
 
 - Module `ui`:
