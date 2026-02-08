@@ -599,7 +599,8 @@ class TestPipelineBatchAsyncConcurrency:
         pipeline = Pipeline(steps=[PipelineStep(agent=agent)])
 
         await pipeline.act_in_batch_async(
-            [{"text": "a"}, {"text": "b"}, {"text": "c"}]
+            [{"text": "a"}, {"text": "b"}, {"text": "c"}],
+            max_concurrent=None,
         )
         # All 3 items should have been in-flight simultaneously
         assert peak == 3

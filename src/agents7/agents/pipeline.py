@@ -11,6 +11,7 @@ from agents7.agents.utils import import_from_path
 from agents7.exceptions import PipelineConfigurationError
 from agents7.logs import logger
 from agents7.models import AgentResponse
+from agents7.settings import DEFAULT_MAX_CONCURRENT
 
 
 def _default_mapper(response: AgentResponse) -> dict:
@@ -270,7 +271,7 @@ class Pipeline:
         self,
         input_list: list[dict],
         chat_kwargs: dict = None,
-        max_concurrent: int | None = None,
+        max_concurrent: int | None = DEFAULT_MAX_CONCURRENT,
     ) -> list[PipelineResponse]:
         """
         Execute the pipeline asynchronously on a batch of
@@ -281,7 +282,8 @@ class Pipeline:
         :param chat_kwargs: Extra kwargs passed to each agent's
             ``act_async()`` method.
         :param max_concurrent: Maximum number of concurrent LLM
-            requests within each step. ``None`` (default) means
+            requests within each step. Defaults to
+            ``DEFAULT_MAX_CONCURRENT`` (5). ``None`` means
             unlimited.
         :return: List of PipelineResponse, one per input, in
             original order.

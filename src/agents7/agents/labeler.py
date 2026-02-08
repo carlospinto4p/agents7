@@ -24,6 +24,7 @@ from agents7.llm.cache import CacheConfig
 from agents7.llm.retry import RetryConfig
 from agents7.logs import logger
 from agents7.models import AgentResponse
+from agents7.settings import DEFAULT_MAX_CONCURRENT
 
 
 @dataclass(frozen=True)
@@ -341,7 +342,7 @@ class Labeler(BaseAgent):
         chat_kwargs: dict = None,
         requests_per_prompt: int = 10,
         with_tqdm: bool = True,
-        max_concurrent: int | None = None,
+        max_concurrent: int | None = DEFAULT_MAX_CONCURRENT,
     ) -> list[AgentResponse]:
         """
         Perform the labeling action based on the provided input, in batch mode.
@@ -365,7 +366,8 @@ class Labeler(BaseAgent):
         :param with_tqdm: Whether to use `tqdm.asyncio` to keep track of the
             iterations.
         :param max_concurrent: Maximum number of concurrent LLM
-            requests. ``None`` (default) means unlimited.
+            requests. Defaults to ``DEFAULT_MAX_CONCURRENT`` (5).
+            ``None`` means unlimited.
         :return: A list of AgentResponse models, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.

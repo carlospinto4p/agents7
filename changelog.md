@@ -1,6 +1,22 @@
 
 ## Changelog - Agents7
 
+### v1.2.1 - 8th February 2026
+
+- Module `settings`:
+  - New `DEFAULT_MAX_CONCURRENT = 5` constant for library-wide
+    default concurrency limit.
+- Module `agents`:
+  - Class `Labeler`:
+    - `act_in_batch_async`: Default `max_concurrent` changed from
+      `None` (unlimited) to `DEFAULT_MAX_CONCURRENT` (5).
+  - Class `Pipeline`:
+    - `act_in_batch_async`: Default `max_concurrent` changed from
+      `None` (unlimited) to `DEFAULT_MAX_CONCURRENT` (5).
+- `README.md`: Updated "Batch Concurrency Control" table with new
+  default.
+
+
 ### v1.2.0 - 8th February 2026
 
 - Module `agents`:

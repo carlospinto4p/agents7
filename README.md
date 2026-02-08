@@ -487,8 +487,11 @@ results = await pipeline.act_in_batch_async(
 
 | Value | Behavior |
 |-------|----------|
-| `None` (default) | Unlimited concurrency (backward compatible) |
+| `DEFAULT_MAX_CONCURRENT` (default: `5`) | Sensible throttling out of the box |
+| `None` | Unlimited concurrency |
 | Positive `int` | Caps concurrent LLM requests via `asyncio.Semaphore` |
+
+The library-level default is defined in `agents7.settings.DEFAULT_MAX_CONCURRENT`.
 
 The semaphore is created per call (not stored on the instance), so different calls can use different limits.
 
