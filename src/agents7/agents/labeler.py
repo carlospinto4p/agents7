@@ -367,7 +367,10 @@ class Labeler(BaseAgent):
             iterations.
         :param batch_settings: Optional `BatchSettings` instance
             controlling concurrency. Defaults to `None` which
-            uses `BatchSettings()` (max_concurrent=5).
+            uses `BatchSettings()`. Fields:
+            - max_concurrent (int | None): Maximum number of
+              concurrent LLM requests. Defaults to 5.
+              `None` means unlimited concurrency.
         :return: A list of AgentResponse models, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
