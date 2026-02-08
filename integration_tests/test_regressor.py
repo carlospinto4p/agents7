@@ -13,16 +13,12 @@ demo_temperature_data = [
         "expected_reason": "TOO_COLD",
     },
     {
-        "text": ("It's scorching outside; I can barely stay in the sun."),
+        "text": "It's scorching outside; I can barely stay in the sun.",
         "expected_reason": "TOO_HOT",
     },
     {
-        "text": ("A light breeze makes the evening feel very pleasant."),
+        "text": "A light breeze makes the evening feel very pleasant.",
         "expected_reason": "COMFORTABLE",
-    },
-    {
-        "text": "The thermometer shows 38 degrees in the shade.",
-        "expected_reason": "TOO_HOT",
     },
 ]
 

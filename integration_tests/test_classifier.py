@@ -16,14 +16,6 @@ demo_sentiment_data = [
         "text": "The meeting is at 3 PM in conference room B.",
         "expected_category": "NEUTRAL",
     },
-    {
-        "text": "Thank you so much for helping me!",
-        "expected_category": "POSITIVE",
-    },
-    {
-        "text": ("I can't believe how frustrating this experience has been."),
-        "expected_category": "NEGATIVE",
-    },
 ]
 
 

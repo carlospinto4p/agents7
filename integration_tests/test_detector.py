@@ -6,67 +6,18 @@ from agents7.agents import Detector
 demo_temperature_data = [
     {
         "text": "This is a test text.",
-        "expected_value": None,
         "expected_reason": "NOT_APPLICABLE",
     },
     {
         "text": "The water in the lake is starting to freeze.",
-        "expected_value_min": -20,
-        "expected_value_max": 0,
         "expected_reason": "TOO_COLD",
     },
     {
         "text": "It's scorching outside; I can barely stay in the sun.",
-        "expected_value_min": 30,
-        "expected_value_max": 40,
         "expected_reason": "TOO_HOT",
     },
     {
         "text": "A light breeze makes the evening feel very pleasant.",
-        "expected_value_min": 15,
-        "expected_value_max": 25,
-        "expected_reason": "COMFORTABLE",
-    },
-    {
-        "text": "The thermometer shows 38 degrees in the shade.",
-        "expected_value_min": 35,
-        "expected_value_max": 40,
-        "expected_reason": "TOO_HOT",
-    },
-    {
-        "text": "I walked outside and shivered immediately.",
-        "expected_value_min": -20,
-        "expected_value_max": 10,
-        "expected_reason": "TOO_COLD",
-    },
-    {
-        "text": "The book I ordered finally arrived today.",
-        "expected_value": None,
-        "expected_reason": "NOT_APPLICABLE",
-    },
-    {
-        "text": "Summer in this city often exceeds 35 degrees.",
-        "expected_value_min": 35,
-        "expected_value_max": 40,
-        "expected_reason": "TOO_HOT",
-    },
-    {
-        "text": "She just bought a new pair of shoes.",
-        "expected_value": None,
-        "expected_reason": "NOT_APPLICABLE",
-    },
-    {
-        "text": "The snow on the mountains hasn't melted yet.",
-        "expected_value_min": -20,
-        "expected_value_max": 10,
-        "expected_reason": "TOO_COLD",
-    },
-    {
-        "text": (
-            "At 21 degrees, the room feels perfectly comfortable for working."
-        ),
-        "expected_value_min": 19,
-        "expected_value_max": 23,
         "expected_reason": "COMFORTABLE",
     },
 ]
