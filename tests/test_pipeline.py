@@ -1,5 +1,6 @@
 """Unit tests for Pipeline agent chaining (no LLM required)."""
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, patch
 
@@ -561,3 +562,84 @@ class TestPipelineYAML:
 
         with pytest.raises(PipelineConfigurationError):
             Pipeline.from_yaml(str(pipeline_yaml))
+
+
+# ===================================================================
+# 9. Pipeline.act_in_batch_async() concurrency
+# ===================================================================
+
+
+class TestPipelineBatchAsyncConcurrency:
+    @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+    @pytest.mark.asyncio
+    async def test_batch_async_concurrent_within_step(self, mock_chat):
+        """Items within a step run concurrently (not sequentially)."""
+        peak = 0
+        current = 0
+        lock = asyncio.Lock()
+
+        async def _side_effect(**kwargs):
+            nonlocal peak, current
+            async with lock:
+                current += 1
+                peak = max(peak, current)
+            await asyncio.sleep(0.05)
+            async with lock:
+                current -= 1
+            return {
+                "role": "assistant",
+                "response": json.dumps({"name": "X"}),
+                "thinking": None,
+                "metrics": DUMMY_METRICS,
+            }
+
+        mock_chat.side_effect = _side_effect
+
+        agent = _make_labeler(StepOneOutput)
+        pipeline = Pipeline(steps=[PipelineStep(agent=agent)])
+
+        await pipeline.act_in_batch_async(
+            [{"text": "a"}, {"text": "b"}, {"text": "c"}]
+        )
+        # All 3 items should have been in-flight simultaneously
+        assert peak == 3
+
+    @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+    @pytest.mark.asyncio
+    async def test_batch_async_max_concurrent(self, mock_chat):
+        """Semaphore limits concurrency within each step."""
+        peak = 0
+        current = 0
+        lock = asyncio.Lock()
+
+        async def _side_effect(**kwargs):
+            nonlocal peak, current
+            async with lock:
+                current += 1
+                peak = max(peak, current)
+            await asyncio.sleep(0.05)
+            async with lock:
+                current -= 1
+            return {
+                "role": "assistant",
+                "response": json.dumps({"name": "X"}),
+                "thinking": None,
+                "metrics": DUMMY_METRICS,
+            }
+
+        mock_chat.side_effect = _side_effect
+
+        agent = _make_labeler(StepOneOutput)
+        pipeline = Pipeline(steps=[PipelineStep(agent=agent)])
+
+        await pipeline.act_in_batch_async(
+            [
+                {"text": "a"},
+                {"text": "b"},
+                {"text": "c"},
+                {"text": "d"},
+                {"text": "e"},
+            ],
+            max_concurrent=2,
+        )
+        assert peak <= 2

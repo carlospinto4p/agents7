@@ -1,3 +1,4 @@
+import asyncio
 import json
 from asyncio import as_completed
 from dataclasses import dataclass
@@ -340,6 +341,7 @@ class Labeler(BaseAgent):
         chat_kwargs: dict = None,
         requests_per_prompt: int = 10,
         with_tqdm: bool = True,
+        max_concurrent: int | None = None,
     ) -> list[AgentResponse]:
         """
         Perform the labeling action based on the provided input, in batch mode.
@@ -362,6 +364,8 @@ class Labeler(BaseAgent):
             Defaults to 10.
         :param with_tqdm: Whether to use `tqdm.asyncio` to keep track of the
             iterations.
+        :param max_concurrent: Maximum number of concurrent LLM
+            requests. ``None`` (default) means unlimited.
         :return: A list of AgentResponse models, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
@@ -373,6 +377,14 @@ class Labeler(BaseAgent):
                  in seconds.
             - idx: Optional index for tracking purposes.
         """
+        sem = asyncio.Semaphore(max_concurrent) if max_concurrent else None
+
+        async def _limited(coro):
+            if sem:
+                async with sem:
+                    return await coro
+            return await coro
+
         input_chunks = [
             input_list[
                 i * requests_per_prompt : (i + 1) * requests_per_prompt
@@ -380,8 +392,10 @@ class Labeler(BaseAgent):
             for i in range(ceil(len(input_list) / requests_per_prompt))
         ]
         tasks = [
-            self._act_in_batch_async_request(
-                input_data, chat_kwargs=chat_kwargs, _idx=idx
+            _limited(
+                self._act_in_batch_async_request(
+                    input_data, chat_kwargs=chat_kwargs, _idx=idx
+                )
             )
             for idx, input_data in enumerate(input_chunks)
         ]

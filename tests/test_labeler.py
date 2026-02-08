@@ -1,7 +1,9 @@
 """Unit tests for the Labeler agent (no LLM required)."""
 
+import asyncio
 import json
 from enum import StrEnum
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pydantic import BaseModel
@@ -336,3 +338,121 @@ class TestEnumMapping:
             Labeler._apply_enum_mappings_to_item("string", mappings)
             == "string"
         )
+
+
+# ===================================================================
+# 7. Async batch concurrency (max_concurrent)
+# ===================================================================
+
+
+BATCH_METRICS = {
+    "tokens": 10,
+    "prompt_tokens": 5,
+    "total_duration": 0.1,
+}
+
+
+def _batch_chat_response(items: list[dict]) -> dict:
+    """Build a mock chat_async return value for batch mode."""
+    return {
+        "role": "assistant",
+        "response": json.dumps({"items": items}),
+        "thinking": None,
+        "metrics": BATCH_METRICS,
+    }
+
+
+class TestBatchAsyncConcurrency:
+    @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+    @pytest.mark.asyncio
+    async def test_max_concurrent_none_unlimited(self, mock_chat):
+        """All chunk tasks fire at once when max_concurrent=None."""
+        peak = 0
+        current = 0
+        lock = asyncio.Lock()
+
+        original_return = _batch_chat_response([{"value": "x"}])
+
+        async def _side_effect(**kwargs):
+            nonlocal peak, current
+            async with lock:
+                current += 1
+                peak = max(peak, current)
+            await asyncio.sleep(0.05)
+            async with lock:
+                current -= 1
+            return dict(original_return)
+
+        mock_chat.side_effect = _side_effect
+
+        agent = _make_labeler()
+        # 3 items with requests_per_prompt=1 → 3 chunks
+        await agent.act_in_batch_async(
+            [{"a": 1}, {"a": 2}, {"a": 3}],
+            requests_per_prompt=1,
+            with_tqdm=False,
+            max_concurrent=None,
+        )
+        assert peak == 3
+
+    @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+    @pytest.mark.asyncio
+    async def test_max_concurrent_limits_parallelism(self, mock_chat):
+        """Semaphore caps concurrent requests to max_concurrent."""
+        peak = 0
+        current = 0
+        lock = asyncio.Lock()
+
+        original_return = _batch_chat_response([{"value": "x"}])
+
+        async def _side_effect(**kwargs):
+            nonlocal peak, current
+            async with lock:
+                current += 1
+                peak = max(peak, current)
+            await asyncio.sleep(0.05)
+            async with lock:
+                current -= 1
+            return dict(original_return)
+
+        mock_chat.side_effect = _side_effect
+
+        agent = _make_labeler()
+        await agent.act_in_batch_async(
+            [{"a": i} for i in range(5)],
+            requests_per_prompt=1,
+            with_tqdm=False,
+            max_concurrent=2,
+        )
+        assert peak <= 2
+
+    @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+    @pytest.mark.asyncio
+    async def test_max_concurrent_one_is_sequential(self, mock_chat):
+        """max_concurrent=1 runs one request at a time."""
+        peak = 0
+        current = 0
+        lock = asyncio.Lock()
+
+        original_return = _batch_chat_response([{"value": "x"}])
+
+        async def _side_effect(**kwargs):
+            nonlocal peak, current
+            async with lock:
+                current += 1
+                peak = max(peak, current)
+            await asyncio.sleep(0.02)
+            async with lock:
+                current -= 1
+            return dict(original_return)
+
+        mock_chat.side_effect = _side_effect
+
+        agent = _make_labeler()
+        await agent.act_in_batch_async(
+            [{"a": i} for i in range(4)],
+            requests_per_prompt=1,
+            with_tqdm=False,
+            max_concurrent=1,
+        )
+        assert peak == 1

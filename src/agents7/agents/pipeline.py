@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -269,18 +270,30 @@ class Pipeline:
         self,
         input_list: list[dict],
         chat_kwargs: dict = None,
+        max_concurrent: int | None = None,
     ) -> list[PipelineResponse]:
         """
         Execute the pipeline asynchronously on a batch of
-        inputs. Each step processes all surviving items in one
-        batch call. Failed items are excluded from subsequent
-        steps.
+        inputs. Each step processes all surviving items
+        concurrently. Failed items are excluded from
+        subsequent steps.
         :param input_list: List of input dicts.
         :param chat_kwargs: Extra kwargs passed to each agent's
             ``act_async()`` method.
+        :param max_concurrent: Maximum number of concurrent LLM
+            requests within each step. ``None`` (default) means
+            unlimited.
         :return: List of PipelineResponse, one per input, in
             original order.
         """
+        sem = asyncio.Semaphore(max_concurrent) if max_concurrent else None
+
+        async def _limited(coro):
+            if sem:
+                async with sem:
+                    return await coro
+            return await coro
+
         n = len(input_list)
         active: dict[int, dict] = {i: inp for i, inp in enumerate(input_list)}
         per_input_steps: dict[int, list[AgentResponse]] = {
@@ -295,10 +308,16 @@ class Pipeline:
             ordered_indices = sorted(active.keys())
             batch_inputs = [active[i] for i in ordered_indices]
 
-            batch_responses = [
-                await step.agent.act_async(inp, chat_kwargs=chat_kwargs)
-                for inp in batch_inputs
-            ]
+            batch_responses = list(
+                await asyncio.gather(
+                    *[
+                        _limited(
+                            step.agent.act_async(inp, chat_kwargs=chat_kwargs)
+                        )
+                        for inp in batch_inputs
+                    ]
+                )
+            )
 
             next_active: dict[int, dict] = {}
             for orig_idx, response in zip(ordered_indices, batch_responses):
@@ -314,7 +333,8 @@ class Pipeline:
                     except Exception as e:
                         logger.error(
                             f"Pipeline mapper failed at step "
-                            f"{step_idx} for item {orig_idx}: {e}"
+                            f"{step_idx} for item {orig_idx}: "
+                            f"{e}"
                         )
                         failed[orig_idx] = None
                 else:
