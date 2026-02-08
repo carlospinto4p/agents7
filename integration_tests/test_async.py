@@ -1,8 +1,6 @@
 import pytest
 
-from agents7.agents.classifier import Classifier
-from agents7.agents.detector import Detector
-from agents7.agents.regressor import Regressor
+from agents7.agents import Classifier, Detector, Regressor
 
 
 # --- Test data (3-item subsets) ---
@@ -97,7 +95,7 @@ class TestDetectorAsync:
     async def test_act_in_batch_async(
         self, temperature_detector: Detector
     ) -> None:
-        """Test batch async detection returns correct count and reasons."""
+        """Test batch async detection returns correct reasons."""
         inputs = [{"text": c["text"]} for c in detector_data]
         responses = await temperature_detector.act_in_batch_async(
             inputs, with_tqdm=False
@@ -134,7 +132,7 @@ class TestClassifierAsync:
     async def test_act_in_batch_async(
         self, sentiment_classifier: Classifier
     ) -> None:
-        """Test batch async classification returns correct count and categories."""
+        """Test batch async classification returns correct categories."""
         inputs = [{"text": c["text"]} for c in classifier_data]
         responses = await sentiment_classifier.act_in_batch_async(
             inputs, with_tqdm=False
@@ -162,7 +160,7 @@ class TestRegressorAsync:
     async def test_act_in_batch_async(
         self, temperature_regressor: Regressor
     ) -> None:
-        """Test batch async regression returns correct count and reasons."""
+        """Test batch async regression returns correct reasons."""
         inputs = [{"text": c["text"]} for c in regressor_data]
         responses = await temperature_regressor.act_in_batch_async(
             inputs, with_tqdm=False

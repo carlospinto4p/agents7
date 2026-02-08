@@ -89,7 +89,7 @@ def make_detector():
 def test_temperature_detection_across_models(
     make_detector, model_name: str, test_case: dict
 ) -> None:
-    """Test that temperature detection works across different models."""
+    """Test temperature detection works across different models."""
     detector = make_detector(model_name)
     input_data = {"text": test_case["text"]}
 
@@ -115,7 +115,6 @@ MODELS_FOR_BATCH = [
             reason="qwen3 model not available",
         ),
     ),
-    # gpt-oss:20b excluded - doesn't support structured output for batches
 ]
 
 
@@ -123,11 +122,7 @@ MODELS_FOR_BATCH = [
 def test_batch_processing_across_models(
     make_detector, model_name: str
 ) -> None:
-    """Test that batch processing works across different models.
-
-    Note: Some models (like gpt-oss:20b) don't support structured output
-    for batch responses and are excluded from this test.
-    """
+    """Test that batch processing works across different models."""
     detector = make_detector(model_name)
     inputs = [{"text": case["text"]} for case in SIMPLE_TEST_CASES]
 

@@ -492,8 +492,11 @@ Common LLM output issues are handled automatically:
 # Install dev dependencies (using uv)
 uv pip install -e ".[dev]"
 
-# Run tests
-cd tests && uv run pytest -v
+# Run unit tests (fast, no LLM required)
+uv run pytest tests/ -v
+
+# Run integration tests (requires Ollama running)
+cd integration_tests && uv run pytest -v
 
 # Run linter
 ruff check .
