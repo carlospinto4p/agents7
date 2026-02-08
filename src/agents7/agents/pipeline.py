@@ -32,8 +32,8 @@ class PipelineStep:
         agent (BaseAgent): The agent to execute at this step.
         mapper (Callable[[AgentResponse], dict]): Function that
             maps the agent response to the input dict for the
-            next step. Defaults to ``_default_mapper`` which
-            calls ``model.model_dump()``.
+            next step. Defaults to `_default_mapper` which
+            calls `model.model_dump()`.
     """
 
     agent: BaseAgent
@@ -101,7 +101,7 @@ class Pipeline:
         Execute the pipeline synchronously on a single input.
         :param input_data: Input dict for the first step.
         :param chat_kwargs: Extra kwargs passed to each agent's
-            ``act()`` method.
+            `act()` method.
         :return: A PipelineResponse with all step results.
         """
         current_input = input_data
@@ -145,7 +145,7 @@ class Pipeline:
         Execute the pipeline asynchronously on a single input.
         :param input_data: Input dict for the first step.
         :param chat_kwargs: Extra kwargs passed to each agent's
-            ``act_async()`` method.
+            `act_async()` method.
         :return: A PipelineResponse with all step results.
         """
         current_input = input_data
@@ -193,7 +193,7 @@ class Pipeline:
         items are excluded from subsequent steps.
         :param input_list: List of input dicts.
         :param chat_kwargs: Extra kwargs passed to each agent's
-            ``act()`` method.
+            `act()` method.
         :return: List of PipelineResponse, one per input, in
             original order.
         """
@@ -280,10 +280,10 @@ class Pipeline:
         subsequent steps.
         :param input_list: List of input dicts.
         :param chat_kwargs: Extra kwargs passed to each agent's
-            ``act_async()`` method.
-        :param batch_settings: Optional ``BatchSettings``
+            `act_async()` method.
+        :param batch_settings: Optional `BatchSettings`
             instance controlling concurrency. Defaults to
-            ``None`` which uses ``BatchSettings()``
+            `None` which uses `BatchSettings()`
             (max_concurrent=5).
         :return: List of PipelineResponse, one per input, in
             original order.

@@ -365,9 +365,9 @@ class Labeler(BaseAgent):
             Defaults to 10.
         :param with_tqdm: Whether to use `tqdm.asyncio` to keep track of the
             iterations.
-        :param batch_settings: Optional ``BatchSettings`` instance
-            controlling concurrency. Defaults to ``None`` which
-            uses ``BatchSettings()`` (max_concurrent=5).
+        :param batch_settings: Optional `BatchSettings` instance
+            controlling concurrency. Defaults to `None` which
+            uses `BatchSettings()` (max_concurrent=5).
         :return: A list of AgentResponse models, containing:
             - response: The generated text response.
             - model: The structured output validated by the output model.
