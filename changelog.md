@@ -11,6 +11,10 @@
   - New `.env.example` documenting required `GITLAB_TOKEN`.
   - New `.dockerignore` to keep the build context small.
 - `README.md`: Added "Docker" section with usage instructions.
+- Module `ui`:
+  - Renamed `pages/` to `_pages/` to prevent Streamlit from
+    auto-detecting the directory as multipage navigation. Only the
+    custom sidebar radio navigation is now active.
 
 
 ### v1.1.0 - 8th February 2026
