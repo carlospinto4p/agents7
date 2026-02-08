@@ -1,8 +1,11 @@
 from dataclasses import dataclass
-from enum import StrEnum
 
 from agents7.agents.detector import Detector
-from agents7.agents.utils import get_examples_str, model_class_to_string
+from agents7.agents.utils import (
+    extract_enum_members,
+    get_examples_str,
+    model_class_to_string,
+)
 from agents7.exceptions import PropertyConfigurationError
 from agents7.models.base import ClassificationProperty
 
@@ -70,13 +73,7 @@ class Classifier(Detector):
             dict[str, str]: A dictionary of possible categories,
                 <category name>: <description>.
         """
-        category_enum = self.output_model.model_fields["category"].annotation
-        if not issubclass(category_enum, StrEnum):
-            raise PropertyConfigurationError(
-                f"`category` field in the output_model must be a `StrEnum`. "
-                f"Got `{category_enum}` instead."
-            )
-        return {k: str(v) for k, v in category_enum.__members__.items()}
+        return extract_enum_members(self.output_model, "category")
 
     @property
     def possible_reasons(self) -> dict[str, str]:
@@ -87,13 +84,7 @@ class Classifier(Detector):
             dict[str, str]: A dictionary of possible reasons,
                 <reason name>: <description>.
         """
-        reason_enum = self.output_model.model_fields["reason"].annotation
-        if not issubclass(reason_enum, StrEnum):
-            raise PropertyConfigurationError(
-                f"`reason` field in the output_model must be a `StrEnum`. "
-                f"Got `{reason_enum}` instead."
-            )
-        return {k: str(v) for k, v in reason_enum.__members__.items()}
+        return extract_enum_members(self.output_model, "reason")
 
     @property
     def category_reasons_constraints(self) -> str:

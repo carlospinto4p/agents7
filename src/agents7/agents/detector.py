@@ -1,9 +1,14 @@
 from dataclasses import dataclass
-from enum import StrEnum
 
 from agents7.agents.labeler import Labeler
-from agents7.agents.utils import get_examples_str, model_class_to_string
-from agents7.exceptions import PropertyConfigurationError
+from agents7.agents.utils import (
+    extract_enum_members,
+    get_examples_str,
+    model_class_to_string,
+)
+from agents7.exceptions import (
+    PropertyConfigurationError,
+)
 from agents7.models.base import Property
 
 
@@ -75,13 +80,7 @@ class Detector(Labeler):
             dict[str, str]: A dictionary of possible reasons,
                 <reason name>: <description>.
         """
-        reasons_enum = self.output_model.model_fields["reason"].annotation
-        if not issubclass(reasons_enum, StrEnum):
-            raise TypeError(
-                f"`reason` field in the output_model must be a `StrEnum`. "
-                f"Got `{reasons_enum}` instead."
-            )
-        return {k: str(v) for k, v in reasons_enum.__members__.items()}
+        return extract_enum_members(self.output_model, "reason")
 
     @property
     def prompt(self) -> str:

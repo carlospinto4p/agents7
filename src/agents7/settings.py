@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from cpinto.settings import load_setting
 
 
-@dataclass
+@dataclass(frozen=True)
 class BatchSettings:
     """
     Settings for async batch processing.
@@ -18,6 +18,15 @@ class BatchSettings:
     max_concurrent: int | None = load_setting("BATCH_MAX_CONCURRENT", 5)
 
 
-@dataclass
+@dataclass(frozen=True)
 class OllamaSettings:
+    """
+    Settings for the Ollama LLM provider.
+
+    Attributes:
+        model_name (str): The Ollama model name. Overridable
+            via the `OLLAMA_MODEL_NAME` env var. Defaults to
+            `"qwen3"`.
+    """
+
     model_name: str = load_setting("OLLAMA_MODEL_NAME", "qwen3")

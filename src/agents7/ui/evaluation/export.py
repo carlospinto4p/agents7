@@ -16,13 +16,13 @@ def format_results_csv(
     """Format evaluation results as a CSV string.
 
     Produces flat columns:
-    ``input | {field}_expected | {field}_actual | {field}_passed |
-    ... | passed | error``
+    `input | {field}_expected | {field}_actual | {field}_passed |
+    ... | passed | error`
 
     Args:
         results: List of `EvalResult` from `run_evaluation`.
         expected_fields: Field names that were evaluated
-            (e.g. ``["category", "reason"]``).
+            (e.g. `["category", "reason"]`).
 
     Returns:
         CSV-formatted string (including header row).
@@ -57,9 +57,9 @@ def format_results_csv(
 def format_results_jsonl(results: list[EvalResult]) -> str:
     """Format evaluation results as a JSONL string.
 
-    One JSON object per line with keys: ``input``, ``expected``,
-    ``actual``, ``field_results``, ``passed``, ``error``.
-    The heavy ``response`` object is excluded.
+    One JSON object per line with keys: `input`, `expected`,
+    `actual`, `field_results`, `passed`, `error`.
+    The heavy `response` object is excluded.
 
     Args:
         results: List of `EvalResult` from `run_evaluation`.
@@ -84,7 +84,7 @@ def format_results_jsonl(results: list[EvalResult]) -> str:
 def _input_to_str(input_data: dict) -> str:
     """Stringify input data for CSV display.
 
-    If the dict has a single ``"text"`` key, return its value
+    If the dict has a single `"text"` key, return its value
     directly; otherwise return the string representation.
     """
     if isinstance(input_data, dict) and list(input_data.keys()) == ["text"]:

@@ -1,7 +1,51 @@
+import asyncio
 import importlib
-from enum import Enum
+from enum import Enum, StrEnum
 
 from pydantic import BaseModel
+
+from agents7.exceptions import (
+    AgentConfigurationError,
+    PropertyConfigurationError,
+)
+
+
+async def run_with_semaphore(coro, sem: asyncio.Semaphore | None):
+    """
+    Await a coroutine with optional semaphore concurrency limiting.
+    :param coro: The coroutine to await.
+    :param sem: An `asyncio.Semaphore` to limit concurrency, or
+        `None` to run without limiting.
+    :return: The result of the coroutine.
+    """
+    if sem:
+        async with sem:
+            return await coro
+    return await coro
+
+
+def extract_enum_members(
+    output_model: type[BaseModel],
+    field_name: str,
+) -> dict[str, str]:
+    """
+    Extract `StrEnum` members from a Pydantic model field.
+
+    :param output_model: Pydantic model class containing the field.
+    :param field_name: Name of the field whose annotation must be
+        a `StrEnum`.
+    :return: Dictionary mapping member names to their string values.
+    :raises PropertyConfigurationError: If the field annotation is
+        not a `StrEnum` subclass.
+    """
+    enum_cls = output_model.model_fields[field_name].annotation
+    if not issubclass(enum_cls, StrEnum):
+        raise PropertyConfigurationError(
+            f"`{field_name}` field in the output_model "
+            f"must be a `StrEnum`. "
+            f"Got `{enum_cls}` instead."
+        )
+    return {k: str(v) for k, v in enum_cls.__members__.items()}
 
 
 def get_examples_str(examples: list[dict]) -> str:
@@ -13,16 +57,18 @@ def get_examples_str(examples: list[dict]) -> str:
     """
     examples_str = "## Examples:"
     if not isinstance(examples, list):
-        raise ValueError("Field `system_examples` must be a list")
+        raise AgentConfigurationError(
+            "Field `system_examples` must be a list"
+        )
     for example in examples:
         if not isinstance(example, dict):
-            raise ValueError(
+            raise AgentConfigurationError(
                 "Each example in `system_examples` must be a dictionary"
             )
         if set(example.keys()) != {"input", "output"}:
-            raise ValueError(
-                "Each example in `system_examples` must contain "
-                "`input` and `output` keys"
+            raise AgentConfigurationError(
+                "Each example in `system_examples` must "
+                "contain `input` and `output` keys"
             )
         examples_str += (
             f"\n\n- Input: {example['input']}\n- Output: {example['output']}"

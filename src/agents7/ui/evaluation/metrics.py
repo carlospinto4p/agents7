@@ -13,11 +13,11 @@ def compute_metrics(
 
     Returns:
         Dict with keys:
-        - ``total``: number of rows
-        - ``passed``: rows where all fields matched
-        - ``failed``: rows where at least one field did not
-        - ``accuracy``: passed / total
-        - ``per_field``: dict mapping field name to its accuracy
+        - `total`: number of rows
+        - `passed`: rows where all fields matched
+        - `failed`: rows where at least one field did not
+        - `accuracy`: passed / total
+        - `per_field`: dict mapping field name to its accuracy
     """
     total = len(results)
     if total == 0:
@@ -55,8 +55,8 @@ def build_confusion_matrix(
 
     Returns:
         Dict with keys:
-        - ``labels``: sorted list of unique label strings
-        - ``matrix``: 2-D list ``[actual_idx][predicted_idx]``
+        - `labels`: sorted list of unique label strings
+        - `matrix`: 2-D list `[actual_idx][predicted_idx]`
           of counts
     """
     pairs: list[tuple[str, str]] = []

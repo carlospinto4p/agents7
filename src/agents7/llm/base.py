@@ -50,6 +50,38 @@ class LLMEngine:
 
             self.llm_provider = OllamaProvider(model_name)
 
+    def _cache_lookup(
+        self,
+        method: str,
+        temperature: float,
+        **kwargs,
+    ) -> tuple[str | None, object | None]:
+        """Check cache for a previous result.
+
+        Returns:
+            Tuple of (cache_key, cached_value). Both are
+            `None` when caching is disabled or the temperature
+            is non-zero.
+        """
+        if self._cache is None or temperature != 0:
+            return None, None
+        key = ResponseCache.make_key(
+            model_id=self.model_id,
+            method=method,
+            temperature=temperature,
+            **kwargs,
+        )
+        return key, self._cache.get(key)
+
+    def _cache_store(
+        self,
+        key: str | None,
+        value: object,
+    ) -> None:
+        """Store a result in cache if caching is active."""
+        if key is not None and self._cache is not None:
+            self._cache.put(key, value)
+
     def chat(
         self,
         messages: list[dict[str, str]],
@@ -104,20 +136,17 @@ class LLMEngine:
                  - total_duration: The total duration of the response,
                      in seconds.
         """
-        if self._cache is not None and temperature == 0:
-            key = ResponseCache.make_key(
-                model_id=self.model_id,
-                method="chat",
-                messages=messages,
-                temperature=temperature,
-                seed=seed,
-                max_tokens=max_tokens,
-                output_format=output_format,
-                think=think,
-            )
-            cached = self._cache.get(key)
-            if cached is not None:
-                return cached
+        key, cached = self._cache_lookup(
+            "chat",
+            temperature,
+            messages=messages,
+            seed=seed,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+        )
+        if cached is not None:
+            return cached
 
         result = retry_sync(
             self.llm_provider.chat,
@@ -130,8 +159,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if self._cache is not None and temperature == 0:
-            self._cache.put(key, result)
+        self._cache_store(key, result)
         return result
 
     async def chat_async(
@@ -188,20 +216,17 @@ class LLMEngine:
                  - total_duration: The total duration of the response,
                      in seconds.
         """
-        if self._cache is not None and temperature == 0:
-            key = ResponseCache.make_key(
-                model_id=self.model_id,
-                method="chat",
-                messages=messages,
-                temperature=temperature,
-                seed=seed,
-                max_tokens=max_tokens,
-                output_format=output_format,
-                think=think,
-            )
-            cached = self._cache.get(key)
-            if cached is not None:
-                return cached
+        key, cached = self._cache_lookup(
+            "chat",
+            temperature,
+            messages=messages,
+            seed=seed,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+        )
+        if cached is not None:
+            return cached
 
         result = await retry_async(
             self.llm_provider.chat_async,
@@ -214,8 +239,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if self._cache is not None and temperature == 0:
-            self._cache.put(key, result)
+        self._cache_store(key, result)
         return result
 
     def generate(
@@ -265,20 +289,17 @@ class LLMEngine:
                 - total_duration: The total duration of the response,
                     in seconds.
         """
-        if self._cache is not None and temperature == 0:
-            key = ResponseCache.make_key(
-                model_id=self.model_id,
-                method="generate",
-                prompt=prompt,
-                temperature=temperature,
-                seed=seed,
-                max_tokens=max_tokens,
-                output_format=output_format,
-                think=think,
-            )
-            cached = self._cache.get(key)
-            if cached is not None:
-                return cached
+        key, cached = self._cache_lookup(
+            "generate",
+            temperature,
+            prompt=prompt,
+            seed=seed,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+        )
+        if cached is not None:
+            return cached
 
         result = retry_sync(
             self.llm_provider.generate,
@@ -291,8 +312,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if self._cache is not None and temperature == 0:
-            self._cache.put(key, result)
+        self._cache_store(key, result)
         return result
 
     async def generate_async(
@@ -343,20 +363,17 @@ class LLMEngine:
                 - total_duration: The total duration of the response,
                     in seconds.
         """
-        if self._cache is not None and temperature == 0:
-            key = ResponseCache.make_key(
-                model_id=self.model_id,
-                method="generate",
-                prompt=prompt,
-                temperature=temperature,
-                seed=seed,
-                max_tokens=max_tokens,
-                output_format=output_format,
-                think=think,
-            )
-            cached = self._cache.get(key)
-            if cached is not None:
-                return cached
+        key, cached = self._cache_lookup(
+            "generate",
+            temperature,
+            prompt=prompt,
+            seed=seed,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+        )
+        if cached is not None:
+            return cached
 
         result = await retry_async(
             self.llm_provider.generate_async,
@@ -369,8 +386,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if self._cache is not None and temperature == 0:
-            self._cache.put(key, result)
+        self._cache_store(key, result)
         return result
 
     def chat_stream(
@@ -387,20 +403,17 @@ class LLMEngine:
         Bypasses retry logic — streaming calls cannot be retried
         mid-stream.
         """
-        if self._cache is not None and temperature == 0:
-            key = ResponseCache.make_key(
-                model_id=self.model_id,
-                method="chat_stream",
-                messages=messages,
-                temperature=temperature,
-                seed=seed,
-                max_tokens=max_tokens,
-                output_format=output_format,
-                think=think,
-            )
-            cached = self._cache.get(key)
-            if cached is not None:
-                return StreamResult.from_cached(cached)
+        key, cached = self._cache_lookup(
+            "chat_stream",
+            temperature,
+            messages=messages,
+            seed=seed,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+        )
+        if cached is not None:
+            return StreamResult.from_cached(cached)
 
         result = self.llm_provider.chat_stream(
             messages=messages,
@@ -411,7 +424,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if self._cache is not None and temperature == 0:
+        if key is not None:
             result._on_complete = functools.partial(
                 _cache_store_callback,
                 self._cache,
@@ -433,20 +446,17 @@ class LLMEngine:
         Bypasses retry logic — streaming calls cannot be retried
         mid-stream.
         """
-        if self._cache is not None and temperature == 0:
-            key = ResponseCache.make_key(
-                model_id=self.model_id,
-                method="chat_stream_async",
-                messages=messages,
-                temperature=temperature,
-                seed=seed,
-                max_tokens=max_tokens,
-                output_format=output_format,
-                think=think,
-            )
-            cached = self._cache.get(key)
-            if cached is not None:
-                return AsyncStreamResult.from_cached(cached)
+        key, cached = self._cache_lookup(
+            "chat_stream_async",
+            temperature,
+            messages=messages,
+            seed=seed,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+        )
+        if cached is not None:
+            return AsyncStreamResult.from_cached(cached)
 
         result = await self.llm_provider.chat_stream_async(
             messages=messages,
@@ -457,7 +467,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if self._cache is not None and temperature == 0:
+        if key is not None:
             result._on_complete = functools.partial(
                 _cache_store_callback,
                 self._cache,
@@ -479,20 +489,17 @@ class LLMEngine:
         Bypasses retry logic — streaming calls cannot be retried
         mid-stream.
         """
-        if self._cache is not None and temperature == 0:
-            key = ResponseCache.make_key(
-                model_id=self.model_id,
-                method="generate_stream",
-                prompt=prompt,
-                temperature=temperature,
-                seed=seed,
-                max_tokens=max_tokens,
-                output_format=output_format,
-                think=think,
-            )
-            cached = self._cache.get(key)
-            if cached is not None:
-                return StreamResult.from_cached(cached)
+        key, cached = self._cache_lookup(
+            "generate_stream",
+            temperature,
+            prompt=prompt,
+            seed=seed,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+        )
+        if cached is not None:
+            return StreamResult.from_cached(cached)
 
         result = self.llm_provider.generate_stream(
             prompt=prompt,
@@ -503,7 +510,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if self._cache is not None and temperature == 0:
+        if key is not None:
             result._on_complete = functools.partial(
                 _cache_store_callback,
                 self._cache,
@@ -525,20 +532,17 @@ class LLMEngine:
         Bypasses retry logic — streaming calls cannot be retried
         mid-stream.
         """
-        if self._cache is not None and temperature == 0:
-            key = ResponseCache.make_key(
-                model_id=self.model_id,
-                method="generate_stream_async",
-                prompt=prompt,
-                temperature=temperature,
-                seed=seed,
-                max_tokens=max_tokens,
-                output_format=output_format,
-                think=think,
-            )
-            cached = self._cache.get(key)
-            if cached is not None:
-                return AsyncStreamResult.from_cached(cached)
+        key, cached = self._cache_lookup(
+            "generate_stream_async",
+            temperature,
+            prompt=prompt,
+            seed=seed,
+            max_tokens=max_tokens,
+            output_format=output_format,
+            think=think,
+        )
+        if cached is not None:
+            return AsyncStreamResult.from_cached(cached)
 
         result = await self.llm_provider.generate_stream_async(
             prompt=prompt,
@@ -549,7 +553,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if self._cache is not None and temperature == 0:
+        if key is not None:
             result._on_complete = functools.partial(
                 _cache_store_callback,
                 self._cache,

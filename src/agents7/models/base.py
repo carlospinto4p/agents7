@@ -3,6 +3,8 @@ from typing import ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, Field, model_validator
 
+from agents7.exceptions import PropertyConfigurationError
+
 
 T = TypeVar("T")
 
@@ -180,8 +182,6 @@ class ClassificationProperty(BaseModel):
     @model_validator(mode="after")
     def validate_category_reason_link(self):
         """Ensure reason is valid for the selected category."""
-        from agents7.exceptions import PropertyConfigurationError
-
         if not self.CATEGORY_REASONS:
             return self  # No validation if mapping not defined
 

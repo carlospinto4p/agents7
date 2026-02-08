@@ -9,8 +9,8 @@ import importlib
 def main():
     """Launch the multi-page Streamlit app.
 
-    When invoked from the console entry point, parses ``--host``
-    and ``--port`` arguments and re-launches Streamlit with the
+    When invoked from the console entry point, parses `--host`
+    and `--port` arguments and re-launches Streamlit with the
     corresponding server flags.  When already running inside a
     Streamlit process, renders the app directly.
     """

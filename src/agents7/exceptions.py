@@ -14,5 +14,9 @@ class PromptParameterError(Agents7Exception):
     """Exception raised when prompt_params values are invalid."""
 
 
+class AgentConfigurationError(Agents7Exception):
+    """Exception raised when an agent is misconfigured."""
+
+
 class PipelineConfigurationError(Agents7Exception):
     """Exception raised when a Pipeline is misconfigured."""

@@ -32,16 +32,16 @@ def run_evaluation(
 ) -> list[EvalResult]:
     """Run *agent* against every row in *eval_data*.
 
-    Each row must have an ``"input"`` key (the agent input) and
+    Each row must have an `"input"` key (the agent input) and
     keys matching *expected_fields* holding the expected outputs.
 
     Args:
         agent: Any Labeler-subclass agent instance.
-        eval_data: List of dicts with ``input`` + expected fields.
+        eval_data: List of dicts with `input` + expected fields.
         expected_fields: Field names to compare (e.g.
-            ``["category", "reason"]``).
-        progress_callback: Optional ``(current, total)`` callable
-            invoked after each row (for ``st.progress``).
+            `["category", "reason"]`).
+        progress_callback: Optional `(current, total)` callable
+            invoked after each row (for `st.progress`).
 
     Returns:
         List of :class:`EvalResult`, one per row.

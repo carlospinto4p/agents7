@@ -9,6 +9,7 @@ import pytest
 from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
+from agents7.exceptions import AgentConfigurationError
 from agents7.llm import LLMEngine
 from agents7.settings import BatchSettings
 
@@ -59,8 +60,8 @@ class TestInitialization:
         assert agent.version == 1
 
     def test_non_basemodel_raises_type_error(self):
-        """Non-BaseModel output_model raises TypeError."""
-        with pytest.raises(TypeError, match="output_model"):
+        """Non-BaseModel output_model raises AgentConfigurationError."""
+        with pytest.raises(AgentConfigurationError, match="output_model"):
             _make_labeler(output_model=dict)
 
 
@@ -115,7 +116,7 @@ class TestYAMLLoading:
         assert agent.examples[0]["input"] == "Hello"
 
     def test_missing_name_raises_value_error(self, tmp_path):
-        """Missing mandatory key 'name' raises ValueError."""
+        """Missing mandatory key 'name' raises AgentConfigurationError."""
         yaml_content = (
             "version: 1\n"
             "engine:\n"
@@ -127,11 +128,11 @@ class TestYAMLLoading:
         yaml_file = tmp_path / "config.yml"
         yaml_file.write_text(yaml_content)
 
-        with pytest.raises(ValueError, match="name"):
+        with pytest.raises(AgentConfigurationError, match="name"):
             Labeler.from_yaml(str(yaml_file))
 
     def test_missing_engine_model_raises_value_error(self, tmp_path):
-        """Missing engine key 'model' raises ValueError."""
+        """Missing engine key 'model' raises AgentConfigurationError."""
         yaml_content = (
             "name: Test\n"
             "version: 1\n"
@@ -143,11 +144,11 @@ class TestYAMLLoading:
         yaml_file = tmp_path / "config.yml"
         yaml_file.write_text(yaml_content)
 
-        with pytest.raises(ValueError, match="model"):
+        with pytest.raises(AgentConfigurationError, match="model"):
             Labeler.from_yaml(str(yaml_file))
 
     def test_invalid_examples_format_raises_value_error(self, tmp_path):
-        """Non-list system_examples raises ValueError."""
+        """Non-list system_examples raises AgentConfigurationError."""
         yaml_content = (
             "name: Test\n"
             "version: 1\n"
@@ -161,7 +162,7 @@ class TestYAMLLoading:
         yaml_file = tmp_path / "config.yml"
         yaml_file.write_text(yaml_content)
 
-        with pytest.raises(ValueError, match="system_examples"):
+        with pytest.raises(AgentConfigurationError, match="system_examples"):
             Labeler.from_yaml(str(yaml_file))
 
 

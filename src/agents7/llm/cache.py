@@ -31,7 +31,7 @@ class ResponseCache:
     """Thread-safe in-memory LRU cache for LLM responses.
 
     Entries are evicted in least-recently-used order when
-    ``max_size > 0`` and the limit is exceeded.
+    `max_size > 0` and the limit is exceeded.
     """
 
     def __init__(self, config: CacheConfig):
@@ -70,7 +70,7 @@ class ResponseCache:
         return hashlib.sha256(raw.encode()).hexdigest()
 
     def get(self, key: str) -> Any | None:
-        """Return cached value or ``None`` on miss.
+        """Return cached value or `None` on miss.
 
         On hit the entry is moved to the end (most-recently-used).
         """

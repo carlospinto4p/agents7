@@ -7,8 +7,8 @@ def launch(host: str = "localhost", port: int = 8501):
     """Launch the Agent Builder Streamlit app.
 
     Args:
-        host: Server address to bind to (default: ``"localhost"``).
-        port: Server port (default: ``8501``).
+        host: Server address to bind to (default: `"localhost"`).
+        port: Server port (default: `8501`).
     """
     try:
         import streamlit  # noqa: F401

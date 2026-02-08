@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from cpinto.files import load_yaml
 
 from agents7.agents.base import BaseAgent
-from agents7.agents.utils import import_from_path
+from agents7.agents.labeler import Labeler
+from agents7.agents.utils import import_from_path, run_with_semaphore
 from agents7.exceptions import PipelineConfigurationError
 from agents7.logs import logger
 from agents7.models import AgentResponse
@@ -298,12 +299,6 @@ class Pipeline:
             else None
         )
 
-        async def _limited(coro):
-            if sem:
-                async with sem:
-                    return await coro
-            return await coro
-
         n = len(input_list)
         active: dict[int, dict] = {i: inp for i, inp in enumerate(input_list)}
         per_input_steps: dict[int, list[AgentResponse]] = {
@@ -321,8 +316,11 @@ class Pipeline:
             batch_responses = list(
                 await asyncio.gather(
                     *[
-                        _limited(
-                            step.agent.act_async(inp, chat_kwargs=chat_kwargs)
+                        run_with_semaphore(
+                            step.agent.act_async(
+                                inp, chat_kwargs=chat_kwargs
+                            ),
+                            sem,
                         )
                         for inp in batch_inputs
                     ]
@@ -406,8 +404,6 @@ class Pipeline:
             if agent_type_path:
                 agent_cls = import_from_path(agent_type_path)
             else:
-                from agents7.agents.labeler import Labeler
-
                 agent_cls = Labeler
 
             agent = agent_cls.from_yaml(step_config["agent"])

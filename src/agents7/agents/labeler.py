@@ -15,10 +15,12 @@ from cpinto.functions import identity_func
 
 from agents7.agents.base import BaseAgent
 from agents7.agents.utils import (
-    import_from_path,
     get_examples_str,
+    import_from_path,
     model_class_to_string,
+    run_with_semaphore,
 )
+from agents7.exceptions import AgentConfigurationError
 from agents7.llm import LLMEngine
 from agents7.llm.cache import CacheConfig
 from agents7.llm.retry import RetryConfig
@@ -60,7 +62,7 @@ class Labeler(BaseAgent):
         """
         super().__post_init__()
         if not issubclass(self.output_model, BaseModel):
-            raise TypeError(
+            raise AgentConfigurationError(
                 "`output_model` must be a subclass of `pydantic.BaseModel`"
             )
 
@@ -390,12 +392,6 @@ class Labeler(BaseAgent):
             else None
         )
 
-        async def _limited(coro):
-            if sem:
-                async with sem:
-                    return await coro
-            return await coro
-
         input_chunks = [
             input_list[
                 i * requests_per_prompt : (i + 1) * requests_per_prompt
@@ -403,10 +399,11 @@ class Labeler(BaseAgent):
             for i in range(ceil(len(input_list) / requests_per_prompt))
         ]
         tasks = [
-            _limited(
+            run_with_semaphore(
                 self._act_in_batch_async_request(
                     input_data, chat_kwargs=chat_kwargs, _idx=idx
-                )
+                ),
+                sem,
             )
             for idx, input_data in enumerate(input_chunks)
         ]
@@ -602,46 +599,9 @@ class Labeler(BaseAgent):
             - examples (list[dict], optional): List of examples.
         """
         config = load_yaml(file_path)
+        cls._validate_yaml_config(config, file_path)
 
-        mandatory_keys = [
-            "name",
-            "version",
-            "engine",
-            "system_prompt",
-            "output_model",
-        ]
-        for key in mandatory_keys:
-            if key not in config:
-                raise ValueError(
-                    f"Missing mandatory key `{key}` in the "
-                    f"configuration yaml `{file_path}`"
-                )
-        engine = config["engine"]
-        mandatory_keys = ["provider", "model"]
-        for key in mandatory_keys:
-            if key not in engine:
-                raise ValueError(
-                    f"Missing mandatory key `{key}` in the engine "
-                    f"configuration yaml `{file_path}`"
-                )
-
-        retry_config = None
-        if retry_settings := engine.get("retry"):
-            retry_config = RetryConfig(**retry_settings)
-
-        cache_config = None
-        cache_settings = engine.get("cache")
-        if cache_settings is not None:
-            cache_config = CacheConfig(**cache_settings)
-
-        system_prompt = config["system_prompt"].strip()
-        if examples := config.get("system_examples"):
-            try:
-                get_examples_str(examples)
-            except ValueError as e:
-                raise ValueError(
-                    f"{e} in the configuration file `{file_path}`"
-                ) from e
+        examples = cls._parse_yaml_examples(config, file_path)
 
         prompt_params = None
         if raw_params := config.get("prompt_params"):
@@ -654,18 +614,91 @@ class Labeler(BaseAgent):
         return {
             "name": config["name"],
             "version": config["version"],
-            "engine": LLMEngine(
-                engine["provider"],
-                engine["model"],
-                retry=retry_config,
-                cache=cache_config,
-            ),
-            "system_prompt": system_prompt.strip(),
+            "engine": cls._build_engine(config["engine"]),
+            "system_prompt": config["system_prompt"].strip(),
             "prompt_params": prompt_params,
             "output_model": import_from_path(config["output_model"]),
             "examples": examples,
             "validators": validators,
         }
+
+    @staticmethod
+    def _validate_yaml_config(config: dict, file_path: str) -> None:
+        """
+        Validate mandatory keys in a YAML configuration.
+        :param config: Parsed YAML configuration dictionary.
+        :param file_path: Path to the YAML file (for error
+            messages).
+        :raises AgentConfigurationError: If a mandatory key is
+            missing at the top level or inside the engine section.
+        """
+        for key in (
+            "name",
+            "version",
+            "engine",
+            "system_prompt",
+            "output_model",
+        ):
+            if key not in config:
+                raise AgentConfigurationError(
+                    f"Missing mandatory key `{key}` in the "
+                    f"configuration yaml `{file_path}`"
+                )
+        engine = config["engine"]
+        for key in ("provider", "model"):
+            if key not in engine:
+                raise AgentConfigurationError(
+                    f"Missing mandatory key `{key}` in the "
+                    f"engine configuration yaml "
+                    f"`{file_path}`"
+                )
+
+    @staticmethod
+    def _build_engine(engine_config: dict) -> LLMEngine:
+        """
+        Build an `LLMEngine` from the engine section of YAML config.
+        :param engine_config: Dictionary with keys `provider`,
+            `model`, and optional `retry` / `cache` sections.
+        :return: Configured `LLMEngine` instance.
+        """
+        retry_config = None
+        if retry_settings := engine_config.get("retry"):
+            retry_config = RetryConfig(**retry_settings)
+
+        cache_config = None
+        cache_settings = engine_config.get("cache")
+        if cache_settings is not None:
+            cache_config = CacheConfig(**cache_settings)
+
+        return LLMEngine(
+            engine_config["provider"],
+            engine_config["model"],
+            retry=retry_config,
+            cache=cache_config,
+        )
+
+    @staticmethod
+    def _parse_yaml_examples(
+        config: dict, file_path: str
+    ) -> list[dict] | None:
+        """
+        Extract and validate examples from YAML config.
+        :param config: Parsed YAML configuration dictionary.
+        :param file_path: Path to the YAML file (for error
+            messages).
+        :return: List of example dicts, or `None` if absent.
+        :raises AgentConfigurationError: If examples are malformed.
+        """
+        examples = config.get("system_examples")
+        if examples is None:
+            return None
+        try:
+            get_examples_str(examples)
+        except (ValueError, AgentConfigurationError) as e:
+            raise AgentConfigurationError(
+                f"{e} in the configuration file `{file_path}`"
+            ) from e
+        return examples
 
     def _parse_model_response(
         self, response: str, for_batch: bool = False

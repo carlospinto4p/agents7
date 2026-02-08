@@ -13,7 +13,7 @@ class PromptVersion:
         name: User-facing label for this version.
         system_prompt: The system prompt text.
         examples: List of example dicts (input/output pairs).
-        model_name: Ollama model name (e.g. ``"qwen3"``).
+        model_name: Ollama model name (e.g. `"qwen3"`).
     """
 
     name: str

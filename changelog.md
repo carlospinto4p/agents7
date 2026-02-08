@@ -1,6 +1,41 @@
 
 ## Changelog - Agents7
 
+### v1.2.6 - 8th February 2026
+
+- Module `agents`:
+  - `utils.py`: New shared helpers `extract_enum_members()` and
+    `run_with_semaphore()`.
+  - `detector.py`, `classifier.py`: Use `extract_enum_members`
+    instead of duplicated inline enum extraction.
+  - `labeler.py`: Break up `_load_yaml_settings` into
+    `_validate_yaml_config`, `_build_engine`, and
+    `_parse_yaml_examples`. Use `run_with_semaphore` instead
+    of nested `_limited()`.
+  - `pipeline.py`: Use `run_with_semaphore` instead of nested
+    `_limited()`.
+- Module `llm`:
+  - `base.py`: Extract `_cache_lookup` and `_cache_store` helpers
+    to deduplicate cache logic across 8 methods.
+  - `streaming.py`: Extract `_StreamBase` mixin to deduplicate
+    shared state and helpers between `StreamResult` and
+    `AsyncStreamResult`.
+- Module `settings`:
+  - Add `frozen=True` to `BatchSettings` and `OllamaSettings`.
+  - Add docstring to `OllamaSettings`.
+- Replace `ValueError`/`TypeError` with custom
+  `AgentConfigurationError`/`PropertyConfigurationError`
+  across `labeler.py`, `detector.py`, `classifier.py`,
+  `utils.py`.
+- Move inline imports to module level in `models/base.py`
+  and `pipeline.py`.
+- Fix double-backtick docstrings to single backticks across
+  9 UI/evaluation files.
+- Update test assertions in `test_labeler.py` for custom
+  exceptions.
+- `.claude/CLAUDE.md`: Add "Propose Manual Review" rule.
+
+
 ### v1.2.5 - 8th February 2026
 
 - Module `ui`:

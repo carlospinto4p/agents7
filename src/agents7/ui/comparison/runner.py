@@ -17,12 +17,12 @@ class ComparisonResult:
 
     Fields:
         input_data: The input dict sent to both agents.
-        output_a: Parsed model output from version A, or ``None``.
-        output_b: Parsed model output from version B, or ``None``.
+        output_a: Parsed model output from version A, or `None`.
+        output_b: Parsed model output from version B, or `None`.
         metrics_a: LLM metrics dict from version A.
         metrics_b: LLM metrics dict from version B.
-        error_a: Error message from version A, or ``None``.
-        error_b: Error message from version B, or ``None``.
+        error_a: Error message from version A, or `None`.
+        error_b: Error message from version B, or `None`.
         outputs_match: Whether both outputs are identical.
     """
 
@@ -95,7 +95,7 @@ def run_comparison(
         version_a: First prompt version.
         version_b: Second prompt version.
         inputs: List of input dicts.
-        progress_callback: Optional ``(current, total)``
+        progress_callback: Optional `(current, total)`
             callable invoked after each input pair.
 
     Returns:

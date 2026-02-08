@@ -2,9 +2,9 @@
 
 Two public functions:
 
-* ``generate_model_code(state)`` — returns the ``.py`` file content
+* `generate_model_code(state)` — returns the `.py` file content
   that users will export.
-* ``create_model_class(state)`` — returns a live class usable by
+* `create_model_class(state)` — returns a live class usable by
   the in-memory agent during Test / Evaluate steps.
 """
 
@@ -24,7 +24,7 @@ from agents7.ui.state import AgentBuilderState
 
 
 def generate_model_code(state: AgentBuilderState) -> str:
-    """Return full ``.py`` source for the output model."""
+    """Return full `.py` source for the output model."""
     if state.agent_type == "classifier":
         return _code_for_classifier(state)
     if state.agent_type in ("detector", "regressor"):
@@ -131,7 +131,7 @@ def create_model_class(
     """Build a live Pydantic model class from *state*.
 
     The returned class can be passed straight to an agent
-    constructor as ``output_model``.
+    constructor as `output_model`.
     """
     if state.agent_type == "classifier":
         return _class_for_classifier(state)
