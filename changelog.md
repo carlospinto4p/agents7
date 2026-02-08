@@ -1,6 +1,29 @@
 
 ## Changelog - Agents7
 
+### v1.2.5 - 8th February 2026
+
+- Module `ui`:
+  - New submodule `comparison/`:
+    - `models.py`: `PromptVersion` dataclass for storing
+      prompt snapshots (system_prompt, examples, model_name).
+    - `runner.py`: `ComparisonResult` dataclass and
+      `run_comparison()` function for running two prompt
+      versions side-by-side against the same inputs.
+    - `__init__.py`: Exported `PromptVersion`,
+      `ComparisonResult`, and `run_comparison`.
+  - `app.py`: Added `prompt_versions` to session state init.
+  - Page `3_Test.py`: Restructured into 4 tabs (Single
+    Input, Batch Test, A/B Compare, History). Added prompt
+    version management (save/load/delete) and A/B comparison
+    tab with side-by-side results and agreement metrics.
+- New file `tests/test_ui_comparison.py`: Unit tests for
+  `PromptVersion`, `ComparisonResult`, `_build_version_state`,
+  and `run_comparison`.
+- `README.md`: Updated Test step description.
+- `backlog.md`: Removed completed item.
+
+
 ### v1.2.4 - 8th February 2026
 
 - Module `ui`:
