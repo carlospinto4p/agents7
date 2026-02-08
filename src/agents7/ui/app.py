@@ -68,6 +68,8 @@ def _render_app():
         st.session_state.test_history = []
     if "eval_results" not in st.session_state:
         st.session_state.eval_results = None
+    if "prompt_versions" not in st.session_state:
+        st.session_state.prompt_versions = []
 
     _PAGES = [
         ("Home", _home_page),
