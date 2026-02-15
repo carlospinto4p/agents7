@@ -13,6 +13,10 @@
   path reference.
 - `backlog.md`: Added checkboxes and section headers per backlog
   rules.
+- `integration_tests/`: Removed standalone `pyproject.toml` and
+  `uv.lock`; integration tests now run from the root project.
+- `.claude/commands/`: Added `refactor.md` and
+  `self-refinement.md` command files.
 
 
 ### v1.2.6 - 8th February 2026
