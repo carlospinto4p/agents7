@@ -9,7 +9,11 @@ def render():
     from agents7.ui.helpers import build_agent_from_state
     from agents7.ui.evaluation.runner import run_evaluation
     from agents7.ui.evaluation.metrics import compute_metrics
-    from agents7.ui._pages import _state_from_dict
+    from agents7.ui._pages import (
+        _state_from_dict,
+        get_expected_fields,
+        make_progress_callback,
+    )
 
     st.header("4. Evaluate")
 
@@ -43,7 +47,7 @@ def render():
             value=len(eval_data),
             step=1,
         )
-        expected_fields = _get_expected_fields(state)
+        expected_fields = get_expected_fields(state)
 
         while len(eval_data) < num_rows:
             row = {"input": ""}
@@ -69,21 +73,17 @@ def render():
 
     # --- Run evaluation ---
     eval_data = sd.get("eval_data", [])
-    expected_fields = _get_expected_fields(state)
+    expected_fields = get_expected_fields(state)
 
     if st.button("Run Evaluation") and eval_data:
         try:
             agent = build_agent_from_state(state)
             progress = st.progress(0.0)
-
-            def _progress(current, total):
-                progress.progress(current / total)
-
             results = run_evaluation(
                 agent,
                 eval_data,
                 expected_fields,
-                progress_callback=_progress,
+                progress_callback=make_progress_callback(progress),
             )
             st.session_state.eval_results = results
 
@@ -148,15 +148,6 @@ def render():
                 file_name=f"{agent_name}_eval_results.jsonl",
                 mime="application/jsonl",
             )
-
-
-def _get_expected_fields(state) -> list[str]:
-    """Determine which fields to compare."""
-    if state.agent_type == "classifier":
-        return ["category", "reason"]
-    if state.agent_type in ("detector", "regressor"):
-        return ["reason"]
-    return [f.name for f in state.fields]
 
 
 def _show_confusion_matrix(results):

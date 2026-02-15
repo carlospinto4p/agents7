@@ -93,7 +93,9 @@ def _write_eval_results(directory: str, eval_results, state):
         format_results_jsonl,
     )
 
-    expected_fields = _get_expected_fields(state)
+    from agents7.ui._pages import get_expected_fields
+
+    expected_fields = get_expected_fields(state)
 
     csv_content = format_results_csv(eval_results, expected_fields)
     path_csv = os.path.join(directory, "eval_results.csv")
@@ -104,15 +106,6 @@ def _write_eval_results(directory: str, eval_results, state):
     path_jsonl = os.path.join(directory, "eval_results.jsonl")
     with open(path_jsonl, "w", encoding="utf-8") as f:
         f.write(jsonl_content)
-
-
-def _get_expected_fields(state) -> list[str]:
-    """Determine which fields to compare."""
-    if state.agent_type == "classifier":
-        return ["category", "reason"]
-    if state.agent_type in ("detector", "regressor"):
-        return ["reason"]
-    return [f.name for f in state.fields]
 
 
 def _generate_usage_example(state) -> str:

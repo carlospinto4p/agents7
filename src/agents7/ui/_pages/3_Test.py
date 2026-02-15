@@ -6,7 +6,9 @@ from __future__ import annotations
 def render():
     import streamlit as st
 
-    from agents7.ui._pages import _state_from_dict
+    from agents7.ui._pages import (
+        _state_from_dict,
+    )
 
     st.header("3. Quick Test")
 
@@ -180,6 +182,7 @@ def _render_batch_test(state):
 def _render_ab_compare(state):
     import streamlit as st
 
+    from agents7.ui._pages import make_progress_callback
     from agents7.ui.comparison.runner import (
         run_comparison,
     )
@@ -236,17 +239,13 @@ def _render_ab_compare(state):
             return
 
         progress = st.progress(0)
-
-        def _progress(current, total):
-            progress.progress(current / total)
-
         with st.spinner("Running comparison..."):
             results = run_comparison(
                 state,
                 version_a,
                 version_b,
                 inputs,
-                progress_callback=_progress,
+                progress_callback=make_progress_callback(progress),
             )
 
         _show_comparison(results, version_a, version_b)

@@ -30,6 +30,22 @@ class OllamaProvider(LLMProvider):
     def __init__(self, model_name: str):
         super().__init__("ollama", model_name)
 
+    @staticmethod
+    def _build_options(
+        temperature: float,
+        max_tokens: int,
+        seed: int | None,
+    ) -> dict:
+        """
+        Build the Ollama options dictionary.
+        :param temperature: Temperature for the model.
+        :param max_tokens: Maximum number of tokens.
+        :param seed: Seed for reproducibility, or None.
+        :return: Options dictionary for the Ollama API.
+        """
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
+        return options
+
     def chat(
         self,
         messages: list[dict[str, str]],
@@ -84,12 +100,7 @@ class OllamaProvider(LLMProvider):
                  - total_duration: The total duration of the response,
                      in seconds.
         """
-        options = {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        }
-        if seed is not None:
-            options["seed"] = seed
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
         response = chat(
             model=self.model_name,
@@ -168,12 +179,7 @@ class OllamaProvider(LLMProvider):
                  - total_duration: The total duration of the response,
                      in seconds.
         """
-        options = {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        }
-        if seed is not None:
-            options["seed"] = seed
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
         response = await AsyncClient().chat(
             model=self.model_name,
@@ -245,12 +251,7 @@ class OllamaProvider(LLMProvider):
                 - total_duration: The total duration of the response,
                     in seconds.
         """
-        options = {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        }
-        if seed is not None:
-            options["seed"] = seed
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
         response = generate(
             model=self.model_name,
@@ -309,12 +310,7 @@ class OllamaProvider(LLMProvider):
                 - total_duration: The total duration of the response,
                     in seconds.
         """
-        options = {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        }
-        if seed is not None:
-            options["seed"] = seed
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
         response = await AsyncClient().generate(
             model=self.model_name,
@@ -335,12 +331,7 @@ class OllamaProvider(LLMProvider):
         seed: int | None = None,
     ) -> StreamResult:
         """Stream a chat response, yielding text chunks."""
-        options = {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        }
-        if seed is not None:
-            options["seed"] = seed
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
         iterator = chat(
             model=self.model_name,
@@ -362,12 +353,7 @@ class OllamaProvider(LLMProvider):
         seed: int | None = None,
     ) -> AsyncStreamResult:
         """Stream a chat response asynchronously."""
-        options = {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        }
-        if seed is not None:
-            options["seed"] = seed
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
         iterator = await AsyncClient().chat(
             model=self.model_name,
@@ -389,12 +375,7 @@ class OllamaProvider(LLMProvider):
         seed: int | None = None,
     ) -> StreamResult:
         """Stream a generate response, yielding text chunks."""
-        options = {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        }
-        if seed is not None:
-            options["seed"] = seed
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
         iterator = generate(
             model=self.model_name,
@@ -416,12 +397,7 @@ class OllamaProvider(LLMProvider):
         seed: int | None = None,
     ) -> AsyncStreamResult:
         """Stream a generate response asynchronously."""
-        options = {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        }
-        if seed is not None:
-            options["seed"] = seed
+        options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
         iterator = await AsyncClient().generate(
             model=self.model_name,

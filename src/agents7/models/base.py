@@ -44,6 +44,20 @@ class AgentResponse(BaseModel):
 NOT_APPLICABLE_DESCRIPTION = "No applicable reason for this classification."
 
 
+def _extend_enum_with_not_applicable(
+    enum_cls: type[StrEnum],
+) -> type[StrEnum]:
+    """
+    Return a copy of `enum_cls` with a `NOT_APPLICABLE` member
+    appended. If the member already exists, return the original.
+    """
+    if hasattr(enum_cls, "NOT_APPLICABLE"):
+        return enum_cls
+    members = [(m.name, m.value) for m in enum_cls]
+    members.append(("NOT_APPLICABLE", NOT_APPLICABLE_DESCRIPTION))
+    return StrEnum(enum_cls.__name__, members)
+
+
 class Property(BaseModel, Generic[T]):
     """
     A generic base class for properties used by Detector agents.
@@ -75,10 +89,10 @@ class Property(BaseModel, Generic[T]):
 
     def __init_subclass__(cls, **kwargs):
         """
-        Automatically extend the reason enum with NOT_APPLICABLE if not present.
+        Automatically extend the reason enum with NOT_APPLICABLE.
 
-        This hook runs before Pydantic processes the class, allowing us to
-        modify the reason annotation to include the fallback member.
+        This hook runs before Pydantic processes the class, allowing
+        us to modify the reason annotation to include the fallback.
         """
         super().__init_subclass__(**kwargs)
 
@@ -86,25 +100,10 @@ class Property(BaseModel, Generic[T]):
             return
 
         reason_enum = cls.__annotations__["reason"]
-
-        # Skip if not a StrEnum subclass
-        if not (
-            isinstance(reason_enum, type) and issubclass(reason_enum, StrEnum)
-        ):
-            return
-
-        # Skip if already has NOT_APPLICABLE
-        if hasattr(reason_enum, "NOT_APPLICABLE"):
-            return
-
-        # Create extended enum with NOT_APPLICABLE
-        members = [(m.name, m.value) for m in reason_enum]
-        members.append(("NOT_APPLICABLE", NOT_APPLICABLE_DESCRIPTION))
-
-        extended_enum = StrEnum(reason_enum.__name__, members)
-
-        # Replace the annotation with the extended enum
-        cls.__annotations__["reason"] = extended_enum
+        if isinstance(reason_enum, type) and issubclass(reason_enum, StrEnum):
+            cls.__annotations__["reason"] = _extend_enum_with_not_applicable(
+                reason_enum
+            )
 
 
 class ClassificationProperty(BaseModel):
@@ -146,38 +145,22 @@ class ClassificationProperty(BaseModel):
 
     def __init_subclass__(cls, **kwargs):
         """
-        Automatically extend category and reason enums with NOT_APPLICABLE.
+        Automatically extend category and reason enums with
+        NOT_APPLICABLE.
 
-        This hook runs before Pydantic processes the class, allowing us to
-        modify the annotations to include the fallback members.
+        This hook runs before Pydantic processes the class, allowing
+        us to modify the annotations to include the fallback members.
         """
         super().__init_subclass__(**kwargs)
 
-        # Extend category enum
-        if "category" in cls.__annotations__:
-            category_enum = cls.__annotations__["category"]
-            if (
-                isinstance(category_enum, type)
-                and issubclass(category_enum, StrEnum)
-                and not hasattr(category_enum, "NOT_APPLICABLE")
-            ):
-                members = [(m.name, m.value) for m in category_enum]
-                members.append(("NOT_APPLICABLE", NOT_APPLICABLE_DESCRIPTION))
-                extended_enum = StrEnum(category_enum.__name__, members)
-                cls.__annotations__["category"] = extended_enum
-
-        # Extend reason enum
-        if "reason" in cls.__annotations__:
-            reason_enum = cls.__annotations__["reason"]
-            if (
-                isinstance(reason_enum, type)
-                and issubclass(reason_enum, StrEnum)
-                and not hasattr(reason_enum, "NOT_APPLICABLE")
-            ):
-                members = [(m.name, m.value) for m in reason_enum]
-                members.append(("NOT_APPLICABLE", NOT_APPLICABLE_DESCRIPTION))
-                extended_enum = StrEnum(reason_enum.__name__, members)
-                cls.__annotations__["reason"] = extended_enum
+        for field in ("category", "reason"):
+            if field not in cls.__annotations__:
+                continue
+            enum_cls = cls.__annotations__[field]
+            if isinstance(enum_cls, type) and issubclass(enum_cls, StrEnum):
+                cls.__annotations__[field] = _extend_enum_with_not_applicable(
+                    enum_cls
+                )
 
     @model_validator(mode="after")
     def validate_category_reason_link(self):

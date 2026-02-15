@@ -183,11 +183,7 @@ class Labeler(BaseAgent):
                  in seconds.
             - idx: Optional index for tracking purposes.
         """
-        # Set default `chat_kwargs`
-        chat_kwargs = chat_kwargs or {"think": True}
-        # Ensure certain parameters are set correctly
-        for k in ["messages", "temperature", "output_format"]:
-            chat_kwargs.pop(k, None)
+        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
 
         logger.debug(
             f"Agent `{self.name}`: processing input data:\n{input_data}"
@@ -245,11 +241,7 @@ class Labeler(BaseAgent):
                  in seconds.
             - idx: Optional index for tracking purposes.
         """
-        # Set default `chat_kwargs`
-        chat_kwargs = chat_kwargs or {"think": True}
-        # Ensure certain parameters are set correctly
-        for k in ["messages", "temperature", "output_format"]:
-            chat_kwargs.pop(k, None)
+        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
 
         logger.debug(
             f"Agent `{self.name}`: processing input data:\n{input_data}"
@@ -474,11 +466,7 @@ class Labeler(BaseAgent):
                  in seconds.
             - idx: Optional index for tracking purposes.
         """
-        # Set default `chat_kwargs`
-        chat_kwargs = chat_kwargs or {"think": True}
-        # Ensure certain parameters are set correctly
-        for k in ["messages", "temperature", "output_format"]:
-            chat_kwargs.pop(k, None)
+        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
 
         logger.debug(
             f"Agent `{self.name}`: processing batch input data:\n{input_list}"
@@ -534,11 +522,7 @@ class Labeler(BaseAgent):
                  in seconds.
             - idx: Optional index for tracking purposes.
         """
-        # Set default `chat_kwargs`
-        chat_kwargs = chat_kwargs or {"think": True}
-        # Ensure certain parameters are set correctly
-        for k in ["messages", "temperature", "output_format"]:
-            chat_kwargs.pop(k, None)
+        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
 
         logger.debug(
             f"Agent `{self.name}`: processing batch input data:\n{input_list}"
@@ -762,6 +746,20 @@ class Labeler(BaseAgent):
                 )
                 return None
         return model
+
+    @staticmethod
+    def _sanitize_chat_kwargs(chat_kwargs: dict | None) -> dict:
+        """
+        Prepare `chat_kwargs` for an LLM call.
+        Sets `think=True` by default and removes keys managed
+        internally (`messages`, `temperature`, `output_format`).
+        :param chat_kwargs: Raw keyword arguments, or None.
+        :return: Sanitized copy of the keyword arguments.
+        """
+        chat_kwargs = chat_kwargs or {"think": True}
+        for k in ["messages", "temperature", "output_format"]:
+            chat_kwargs.pop(k, None)
+        return chat_kwargs
 
     @staticmethod
     def _fix_malformed_json(response: str) -> str:

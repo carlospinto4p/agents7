@@ -23,6 +23,18 @@ from agents7.ui.state import AgentBuilderState
 # ------------------------------------------------------------------
 
 
+def _enum_code(
+    class_name: str,
+    members: list,
+) -> list[str]:
+    """Generate source lines for a StrEnum class."""
+    lines = [f"class {class_name}(StrEnum):"]
+    for m in members:
+        lines.append(f'    {m.name} = "{m.description}"')
+    lines += ["", ""]
+    return lines
+
+
 def generate_model_code(state: AgentBuilderState) -> str:
     """Return full `.py` source for the output model."""
     if state.agent_type == "classifier":
@@ -40,21 +52,11 @@ def _code_for_classifier(state: AgentBuilderState) -> str:
         "",
         "",
     ]
-    # Category enum
     cat_name = state.category_enum_name
-    lines.append(f"class {cat_name}(StrEnum):")
-    for m in state.categories:
-        lines.append(f'    {m.name} = "{m.description}"')
-    lines.append("")
-    lines.append("")
+    lines += _enum_code(cat_name, state.categories)
 
-    # Reason enum
     rsn_name = state.reason_enum_name
-    lines.append(f"class {rsn_name}(StrEnum):")
-    for m in state.reasons:
-        lines.append(f'    {m.name} = "{m.description}"')
-    lines.append("")
-    lines.append("")
+    lines += _enum_code(rsn_name, state.reasons)
 
     # Model class
     cls_name = state.model_class_name
@@ -83,11 +85,7 @@ def _code_for_property(state: AgentBuilderState) -> str:
         "",
     ]
     rsn_name = state.reason_enum_name
-    lines.append(f"class {rsn_name}(StrEnum):")
-    for m in state.reasons:
-        lines.append(f'    {m.name} = "{m.description}"')
-    lines.append("")
-    lines.append("")
+    lines += _enum_code(rsn_name, state.reasons)
 
     cls_name = state.model_class_name
     vt = state.value_type
