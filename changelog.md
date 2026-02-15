@@ -17,6 +17,8 @@
   `uv.lock`; integration tests now run from the root project.
 - `.claude/commands/`: Added `refactor.md` and
   `self-refinement.md` command files.
+- `.claude/rules/`: Added `backlog.md` and `refactoring.md`
+  rules files.
 
 
 ### v1.2.6 - 8th February 2026
