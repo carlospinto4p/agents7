@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v1.2.7 - 15th February 2026
+
+- `.claude/rules/app.md`: Fixed optional dependency name from
+  `[app]` to `[ui]` and source path from `app/` to `ui/`.
+- `.claude/rules/testing.md`: Replaced stale references from
+  another project (databases, `db/`) with agents7-
+  specific examples (Ollama, detectors, classifiers). Fixed
+  integration test commands.
+- `CLAUDE.md`: Removed redundant lessons, fixed `.claude/rules/`
+  path reference.
+- `backlog.md`: Added checkboxes and section headers per backlog
+  rules.
+
+
 ### v1.2.6 - 8th February 2026
 
 - Module `agents`:
