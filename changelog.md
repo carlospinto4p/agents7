@@ -1,6 +1,37 @@
 
 ## Changelog - Agents7
 
+### v1.2.8 - 15th February 2026
+
+- Code deduplication:
+  - `labeler.py`: Extracted `_sanitize_chat_kwargs()` static method
+    (4 occurrences).
+  - `ollama.py`: Extracted `_build_options()` static method
+    (8 occurrences).
+  - `models/base.py`: Extracted `_extend_enum_with_not_applicable()`
+    shared function.
+  - UI `_pages/__init__.py`: Added `get_expected_fields()` and
+    `make_progress_callback()` (deduplicated from multiple pages).
+  - `codegen/model_generator.py`: Extracted `_enum_code()` helper
+    (3 occurrences).
+- Tests:
+  - Created `tests/helpers.py` with shared test helpers
+    (ENGINE, DummyOutput, DUMMY_METRICS, make_labeler, chat_chunk,
+    async_iter, mock_metrics, make_agent_mock).
+  - Converted all 50 test classes to plain functions across 10 files.
+  - Added `pythonpath = ["tests"]` to pytest config.
+- UI convention fixes:
+  - Moved all function-level imports to module level in
+    `_pages/*.py` files.
+  - Broke down long functions in `_pages/3_Test.py` into smaller
+    helpers: `_save_version()`, `_render_version_list()`,
+    `_render_prompt_previews()`, `_show_comparison_summary()`,
+    `_show_version_output()`.
+- Style: Fixed 37 line-length violations (>78 chars) in docstrings
+  across `labeler.py`, `classifier.py`, `ollama.py`, `base.py`,
+  and test files.
+
+
 ### v1.2.7 - 15th February 2026
 
 - `.claude/rules/app.md`: Fixed optional dependency name from
