@@ -19,7 +19,7 @@ def sentiment_classifier():
 
 
 def test_classifier_initialization(sentiment_classifier: Classifier) -> None:
-    """Test that the classifier can be properly initialized from YAML config."""
+    """Test that the classifier initializes from YAML config."""
     assert sentiment_classifier is not None
     assert hasattr(sentiment_classifier, "prompt")
     assert hasattr(sentiment_classifier, "possible_categories")
@@ -107,7 +107,7 @@ def test_category_reason_validation() -> None:
 
 
 def test_classifier_requires_classification_property() -> None:
-    """Test that Classifier raises error for non-ClassificationProperty models."""
+    """Test that Classifier raises error for non-CP models."""
 
     class NotAClassificationProperty(BaseModel):
         value: str

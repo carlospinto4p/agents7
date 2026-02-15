@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+import streamlit as st
+
+from agents7.ui._pages import _state_from_dict
+from agents7.ui.codegen.model_generator import (
+    generate_model_code,
+)
+
 
 def render():
-    import streamlit as st
-
-    from agents7.ui.codegen.model_generator import (
-        generate_model_code,
-    )
-    from agents7.ui._pages import _state_from_dict
-
     st.header("1. Define the Output Model")
 
     sd = st.session_state.state_dict
@@ -49,8 +49,6 @@ def render():
 
 
 def _classifier_form(sd: dict):
-    import streamlit as st
-
     st.subheader("Categories")
     _enum_editor(sd, "categories", "Category")
 
@@ -76,8 +74,6 @@ def _classifier_form(sd: dict):
 
 
 def _property_form(sd: dict):
-    import streamlit as st
-
     sd["value_type"] = st.selectbox(
         "Value type",
         ["float", "int", "str", "bool"],
@@ -91,8 +87,6 @@ def _property_form(sd: dict):
 
 
 def _labeler_form(sd: dict):
-    import streamlit as st
-
     st.subheader("Output Fields")
     fields = sd.get("fields", [])
     num = st.number_input(
@@ -143,8 +137,6 @@ def _labeler_form(sd: dict):
 
 def _enum_editor(sd: dict, key: str, label: str):
     """Reusable editor for a list of EnumMember dicts."""
-    import streamlit as st
-
     members = sd.get(key, [])
     num = st.number_input(
         f"Number of {label.lower()}s",

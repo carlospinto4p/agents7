@@ -1,19 +1,15 @@
 from enum import StrEnum
 
 import pytest
-from pydantic import BaseModel
 
-from agents7.agents.labeler import Labeler
-from agents7.agents.detector import Detector
 from agents7.agents.classifier import Classifier
+from agents7.agents.detector import Detector
+from agents7.agents.labeler import Labeler
 from agents7.agents.regressor import Regressor
 from agents7.exceptions import PromptParameterError
-from agents7.llm import LLMEngine
-from agents7.models import Property, ClassificationProperty
+from agents7.models import ClassificationProperty, Property
 
-
-class DummyOutput(BaseModel):
-    value: str
+from helpers import ENGINE, make_labeler
 
 
 class DummyReason(StrEnum):
@@ -43,21 +39,6 @@ class DummyClassification(ClassificationProperty):
         DummyCategory.CAT_A: [DummyClassReason.REASON_A],
         DummyCategory.CAT_B: [DummyClassReason.REASON_B],
     }
-
-
-ENGINE = LLMEngine(provider="ollama", model_name="qwen3")
-
-
-def _make_labeler(**kwargs) -> Labeler:
-    defaults = {
-        "name": "test",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "Test prompt.",
-        "output_model": DummyOutput,
-    }
-    defaults.update(kwargs)
-    return Labeler(**defaults)
 
 
 def _make_detector(**kwargs) -> Detector:
@@ -101,14 +82,14 @@ def _make_regressor(**kwargs) -> Regressor:
 
 def test_no_params_unchanged_behavior():
     """Labeler without prompt_params behaves identically."""
-    agent = _make_labeler(system_prompt="Analyze this data.")
+    agent = make_labeler(system_prompt="Analyze this data.")
     assert agent.resolved_system_prompt == "Analyze this data."
     assert "Analyze this data." in agent.prompt
 
 
 def test_none_params_unchanged():
     """Explicit None for prompt_params behaves identically."""
-    agent = _make_labeler(
+    agent = make_labeler(
         system_prompt="Analyze this data.",
         prompt_params=None,
     )
@@ -120,7 +101,7 @@ def test_none_params_unchanged():
 
 def test_static_param_substitution():
     """Static string params are substituted in the prompt."""
-    agent = _make_labeler(
+    agent = make_labeler(
         system_prompt="Analyze data for $company on $date.",
         prompt_params={"company": "Acme Corp", "date": "2026-02-01"},
     )
@@ -133,7 +114,7 @@ def test_static_param_substitution():
 
 def test_static_params_in_full_prompt():
     """Static params are resolved in the full prompt property."""
-    agent = _make_labeler(
+    agent = make_labeler(
         system_prompt="Analyze data for $company.",
         prompt_params={"company": "TestCo"},
     )
@@ -153,7 +134,7 @@ def test_callable_param_evaluation():
         call_count += 1
         return f"call-{call_count}"
 
-    agent = _make_labeler(
+    agent = make_labeler(
         system_prompt="Value is $val.",
         prompt_params={"val": counter},
     )
@@ -166,7 +147,7 @@ def test_callable_param_evaluation():
 
 def test_mixed_static_and_callable_params():
     """Mix of static strings and callables works correctly."""
-    agent = _make_labeler(
+    agent = make_labeler(
         system_prompt="$greeting from $source.",
         prompt_params={
             "greeting": "Hello",
@@ -183,7 +164,7 @@ def test_mixed_static_and_callable_params():
 
 def test_unmatched_placeholders_preserved():
     """Unmatched $placeholders are left as-is via safe_substitute."""
-    agent = _make_labeler(
+    agent = make_labeler(
         system_prompt="Hello $name, welcome to $place.",
         prompt_params={"name": "Alice"},
     )
@@ -197,7 +178,7 @@ def test_unmatched_placeholders_preserved():
 
 def test_empty_params_dict():
     """Empty dict for prompt_params works same as None."""
-    agent = _make_labeler(
+    agent = make_labeler(
         system_prompt="No changes here.",
         prompt_params={},
     )
@@ -209,7 +190,7 @@ def test_empty_params_dict():
 
 def test_params_applied_to_prompt_for_batch():
     """Params are resolved in prompt_for_batch as well."""
-    agent = _make_labeler(
+    agent = make_labeler(
         system_prompt="Batch for $company.",
         prompt_params={"company": "BatchCo"},
     )
@@ -262,7 +243,7 @@ def test_regressor_param_substitution():
 def test_invalid_param_value_type():
     """Non-string, non-callable values raise PromptParameterError."""
     with pytest.raises(PromptParameterError):
-        _make_labeler(
+        make_labeler(
             system_prompt="Test $val.",
             prompt_params={"val": 123},
         )
@@ -271,7 +252,7 @@ def test_invalid_param_value_type():
 def test_invalid_param_value_list():
     """List values raise PromptParameterError."""
     with pytest.raises(PromptParameterError):
-        _make_labeler(
+        make_labeler(
             system_prompt="Test $val.",
             prompt_params={"val": ["a", "b"]},
         )
@@ -280,7 +261,7 @@ def test_invalid_param_value_list():
 def test_invalid_params_not_dict():
     """Non-dict prompt_params raises PromptParameterError."""
     with pytest.raises(PromptParameterError):
-        _make_labeler(
+        make_labeler(
             system_prompt="Test.",
             prompt_params="not a dict",
         )

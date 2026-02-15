@@ -57,18 +57,21 @@ class OllamaProvider(LLMProvider):
     ) -> dict:
         """
          Generate a chat response based on the provided messages.
-         :param messages: A list of messages to send to the model. Each message
-             should be a dictionary with keys "role" and "content". For example:
+         :param messages: A list of messages to send to
+             the model. Each message should be a dictionary
+             with keys "role" and "content". For example:
              [
                  {"role": "user", "content": "Hello, how are you?"},
                  {"role": "assistant", "content": "I'm fine, thank you!"}
              ]
-             Available roles: "system", "user", "assistant" or "tool".
+             Available roles: "system", "user",
+             "assistant" or "tool".
         :param temperature: Temperature for the model.
-         :param max_tokens: Maximum number of tokens to generate.
-             Default is -1, which means no limit.
-         :param output_format: Format of the response. Can be "json" or the json
-             schema to use, e.g.:
+         :param max_tokens: Maximum number of tokens to
+             generate. Default is -1, which means no limit.
+         :param output_format: Format of the response.
+             Can be "json" or the json schema to use,
+             e.g.:
              {
                  "type": "object",
                  "properties": {
@@ -84,21 +87,28 @@ class OllamaProvider(LLMProvider):
                    "available"
                  ]
              }
-             Easiest way to use this is to pass a Pydantic model
-             `model_json_schema()` method output. See:
-             https://github.com/ollama/ollama-python/blob/main/examples/structured-outputs.py
-         :param think: If True, the model will think before generating the
-             response.
-         :param seed: Seed for random number generation. Default is None.
-         :return: A dictionary containing the parsed response. Schema:
+             Easiest way to use this is to pass a Pydantic
+             model `model_json_schema()` method output.
+             See: https://github.com/ollama/ollama-python
+         :param think: If True, the model will think
+             before generating the response.
+         :param seed: Seed for random number generation.
+             Default is None.
+         :return: A dictionary containing the parsed
+             response. Schema:
              - response: The generated text response.
-             - role: The role of the message (e.g., "user", "assistant").
-             - thinking: The thinking part of the response, if any.
-             - metrics: A dictionary containing the following metrics:
-                 - tokens: The number of tokens in the response.
-                 - prompt_tokens: The number of tokens in the prompt.
-                 - total_duration: The total duration of the response,
-                     in seconds.
+             - role: The role of the message
+                 (e.g., "user", "assistant").
+             - thinking: The thinking part of the
+                 response, if any.
+             - metrics: A dictionary containing the
+                 following metrics:
+                 - tokens: The number of tokens in
+                     the response.
+                 - prompt_tokens: The number of tokens
+                     in the prompt.
+                 - total_duration: The total duration
+                     of the response, in seconds.
         """
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
@@ -135,19 +145,23 @@ class OllamaProvider(LLMProvider):
         seed: int | None = None,
     ) -> dict:
         """
-         Generate a chat response based on the provided messages.
-         :param messages: A list of messages to send to the model. Each message
-             should be a dictionary with keys "role" and "content". For example:
+         Generate a chat response based on the provided
+         messages.
+         :param messages: A list of messages to send to
+             the model. Each message should be a dictionary
+             with keys "role" and "content". For example:
              [
                  {"role": "user", "content": "Hello, how are you?"},
                  {"role": "assistant", "content": "I'm fine, thank you!"}
              ]
-             Available roles: "system", "user", "assistant" or "tool".
+             Available roles: "system", "user",
+             "assistant" or "tool".
         :param temperature: Temperature for the model.
-         :param max_tokens: Maximum number of tokens to generate.
-             Default is -1, which means no limit.
-         :param output_format: Format of the response. Can be "json" or the json
-             schema to use, e.g.:
+         :param max_tokens: Maximum number of tokens to
+             generate. Default is -1, which means no limit.
+         :param output_format: Format of the response.
+             Can be "json" or the json schema to use,
+             e.g.:
              {
                  "type": "object",
                  "properties": {
@@ -163,21 +177,28 @@ class OllamaProvider(LLMProvider):
                    "available"
                  ]
              }
-             Easiest way to use this is to pass a Pydantic model
-             `model_json_schema()` method output. See:
-             https://github.com/ollama/ollama-python/blob/main/examples/structured-outputs.py
-         :param think: If True, the model will think before generating the
-             response.
-         :param seed: Seed for random number generation. Default is None.
-         :return: A dictionary containing the parsed response. Schema:
+             Easiest way to use this is to pass a Pydantic
+             model `model_json_schema()` method output.
+             See: https://github.com/ollama/ollama-python
+         :param think: If True, the model will think
+             before generating the response.
+         :param seed: Seed for random number generation.
+             Default is None.
+         :return: A dictionary containing the parsed
+             response. Schema:
              - response: The generated text response.
-             - role: The role of the message (e.g., "user", "assistant").
-             - thinking: The thinking part of the response, if any.
-             - metrics: A dictionary containing the following metrics:
-                 - tokens: The number of tokens in the response.
-                 - prompt_tokens: The number of tokens in the prompt.
-                 - total_duration: The total duration of the response,
-                     in seconds.
+             - role: The role of the message
+                 (e.g., "user", "assistant").
+             - thinking: The thinking part of the
+                 response, if any.
+             - metrics: A dictionary containing the
+                 following metrics:
+                 - tokens: The number of tokens in
+                     the response.
+                 - prompt_tokens: The number of tokens
+                     in the prompt.
+                 - total_duration: The total duration
+                     of the response, in seconds.
         """
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
@@ -219,8 +240,9 @@ class OllamaProvider(LLMProvider):
         :param temperature: Temperature for the model.
         :param max_tokens: Maximum number of tokens to generate.
             Default is -1, which means no limit.
-        :param output_format: Format of the response. Can be "json" or the json
-            schema to use, e.g.:
+        :param output_format: Format of the response.
+            Can be "json" or the json schema to use,
+            e.g.:
             {
                 "type": "object",
                 "properties": {
@@ -236,20 +258,26 @@ class OllamaProvider(LLMProvider):
                   "available"
                 ]
             }
-            Easiest way to use this is to pass a Pydantic model
-            `model_json_schema()` method output. See:
-            https://github.com/ollama/ollama-python/blob/main/examples/structured-outputs.py
-        :param think: If True, the model will think before generating the
-            response.
-        :param seed: Seed for random number generation. Default is None.
-        :return: A dictionary containing the parsed response. Schema:
+            Easiest way to use this is to pass a Pydantic
+            model `model_json_schema()` method output.
+            See: https://github.com/ollama/ollama-python
+        :param think: If True, the model will think
+            before generating the response.
+        :param seed: Seed for random number generation.
+            Default is None.
+        :return: A dictionary containing the parsed
+            response. Schema:
             - response: The generated text response.
-            - thinking: The thinking part of the response, if any.
-            - metrics: A dictionary containing the following metrics:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                    in seconds.
+            - thinking: The thinking part of the
+                response, if any.
+            - metrics: A dictionary containing the
+                following metrics:
+                - tokens: The number of tokens in the
+                    response.
+                - prompt_tokens: The number of tokens
+                    in the prompt.
+                - total_duration: The total duration
+                    of the response, in seconds.
         """
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
@@ -272,14 +300,16 @@ class OllamaProvider(LLMProvider):
         seed: int | None = None,
     ) -> dict:
         """
-        Asynchronously generate text based on the provided prompt using the
-        Ollama API.
-        :param prompt: The input prompt to send to the model.
+        Asynchronously generate text based on the
+        provided prompt using the Ollama API.
+        :param prompt: The input prompt to send to the
+            model.
         :param temperature: Temperature for the model.
-        :param max_tokens: Maximum number of tokens to generate.
-            Default is -1, which means no limit.
-        :param output_format: Format of the response. Can be "json" or the json
-            schema to use, e.g.:
+        :param max_tokens: Maximum number of tokens to
+            generate. Default is -1, which means no limit.
+        :param output_format: Format of the response.
+            Can be "json" or the json schema to use,
+            e.g.:
             {
                 "type": "object",
                 "properties": {
@@ -295,20 +325,26 @@ class OllamaProvider(LLMProvider):
                   "available"
                 ]
             }
-            Easiest way to use this is to pass a Pydantic model
-            `model_json_schema()` method output. See:
-            https://github.com/ollama/ollama-python/blob/main/examples/structured-outputs.py
-        :param think: If True, the model will think before generating the
-            response.
-        :param seed: Seed for random number generation. Default is None.
-        :return: A dictionary containing the parsed response. Schema:
+            Easiest way to use this is to pass a Pydantic
+            model `model_json_schema()` method output.
+            See: https://github.com/ollama/ollama-python
+        :param think: If True, the model will think
+            before generating the response.
+        :param seed: Seed for random number generation.
+            Default is None.
+        :return: A dictionary containing the parsed
+            response. Schema:
             - response: The generated text response.
-            - thinking: The thinking part of the response, if any.
-            - metrics: A dictionary containing the following metrics:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                    in seconds.
+            - thinking: The thinking part of the
+                response, if any.
+            - metrics: A dictionary containing the
+                following metrics:
+                - tokens: The number of tokens in the
+                    response.
+                - prompt_tokens: The number of tokens
+                    in the prompt.
+                - total_duration: The total duration
+                    of the response, in seconds.
         """
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
 

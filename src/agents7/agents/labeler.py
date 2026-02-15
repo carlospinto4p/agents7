@@ -33,7 +33,8 @@ from agents7.settings import BatchSettings
 class Labeler(BaseAgent):
     """
     Labeler agent for processing and labeling data.
-    This agent is designed to analyze and label data based on predefined rules.
+    This agent is designed to analyze and label data based on
+    predefined rules.
 
     Attributes:
         name (str): The name of the agent.
@@ -130,8 +131,9 @@ class Labeler(BaseAgent):
             f"{self.resolved_system_prompt}\n\n"
             f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}\n\n"
-            f"You will receive multiple inputs. Process each one independently "
-            f"and return an array of outputs in the same order as the inputs."
+            f"You will receive multiple inputs. Process each "
+            f"one independently and return an array of outputs "
+            f"in the same order as the inputs."
         ).strip()
 
         if self.examples:
@@ -273,7 +275,8 @@ class Labeler(BaseAgent):
         iter_func: Callable = tqdm,
     ) -> list[AgentResponse]:
         """
-        Perform the labeling action based on the provided input, in batch mode.
+        Perform the labeling action based on the provided
+        input, in batch mode.
         :param input_list: List of input data to be processed.
         :param chat_kwargs: Dictionary with extra keyword arguments to
             send to the `self.engine.chat` method. Note that:
@@ -339,7 +342,8 @@ class Labeler(BaseAgent):
         batch_settings: BatchSettings | None = None,
     ) -> list[AgentResponse]:
         """
-        Perform the labeling action based on the provided input, in batch mode.
+        Perform the labeling action based on the provided
+        input, in batch mode.
         :param input_list: List of input data to be processed.
         :param chat_kwargs: Dictionary with extra keyword arguments to
             send to the `self.engine.chat` method. Note that:
@@ -437,7 +441,8 @@ class Labeler(BaseAgent):
         _idx: int = 0,
     ) -> AgentResponse:
         """
-        Perform the labeling action based on the provided input, in batch mode.
+        Perform the labeling action based on the provided
+        input, in batch mode.
         Will send a single request to the LLM with a list of inputs.
         :param input_list: List of input data to be processed.
         :param chat_kwargs: Dictionary with extra keyword arguments to
@@ -496,7 +501,8 @@ class Labeler(BaseAgent):
         chat_kwargs: dict = None,
     ) -> AgentResponse:
         """
-        Perform the labeling action based on the provided input, in batch mode.
+        Perform the labeling action based on the provided
+        input, in batch mode.
         Will send a single request to the LLM with a list of inputs.
         :param input_list: List of input data to be processed.
         :param chat_kwargs: Dictionary with extra keyword arguments to
@@ -792,7 +798,8 @@ class Labeler(BaseAgent):
 
     def _get_enum_mappings(self) -> dict[str, dict[str, str]]:
         """
-        Get enum name-to-value mappings for all StrEnum fields in output_model.
+        Get enum name-to-value mappings for all StrEnum
+        fields in output_model.
         :return: Dict mapping field names to their enum name->value dicts.
         """
         enum_mappings = {}

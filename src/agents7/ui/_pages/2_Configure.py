@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import streamlit as st
+
+from agents7.ui._pages import _state_from_dict
+from agents7.ui.codegen.yaml_generator import generate_yaml
+from agents7.ui.helpers import build_agent_from_state
+from agents7.ui.ollama_utils import (
+    check_connection,
+    list_available_models,
+)
+
 
 def render():
-    import streamlit as st
-
-    from agents7.ui.codegen.yaml_generator import generate_yaml
-    from agents7.ui.ollama_utils import (
-        check_connection,
-        list_available_models,
-    )
-
     st.header("2. Configure the Agent")
 
     sd = st.session_state.state_dict
@@ -80,8 +82,6 @@ def render():
 
     # --- YAML preview ---
     st.subheader("YAML Config Preview")
-    from agents7.ui._pages import _state_from_dict
-
     state = _state_from_dict(sd)
     yml = generate_yaml(state)
     st.code(yml, language="yaml")
@@ -89,8 +89,6 @@ def render():
     # --- Resolved prompt preview ---
     st.subheader("Resolved Prompt Preview")
     try:
-        from agents7.ui.helpers import build_agent_from_state
-
         agent = build_agent_from_state(state)
         st.code(agent.prompt, language="text")
     except Exception as e:

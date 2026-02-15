@@ -24,8 +24,9 @@ class Classifier(Detector):
         version (int): The version of the agent.
         engine (LLMEngine): The LLM engine used by the agent.
         system_prompt (str): The system prompt for the agent.
-        output_model (ClassificationProperty): The model used to validate
-            and structure the output. Must be a ClassificationProperty subclass.
+        output_model (ClassificationProperty): The model used to
+            validate and structure the output. Must be a
+            ClassificationProperty subclass.
         examples (list[dict], optional): List of examples to include in the
             system prompt.
 
@@ -47,7 +48,8 @@ class Classifier(Detector):
         if not issubclass(self.output_model, ClassificationProperty):
             raise PropertyConfigurationError(
                 "`output_model` must be a subclass of "
-                "`agents7.models.ClassificationProperty` for `Classifier` agents."
+                "`agents7.models.ClassificationProperty`"
+                " for `Classifier` agents."
             )
 
     @classmethod

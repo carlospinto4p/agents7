@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import csv
+import os
+
+import streamlit as st
+
+from agents7.ui._pages import _state_from_dict, get_expected_fields
+from agents7.ui.codegen.model_generator import generate_model_code
+from agents7.ui.codegen.yaml_generator import generate_yaml
+from agents7.ui.evaluation.export import (
+    format_results_csv,
+    format_results_jsonl,
+)
+
 
 def render():
-    import os
-
-    import streamlit as st
-
-    from agents7.ui.codegen.model_generator import (
-        generate_model_code,
-    )
-    from agents7.ui.codegen.yaml_generator import generate_yaml
-    from agents7.ui._pages import _state_from_dict
-
     st.header("5. Export")
 
     sd = st.session_state.state_dict
@@ -64,17 +67,12 @@ def render():
 
 
 def _write(directory: str, filename: str, content: str):
-    import os
-
     path = os.path.join(directory, filename)
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
 
 def _write_csv(directory: str, data: list[dict]):
-    import csv
-    import os
-
     path = os.path.join(directory, "eval_data.csv")
     if not data:
         return
@@ -86,15 +84,6 @@ def _write_csv(directory: str, data: list[dict]):
 
 
 def _write_eval_results(directory: str, eval_results, state):
-    import os
-
-    from agents7.ui.evaluation.export import (
-        format_results_csv,
-        format_results_jsonl,
-    )
-
-    from agents7.ui._pages import get_expected_fields
-
     expected_fields = get_expected_fields(state)
 
     csv_content = format_results_csv(eval_results, expected_fields)

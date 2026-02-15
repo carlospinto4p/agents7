@@ -2,19 +2,27 @@
 
 from __future__ import annotations
 
+import pandas as pd
+import streamlit as st
+
+from agents7.ui._pages import (
+    _state_from_dict,
+    get_expected_fields,
+    make_progress_callback,
+)
+from agents7.ui.evaluation.export import (
+    format_results_csv,
+    format_results_jsonl,
+)
+from agents7.ui.evaluation.metrics import (
+    build_confusion_matrix,
+    compute_metrics,
+)
+from agents7.ui.evaluation.runner import run_evaluation
+from agents7.ui.helpers import build_agent_from_state
+
 
 def render():
-    import streamlit as st
-
-    from agents7.ui.helpers import build_agent_from_state
-    from agents7.ui.evaluation.runner import run_evaluation
-    from agents7.ui.evaluation.metrics import compute_metrics
-    from agents7.ui._pages import (
-        _state_from_dict,
-        get_expected_fields,
-        make_progress_callback,
-    )
-
     st.header("4. Evaluate")
 
     sd = st.session_state.state_dict
@@ -29,8 +37,6 @@ def render():
             type=["csv"],
         )
         if uploaded is not None:
-            import pandas as pd
-
             df = pd.read_csv(uploaded)
             sd["eval_data"] = df.to_dict(orient="records")
             st.dataframe(df, use_container_width=True)
@@ -127,11 +133,6 @@ def render():
 
         # Download results
         st.subheader("Download Results")
-        from agents7.ui.evaluation.export import (
-            format_results_csv,
-            format_results_jsonl,
-        )
-
         agent_name = state.agent_name or "agent"
         col_csv, col_jsonl = st.columns(2)
         with col_csv:
@@ -151,20 +152,12 @@ def render():
 
 
 def _show_confusion_matrix(results):
-    import streamlit as st
-
-    from agents7.ui.evaluation.metrics import (
-        build_confusion_matrix,
-    )
-
     cm = build_confusion_matrix(results, "category")
     if not cm["labels"]:
         return
 
     st.subheader("Confusion Matrix (category)")
     try:
-        import pandas as pd
-
         df = pd.DataFrame(
             cm["matrix"],
             index=cm["labels"],

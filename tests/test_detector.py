@@ -84,7 +84,7 @@ def test_explicit_not_applicable_preserved() -> None:
 
 
 def test_detector_requires_property_subclass() -> None:
-    """Test that Detector raises PropertyConfigurationError for non-Property models."""
+    """Test that Detector raises error for non-Property models."""
 
     class NotAProperty(BaseModel):
         value: str

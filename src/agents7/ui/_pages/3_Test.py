@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import json
+
+import streamlit as st
+
+from agents7.ui._pages import (
+    _state_from_dict,
+    make_progress_callback,
+)
+from agents7.ui.comparison.models import PromptVersion
+from agents7.ui.comparison.runner import run_comparison
+from agents7.ui.helpers import build_agent_from_state
+
 
 def render():
-    import streamlit as st
-
-    from agents7.ui._pages import (
-        _state_from_dict,
-    )
-
     st.header("3. Quick Test")
 
     sd = st.session_state.state_dict
@@ -42,10 +48,6 @@ def render():
 
 
 def _render_version_management(sd: dict):
-    import streamlit as st
-
-    from agents7.ui.comparison.models import PromptVersion
-
     st.subheader("Prompt Versions")
 
     col_name, col_btn = st.columns([3, 1])
@@ -59,41 +61,49 @@ def _render_version_management(sd: dict):
         save_clicked = st.button("Save Current")
 
     if save_clicked:
-        if not version_name.strip():
-            st.warning("Please enter a version name.")
-        else:
-            names = [v.name for v in st.session_state.prompt_versions]
-            if version_name.strip() in names:
-                st.warning(
-                    f"Version '{version_name.strip()}' already exists."
-                )
-            else:
-                version = PromptVersion(
-                    name=version_name.strip(),
-                    system_prompt=sd.get("system_prompt", ""),
-                    examples=sd.get("examples", []),
-                    model_name=sd.get("model_name", "qwen3"),
-                )
-                st.session_state.prompt_versions.append(version)
-                st.success(f"Saved version '{version.name}'.")
+        _save_version(sd, version_name)
 
     if st.session_state.prompt_versions:
-        for i, v in enumerate(st.session_state.prompt_versions):
-            col_info, col_load, col_del = st.columns([4, 1, 1])
-            with col_info:
-                st.text(f"{v.name}  (model: {v.model_name})")
-            with col_load:
-                if st.button("Load", key=f"load_version_{i}"):
-                    sd["system_prompt"] = v.system_prompt
-                    sd["examples"] = v.examples
-                    sd["model_name"] = v.model_name
-                    st.rerun()
-            with col_del:
-                if st.button("Delete", key=f"del_version_{i}"):
-                    st.session_state.prompt_versions.pop(i)
-                    st.rerun()
+        _render_version_list(sd)
 
     st.divider()
+
+
+def _save_version(sd: dict, version_name: str):
+    """Validate and save a new prompt version."""
+    if not version_name.strip():
+        st.warning("Please enter a version name.")
+        return
+    names = [v.name for v in st.session_state.prompt_versions]
+    if version_name.strip() in names:
+        st.warning(f"Version '{version_name.strip()}' already exists.")
+        return
+    version = PromptVersion(
+        name=version_name.strip(),
+        system_prompt=sd.get("system_prompt", ""),
+        examples=sd.get("examples", []),
+        model_name=sd.get("model_name", "qwen3"),
+    )
+    st.session_state.prompt_versions.append(version)
+    st.success(f"Saved version '{version.name}'.")
+
+
+def _render_version_list(sd: dict):
+    """Render the list of saved versions with load/delete."""
+    for i, v in enumerate(st.session_state.prompt_versions):
+        col_info, col_load, col_del = st.columns([4, 1, 1])
+        with col_info:
+            st.text(f"{v.name}  (model: {v.model_name})")
+        with col_load:
+            if st.button("Load", key=f"load_version_{i}"):
+                sd["system_prompt"] = v.system_prompt
+                sd["examples"] = v.examples
+                sd["model_name"] = v.model_name
+                st.rerun()
+        with col_del:
+            if st.button("Delete", key=f"del_version_{i}"):
+                st.session_state.prompt_versions.pop(i)
+                st.rerun()
 
 
 # ----------------------------------------------------------------
@@ -102,10 +112,6 @@ def _render_version_management(sd: dict):
 
 
 def _render_single_test(state):
-    import streamlit as st
-
-    from agents7.ui.helpers import build_agent_from_state
-
     test_input = st.text_area(
         "Input (plain text or JSON dict)",
         height=80,
@@ -143,10 +149,6 @@ def _render_single_test(state):
 
 
 def _render_batch_test(state):
-    import streamlit as st
-
-    from agents7.ui.helpers import build_agent_from_state
-
     st.caption("One input per line (plain text) or a JSON array.")
     batch_input = st.text_area(
         "Batch inputs",
@@ -180,13 +182,6 @@ def _render_batch_test(state):
 
 
 def _render_ab_compare(state):
-    import streamlit as st
-
-    from agents7.ui._pages import make_progress_callback
-    from agents7.ui.comparison.runner import (
-        run_comparison,
-    )
-
     versions = st.session_state.prompt_versions
     if len(versions) < 2:
         st.info(
@@ -214,15 +209,7 @@ def _render_ab_compare(state):
     version_a = versions[names.index(sel_a)]
     version_b = versions[names.index(sel_b)]
 
-    # Prompt previews
-    with st.expander("Prompt previews"):
-        prev_a, prev_b = st.columns(2)
-        with prev_a:
-            st.markdown(f"**{version_a.name}**")
-            st.text(version_a.system_prompt[:300])
-        with prev_b:
-            st.markdown(f"**{version_b.name}**")
-            st.text(version_b.system_prompt[:300])
+    _render_prompt_previews(version_a, version_b)
 
     # Input area
     st.caption("One input per line (plain text) or a JSON array.")
@@ -251,17 +238,54 @@ def _render_ab_compare(state):
         _show_comparison(results, version_a, version_b)
 
 
+def _render_prompt_previews(version_a, version_b):
+    """Show expandable prompt previews for both versions."""
+    with st.expander("Prompt previews"):
+        prev_a, prev_b = st.columns(2)
+        with prev_a:
+            st.markdown(f"**{version_a.name}**")
+            st.text(version_a.system_prompt[:300])
+        with prev_b:
+            st.markdown(f"**{version_b.name}**")
+            st.text(version_b.system_prompt[:300])
+
+
 def _show_comparison(results, version_a, version_b):
     """Display comparison results with summary and
     per-input detail."""
-    import streamlit as st
+    _show_comparison_summary(results)
 
+    st.subheader("Per-Input Results")
+    for i, r in enumerate(results):
+        label = f"Input {i + 1}" + (" ✓" if r.outputs_match else " ✗")
+        with st.expander(label):
+            st.markdown("**Input:**")
+            st.json(r.input_data)
+
+            col_a, col_b = st.columns(2)
+            with col_a:
+                _show_version_output(
+                    version_a.name,
+                    r.error_a,
+                    r.output_a,
+                    r.metrics_a,
+                )
+            with col_b:
+                _show_version_output(
+                    version_b.name,
+                    r.error_b,
+                    r.output_b,
+                    r.metrics_b,
+                )
+
+
+def _show_comparison_summary(results):
+    """Render the summary metrics row."""
     total = len(results)
     matching = sum(1 for r in results if r.outputs_match)
     errors_a = sum(1 for r in results if r.error_a is not None)
     errors_b = sum(1 for r in results if r.error_b is not None)
 
-    # Summary metrics
     st.subheader("Summary")
     cols = st.columns(4)
     cols[0].metric("Total Inputs", total)
@@ -275,36 +299,18 @@ def _show_comparison(results, version_a, version_b):
         f"A:{errors_a} / B:{errors_b}",
     )
 
-    # Per-input results
-    st.subheader("Per-Input Results")
-    for i, r in enumerate(results):
-        label = f"Input {i + 1}" + (" ✓" if r.outputs_match else " ✗")
-        with st.expander(label):
-            st.markdown("**Input:**")
-            st.json(r.input_data)
 
-            col_a, col_b = st.columns(2)
-            with col_a:
-                st.markdown(f"**{version_a.name}**")
-                if r.error_a:
-                    st.error(r.error_a)
-                elif r.output_a is not None:
-                    st.json(r.output_a)
-                else:
-                    st.warning("Model returned None")
-                if r.metrics_a:
-                    st.caption(f"Tokens: {r.metrics_a.get('tokens', '?')}")
-
-            with col_b:
-                st.markdown(f"**{version_b.name}**")
-                if r.error_b:
-                    st.error(r.error_b)
-                elif r.output_b is not None:
-                    st.json(r.output_b)
-                else:
-                    st.warning("Model returned None")
-                if r.metrics_b:
-                    st.caption(f"Tokens: {r.metrics_b.get('tokens', '?')}")
+def _show_version_output(name, error, output, metrics):
+    """Render one version's output in a comparison column."""
+    st.markdown(f"**{name}**")
+    if error:
+        st.error(error)
+    elif output is not None:
+        st.json(output)
+    else:
+        st.warning("Model returned None")
+    if metrics:
+        st.caption(f"Tokens: {metrics.get('tokens', '?')}")
 
 
 # ----------------------------------------------------------------
@@ -313,8 +319,6 @@ def _show_comparison(results, version_a, version_b):
 
 
 def _render_history():
-    import streamlit as st
-
     if not st.session_state.test_history:
         st.info("No test history yet.")
         return
@@ -331,8 +335,6 @@ def _render_history():
 
 def _parse_input(text: str):
     """Try to parse as JSON dict, fall back to string."""
-    import json
-
     text = text.strip()
     if text.startswith("{"):
         try:
@@ -344,8 +346,6 @@ def _parse_input(text: str):
 
 def _parse_batch(text: str) -> list:
     """Parse batch input: JSON array or one-per-line."""
-    import json
-
     text = text.strip()
     if not text:
         return []
@@ -364,8 +364,6 @@ def _parse_batch(text: str) -> list:
 
 
 def _show_response(response):
-    import streamlit as st
-
     if response.model is not None:
         st.json(response.model.model_dump())
     else:

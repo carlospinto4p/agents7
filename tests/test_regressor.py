@@ -13,7 +13,7 @@ def temperature_regressor():
 
 
 def test_regressor_initialization(temperature_regressor: Regressor) -> None:
-    """Test that the regressor can be properly initialized from YAML config."""
+    """Test that the regressor initializes from YAML config."""
     assert temperature_regressor is not None
     assert hasattr(temperature_regressor, "prompt")
     assert hasattr(temperature_regressor, "possible_reasons")
