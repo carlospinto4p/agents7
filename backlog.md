@@ -11,16 +11,16 @@
 
 #### Documentation & Correctness
 
-- [ ] Fix README.md regressor example: rename variable `detector` to `regressor` and fix config path from `demo_detector.yml` to `demo_temperature_detector.yml` (line ~105).
-- [ ] Add `BaseAgent` to `agents/__init__.py` `__all__` — it is documented in README but not importable via `from agents7.agents import BaseAgent`.
-- [ ] Remove manual `NOT_APPLICABLE` from `TemperaturePropertyReason` in `models/demo.py` — it is auto-added by `_extend_enum_with_not_applicable()`, so defining it manually is redundant and risks description drift.
-- [ ] Create `examples/regressor.py` example script — all other agent types have examples, but Regressor is missing.
+- [x] Fix README.md regressor example: rename variable `detector` to `regressor` and fix config path from `demo_detector.yml` to `demo_temperature_detector.yml` (line ~105).
+- [x] Add `BaseAgent` to `agents/__init__.py` `__all__` — it is documented in README but not importable via `from agents7.agents import BaseAgent`.
+- [x] Remove manual `NOT_APPLICABLE` from `TemperaturePropertyReason` in `models/demo.py` — it is auto-added by `_extend_enum_with_not_applicable()`, so defining it manually is redundant and risks description drift.
+- [x] Create `examples/regressor.py` example script — all other agent types have examples, but Regressor is missing.
 
 #### Type Hints
 
-- [ ] Add missing type hints to core code: `BaseAgent.__post_init__` (`-> None`), abstract `act()` param types in `base.py`.
-- [ ] Add missing type hints to UI pages: all `render()` functions, `_render_*` helpers in `3_Test.py`, `_show_confusion_matrix` in `4_Evaluate.py`, `_write_eval_results`/`_generate_usage_example` in `5_Export.py`.
-- [ ] Fix type hint inconsistencies: `make_progress_callback` returns `callable` (should be `Callable`), `_parse_batch` returns bare `list` (should be `list[dict]`), `_enum_code` has bare `list` param (should be `list[EnumMember]`).
+- [x] Add missing type hints to core code: `BaseAgent.__post_init__` (`-> None`), abstract `act()` param types in `base.py`.
+- [x] Add missing type hints to UI pages: all `render()` functions, `_render_*` helpers in `3_Test.py`, `_show_confusion_matrix` in `4_Evaluate.py`, `_write_eval_results`/`_generate_usage_example` in `5_Export.py`.
+- [x] Fix type hint inconsistencies: `make_progress_callback` returns `callable` (should be `Callable`), `_parse_batch` returns bare `list` (should be `list[dict]`), `_enum_code` has bare `list` param (should be `list[EnumMember]`).
 
 #### Code Duplication — Agents
 
