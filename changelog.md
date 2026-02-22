@@ -1,6 +1,27 @@
 
 ## Changelog - Agents7
 
+### v1.4.3 - 22nd February 2026
+
+- Module `ui`:
+  - `ollama_utils.py`: new `render_model_selector()` function
+    extracting the shared Ollama model selector widget.
+  - `_pages/1_Define.py`: replaced duplicated model selector
+    with `render_model_selector()`.
+  - `_pages/2_Configure.py`: replaced duplicated model selector
+    with `render_model_selector()`.
+- Module `agents`:
+  - `parsing.py`: fixed `_get_enum_mappings()` to handle
+    `X | None` union type syntax (`types.UnionType`).
+- Tests:
+  - New file `test_batch.py`: 8 tests for batch flattening
+    logic (sync/async chunking, idx, shared metadata, empty
+    input, order preservation).
+  - New file `test_enum_parsing.py`: 13 parametrized tests for
+    enum conversion edge cases (multiple enums, optional fields,
+    unknown names, nested lists, empty data).
+
+
 ### v1.4.2 - 22nd February 2026
 
 - Module `agents`:

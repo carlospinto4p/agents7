@@ -18,12 +18,12 @@
 
 #### Duplication (medium impact)
 
-- [ ] Extract shared Ollama model selector widget — `1_Define.py` (discovery section) and `2_Configure.py` both implement the same `check_connection → list_available_models → selectbox/fallback` pattern. Extract to a reusable helper in `_pages/__init__.py` or `ollama_utils.py`.
+- [x] Extract shared Ollama model selector widget — done in v1.4.3 (`render_model_selector()` in `ollama_utils.py`).
 
 #### Test Coverage (medium impact)
 
-- [ ] Add tests for batch flattening logic — `Labeler.act_in_batch` (line ~295) and `act_in_batch_async` (line ~369) have complex state management (per-input step tracking, idx increments, failed item propagation) with no dedicated tests.
-- [ ] Add parametrized tests for enum conversion edge cases — nested enums in lists, optional enum fields, missing enum members in `_convert_enum_names_to_values` and `_apply_enum_mappings`.
+- [x] Add tests for batch flattening logic — done in v1.4.3 (`tests/test_batch.py`, 8 tests).
+- [x] Add parametrized tests for enum conversion edge cases — done in v1.4.3 (`tests/test_enum_parsing.py`, 13 tests).
 
 #### Style & Consistency (low impact)
 
