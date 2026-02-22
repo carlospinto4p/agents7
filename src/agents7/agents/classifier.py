@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.detector import Detector
 from agents7.agents.utils import extract_enum_members
 from agents7.exceptions import PropertyConfigurationError
@@ -59,7 +60,7 @@ class Classifier(Detector):
         Returns:
             Classifier: An instance of the Classifier agent.
         """
-        config = cls._load_yaml_settings(file_path)
+        config = load_yaml_settings(file_path)
         return Classifier(**config)
 
     @property

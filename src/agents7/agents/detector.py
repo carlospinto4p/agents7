@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.labeler import Labeler
 from agents7.agents.utils import extract_enum_members
 from agents7.exceptions import (
@@ -62,7 +63,7 @@ class Detector(Labeler):
         Returns:
             Detector: An instance of the Detector agent.
         """
-        config = cls._load_yaml_settings(file_path)
+        config = load_yaml_settings(file_path)
         return Detector(**config)
 
     @property

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.detector import Detector
 from agents7.models.base import Property
 
@@ -41,7 +42,7 @@ class Regressor(Detector):
         Returns:
             Regressor: An instance of the Regressor agent.
         """
-        config = cls._load_yaml_settings(file_path)
+        config = load_yaml_settings(file_path)
         return Regressor(**config)
 
     @property
