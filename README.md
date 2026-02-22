@@ -505,6 +505,8 @@ The semaphore is created per call (not stored on the instance), so different cal
 
 ### Agent Builder UI
 
+> Full workflow documentation: [docs/agent_builder.md](docs/agent_builder.md)
+
 An optional Streamlit-based UI for creating, testing, and evaluating agents interactively. Install with:
 
 ```bash
