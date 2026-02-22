@@ -72,10 +72,25 @@ The rest of the form depends on the agent type:
 - **Labeler:** Arbitrary output fields, each with a name, type,
   optional flag, and description.
 
+#### Discover from Data (optional)
+
+A collapsible section that lets the LLM suggest the output schema
+automatically. Provide:
+
+| Widget | Description |
+|--------|-------------|
+| Ollama model | Model used for discovery (same selector as Step 2) |
+| Intent | 1-2 sentence description of what the agent should do |
+| JSONL upload | Sample data file (one JSON object per line) |
+
+After uploading, a preview of the first 5 records is shown. Click
+**Discover Schema** to run the LLM analysis. The result pre-fills the
+form below (categories, reasons, fields, etc.) for review and editing.
+
 **Outputs stored in `state_dict`:**
 
 ```
-agent_type, agent_name,
+agent_type, agent_name, intent, sample_data,
 categories, reasons, category_reasons   (classifier)
 value_type, reasons                     (detector / regressor)
 fields                                  (labeler)
@@ -98,6 +113,14 @@ provide input/output examples.
 | Model selector | Dropdown of models detected from Ollama |
 | System prompt | Free-text prompt that instructs the LLM |
 | Examples | List of input/output pairs (resizable) |
+
+#### Generate Prompt & Examples (optional)
+
+If intent and sample data were provided in Step 1, a
+**Generate Prompt & Examples** button appears above the system prompt
+text area. Clicking it asks the LLM to write a system prompt and 2-4
+few-shot examples based on the intent, the schema from Step 1, and
+the sample data. The generated values pre-fill the form for editing.
 
 **Outputs stored in `state_dict`:**
 
@@ -293,7 +316,7 @@ initialized once when the app loads:
 they move through the steps:
 
 ```
-Step 1 sets:  agent_type, agent_name, categories, reasons,
+Step 1 sets:  agent_type, agent_name, intent, sample_data, categories, reasons,
               category_reasons, value_type, fields
 Step 2 sets:  model_name, system_prompt, examples
 Step 4 sets:  eval_data

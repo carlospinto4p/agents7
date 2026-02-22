@@ -42,6 +42,10 @@ class AgentBuilderState:
     system_prompt: str = ""
     examples: list[dict] = field(default_factory=list)
 
+    # Discovery
+    intent: str = ""
+    sample_data: list[dict] = field(default_factory=list)
+
     # Step 4 — Evaluate
     eval_data: list[dict] = field(default_factory=list)
 

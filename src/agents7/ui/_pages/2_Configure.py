@@ -44,6 +44,10 @@ def render() -> None:
 
     # --- System prompt ---
     st.subheader("System Prompt")
+
+    # Generate from discovery data
+    _prompt_generation_section(sd)
+
     sd["system_prompt"] = st.text_area(
         "System prompt",
         value=sd.get("system_prompt", ""),
@@ -95,3 +99,50 @@ def render() -> None:
         st.code(agent.prompt, language="text")
     except Exception as e:
         st.warning(f"Cannot preview prompt: {e}")
+
+
+def _prompt_generation_section(sd: dict) -> None:
+    """Button to auto-generate system prompt and examples."""
+    has_intent = bool(sd.get("intent", "").strip())
+    has_data = bool(sd.get("sample_data"))
+
+    if not (has_intent and has_data):
+        st.info(
+            "To auto-generate the prompt, provide an "
+            "**intent** and **sample data** in Step 1 "
+            "(Discover from Data)."
+        )
+        return
+
+    if st.button(
+        "Generate Prompt & Examples",
+        key="generate_prompt_btn",
+    ):
+        _run_prompt_generation(sd)
+
+
+def _run_prompt_generation(sd: dict) -> None:
+    """Execute prompt generation and merge results."""
+    from agents7.llm import LLMEngine
+    from agents7.ui.discovery.analyzer import generate_prompt
+
+    agent_type = sd.get("agent_type", "classifier")
+    intent = sd["intent"]
+    sample_data = sd["sample_data"]
+    model_name = sd.get("model_name", "qwen3")
+
+    engine = LLMEngine(provider="ollama", model_name=model_name)
+
+    with st.spinner("Generating prompt and examples..."):
+        try:
+            result = generate_prompt(
+                engine, agent_type, intent, sd, sample_data
+            )
+            sd["system_prompt"] = result["system_prompt"]
+            sd["examples"] = result["examples"]
+            st.success(
+                "Prompt and examples generated! Review and edit below."
+            )
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Prompt generation failed: {exc}")

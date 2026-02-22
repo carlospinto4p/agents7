@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import json
+
 import streamlit as st
 
-from agents7.ui._pages import _state_from_dict, resize_list, safe_index
+from agents7.ui._pages import (
+    _state_from_dict,
+    parse_jsonl,
+    resize_list,
+    safe_index,
+)
 from agents7.ui.codegen.model_generator import (
     generate_model_code,
 )
@@ -55,6 +62,9 @@ def render() -> None:
         "Agent name (snake_case)",
         value=sd.get("agent_name", ""),
     )
+
+    # ---- Discover from Data ----
+    _discovery_section(sd)
 
     # ---- Classifier ----
     if agent_type == "classifier":
@@ -157,6 +167,114 @@ def _labeler_form(sd: dict) -> None:
         )
 
     sd["fields"] = fields
+
+
+def _discovery_section(sd: dict) -> None:
+    """Collapsible section for LLM-powered schema discovery."""
+    with st.expander("Discover from Data", expanded=False):
+        st.caption(
+            "Upload sample data and describe your intent — "
+            "the LLM will suggest categories, reasons, or "
+            "fields to pre-fill the form below."
+        )
+
+        # Model selector
+        from agents7.ui.ollama_utils import (
+            check_connection,
+            list_available_models,
+        )
+
+        connected = check_connection()
+        if connected:
+            models = list_available_models()
+            if models:
+                current = sd.get("model_name", "qwen3")
+                idx = models.index(current) if current in models else 0
+                sd["model_name"] = st.selectbox(
+                    "Ollama model",
+                    models,
+                    index=idx,
+                    key="discovery_model_select",
+                )
+            else:
+                sd["model_name"] = st.text_input(
+                    "Model name",
+                    value=sd.get("model_name", "qwen3"),
+                    key="discovery_model_input",
+                )
+        else:
+            st.warning(
+                "Ollama not connected. Start it with "
+                "`ollama serve` for auto-discovery."
+            )
+            sd["model_name"] = st.text_input(
+                "Model name (manual)",
+                value=sd.get("model_name", "qwen3"),
+                key="discovery_model_manual",
+            )
+
+        # Intent
+        sd["intent"] = st.text_input(
+            "Intent (what should this agent do?)",
+            value=sd.get("intent", ""),
+            placeholder=(
+                "e.g. Classify customer support tickets by urgency and topic"
+            ),
+            key="discovery_intent",
+        )
+
+        # JSONL upload
+        uploaded = st.file_uploader(
+            "Upload sample data (JSONL)",
+            type=["jsonl"],
+            key="discovery_upload",
+        )
+        if uploaded is not None:
+            text = uploaded.getvalue().decode("utf-8")
+            sd["sample_data"] = parse_jsonl(text)
+
+        # Preview
+        sample_data = sd.get("sample_data", [])
+        if sample_data:
+            st.write(
+                f"**{len(sample_data)} records loaded.** Preview (first 5):"
+            )
+            for record in sample_data[:5]:
+                st.code(json.dumps(record, ensure_ascii=False))
+
+        # Discover button
+        has_intent = bool(sd.get("intent", "").strip())
+        has_data = bool(sd.get("sample_data"))
+
+        if st.button(
+            "Discover Schema",
+            disabled=not (has_intent and has_data),
+            key="discover_schema_btn",
+        ):
+            _run_discovery(sd)
+
+
+def _run_discovery(sd: dict) -> None:
+    """Execute schema discovery and merge results."""
+    from agents7.llm import LLMEngine
+    from agents7.ui.discovery.analyzer import discover_schema
+
+    agent_type = sd.get("agent_type", "classifier")
+    intent = sd["intent"]
+    sample_data = sd["sample_data"]
+    model_name = sd.get("model_name", "qwen3")
+
+    engine = LLMEngine(provider="ollama", model_name=model_name)
+
+    with st.spinner("Discovering schema..."):
+        try:
+            result = discover_schema(engine, agent_type, intent, sample_data)
+            for key, value in result.items():
+                sd[key] = value
+            st.success("Schema discovered! Review below.")
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Discovery failed: {exc}")
 
 
 def _enum_editor(sd: dict, key: str, label: str) -> None:

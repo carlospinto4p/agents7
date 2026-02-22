@@ -116,5 +116,7 @@ def _state_from_dict(sd: dict) -> AgentBuilderState:
         model_name=sd.get("model_name", "qwen3"),
         system_prompt=sd.get("system_prompt", ""),
         examples=sd.get("examples", []),
+        intent=sd.get("intent", ""),
+        sample_data=sd.get("sample_data", []),
         eval_data=sd.get("eval_data", []),
     )
