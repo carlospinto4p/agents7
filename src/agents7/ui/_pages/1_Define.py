@@ -179,39 +179,9 @@ def _discovery_section(sd: dict) -> None:
         )
 
         # Model selector
-        from agents7.ui.ollama_utils import (
-            check_connection,
-            list_available_models,
-        )
+        from agents7.ui.ollama_utils import render_model_selector
 
-        connected = check_connection()
-        if connected:
-            models = list_available_models()
-            if models:
-                current = sd.get("model_name", "qwen3")
-                idx = models.index(current) if current in models else 0
-                sd["model_name"] = st.selectbox(
-                    "Ollama model",
-                    models,
-                    index=idx,
-                    key="discovery_model_select",
-                )
-            else:
-                sd["model_name"] = st.text_input(
-                    "Model name",
-                    value=sd.get("model_name", "qwen3"),
-                    key="discovery_model_input",
-                )
-        else:
-            st.warning(
-                "Ollama not connected. Start it with "
-                "`ollama serve` for auto-discovery."
-            )
-            sd["model_name"] = st.text_input(
-                "Model name (manual)",
-                value=sd.get("model_name", "qwen3"),
-                key="discovery_model_manual",
-            )
+        render_model_selector(sd, key_prefix="discovery_")
 
         # Intent
         sd["intent"] = st.text_input(

@@ -7,10 +7,7 @@ import streamlit as st
 from agents7.ui._pages import _state_from_dict, resize_list
 from agents7.ui.codegen.yaml_generator import generate_yaml
 from agents7.ui.helpers import build_agent_from_state
-from agents7.ui.ollama_utils import (
-    check_connection,
-    list_available_models,
-)
+from agents7.ui.ollama_utils import render_model_selector
 
 
 def render() -> None:
@@ -20,27 +17,7 @@ def render() -> None:
 
     # --- Ollama model selection ---
     st.subheader("LLM Model")
-    connected = check_connection()
-    if connected:
-        models = list_available_models()
-        if models:
-            current = sd.get("model_name", "qwen3")
-            idx = models.index(current) if current in models else 0
-            sd["model_name"] = st.selectbox("Ollama model", models, index=idx)
-        else:
-            st.warning("Ollama is running but no models found.")
-            sd["model_name"] = st.text_input(
-                "Model name", value=sd.get("model_name", "qwen3")
-            )
-    else:
-        st.error(
-            "Cannot connect to Ollama. "
-            "Make sure it is running (`ollama serve`)."
-        )
-        sd["model_name"] = st.text_input(
-            "Model name (manual)",
-            value=sd.get("model_name", "qwen3"),
-        )
+    render_model_selector(sd)
 
     # --- System prompt ---
     st.subheader("System Prompt")
