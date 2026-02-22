@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v1.4.1 - 22nd February 2026
+
+- Module `ui`:
+  - `discovery/analyzer.py`: `discover_schema()` and `generate_prompt()` now include the `_messages` list in their return dicts.
+  - `_pages/1_Define.py`: added "Last Discovery Prompt Sent" expander showing the messages sent to the LLM during schema discovery.
+  - `_pages/2_Configure.py`: added "Last Generation Prompt Sent" expander showing the messages sent to the LLM during prompt generation.
+- `tests/test_ui_discovery.py`: added tests for `_messages` key in analyzer results.
+
+
 ### v1.4.0 - 22nd February 2026
 
 - Module `ui`:
