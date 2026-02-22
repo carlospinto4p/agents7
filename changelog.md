@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v1.4.6 - 23rd February 2026
+
+- Module `.claude`:
+  - `rules/versioning.md`: expanded changelog template to cover
+    `Tests:` and `Module .claude:` entry patterns.
+  - `rules/refactoring.md`: clarified that the 6-7 version counter
+    resets after each refactoring pass.
+
+
 ### v1.4.5 - 23rd February 2026
 
 - Module `.claude`:
