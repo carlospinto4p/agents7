@@ -87,6 +87,7 @@ def _render_app():
         "Step",
         labels,
         index=st.session_state.step,
+        key="nav_step",
     )
     st.session_state.step = labels.index(choice)
 
