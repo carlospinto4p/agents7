@@ -71,7 +71,9 @@ def discover_schema(
 
     raw = response["response"]
     suggestion = model_cls.model_validate_json(raw)
-    return _suggestion_to_state(agent_type, suggestion)
+    result = _suggestion_to_state(agent_type, suggestion)
+    result["_messages"] = messages
+    return result
 
 
 def generate_prompt(
@@ -124,6 +126,7 @@ def generate_prompt(
             {"input": ex.input, "output": ex.output}
             for ex in suggestion.examples
         ],
+        "_messages": messages,
     }
 
 

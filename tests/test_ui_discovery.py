@@ -380,3 +380,36 @@ def test_generate_prompt_uses_schema_description():
     messages = call_args[1]["messages"]
     system_msg = messages[0]["content"]
     assert "Cat A" in system_msg
+
+
+# --- _messages key ---
+
+
+def test_discover_schema_returns_messages():
+    suggestion = PropertySuggestion(
+        value_type="float",
+        reasons=[
+            DiscoveredEnum(name="R", description="Reason"),
+        ],
+    )
+    engine = _mock_engine_chat(suggestion.model_dump_json())
+
+    result = discover_schema(engine, "detector", "test", [{"x": 1}])
+    assert "_messages" in result
+    assert len(result["_messages"]) == 2
+    assert result["_messages"][0]["role"] == "system"
+    assert result["_messages"][1]["role"] == "user"
+
+
+def test_generate_prompt_returns_messages():
+    suggestion = PromptSuggestion(
+        system_prompt="Do it.",
+        examples=[],
+    )
+    engine = _mock_engine_chat(suggestion.model_dump_json())
+
+    result = generate_prompt(engine, "classifier", "intent", {}, [{"x": 1}])
+    assert "_messages" in result
+    assert len(result["_messages"]) == 2
+    assert result["_messages"][0]["role"] == "system"
+    assert result["_messages"][1]["role"] == "user"

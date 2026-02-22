@@ -120,6 +120,14 @@ def _prompt_generation_section(sd: dict) -> None:
     ):
         _run_prompt_generation(sd)
 
+    # Show last generation prompt
+    last_msgs = sd.get("last_generation_messages", [])
+    if last_msgs:
+        with st.expander("Last Generation Prompt Sent"):
+            for msg in last_msgs:
+                st.markdown(f"**{msg['role'].title()}**")
+                st.code(msg["content"])
+
 
 def _run_prompt_generation(sd: dict) -> None:
     """Execute prompt generation and merge results."""
@@ -138,6 +146,7 @@ def _run_prompt_generation(sd: dict) -> None:
             result = generate_prompt(
                 engine, agent_type, intent, sd, sample_data
             )
+            sd["last_generation_messages"] = result.pop("_messages", [])
             sd["system_prompt"] = result["system_prompt"]
             sd["examples"] = result["examples"]
             st.success(

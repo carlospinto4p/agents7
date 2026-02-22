@@ -253,6 +253,14 @@ def _discovery_section(sd: dict) -> None:
         ):
             _run_discovery(sd)
 
+        # Show last discovery prompt
+        last_msgs = sd.get("last_discovery_messages", [])
+        if last_msgs:
+            with st.expander("Last Discovery Prompt Sent"):
+                for msg in last_msgs:
+                    st.markdown(f"**{msg['role'].title()}**")
+                    st.code(msg["content"])
+
 
 def _run_discovery(sd: dict) -> None:
     """Execute schema discovery and merge results."""
@@ -269,6 +277,7 @@ def _run_discovery(sd: dict) -> None:
     with st.spinner("Discovering schema..."):
         try:
             result = discover_schema(engine, agent_type, intent, sample_data)
+            sd["last_discovery_messages"] = result.pop("_messages", [])
             for key, value in result.items():
                 sd[key] = value
             st.success("Schema discovered! Review below.")
