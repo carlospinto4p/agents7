@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v1.3.1 - 22nd February 2026
+
+- Module `llm`:
+  - `ollama.py`: Fixed infinite recursion in `_build_options()` — the
+    method was calling itself instead of building the options dict
+    (introduced in v1.2.8 refactor).
+
+
 ### v1.3.0 - 22nd February 2026
 
 - UI `_pages/__init__.py`:
