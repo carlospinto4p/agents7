@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v1.3.9 - 22nd February 2026
+
+- Module `ui`:
+  - `3_Test.py`: added a preview of the first 5 records after uploading a JSONL file in the Batch Test tab, along with a total record count.
+
+
 ### v1.3.8 - 22nd February 2026
 
 - Module `ui`:
