@@ -1,6 +1,23 @@
 
 ## Changelog - Agents7
 
+### v1.3.0 - 22nd February 2026
+
+- UI `_pages/__init__.py`:
+  - New `parse_jsonl()` shared helper for JSONL file parsing.
+- UI `_pages/4_Evaluate.py`:
+  - File uploader now accepts both CSV and JSONL files.
+  - JSONL files are parsed line-by-line into a DataFrame.
+- UI `_pages/3_Test.py`:
+  - Batch Test tab now includes a JSONL file uploader as an
+    alternative to the text area.
+- Tests:
+  - New `tests/test_ui_jsonl.py` with 12 tests for JSONL parsing
+    (valid input, empty/blank, malformed lines, non-object JSON,
+    edge cases).
+- `README.md` updated to reflect JSONL upload support.
+
+
 ### v1.2.8 - 15th February 2026
 
 - Code deduplication:
