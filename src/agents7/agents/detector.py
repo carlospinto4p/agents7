@@ -68,22 +68,12 @@ class Detector(Labeler):
 
     @property
     def possible_reasons(self) -> dict[str, str]:
-        """
-        Get the possible reasons for the output model.
-        This method retrieves the possible reasons defined in the
-        `output_model.reason` StrEnum class values.
-
-        Returns:
-            dict[str, str]: A dictionary of possible reasons,
-                <reason name>: <description>.
-        """
+        """Possible reasons from the output model's reason enum."""
         return extract_enum_members(self.output_model, "reason")
 
     @property
     def prompt(self) -> str:
-        """Get the full prompt used by the agent.
-        :return: Full prompt string.
-        """
+        """Full prompt used by the agent."""
         return self._build_prompt(
             "You need to stick to the reasons defined "
             "in the output model schema above."
@@ -91,9 +81,7 @@ class Detector(Labeler):
 
     @property
     def prompt_for_batch(self) -> str:
-        """Get the full prompt for batch processing.
-        :return: Full prompt string.
-        """
+        """Full prompt for batch processing."""
         return self._build_prompt(
             "You need to stick to the reasons defined "
             "in the output model schema above. Respond "

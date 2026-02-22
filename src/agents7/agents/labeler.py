@@ -48,7 +48,7 @@ class Labeler(BaseAgent):
     """
 
     output_model: type[BaseModel]
-    examples: list[dict] = None
+    examples: list[dict] | None = None
     validators: list[Callable[[BaseModel], BaseModel]] | None = None
 
     def __post_init__(self):
@@ -108,16 +108,12 @@ class Labeler(BaseAgent):
 
     @property
     def prompt(self) -> str:
-        """Get the full prompt used by the agent.
-        :return: Full prompt string.
-        """
+        """Full prompt used by the agent."""
         return self._build_prompt()
 
     @property
     def prompt_for_batch(self) -> str:
-        """Get the full prompt for batch processing.
-        :return: Full prompt string.
-        """
+        """Full prompt for batch processing."""
         return self._build_prompt(
             "You will receive multiple inputs. Process "
             "each one independently and return an array "
@@ -163,11 +159,7 @@ class Labeler(BaseAgent):
 
     @property
     def output_model_list(self) -> type[BaseModel]:
-        """
-        Get a dynamic model that wraps the output_model in a list.
-        :return: A dynamic pydantic model class with a single field `items`
-            which is a list of `self.output_model`.
-        """
+        """Dynamic model wrapping ``output_model`` in a list."""
         # Create a dynamic model that wraps the output_model in a list
         return create_model(
             f"{self.output_model.__name__}List",
@@ -230,7 +222,7 @@ class Labeler(BaseAgent):
     async def act_async(
         self,
         input_data: dict | list[dict],
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
         _idx: int = 0,
     ) -> AgentResponse:
         """Async version of `act()`.
@@ -268,7 +260,7 @@ class Labeler(BaseAgent):
     def act_in_batch(
         self,
         input_list: list[dict | list[dict]],
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
         requests_per_prompt: int = 10,
         iter_func: Callable = tqdm,
     ) -> list[AgentResponse]:
@@ -312,7 +304,7 @@ class Labeler(BaseAgent):
     async def act_in_batch_async(
         self,
         input_list: list[dict | list[dict]],
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
         requests_per_prompt: int = 10,
         with_tqdm: bool = True,
         batch_settings: BatchSettings | None = None,
@@ -386,7 +378,7 @@ class Labeler(BaseAgent):
     async def _act_in_batch_async_request(
         self,
         input_list: list[dict | list[dict]],
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
         _idx: int = 0,
     ) -> AgentResponse:
         """Send a single async batch request to the LLM.
@@ -424,7 +416,7 @@ class Labeler(BaseAgent):
     def _act_in_batch_request(
         self,
         input_list: list[dict | list[dict]],
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
     ) -> AgentResponse:
         """Send a single sync batch request to the LLM.
 

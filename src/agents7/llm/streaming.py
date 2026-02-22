@@ -7,7 +7,7 @@ role, and metrics are available as attributes.
 
 from __future__ import annotations
 
-from typing import AsyncIterator, Callable, Iterator
+from typing import Any, AsyncIterator, Callable, Iterator
 
 
 class _StreamBase:
@@ -49,7 +49,7 @@ class _StreamBase:
         """Token counts and duration from the final chunk."""
         return self._metrics
 
-    def _extract(self, chunk) -> tuple[str, str]:
+    def _extract(self, chunk: Any) -> tuple[str, str]:
         """Extract content and thinking from a chunk."""
         content = ""
         thinking = ""
@@ -69,7 +69,7 @@ class _StreamBase:
 
         return content, thinking
 
-    def _read_final(self, chunk) -> None:
+    def _read_final(self, chunk: Any) -> None:
         """Read metrics from the final chunk."""
         if getattr(chunk, "done", False):
             eval_count = getattr(chunk, "eval_count", None)
@@ -92,7 +92,7 @@ class _StreamBase:
             "metrics": dict(self._metrics),
         }
 
-    def _process_chunk(self, chunk) -> str | None:
+    def _process_chunk(self, chunk: Any) -> str | None:
         """Process a single chunk, returning content or
         `None`."""
         content, thinking = self._extract(chunk)

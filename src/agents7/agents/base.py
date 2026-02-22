@@ -51,12 +51,7 @@ class BaseAgent(ABC):
 
     @property
     def resolved_system_prompt(self) -> str:
-        """
-        Get the system prompt with $variable placeholders resolved
-        using prompt_params. Callable values are evaluated each time.
-        Unmatched placeholders are left as-is.
-        :return: The resolved system prompt string.
-        """
+        """Resolved system prompt with placeholders substituted."""
         if not self.prompt_params:
             return self.system_prompt
         resolved = {

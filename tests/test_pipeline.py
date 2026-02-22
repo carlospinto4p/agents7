@@ -11,7 +11,6 @@ from agents7.agents.labeler import Labeler
 from agents7.agents.pipeline import (
     Pipeline,
     PipelineStep,
-    _default_mapper,
 )
 from agents7.exceptions import PipelineConfigurationError
 from agents7.llm import LLMEngine
@@ -70,7 +69,7 @@ def test_valid_step_default_mapper():
     agent = _make_labeler()
     step = PipelineStep(agent=agent)
     assert step.agent is agent
-    assert step.mapper is _default_mapper
+    assert step.mapper is PipelineStep.default_mapper
 
 
 def test_custom_mapper():
@@ -116,14 +115,14 @@ def test_non_step_raises():
         Pipeline(steps=["not-a-step"])
 
 
-# --- _default_mapper Tests ---
+# --- PipelineStep.default_mapper() Tests ---
 
 
 def test_converts_model_to_dict():
     """Default mapper converts model to dict via model_dump."""
     model = StepOneOutput(name="Alice")
     response = _make_response(model)
-    result = _default_mapper(response)
+    result = PipelineStep.default_mapper(response)
     assert result == {"name": "Alice"}
 
 
@@ -511,7 +510,7 @@ def test_valid_yaml(tmp_path):
 
     pipeline = Pipeline.from_yaml(str(pipeline_yaml))
     assert len(pipeline.steps) == 2
-    assert pipeline.steps[0].mapper is _default_mapper
+    assert pipeline.steps[0].mapper is PipelineStep.default_mapper
 
 
 def test_yaml_with_agent_type(tmp_path):

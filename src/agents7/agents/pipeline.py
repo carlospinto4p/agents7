@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from pydantic import BaseModel
 
@@ -15,15 +15,6 @@ from agents7.models import AgentResponse
 from agents7.settings import BatchSettings
 
 
-def _default_mapper(response: AgentResponse) -> dict:
-    """
-    Default mapper: converts the response model to a dict.
-    :param response: The AgentResponse from the previous step.
-    :return: Dictionary representation of the model.
-    """
-    return response.model.model_dump()
-
-
 @dataclass(frozen=True)
 class PipelineStep:
     """
@@ -33,20 +24,31 @@ class PipelineStep:
         agent (BaseAgent): The agent to execute at this step.
         mapper (Callable[[AgentResponse], dict]): Function that
             maps the agent response to the input dict for the
-            next step. Defaults to `_default_mapper` which
+            next step. Defaults to `default_mapper` which
             calls `model.model_dump()`.
     """
 
     agent: BaseAgent
-    mapper: Callable[[AgentResponse], dict] = field(default=_default_mapper)
+    mapper: Callable[[AgentResponse], dict] | None = None
 
     def __post_init__(self):
         if not isinstance(self.agent, BaseAgent):
             raise PipelineConfigurationError(
                 "`agent` must be a BaseAgent instance."
             )
+        if self.mapper is None:
+            object.__setattr__(self, "mapper", PipelineStep.default_mapper)
         if not callable(self.mapper):
             raise PipelineConfigurationError("`mapper` must be callable.")
+
+    @staticmethod
+    def default_mapper(response: AgentResponse) -> dict:
+        """Default mapper: converts the response model to a dict.
+
+        :param response: The AgentResponse from the previous step.
+        :return: Dictionary representation of the model.
+        """
+        return response.model.model_dump()
 
 
 class PipelineResponse(BaseModel):
@@ -190,7 +192,7 @@ class Pipeline:
     def act(
         self,
         input_data: dict,
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
     ) -> PipelineResponse:
         """
         Execute the pipeline synchronously on a single input.
@@ -225,7 +227,7 @@ class Pipeline:
     async def act_async(
         self,
         input_data: dict,
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
     ) -> PipelineResponse:
         """
         Execute the pipeline asynchronously on a single
@@ -263,7 +265,7 @@ class Pipeline:
     def act_in_batch(
         self,
         input_list: list[dict],
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
     ) -> list[PipelineResponse]:
         """
         Execute the pipeline on a batch of inputs. Each step
@@ -305,7 +307,7 @@ class Pipeline:
     async def act_in_batch_async(
         self,
         input_list: list[dict],
-        chat_kwargs: dict = None,
+        chat_kwargs: dict | None = None,
         batch_settings: BatchSettings | None = None,
     ) -> list[PipelineResponse]:
         """
@@ -412,7 +414,7 @@ class Pipeline:
             if mapper_path:
                 mapper = import_from_path(mapper_path)
             else:
-                mapper = _default_mapper
+                mapper = PipelineStep.default_mapper
 
             pipeline_steps.append(PipelineStep(agent=agent, mapper=mapper))
 

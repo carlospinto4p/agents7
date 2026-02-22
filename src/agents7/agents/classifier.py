@@ -65,34 +65,17 @@ class Classifier(Detector):
 
     @property
     def possible_categories(self) -> dict[str, str]:
-        """
-        Get the possible categories for the output model.
-
-        Returns:
-            dict[str, str]: A dictionary of possible categories,
-                <category name>: <description>.
-        """
+        """Possible categories from the output model's enum."""
         return extract_enum_members(self.output_model, "category")
 
     @property
     def possible_reasons(self) -> dict[str, str]:
-        """
-        Get the possible reasons for the output model.
-
-        Returns:
-            dict[str, str]: A dictionary of possible reasons,
-                <reason name>: <description>.
-        """
+        """Possible reasons from the output model's reason enum."""
         return extract_enum_members(self.output_model, "reason")
 
     @property
     def category_reasons_constraints(self) -> str:
-        """
-        Get the category-reason constraints as a formatted string.
-
-        Returns:
-            str: Formatted string describing valid reasons for each category.
-        """
+        """Category-reason constraints as a formatted string."""
         if not self.output_model.CATEGORY_REASONS:
             return ""
 
