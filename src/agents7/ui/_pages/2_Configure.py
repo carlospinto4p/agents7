@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from agents7.ui._pages import _state_from_dict
+from agents7.ui._pages import _state_from_dict, resize_list
 from agents7.ui.codegen.yaml_generator import generate_yaml
 from agents7.ui.helpers import build_agent_from_state
 from agents7.ui.ollama_utils import (
@@ -59,9 +59,11 @@ def render() -> None:
         value=len(examples),
         step=1,
     )
-    while len(examples) < num_ex:
-        examples.append({"input": "", "output": ""})
-    examples = examples[:num_ex]
+    examples = resize_list(
+        examples,
+        num_ex,
+        lambda: {"input": "", "output": ""},
+    )
 
     for i, ex in enumerate(examples):
         cols = st.columns(2)

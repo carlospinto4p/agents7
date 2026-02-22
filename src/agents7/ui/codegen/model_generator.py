@@ -180,13 +180,7 @@ def _class_for_property(
     rsn_members = [(m.name, m.description) for m in state.reasons]
     rsn_enum = _make_str_enum(state.reason_enum_name, rsn_members)
 
-    type_map = {
-        "float": float,
-        "int": int,
-        "str": str,
-        "bool": bool,
-    }
-    value_python_type = type_map.get(state.value_type, float)
+    value_python_type = _FIELD_TYPE_MAP.get(state.value_type, float)
 
     cls = type(
         state.model_class_name,

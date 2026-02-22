@@ -10,6 +10,7 @@ from agents7.ui._pages import (
     get_expected_fields,
     make_progress_callback,
     parse_jsonl,
+    resize_list,
 )
 from agents7.ui.evaluation.export import (
     format_results_csv,
@@ -62,12 +63,13 @@ def render() -> None:
         )
         expected_fields = get_expected_fields(state)
 
-        while len(eval_data) < num_rows:
+        def _default_row() -> dict:
             row = {"input": ""}
             for f in expected_fields:
                 row[f] = ""
-            eval_data.append(row)
-        eval_data = eval_data[:num_rows]
+            return row
+
+        eval_data = resize_list(eval_data, num_rows, _default_row)
 
         for i, row in enumerate(eval_data):
             cols = st.columns(1 + len(expected_fields))

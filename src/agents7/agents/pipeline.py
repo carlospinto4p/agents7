@@ -93,6 +93,100 @@ class Pipeline:
                     f"got {type(step).__name__}."
                 )
 
+    def _process_step_result(
+        self,
+        step_idx: int,
+        step: PipelineStep,
+        response: AgentResponse,
+        executed_steps: list[AgentResponse],
+    ) -> tuple[bool, dict | None]:
+        """Evaluate a single pipeline step result.
+
+        :param step_idx: Index of the current step.
+        :param step: The pipeline step that was executed.
+        :param response: The agent response from the step.
+        :param executed_steps: Accumulator for step
+            responses (modified in place).
+        :return: ``(success, next_input)``. If success is
+            False, the pipeline should stop. next_input is
+            None on last step or on failure.
+        """
+        executed_steps.append(response)
+        if response.model is None:
+            return False, None
+        if step_idx < len(self.steps) - 1:
+            try:
+                return True, step.mapper(response)
+            except Exception as e:
+                logger.error(
+                    f"Pipeline mapper failed at step {step_idx}: {e}"
+                )
+                return False, None
+        return True, None
+
+    def _evaluate_batch_step(
+        self,
+        step_idx: int,
+        step: PipelineStep,
+        ordered_indices: list[int],
+        batch_responses: list[AgentResponse],
+        per_input_steps: dict[int, list[AgentResponse]],
+        failed: dict[int, None],
+    ) -> dict[int, dict]:
+        """Evaluate batch responses for one pipeline step.
+
+        Updates ``per_input_steps`` and ``failed`` in place.
+
+        :return: Active items for the next step.
+        """
+        next_active: dict[int, dict] = {}
+        for orig_idx, response in zip(ordered_indices, batch_responses):
+            per_input_steps[orig_idx].append(response)
+            if response.model is None:
+                failed[orig_idx] = None
+                continue
+            if step_idx < len(self.steps) - 1:
+                try:
+                    next_active[orig_idx] = step.mapper(response)
+                except Exception as e:
+                    logger.error(
+                        f"Pipeline mapper failed at step "
+                        f"{step_idx} for item "
+                        f"{orig_idx}: {e}"
+                    )
+                    failed[orig_idx] = None
+            else:
+                next_active[orig_idx] = {}
+        return next_active
+
+    @staticmethod
+    def _assemble_batch_results(
+        n: int,
+        per_input_steps: dict[int, list[AgentResponse]],
+        failed: dict[int, None],
+    ) -> list[PipelineResponse]:
+        """Assemble batch results in original input order."""
+        results: list[PipelineResponse] = []
+        for i in range(n):
+            steps = per_input_steps[i]
+            if i in failed:
+                results.append(
+                    PipelineResponse(
+                        steps=steps,
+                        model=None,
+                        success=False,
+                    )
+                )
+            else:
+                results.append(
+                    PipelineResponse(
+                        steps=steps,
+                        model=(steps[-1].model if steps else None),
+                        success=bool(steps),
+                    )
+                )
+        return results
+
     def act(
         self,
         input_data: dict,
@@ -101,8 +195,8 @@ class Pipeline:
         """
         Execute the pipeline synchronously on a single input.
         :param input_data: Input dict for the first step.
-        :param chat_kwargs: Extra kwargs passed to each agent's
-            `act()` method.
+        :param chat_kwargs: Extra kwargs passed to each
+            agent's ``act()`` method.
         :return: A PipelineResponse with all step results.
         """
         current_input = input_data
@@ -110,26 +204,17 @@ class Pipeline:
 
         for i, step in enumerate(self.steps):
             response = step.agent.act(current_input, chat_kwargs=chat_kwargs)
-            executed_steps.append(response)
-
-            if response.model is None:
+            ok, next_input = self._process_step_result(
+                i, step, response, executed_steps
+            )
+            if not ok:
                 return PipelineResponse(
                     steps=executed_steps,
                     model=None,
                     success=False,
                 )
-
-            # Skip mapper on last step
-            if i < len(self.steps) - 1:
-                try:
-                    current_input = step.mapper(response)
-                except Exception as e:
-                    logger.error(f"Pipeline mapper failed at step {i}: {e}")
-                    return PipelineResponse(
-                        steps=executed_steps,
-                        model=None,
-                        success=False,
-                    )
+            if next_input is not None:
+                current_input = next_input
 
         return PipelineResponse(
             steps=executed_steps,
@@ -143,10 +228,11 @@ class Pipeline:
         chat_kwargs: dict = None,
     ) -> PipelineResponse:
         """
-        Execute the pipeline asynchronously on a single input.
+        Execute the pipeline asynchronously on a single
+        input.
         :param input_data: Input dict for the first step.
-        :param chat_kwargs: Extra kwargs passed to each agent's
-            `act_async()` method.
+        :param chat_kwargs: Extra kwargs passed to each
+            agent's ``act_async()`` method.
         :return: A PipelineResponse with all step results.
         """
         current_input = input_data
@@ -156,26 +242,17 @@ class Pipeline:
             response = await step.agent.act_async(
                 current_input, chat_kwargs=chat_kwargs
             )
-            executed_steps.append(response)
-
-            if response.model is None:
+            ok, next_input = self._process_step_result(
+                i, step, response, executed_steps
+            )
+            if not ok:
                 return PipelineResponse(
                     steps=executed_steps,
                     model=None,
                     success=False,
                 )
-
-            # Skip mapper on last step
-            if i < len(self.steps) - 1:
-                try:
-                    current_input = step.mapper(response)
-                except Exception as e:
-                    logger.error(f"Pipeline mapper failed at step {i}: {e}")
-                    return PipelineResponse(
-                        steps=executed_steps,
-                        model=None,
-                        success=False,
-                    )
+            if next_input is not None:
+                current_input = next_input
 
         return PipelineResponse(
             steps=executed_steps,
@@ -190,83 +267,40 @@ class Pipeline:
     ) -> list[PipelineResponse]:
         """
         Execute the pipeline on a batch of inputs. Each step
-        processes all surviving items in one batch call. Failed
-        items are excluded from subsequent steps.
+        processes all surviving items. Failed items are
+        excluded from subsequent steps.
         :param input_list: List of input dicts.
-        :param chat_kwargs: Extra kwargs passed to each agent's
-            `act()` method.
-        :return: List of PipelineResponse, one per input, in
-            original order.
+        :param chat_kwargs: Extra kwargs passed to each
+            agent's ``act()`` method.
+        :return: List of PipelineResponse, one per input,
+            in original order.
         """
         n = len(input_list)
-        # Track active items: orig_index -> current_input
         active: dict[int, dict] = {i: inp for i, inp in enumerate(input_list)}
-        # Track per-input step results
         per_input_steps: dict[int, list[AgentResponse]] = {
             i: [] for i in range(n)
         }
-        # Track failed items
-        failed: dict[int, BaseModel | None] = {}
+        failed: dict[int, None] = {}
 
         for step_idx, step in enumerate(self.steps):
             if not active:
                 break
-
-            # Build ordered batch from active items
-            ordered_indices = sorted(active.keys())
-            batch_inputs = [active[i] for i in ordered_indices]
-
-            # Process batch: one act() call per input
+            ordered = sorted(active.keys())
+            batch_inputs = [active[i] for i in ordered]
             batch_responses = [
                 step.agent.act(inp, chat_kwargs=chat_kwargs)
                 for inp in batch_inputs
             ]
+            active = self._evaluate_batch_step(
+                step_idx,
+                step,
+                ordered,
+                batch_responses,
+                per_input_steps,
+                failed,
+            )
 
-            # Evaluate results
-            next_active: dict[int, dict] = {}
-            for orig_idx, response in zip(ordered_indices, batch_responses):
-                per_input_steps[orig_idx].append(response)
-
-                if response.model is None:
-                    failed[orig_idx] = None
-                    continue
-
-                # Apply mapper (skip on last step)
-                if step_idx < len(self.steps) - 1:
-                    try:
-                        next_active[orig_idx] = step.mapper(response)
-                    except Exception as e:
-                        logger.error(
-                            f"Pipeline mapper failed at step "
-                            f"{step_idx} for item {orig_idx}: {e}"
-                        )
-                        failed[orig_idx] = None
-                else:
-                    next_active[orig_idx] = {}  # placeholder
-
-            active = next_active
-
-        # Assemble results in original order
-        results: list[PipelineResponse] = []
-        for i in range(n):
-            if i in failed:
-                results.append(
-                    PipelineResponse(
-                        steps=per_input_steps[i],
-                        model=None,
-                        success=False,
-                    )
-                )
-            else:
-                steps = per_input_steps[i]
-                results.append(
-                    PipelineResponse(
-                        steps=steps,
-                        model=steps[-1].model if steps else None,
-                        success=bool(steps),
-                    )
-                )
-        return results
+        return self._assemble_batch_results(n, per_input_steps, failed)
 
     async def act_in_batch_async(
         self,
@@ -280,8 +314,8 @@ class Pipeline:
         concurrently. Failed items are excluded from
         subsequent steps.
         :param input_list: List of input dicts.
-        :param chat_kwargs: Extra kwargs passed to each agent's
-            `act_async()` method.
+        :param chat_kwargs: Extra kwargs passed to each
+            agent's ``act_async()`` method.
         :param batch_settings: Optional `BatchSettings`
             instance controlling concurrency. Defaults to
             `None` which uses `BatchSettings()`. Fields:
@@ -289,8 +323,8 @@ class Pipeline:
               of concurrent LLM requests. Overridable via
               the `BATCH_MAX_CONCURRENT` env var. Defaults
               to 5. `None` means unlimited concurrency.
-        :return: List of PipelineResponse, one per input, in
-            original order.
+        :return: List of PipelineResponse, one per input,
+            in original order.
         """
         settings = batch_settings or BatchSettings()
         sem = (
@@ -304,21 +338,20 @@ class Pipeline:
         per_input_steps: dict[int, list[AgentResponse]] = {
             i: [] for i in range(n)
         }
-        failed: dict[int, BaseModel | None] = {}
+        failed: dict[int, None] = {}
 
         for step_idx, step in enumerate(self.steps):
             if not active:
                 break
-
-            ordered_indices = sorted(active.keys())
-            batch_inputs = [active[i] for i in ordered_indices]
-
+            ordered = sorted(active.keys())
+            batch_inputs = [active[i] for i in ordered]
             batch_responses = list(
                 await asyncio.gather(
                     *[
                         run_with_semaphore(
                             step.agent.act_async(
-                                inp, chat_kwargs=chat_kwargs
+                                inp,
+                                chat_kwargs=chat_kwargs,
                             ),
                             sem,
                         )
@@ -326,50 +359,16 @@ class Pipeline:
                     ]
                 )
             )
+            active = self._evaluate_batch_step(
+                step_idx,
+                step,
+                ordered,
+                batch_responses,
+                per_input_steps,
+                failed,
+            )
 
-            next_active: dict[int, dict] = {}
-            for orig_idx, response in zip(ordered_indices, batch_responses):
-                per_input_steps[orig_idx].append(response)
-
-                if response.model is None:
-                    failed[orig_idx] = None
-                    continue
-
-                if step_idx < len(self.steps) - 1:
-                    try:
-                        next_active[orig_idx] = step.mapper(response)
-                    except Exception as e:
-                        logger.error(
-                            f"Pipeline mapper failed at step "
-                            f"{step_idx} for item {orig_idx}: "
-                            f"{e}"
-                        )
-                        failed[orig_idx] = None
-                else:
-                    next_active[orig_idx] = {}
-
-            active = next_active
-
-        results: list[PipelineResponse] = []
-        for i in range(n):
-            if i in failed:
-                results.append(
-                    PipelineResponse(
-                        steps=per_input_steps[i],
-                        model=None,
-                        success=False,
-                    )
-                )
-            else:
-                steps = per_input_steps[i]
-                results.append(
-                    PipelineResponse(
-                        steps=steps,
-                        model=steps[-1].model if steps else None,
-                        success=bool(steps),
-                    )
-                )
-        return results
+        return self._assemble_batch_results(n, per_input_steps, failed)
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Pipeline":

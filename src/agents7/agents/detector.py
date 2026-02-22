@@ -1,11 +1,7 @@
 from dataclasses import dataclass
 
 from agents7.agents.labeler import Labeler
-from agents7.agents.utils import (
-    extract_enum_members,
-    get_examples_str,
-    model_class_to_string,
-)
+from agents7.agents.utils import extract_enum_members
 from agents7.exceptions import (
     PropertyConfigurationError,
 )
@@ -84,42 +80,22 @@ class Detector(Labeler):
 
     @property
     def prompt(self) -> str:
-        """
-        Get the full prompt used by the agent, including the system prompt.
+        """Get the full prompt used by the agent.
         :return: Full prompt string.
         """
-        full_prompt = (
-            f"{self.resolved_system_prompt}\n\n"
-            f"## Output Model Schema\n\n"
-            f"{model_class_to_string(self.output_model)}\n\n"
-            f"You need to stick to the reasons defined in the "
-            f"output model schema above."
-        ).strip()
-
-        if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
-
-        return full_prompt
+        return self._build_prompt(
+            "You need to stick to the reasons defined "
+            "in the output model schema above."
+        )
 
     @property
     def prompt_for_batch(self) -> str:
-        """
-        Get the full prompt used by the agent, including the system prompt
-        and examples if provided. This prompt is used for batch processing.
+        """Get the full prompt for batch processing.
         :return: Full prompt string.
         """
-        full_prompt = (
-            f"{self.resolved_system_prompt}\n\n"
-            f"## Output Models Schema\n\n"
-            f"{model_class_to_string(self.output_model)}\n\n"
-            f"You need to stick to the reasons defined in the output "
-            f"model schema above. Respond with a JSON array of "
-            f"objects, each one matching the schema above."
-        ).strip()
-
-        if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
-
-        return full_prompt
+        return self._build_prompt(
+            "You need to stick to the reasons defined "
+            "in the output model schema above. Respond "
+            "with a JSON array of objects, each one "
+            "matching the schema above."
+        )

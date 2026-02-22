@@ -24,14 +24,17 @@
 
 #### Code Duplication — Agents
 
-- [ ] Extract prompt-building logic into a shared helper method on `Labeler` — identical pattern repeated in `prompt`/`prompt_for_batch` properties across `labeler.py`, `detector.py`, `classifier.py`, `regressor.py` (8 occurrences).
-- [ ] Consolidate duplicated `chat_kwargs` docstrings in `labeler.py` — identical param blocks repeated 6+ times across `act`, `act_async`, `act_in_batch`, etc.
-- [ ] Consolidate duplicated docstrings in `llm/base.py` and `llm/ollama.py` — same param/return blocks repeated 8+ times across sync/async/stream method pairs.
+- [x] Extract prompt-building logic into a shared helper method on `Labeler` — identical pattern repeated in `prompt`/`prompt_for_batch` properties across `labeler.py`, `detector.py`, `classifier.py`, `regressor.py` (8 occurrences).
+- [x] Deduplicate `Pipeline.act()`/`act_async()` — nearly identical logic (~73 lines each), only difference is sync vs async agent call. Extract shared pipeline execution logic.
+- [x] Deduplicate `Pipeline.act_in_batch()`/`act_in_batch_async()` — same tracking/evaluation/assembly logic (~180 lines each). Extract shared batch step processing.
+- [x] Consolidate duplicated `chat_kwargs` docstrings in `labeler.py` — identical param blocks repeated 6+ times across `act`, `act_async`, `act_in_batch`, etc.
+- [x] Consolidate duplicated docstrings in `llm/base.py` and `llm/ollama.py` — same param/return blocks repeated 8+ times across sync/async/stream method pairs.
+- [x] Extract OllamaProvider fallback retry into helper — identical "retry without format" block duplicated in `chat()` and `chat_async()`.
 
 #### Code Duplication — UI
 
-- [ ] Extract duplicated list-expansion pattern into a helper in `_pages/__init__.py` — the `while len(items) < num: items.append(...)` / `items = items[:num]` pattern appears in `1_Define.py` (fields, enum members), `2_Configure.py` (examples), and `4_Evaluate.py` (eval rows).
-- [ ] Deduplicate type map in `codegen/model_generator.py` — local `type_map` dict in `_class_for_property()` duplicates the module-level `_FIELD_TYPE_MAP`.
+- [x] Extract duplicated list-expansion pattern into a helper in `_pages/__init__.py` — the `while len(items) < num: items.append(...)` / `items = items[:num]` pattern appears in `1_Define.py` (fields, enum members), `2_Configure.py` (examples), and `4_Evaluate.py` (eval rows).
+- [x] Deduplicate type map in `codegen/model_generator.py` — local `type_map` dict in `_class_for_property()` duplicates the module-level `_FIELD_TYPE_MAP`.
 
 #### Code Duplication — Tests
 
@@ -49,6 +52,8 @@
 - [ ] Extract cache callback setup into helper in `llm/base.py` — the `if key is not None: result._on_complete = functools.partial(...)` block is duplicated 4 times across streaming methods.
 - [ ] Consolidate enum-handling methods in `labeler.py` — `_apply_enum_mappings` and `_apply_enum_mappings_to_item` could be merged to reduce the 4-method chain.
 - [ ] Make state dict `index()` calls safe in `1_Define.py` and `2_Configure.py` — `.index(value)` on selectbox options will raise `ValueError` if the value isn't in the list; use a safe fallback.
+- [ ] Add missing type hints to internal UI helper functions — `_classifier_form`, `_property_form`, `_labeler_form`, `_enum_editor` in `1_Define.py` and helpers in `2_Configure.py` lack `-> None` return types.
+- [ ] Narrow bare `except Exception` in `ollama_utils.py` — `check_connection()` and `list_available_models()` catch all exceptions; use specific exceptions (`ConnectionError`, `ImportError`) for better debugging.
 
 #### Infrastructure
 

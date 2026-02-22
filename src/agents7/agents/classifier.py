@@ -1,11 +1,7 @@
 from dataclasses import dataclass
 
 from agents7.agents.detector import Detector
-from agents7.agents.utils import (
-    extract_enum_members,
-    get_examples_str,
-    model_class_to_string,
-)
+from agents7.agents.utils import extract_enum_members
 from agents7.exceptions import PropertyConfigurationError
 from agents7.models.base import ClassificationProperty
 
@@ -108,52 +104,29 @@ class Classifier(Detector):
 
     @property
     def prompt(self) -> str:
-        """
-        Get the full prompt used by the agent.
-
-        The prompt emphasizes category selection and reason justification.
-        """
-        full_prompt = (
-            f"{self.resolved_system_prompt}\n\n"
-            f"## Output Model Schema\n\n"
-            f"{model_class_to_string(self.output_model)}\n\n"
-            f"Classify the input into one of the categories defined "
-            f"above. Then provide a reason that justifies your "
-            f"classification. Use NOT_APPLICABLE if the input cannot "
-            f"be classified."
-        ).strip()
-
-        constraints = self.category_reasons_constraints
-        if constraints:
-            full_prompt = f"{full_prompt}\n\n{constraints}"
-
-        if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
-
-        return full_prompt
+        """Get the full prompt used by the agent."""
+        return self._build_prompt(
+            "Classify the input into one of the "
+            "categories defined above. Then provide a "
+            "reason that justifies your classification. "
+            "Use NOT_APPLICABLE if the input cannot be "
+            "classified.",
+            extra_sections=[
+                self.category_reasons_constraints,
+            ],
+        )
 
     @property
     def prompt_for_batch(self) -> str:
-        """
-        Get the full prompt for batch processing.
-        """
-        full_prompt = (
-            f"{self.resolved_system_prompt}\n\n"
-            f"## Output Model Schema\n\n"
-            f"{model_class_to_string(self.output_model)}\n\n"
-            f"Classify each input into one of the categories defined above. "
-            f"Provide a reason that justifies each classification. "
-            f"Use NOT_APPLICABLE if an input cannot be classified. "
-            f"Respond with a JSON array of objects, each matching the schema."
-        ).strip()
-
-        constraints = self.category_reasons_constraints
-        if constraints:
-            full_prompt = f"{full_prompt}\n\n{constraints}"
-
-        if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
-
-        return full_prompt
+        """Get the full prompt for batch processing."""
+        return self._build_prompt(
+            "Classify each input into one of the "
+            "categories defined above. Provide a reason "
+            "that justifies each classification. Use "
+            "NOT_APPLICABLE if an input cannot be "
+            "classified. Respond with a JSON array of "
+            "objects, each matching the schema.",
+            extra_sections=[
+                self.category_reasons_constraints,
+            ],
+        )

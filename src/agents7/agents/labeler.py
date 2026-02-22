@@ -103,42 +103,56 @@ class Labeler(BaseAgent):
 
     @property
     def prompt(self) -> str:
+        """Get the full prompt used by the agent.
+        :return: Full prompt string.
         """
-        Get the full prompt used by the agent, including the system prompt
-        and examples if provided.
+        return self._build_prompt()
+
+    @property
+    def prompt_for_batch(self) -> str:
+        """Get the full prompt for batch processing.
+        :return: Full prompt string.
+        """
+        return self._build_prompt(
+            "You will receive multiple inputs. Process "
+            "each one independently and return an array "
+            "of outputs in the same order as the inputs."
+        )
+
+    def _build_prompt(
+        self,
+        instruction: str = "",
+        extra_sections: list[str] | None = None,
+    ) -> str:
+        """Build the full prompt from system prompt, schema,
+        instruction, extra sections, and examples.
+
+        Subclasses pass their agent-specific instruction
+        and optional extra sections (e.g., constraints).
+
+        :param instruction: Agent-specific instruction
+            appended after the output model schema.
+        :param extra_sections: Additional text sections
+            inserted between instruction and examples.
         :return: Full prompt string.
         """
         full_prompt = (
             f"{self.resolved_system_prompt}\n\n"
             f"## Output Model Schema\n\n"
             f"{model_class_to_string(self.output_model)}"
-        ).strip()
+        )
+        if instruction:
+            full_prompt = f"{full_prompt}\n\n{instruction}"
+        full_prompt = full_prompt.strip()
+
+        for section in extra_sections or []:
+            if section:
+                full_prompt = f"{full_prompt}\n\n{section}"
 
         if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
-
-        return full_prompt
-
-    @property
-    def prompt_for_batch(self) -> str:
-        """
-        Get the full prompt used by the agent, including the system prompt
-        and examples if provided. This prompt is used for batch processing.
-        :return: Full prompt string.
-        """
-        full_prompt = (
-            f"{self.resolved_system_prompt}\n\n"
-            f"## Output Model Schema\n\n"
-            f"{model_class_to_string(self.output_model)}\n\n"
-            f"You will receive multiple inputs. Process each "
-            f"one independently and return an array of outputs "
-            f"in the same order as the inputs."
-        ).strip()
-
-        if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
+            full_prompt = (
+                f"{full_prompt}\n\n{get_examples_str(self.examples)}"
+            )
 
         return full_prompt
 
@@ -214,34 +228,13 @@ class Labeler(BaseAgent):
         chat_kwargs: dict = None,
         _idx: int = 0,
     ) -> AgentResponse:
-        """
-        Perform the labeling action based on the provided input.
+        """Async version of `act()`.
+
         :param input_data: The input data to be processed.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :param _idx: Internal parameter to keep track of the index of the
-            input data when processing in batch mode. Default to 0.
-            This parameter should not be set by the user.
-        :return: An AgentResponse model, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
+        :param chat_kwargs: See `act()` for details.
+        :param _idx: Internal index for batch tracking.
+            Should not be set by the user.
+        :return: See `act()` for return schema.
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
 
@@ -274,38 +267,16 @@ class Labeler(BaseAgent):
         requests_per_prompt: int = 10,
         iter_func: Callable = tqdm,
     ) -> list[AgentResponse]:
-        """
-        Perform the labeling action based on the provided
-        input, in batch mode.
-        :param input_list: List of input data to be processed.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :param requests_per_prompt: Number of requests to send per prompt.
-            Number of LLM calls will be
-                `ceil(len(input_list) / requests_per_prompt)`.
+        """Sync batch processing.
+
+        :param input_list: List of input data to process.
+        :param chat_kwargs: See `act()` for details.
+        :param requests_per_prompt: Items per LLM call.
             Defaults to 10.
-        :param iter_func: Function to keep track of the iterations.
-            Defaults to `tqdm.tqdm`. If `None`, no function will be used.
-        :return: A list of AgentResponse models, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
+        :param iter_func: Progress iterator. Defaults to
+            `tqdm.tqdm`. Pass `None` to disable.
+        :return: List of `AgentResponse`, one per input.
+            See `act()` for the response schema.
         """
         if iter_func is None:
             iter_func = identity_func
@@ -341,45 +312,18 @@ class Labeler(BaseAgent):
         with_tqdm: bool = True,
         batch_settings: BatchSettings | None = None,
     ) -> list[AgentResponse]:
-        """
-        Perform the labeling action based on the provided
-        input, in batch mode.
-        :param input_list: List of input data to be processed.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :param requests_per_prompt: Number of requests to send per prompt.
-            Number of LLM calls will be
-                `ceil(len(input_list) / requests_per_prompt)`.
+        """Async batch processing.
+
+        :param input_list: List of input data to process.
+        :param chat_kwargs: See `act()` for details.
+        :param requests_per_prompt: Items per LLM call.
             Defaults to 10.
-        :param with_tqdm: Whether to use `tqdm.asyncio` to keep track of the
-            iterations.
-        :param batch_settings: Optional `BatchSettings` instance
-            controlling concurrency. Defaults to `None` which
-            uses `BatchSettings()`. Fields:
-            - max_concurrent (int | None): Maximum number of
-              concurrent LLM requests. Overridable via the
-              `BATCH_MAX_CONCURRENT` env var. Defaults to 5.
-              `None` means unlimited concurrency.
-        :return: A list of AgentResponse models, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
+        :param with_tqdm: Show async progress bar.
+        :param batch_settings: Optional `BatchSettings`
+            controlling concurrency. Defaults to
+            `BatchSettings()` (max 5 concurrent).
+        :return: List of `AgentResponse`, one per input.
+            See `act()` for the response schema.
         """
         settings = batch_settings or BatchSettings()
         sem = (
@@ -440,36 +384,13 @@ class Labeler(BaseAgent):
         chat_kwargs: dict = None,
         _idx: int = 0,
     ) -> AgentResponse:
-        """
-        Perform the labeling action based on the provided
-        input, in batch mode.
-        Will send a single request to the LLM with a list of inputs.
-        :param input_list: List of input data to be processed.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :param _idx: Internal parameter to keep track of the index of the
-            input data when processing in batch mode. Default to 0.
-            This parameter should not be set by the user.
-        :return: A list of AgentResponse models, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
+        """Send a single async batch request to the LLM.
+
+        :param input_list: List of input data to process.
+        :param chat_kwargs: See `act()` for details.
+        :param _idx: Internal index for batch tracking.
+        :return: An `AgentResponse` wrapping the batch
+            output model.
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
 
@@ -500,33 +421,12 @@ class Labeler(BaseAgent):
         input_list: list[dict | list[dict]],
         chat_kwargs: dict = None,
     ) -> AgentResponse:
-        """
-        Perform the labeling action based on the provided
-        input, in batch mode.
-        Will send a single request to the LLM with a list of inputs.
-        :param input_list: List of input data to be processed.
-        :param chat_kwargs: Dictionary with extra keyword arguments to
-            send to the `self.engine.chat` method. Note that:
-            - The parameter `temperature` is set to 0 for agents, and
-              won't be overridden by this parameter.
-            - The parameter `think` is set to True by default, unless
-              specified otherwise.
-            - Available parameters:
-                - max_tokens: The maximum number of tokens to generate in the
-                    response.
-                - think: If True, the model will think before generating the
-                    response.
-                - seed: Seed for random number generation. Default to None.
-        :return: An AgentResponse model, containing:
-            - response: The generated text response.
-            - model: The structured output validated by the output model.
-            - thinking: The thinking part of the response, if any.
-            - metrics: LLMMetrics model, containing:
-                - tokens: The number of tokens in the response.
-                - prompt_tokens: The number of tokens in the prompt.
-                - total_duration: The total duration of the response,
-                 in seconds.
-            - idx: Optional index for tracking purposes.
+        """Send a single sync batch request to the LLM.
+
+        :param input_list: List of input data to process.
+        :param chat_kwargs: See `act()` for details.
+        :return: An `AgentResponse` wrapping the batch
+            output model.
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
 

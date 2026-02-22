@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from agents7.agents.detector import Detector
-from agents7.agents.utils import get_examples_str, model_class_to_string
 from agents7.models.base import Property
 
 
@@ -47,44 +46,22 @@ class Regressor(Detector):
 
     @property
     def prompt(self) -> str:
-        """
-        Get the full prompt used by the agent.
-
-        The prompt emphasizes value extraction and reason classification.
-        """
-        full_prompt = (
-            f"{self.resolved_system_prompt}\n\n"
-            f"## Output Model Schema\n\n"
-            f"{model_class_to_string(self.output_model)}\n\n"
-            f"Extract the numeric value from the input. "
-            f"Then classify the extracted value using one of the "
-            f"reasons defined above. Use NOT_APPLICABLE if no value "
-            f"can be extracted."
-        ).strip()
-
-        if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
-
-        return full_prompt
+        """Get the full prompt used by the agent."""
+        return self._build_prompt(
+            "Extract the numeric value from the input. "
+            "Then classify the extracted value using one "
+            "of the reasons defined above. Use "
+            "NOT_APPLICABLE if no value can be extracted."
+        )
 
     @property
     def prompt_for_batch(self) -> str:
-        """
-        Get the full prompt for batch processing.
-        """
-        full_prompt = (
-            f"{self.resolved_system_prompt}\n\n"
-            f"## Output Model Schema\n\n"
-            f"{model_class_to_string(self.output_model)}\n\n"
-            f"Extract the numeric value from each input. "
-            f"Classify each extracted value using the reasons defined above. "
-            f"Use NOT_APPLICABLE if no value can be extracted. "
-            f"Respond with a JSON array of objects, each matching the schema."
-        ).strip()
-
-        if self.examples:
-            examples_str = get_examples_str(self.examples)
-            full_prompt = f"{full_prompt}\n\n{examples_str}"
-
-        return full_prompt
+        """Get the full prompt for batch processing."""
+        return self._build_prompt(
+            "Extract the numeric value from each input. "
+            "Classify each extracted value using the "
+            "reasons defined above. Use NOT_APPLICABLE "
+            "if no value can be extracted. Respond with "
+            "a JSON array of objects, each matching the "
+            "schema."
+        )

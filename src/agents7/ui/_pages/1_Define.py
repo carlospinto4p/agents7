@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from agents7.ui._pages import _state_from_dict
+from agents7.ui._pages import _state_from_dict, resize_list
 from agents7.ui.codegen.model_generator import (
     generate_model_code,
 )
@@ -95,16 +95,16 @@ def _labeler_form(sd: dict) -> None:
         value=len(fields),
         step=1,
     )
-    while len(fields) < num:
-        fields.append(
-            {
-                "name": "",
-                "field_type": "str",
-                "optional": False,
-                "description": "",
-            }
-        )
-    fields = fields[:num]
+    fields = resize_list(
+        fields,
+        num,
+        lambda: {
+            "name": "",
+            "field_type": "str",
+            "optional": False,
+            "description": "",
+        },
+    )
 
     for i, f in enumerate(fields):
         cols = st.columns([2, 1, 1, 3])
@@ -145,9 +145,11 @@ def _enum_editor(sd: dict, key: str, label: str) -> None:
         step=1,
         key=f"num_{key}",
     )
-    while len(members) < num:
-        members.append({"name": "", "description": ""})
-    members = members[:num]
+    members = resize_list(
+        members,
+        num,
+        lambda: {"name": "", "description": ""},
+    )
 
     for i, m in enumerate(members):
         cols = st.columns(2)

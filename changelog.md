@@ -1,6 +1,50 @@
 
 ## Changelog - Agents7
 
+### v1.3.3 - 22nd February 2026
+
+- Code deduplication — Agents:
+  - `labeler.py`: New `_build_prompt()` helper method that
+    centralises prompt assembly (system prompt + schema +
+    instruction + extra sections + examples). Used by all
+    4 agent types, replacing 8 near-identical prompt/
+    prompt_for_batch property implementations across
+    `labeler.py`, `detector.py`, `classifier.py`, and
+    `regressor.py`.
+  - `pipeline.py`: Extracted `_process_step_result()`,
+    `_evaluate_batch_step()`, and `_assemble_batch_results()`
+    helpers, deduplicating ~100 lines of shared logic between
+    sync/async act and batch methods.
+  - `labeler.py`: Consolidated duplicated `chat_kwargs`
+    docstrings (6 occurrences) — full docs on `act()`, all
+    other methods reference it.
+  - `ollama.py`: Extracted `_needs_format_fallback()` and
+    `_chat_call_kwargs()` helpers to deduplicate the
+    fallback-retry pattern in `chat()`/`chat_async()`.
+- Code deduplication — LLM:
+  - `llm/base.py`: Consolidated docstrings across `LLMEngine`
+    and `LLMProvider` — full docs on `LLMProvider` abstract
+    methods, cross-references elsewhere (12 → 4 unique docs).
+  - `llm/ollama.py`: Same cross-reference approach for all
+    `OllamaProvider` methods.
+- Code deduplication — UI:
+  - `_pages/__init__.py`: New `resize_list()` helper that
+    replaces the duplicated `while len < num / items[:num]`
+    list-expansion pattern in `1_Define.py`, `2_Configure.py`,
+    and `4_Evaluate.py` (4 occurrences).
+  - `codegen/model_generator.py`: Removed local `type_map`
+    dict in `_class_for_property()` — now reuses module-level
+    `_FIELD_TYPE_MAP`.
+- Cleanup:
+  - Removed unused imports (`get_examples_str`,
+    `model_class_to_string`) from `detector.py`,
+    `classifier.py`, and `regressor.py`.
+  - Fixed minor inconsistency: detector `prompt_for_batch`
+    used "Output Models Schema" (plural) while all others
+    used "Output Model Schema" (singular) — now consistent.
+  - Updated backlog with completed items.
+
+
 ### v1.3.2 - 22nd February 2026
 
 - Documentation & correctness:

@@ -64,6 +64,28 @@ def parse_jsonl(text: str) -> list[dict]:
     return records
 
 
+def resize_list(
+    items: list,
+    target: int,
+    default_factory: Callable[[], dict],
+) -> list:
+    """Resize a list to ``target`` length.
+
+    Pads with defaults from ``default_factory`` when too
+    short; truncates when too long.
+
+    :param items: The list to resize (modified in place
+        when padding, but the truncated copy is returned).
+    :param target: Desired length.
+    :param default_factory: Zero-arg callable that creates
+        a new default item.
+    :return: The resized list.
+    """
+    while len(items) < target:
+        items.append(default_factory())
+    return items[:target]
+
+
 def _state_from_dict(sd: dict) -> AgentBuilderState:
     """Reconstruct an AgentBuilderState from session dict."""
     return AgentBuilderState(
