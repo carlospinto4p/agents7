@@ -1,6 +1,22 @@
 
 ## Changelog - Agents7
 
+### v1.4.0 - 22nd February 2026
+
+- Module `ui`:
+  - New subpackage `discovery/`:
+    - New file `models.py`: Pydantic suggestion models (`ClassifierSuggestion`, `PropertySuggestion`, `LabelerSuggestion`, `PromptSuggestion`, etc.) for structured LLM responses.
+    - New file `prompts.py`: system prompt templates for schema discovery and prompt generation, plus `describe_schema()` helper.
+    - New file `analyzer.py`: `discover_schema()` and `generate_prompt()` functions that call the LLM with structured output to auto-suggest schemas, system prompts, and examples.
+  - `state.py`: added `intent` and `sample_data` fields to `AgentBuilderState`.
+  - `_pages/__init__.py`: updated `_state_from_dict()` to read new discovery fields.
+  - `_pages/1_Define.py`: added collapsible "Discover from Data" section with model selector, intent input, JSONL upload, preview, and "Discover Schema" button.
+  - `_pages/2_Configure.py`: added "Generate Prompt & Examples" button that auto-generates system prompt and few-shot examples from intent + schema + sample data.
+- `docs/agent_builder.md`: documented discovery feature in Step 1 and Step 2 sections.
+- `README.md`: updated Agent Builder UI table to mention auto-discovery.
+- New file `tests/test_ui_discovery.py`: unit tests for discovery models, prompts, and analyzer.
+
+
 ### v1.3.11 - 22nd February 2026
 
 - New file `docs/agent_builder.md`: full workflow documentation for the Agent Builder UI (overview, step-by-step guide, agent types, data flow, session state, file formats).
