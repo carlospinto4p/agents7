@@ -21,6 +21,7 @@ def render() -> None:
         "Agent type",
         _agent_types,
         index=safe_index(_agent_types, sd.get("agent_type", "classifier")),
+        key="agent_type_select",
     )
     sd["agent_type"] = agent_type
 
@@ -103,6 +104,7 @@ def _property_form(sd: dict) -> None:
         "Value type",
         _value_types,
         index=safe_index(_value_types, sd.get("value_type", "float")),
+        key="value_type_select",
     )
 
     st.subheader("Reasons")
