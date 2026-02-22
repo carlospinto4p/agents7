@@ -2,11 +2,18 @@ services:
   app:
     build:
       context: .
-      args:
-        GITLAB_TOKEN: ${GITLAB_TOKEN}
+      secrets:
+        - gitlab_token
     ports:
       - "8501:8501"
     environment:
       - OLLAMA_HOST=http://host.docker.internal:11434
+    # host.docker.internal resolves automatically on Docker Desktop
+    # (Windows/Mac). On native Linux Docker (20.10+), the extra_hosts
+    # directive below maps it via the host-gateway special address.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+secrets:
+  gitlab_token:
+    environment: GITLAB_TOKEN

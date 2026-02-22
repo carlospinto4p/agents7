@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v1.3.6 - 22nd February 2026
+
+- Infrastructure:
+  - `Dockerfile`: replaced build `ARG` with BuildKit `--mount=type=secret` for `GITLAB_TOKEN` — the token is no longer persisted in image layer history.
+  - `docker-compose.yml`: added `secrets` section to pass `GITLAB_TOKEN` via BuildKit secrets during build; added comment explaining `host.docker.internal` and the `extra_hosts` workaround for native Linux Docker (20.10+).
+
+
 ### v1.3.5 - 22nd February 2026
 
 - Module `ui`:
