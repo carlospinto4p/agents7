@@ -2,8 +2,6 @@
 
 from unittest.mock import MagicMock
 
-from pydantic import BaseModel
-
 from agents7.models.base import AgentResponse
 from agents7.ui.evaluation.runner import (
     EvalResult,
@@ -15,28 +13,7 @@ from agents7.ui.evaluation.metrics import (
     compute_metrics,
 )
 
-from helpers import make_agent_mock, mock_metrics
-
-
-# ----------------------------------------------------------------
-# Helpers
-# ----------------------------------------------------------------
-
-
-class _MockModel(BaseModel):
-    category: str = "POSITIVE"
-    reason: str = "HAPPY"
-
-
-def _make_response(
-    category: str = "POSITIVE", reason: str = "HAPPY"
-) -> AgentResponse:
-    model = _MockModel(category=category, reason=reason)
-    return AgentResponse(
-        response="{}",
-        model=model,
-        metrics=mock_metrics(),
-    )
+from conftest import make_agent_mock, make_response, mock_metrics
 
 
 # --- _compare_field ---
@@ -67,8 +44,8 @@ def test_none_not_equal():
 
 def test_all_pass():
     responses = [
-        _make_response("POSITIVE", "HAPPY"),
-        _make_response("NEGATIVE", "SAD"),
+        make_response("POSITIVE", "HAPPY"),
+        make_response("NEGATIVE", "SAD"),
     ]
     agent = make_agent_mock(responses)
     eval_data = [
@@ -90,7 +67,7 @@ def test_all_pass():
 
 def test_partial_fail():
     responses = [
-        _make_response("NEGATIVE", "HAPPY"),
+        make_response("NEGATIVE", "HAPPY"),
     ]
     agent = make_agent_mock(responses)
     eval_data = [
@@ -139,7 +116,7 @@ def test_agent_exception():
 
 
 def test_progress_callback():
-    responses = [_make_response(), _make_response()]
+    responses = [make_response(), make_response()]
     agent = make_agent_mock(responses)
     callback = MagicMock()
     eval_data = [

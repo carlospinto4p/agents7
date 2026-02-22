@@ -737,27 +737,20 @@ class Labeler(BaseAgent):
 
     @staticmethod
     def _apply_enum_mappings(
-        data: dict | list, mappings: dict[str, dict[str, str]]
+        data: dict | list,
+        mappings: dict[str, dict[str, str]],
     ) -> dict | list:
-        """
-        Apply enum name-to-value mappings to data.
-        Handles both single objects and lists.
+        """Apply enum name-to-value mappings to data.
+
+        Handles single objects, lists, and non-dict values.
         """
         if isinstance(data, list):
             return [
-                Labeler._apply_enum_mappings_to_item(item, mappings)
-                for item in data
+                Labeler._apply_enum_mappings(item, mappings) for item in data
             ]
-        return Labeler._apply_enum_mappings_to_item(data, mappings)
-
-    @staticmethod
-    def _apply_enum_mappings_to_item(
-        item: dict, mappings: dict[str, dict[str, str]]
-    ) -> dict:
-        """Apply enum name-to-value mappings to a single item."""
-        if not isinstance(item, dict):
-            return item
+        if not isinstance(data, dict):
+            return data
         for field_name, mapping in mappings.items():
-            if field_name in item and item[field_name] in mapping:
-                item[field_name] = mapping[item[field_name]]
-        return item
+            if field_name in data and data[field_name] in mapping:
+                data[field_name] = mapping[data[field_name]]
+        return data

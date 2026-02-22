@@ -10,9 +10,7 @@ from agents7.exceptions import LLMException
 from agents7.llm.retry import RetryConfig, retry_async, retry_sync
 
 
-# ===================================================================
-# 1. RetryConfig validation
-# ===================================================================
+# --- RetryConfig validation ---
 
 
 def test_defaults():
@@ -56,9 +54,7 @@ def test_invalid_backoff_factor():
         RetryConfig(backoff_factor=0.5)
 
 
-# ===================================================================
-# 2. retry_sync logic
-# ===================================================================
+# --- retry_sync logic ---
 
 
 def test_succeeds_first_attempt():
@@ -142,9 +138,7 @@ def test_no_retry_when_none():
     assert fn.call_count == 1
 
 
-# ===================================================================
-# 3. retry_async logic
-# ===================================================================
+# --- retry_async logic ---
 
 
 @pytest.mark.asyncio
@@ -180,9 +174,7 @@ async def test_async_retries_exhausted(mock_sleep):
     assert mock_sleep.call_count == 2
 
 
-# ===================================================================
-# 4. YAML config parsing
-# ===================================================================
+# --- YAML config parsing ---
 
 
 def test_yaml_with_retry(tmp_path):

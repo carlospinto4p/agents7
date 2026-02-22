@@ -11,9 +11,7 @@ from agents7.llm.streaming import AsyncStreamResult, StreamResult
 from helpers import async_iter, chat_chunk
 
 
-# ===================================================================
-# Helpers — mock ollama chunk objects
-# ===================================================================
+# --- Helpers — mock ollama chunk objects ---
 
 
 def _gen_chunk(
@@ -35,9 +33,7 @@ def _gen_chunk(
     )
 
 
-# ===================================================================
-# 1. StreamResult (sync)
-# ===================================================================
+# --- StreamResult (sync) ---
 
 
 def test_yields_chat_content_chunks():
@@ -161,9 +157,7 @@ def test_role_is_none_for_generate():
     assert stream.role is None
 
 
-# ===================================================================
-# 2. AsyncStreamResult
-# ===================================================================
+# --- AsyncStreamResult ---
 
 
 @pytest.mark.asyncio
@@ -231,9 +225,7 @@ async def test_thinking_accumulated_async():
     assert stream.thinking == "Hmm..."
 
 
-# ===================================================================
-# 3. LLMEngine delegation
-# ===================================================================
+# --- LLMEngine delegation ---
 
 
 def _make_engine():

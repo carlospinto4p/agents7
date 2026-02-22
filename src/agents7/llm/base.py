@@ -82,6 +82,23 @@ class LLMEngine:
         if key is not None and self._cache is not None:
             self._cache.put(key, value)
 
+    def _set_stream_cache_callback(
+        self,
+        result: StreamResult | AsyncStreamResult,
+        key: str | None,
+    ) -> None:
+        """Attach a cache-store callback to a stream result.
+
+        When the stream completes, the callback stores the
+        final data in the cache.
+        """
+        if key is not None:
+            result._on_complete = functools.partial(
+                _cache_store_callback,
+                self._cache,
+                key,
+            )
+
     def chat(
         self,
         messages: list[dict[str, str]],
@@ -277,12 +294,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if key is not None:
-            result._on_complete = functools.partial(
-                _cache_store_callback,
-                self._cache,
-                key,
-            )
+        self._set_stream_cache_callback(result, key)
         return result
 
     async def chat_stream_async(
@@ -320,12 +332,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if key is not None:
-            result._on_complete = functools.partial(
-                _cache_store_callback,
-                self._cache,
-                key,
-            )
+        self._set_stream_cache_callback(result, key)
         return result
 
     def generate_stream(
@@ -363,12 +370,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if key is not None:
-            result._on_complete = functools.partial(
-                _cache_store_callback,
-                self._cache,
-                key,
-            )
+        self._set_stream_cache_callback(result, key)
         return result
 
     async def generate_stream_async(
@@ -406,12 +408,7 @@ class LLMEngine:
             seed=seed,
         )
 
-        if key is not None:
-            result._on_complete = functools.partial(
-                _cache_store_callback,
-                self._cache,
-                key,
-            )
+        self._set_stream_cache_callback(result, key)
         return result
 
     def get_model_info(self) -> dict:

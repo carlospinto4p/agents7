@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v1.3.4 - 22nd February 2026
+
+- Tests:
+  - New `tests/conftest.py` with `_chdir_to_project_root` session fixture and shared UI helpers (`mock_metrics`, `make_agent_mock`, `MockModel`, `make_response`).
+  - Deduplicated `_make_response()` helpers across `test_ui_comparison.py` and `test_ui_evaluation.py` into shared `make_response()`.
+  - Standardized all test comment headers from `# === Section ===` to `# --- Section ---` across `test_cache.py`, `test_labeler.py`, `test_streaming.py`, `test_retry.py`.
+- Module `llm`:
+  - `LLMEngine`: extracted `_set_stream_cache_callback()` helper, replacing 4 duplicated blocks in streaming methods.
+- Module `agents`:
+  - `Labeler`: merged `_apply_enum_mappings` and `_apply_enum_mappings_to_item` into a single recursive method.
+- `.claude/`: updated backlog marking 7 items as completed.
+
+
 ### v1.3.3 - 22nd February 2026
 
 - Code deduplication — Agents:

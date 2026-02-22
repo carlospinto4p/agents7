@@ -2,8 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-from pydantic import BaseModel
-
 from agents7.models.base import AgentResponse
 from agents7.ui.comparison.models import PromptVersion
 from agents7.ui.comparison.runner import (
@@ -13,27 +11,7 @@ from agents7.ui.comparison.runner import (
 )
 from agents7.ui.state import AgentBuilderState
 
-from helpers import make_agent_mock, mock_metrics
-
-
-# ----------------------------------------------------------------
-# Helpers
-# ----------------------------------------------------------------
-
-
-class _MockModel(BaseModel):
-    category: str = "POSITIVE"
-
-
-def _make_response(
-    category: str = "POSITIVE",
-) -> AgentResponse:
-    model = _MockModel(category=category)
-    return AgentResponse(
-        response="{}",
-        model=model,
-        metrics=mock_metrics(),
-    )
+from conftest import make_agent_mock, make_response, mock_metrics
 
 
 # --- PromptVersion ---
@@ -130,7 +108,7 @@ def test_outputs_match_true():
 
 @patch("agents7.ui.comparison.runner.build_agent_from_state")
 def test_matching_outputs(mock_build):
-    resp = _make_response("POSITIVE")
+    resp = make_response("POSITIVE")
     agent = make_agent_mock([resp, resp])
     mock_build.return_value = agent
 
@@ -141,14 +119,20 @@ def test_matching_outputs(mock_build):
     results = run_comparison(base, va, vb, [{"text": "great"}])
     assert len(results) == 1
     assert results[0].outputs_match is True
-    assert results[0].output_a == {"category": "POSITIVE"}
-    assert results[0].output_b == {"category": "POSITIVE"}
+    assert results[0].output_a == {
+        "category": "POSITIVE",
+        "reason": "HAPPY",
+    }
+    assert results[0].output_b == {
+        "category": "POSITIVE",
+        "reason": "HAPPY",
+    }
 
 
 @patch("agents7.ui.comparison.runner.build_agent_from_state")
 def test_different_outputs(mock_build):
-    resp_a = _make_response("POSITIVE")
-    resp_b = _make_response("NEGATIVE")
+    resp_a = make_response("POSITIVE")
+    resp_b = make_response("NEGATIVE")
 
     agent_a = make_agent_mock([resp_a])
     agent_b = make_agent_mock([resp_b])
@@ -161,13 +145,19 @@ def test_different_outputs(mock_build):
     results = run_comparison(base, va, vb, [{"text": "mixed"}])
     assert len(results) == 1
     assert results[0].outputs_match is False
-    assert results[0].output_a == {"category": "POSITIVE"}
-    assert results[0].output_b == {"category": "NEGATIVE"}
+    assert results[0].output_a == {
+        "category": "POSITIVE",
+        "reason": "HAPPY",
+    }
+    assert results[0].output_b == {
+        "category": "NEGATIVE",
+        "reason": "HAPPY",
+    }
 
 
 @patch("agents7.ui.comparison.runner.build_agent_from_state")
 def test_error_in_one_version(mock_build):
-    resp_a = _make_response("POSITIVE")
+    resp_a = make_response("POSITIVE")
     agent_a = make_agent_mock([resp_a])
 
     agent_b = MagicMock()
@@ -187,7 +177,7 @@ def test_error_in_one_version(mock_build):
 
 @patch("agents7.ui.comparison.runner.build_agent_from_state")
 def test_progress_callback(mock_build):
-    resp = _make_response("POSITIVE")
+    resp = make_response("POSITIVE")
     agent = make_agent_mock([resp, resp, resp, resp])
     mock_build.return_value = agent
 

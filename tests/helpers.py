@@ -1,13 +1,11 @@
-"""Shared test helpers and fixtures used across test files."""
+"""Shared test helpers used across test files."""
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock
 
 from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
 from agents7.llm import LLMEngine
-from agents7.models.base import AgentResponse, LLMMetrics
 
 
 # --- Shared constants ---
@@ -75,18 +73,3 @@ async def async_iter(items):
     """Turn a list into an async iterator."""
     for item in items:
         yield item
-
-
-# --- UI test helpers ---
-
-
-def mock_metrics() -> LLMMetrics:
-    """Create standard LLMMetrics for UI tests."""
-    return LLMMetrics(tokens=10, prompt_tokens=5, total_duration=0.1)
-
-
-def make_agent_mock(responses: list[AgentResponse]):
-    """Return a mock agent that returns responses in order."""
-    agent = MagicMock()
-    agent.act = MagicMock(side_effect=responses)
-    return agent

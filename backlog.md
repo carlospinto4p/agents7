@@ -38,19 +38,19 @@
 
 #### Code Duplication — Tests
 
-- [ ] Move shared test helpers (`mock_metrics`, `make_agent_mock`) from `tests/helpers.py` to `tests/conftest.py` as proper pytest fixtures.
-- [ ] Deduplicate `_make_response()` helpers — nearly identical functions exist in `test_ui_comparison.py` and `test_ui_evaluation.py`.
+- [x] Move shared test helpers (`mock_metrics`, `make_agent_mock`) from `tests/helpers.py` to `tests/conftest.py` as proper pytest fixtures.
+- [x] Deduplicate `_make_response()` helpers — nearly identical functions exist in `test_ui_comparison.py` and `test_ui_evaluation.py`.
 
 #### Test Infrastructure
 
-- [ ] Add `tests/conftest.py` with session-scoped `chdir` to project root — unit tests use relative paths for YAML configs but lack the `_chdir_to_project_root()` fixture that `integration_tests/conftest.py` has, so tests may fail if run from a non-root directory.
-- [ ] Standardize test comment headers — some files use `# --- Section ---`, others use `# === Section ===`. Adopt `# --- Section ---` consistently per testing conventions.
-- [ ] Add missing comment headers to `test_ui_export.py` and `test_ui_jsonl.py` — group tests by function/category.
+- [x] Add `tests/conftest.py` with session-scoped `chdir` to project root — unit tests use relative paths for YAML configs but lack the `_chdir_to_project_root()` fixture that `integration_tests/conftest.py` has, so tests may fail if run from a non-root directory.
+- [x] Standardize test comment headers — some files use `# --- Section ---`, others use `# === Section ===`. Adopt `# --- Section ---` consistently per testing conventions.
+- [x] Add missing comment headers to `test_ui_export.py` and `test_ui_jsonl.py` — group tests by function/category.
 
 #### Code Quality
 
-- [ ] Extract cache callback setup into helper in `llm/base.py` — the `if key is not None: result._on_complete = functools.partial(...)` block is duplicated 4 times across streaming methods.
-- [ ] Consolidate enum-handling methods in `labeler.py` — `_apply_enum_mappings` and `_apply_enum_mappings_to_item` could be merged to reduce the 4-method chain.
+- [x] Extract cache callback setup into helper in `llm/base.py` — the `if key is not None: result._on_complete = functools.partial(...)` block is duplicated 4 times across streaming methods.
+- [x] Consolidate enum-handling methods in `labeler.py` — `_apply_enum_mappings` and `_apply_enum_mappings_to_item` could be merged to reduce the 4-method chain.
 - [ ] Make state dict `index()` calls safe in `1_Define.py` and `2_Configure.py` — `.index(value)` on selectbox options will raise `ValueError` if the value isn't in the list; use a safe fallback.
 - [ ] Add missing type hints to internal UI helper functions — `_classifier_form`, `_property_form`, `_labeler_form`, `_enum_editor` in `1_Define.py` and helpers in `2_Configure.py` lack `-> None` return types.
 - [ ] Narrow bare `except Exception` in `ollama_utils.py` — `check_connection()` and `list_available_models()` catch all exceptions; use specific exceptions (`ConnectionError`, `ImportError`) for better debugging.

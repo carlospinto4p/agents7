@@ -33,11 +33,6 @@ class DummyOutputWithEnum(BaseModel):
     reason: DummyReason
 
 
-# ===================================================================
-# 1. Initialization & validation
-# ===================================================================
-
-
 # --- TestInitialization ---
 
 
@@ -53,11 +48,6 @@ def test_non_basemodel_raises_type_error():
     """Non-BaseModel output_model raises AgentConfigurationError."""
     with pytest.raises(AgentConfigurationError, match="output_model"):
         make_labeler(output_model=dict)
-
-
-# ===================================================================
-# 2. YAML loading
-# ===================================================================
 
 
 # --- TestYAMLLoading ---
@@ -162,11 +152,6 @@ def test_invalid_examples_format_raises_value_error(tmp_path):
         Labeler.from_yaml(str(yaml_file))
 
 
-# ===================================================================
-# 3. Prompt generation
-# ===================================================================
-
-
 # --- TestPromptGeneration ---
 
 
@@ -213,11 +198,6 @@ def test_prompt_for_batch_includes_examples():
     assert "x" in batch
 
 
-# ===================================================================
-# 4. Output model list
-# ===================================================================
-
-
 # --- TestOutputModelList ---
 
 
@@ -239,11 +219,6 @@ def test_output_model_list_validates():
     )
     assert len(instance.items) == 2
     assert instance.items[0].value == "a"
-
-
-# ===================================================================
-# 5. JSON parsing
-# ===================================================================
 
 
 # --- TestFixMalformedJson ---
@@ -303,11 +278,6 @@ def test_batch_parse():
     assert result.items[0].value == "a"
 
 
-# ===================================================================
-# 6. Enum mapping
-# ===================================================================
-
-
 # --- TestEnumMapping ---
 
 
@@ -354,17 +324,13 @@ def test_apply_enum_mappings_list():
     assert result[1]["reason"] == "other"
 
 
-def test_apply_enum_mappings_to_item_non_dict():
+def test_apply_enum_mappings_non_dict():
     """Non-dict input is returned unchanged."""
     mappings = {"reason": {"GOOD": "Good result."}}
-    assert (
-        Labeler._apply_enum_mappings_to_item("string", mappings) == "string"
-    )
+    assert Labeler._apply_enum_mappings("string", mappings) == "string"
 
 
-# ===================================================================
-# 7. Async batch concurrency (max_concurrent)
-# ===================================================================
+# --- TestBatchAsyncConcurrency ---
 
 
 def _batch_chat_response(items: list[dict]) -> dict:
@@ -375,9 +341,6 @@ def _batch_chat_response(items: list[dict]) -> dict:
         "thinking": None,
         "metrics": DUMMY_METRICS,
     }
-
-
-# --- TestBatchAsyncConcurrency ---
 
 
 @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)

@@ -25,11 +25,6 @@ def _make_engine(cache: CacheConfig | None = None):
     return engine
 
 
-# ===================================================================
-# 1. CacheConfig validation
-# ===================================================================
-
-
 # --- CacheConfig ---
 
 
@@ -55,11 +50,6 @@ def test_zero_max_size_allowed():
     """max_size=0 means unlimited, no error."""
     cfg = CacheConfig(max_size=0)
     assert cfg.max_size == 0
-
-
-# ===================================================================
-# 2. ResponseCache core operations
-# ===================================================================
 
 
 # --- ResponseCache ---
@@ -135,11 +125,6 @@ def test_unlimited_no_eviction():
     assert cache.get("k499") == 499
 
 
-# ===================================================================
-# 3. make_key
-# ===================================================================
-
-
 # --- MakeKey ---
 
 
@@ -200,11 +185,6 @@ def test_different_model_different_key():
         temperature=0,
     )
     assert k1 != k2
-
-
-# ===================================================================
-# 4. LLMEngine cache integration (non-streaming)
-# ===================================================================
 
 
 # --- EngineCacheIntegration ---
@@ -306,11 +286,6 @@ def test_generate_cache_hit():
     assert engine.llm_provider.generate.call_count == 1
 
 
-# ===================================================================
-# 5. Streaming cache integration
-# ===================================================================
-
-
 # --- StreamingCacheIntegration ---
 
 
@@ -375,11 +350,6 @@ def test_stream_cache_hit_returns_cached():
     assert result2.response == "Hello"
 
 
-# ===================================================================
-# 6. from_cached
-# ===================================================================
-
-
 # --- FromCached ---
 
 
@@ -432,11 +402,6 @@ def test_sync_from_cached_no_thinking():
     stream = StreamResult.from_cached(cached)
     list(stream)
     assert stream.thinking is None
-
-
-# ===================================================================
-# 7. YAML config parsing
-# ===================================================================
 
 
 # --- CacheYAMLConfig ---
