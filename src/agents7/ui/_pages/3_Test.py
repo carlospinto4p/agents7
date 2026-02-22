@@ -9,6 +9,7 @@ import streamlit as st
 from agents7.ui._pages import (
     _state_from_dict,
     make_progress_callback,
+    parse_jsonl,
 )
 from agents7.ui.comparison.models import PromptVersion
 from agents7.ui.comparison.runner import run_comparison
@@ -156,8 +157,18 @@ def _render_batch_test(state):
         key="batch_test_input",
     )
 
+    uploaded = st.file_uploader(
+        "Or upload a JSONL file",
+        type=["jsonl"],
+        key="batch_jsonl_upload",
+    )
+
     if st.button("Run Batch", key="run_batch"):
-        inputs = _parse_batch(batch_input)
+        if uploaded is not None:
+            raw = uploaded.read().decode("utf-8")
+            inputs = parse_jsonl(raw)
+        else:
+            inputs = _parse_batch(batch_input)
         if not inputs:
             st.warning("No valid inputs found.")
         else:

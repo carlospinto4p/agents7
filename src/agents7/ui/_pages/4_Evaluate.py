@@ -9,6 +9,7 @@ from agents7.ui._pages import (
     _state_from_dict,
     get_expected_fields,
     make_progress_callback,
+    parse_jsonl,
 )
 from agents7.ui.evaluation.export import (
     format_results_csv,
@@ -29,15 +30,21 @@ def render():
     state = _state_from_dict(sd)
 
     # --- Data source ---
-    tab_csv, tab_inline = st.tabs(["Upload CSV", "Inline"])
+    tab_file, tab_inline = st.tabs(["Upload CSV / JSONL", "Inline"])
 
-    with tab_csv:
+    with tab_file:
         uploaded = st.file_uploader(
-            "Upload CSV (columns: input, + expected fields)",
-            type=["csv"],
+            "Upload CSV or JSONL (columns: input, + expected fields)",
+            type=["csv", "jsonl"],
         )
         if uploaded is not None:
-            df = pd.read_csv(uploaded)
+            name = uploaded.name.lower()
+            if name.endswith(".jsonl"):
+                raw = uploaded.read().decode("utf-8")
+                records = parse_jsonl(raw)
+                df = pd.DataFrame(records)
+            else:
+                df = pd.read_csv(uploaded)
             sd["eval_data"] = df.to_dict(orient="records")
             st.dataframe(df, use_container_width=True)
 

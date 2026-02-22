@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from agents7.ui.state import (
     AgentBuilderState,
     EnumMember,
@@ -31,6 +33,32 @@ def get_expected_fields(state: AgentBuilderState) -> list[str]:
     if state.agent_type in ("detector", "regressor"):
         return ["reason"]
     return [f.name for f in state.fields]
+
+
+def parse_jsonl(text: str) -> list[dict]:
+    """Parse JSONL text into a list of dicts.
+
+    Each non-empty line is parsed as JSON. Lines that are valid
+    JSON objects are kept as-is; non-object JSON values and
+    malformed lines are wrapped as ``{"text": <line>}``.
+
+    :param text: Raw JSONL content (one JSON object per line).
+    :return: List of dicts, one per non-empty line.
+    """
+    records: list[dict] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+            if isinstance(obj, dict):
+                records.append(obj)
+            else:
+                records.append({"text": str(obj)})
+        except json.JSONDecodeError:
+            records.append({"text": line})
+    return records
 
 
 def _state_from_dict(sd: dict) -> AgentBuilderState:
