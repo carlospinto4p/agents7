@@ -24,6 +24,31 @@ def render() -> None:
     )
     sd["agent_type"] = agent_type
 
+    _AGENT_TYPE_INFO = {
+        "classifier": (
+            "Assigns a **category** and **reason** to each input. "
+            "Define the possible categories and reasons as enums, "
+            "and optionally constrain which reasons are valid for "
+            "each category."
+        ),
+        "detector": (
+            "Detects whether a property holds (boolean) and "
+            "provides a **reason**. Use for yes/no decisions "
+            "like anomaly detection or content filtering."
+        ),
+        "regressor": (
+            "Extracts a **scalar value** (float, int, str, or "
+            "bool) and provides a **reason**. Use for "
+            "measurements like scores, ratings, or counts."
+        ),
+        "labeler": (
+            "Generic agent with **custom output fields**. "
+            "Define any combination of typed fields. Most "
+            "flexible — use when the other types don't fit."
+        ),
+    }
+    st.info(_AGENT_TYPE_INFO[agent_type])
+
     # Agent name
     sd["agent_name"] = st.text_input(
         "Agent name (snake_case)",
@@ -136,7 +161,7 @@ def _enum_editor(sd: dict, key: str, label: str) -> None:
     """Reusable editor for a list of EnumMember dicts."""
     members = sd.get(key, [])
     num = st.number_input(
-        f"Number of {label.lower()}s",
+        f"Number of {key}",
         min_value=0,
         value=len(members),
         step=1,

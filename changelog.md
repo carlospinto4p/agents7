@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v1.3.7 - 22nd February 2026
+
+- Module `ui`:
+  - `1_Define.py`: added info box describing each agent type (classifier, detector, regressor, labeler) below the type selector.
+  - `1_Define.py`: fixed "Number of categorys" typo — `_enum_editor` now uses the `key` parameter (already plural) instead of naive `label + "s"` pluralization.
+
+
 ### v1.3.6 - 22nd February 2026
 
 - Infrastructure:
