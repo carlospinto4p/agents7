@@ -165,9 +165,18 @@ def _render_batch_test(state: AgentBuilderState) -> None:
         key="batch_jsonl_upload",
     )
 
+    if uploaded is not None:
+        raw = uploaded.getvalue().decode("utf-8")
+        file_inputs = parse_jsonl(raw)
+        if file_inputs:
+            st.caption(
+                f"{len(file_inputs)} records loaded. Preview (first 5):"
+            )
+            st.json(file_inputs[:5])
+
     if st.button("Run Batch", key="run_batch"):
         if uploaded is not None:
-            raw = uploaded.read().decode("utf-8")
+            raw = uploaded.getvalue().decode("utf-8")
             inputs = parse_jsonl(raw)
         else:
             inputs = _parse_batch(batch_input)
