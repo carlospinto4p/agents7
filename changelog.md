@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v1.3.8 - 22nd February 2026
+
+- Module `ui`:
+  - `1_Define.py`: fixed double-click bug on the agent type and value type selectboxes — added explicit `key` parameters so Streamlit's session state takes precedence over the `index` parameter on reruns.
+
+
 ### v1.3.7 - 22nd February 2026
 
 - Module `ui`:
