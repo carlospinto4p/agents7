@@ -9,6 +9,7 @@ import pytest
 from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
+from agents7.agents.parsing import ResponseParser
 from agents7.exceptions import AgentConfigurationError
 from agents7.llm import LLMEngine
 from agents7.settings import BatchSettings
@@ -227,27 +228,27 @@ def test_output_model_list_validates():
 def test_strips_markdown_code_block():
     """Strips ```json ... ``` markdown blocks."""
     raw = '```json\n{"value": "ok"}\n```'
-    assert Labeler._fix_malformed_json(raw) == '{"value": "ok"}'
+    assert ResponseParser._fix_malformed_json(raw) == '{"value": "ok"}'
 
 
 def test_fixes_double_brace():
     """Fixes {\"{ double-brace malformation."""
     raw = '{"{"value": "ok"}'
-    result = Labeler._fix_malformed_json(raw)
+    result = ResponseParser._fix_malformed_json(raw)
     assert result == '{"value": "ok"}'
 
 
 def test_fixes_double_bracket():
     """Fixes [\"[ double-bracket malformation."""
     raw = '["[{"value": "ok"}]'
-    result = Labeler._fix_malformed_json(raw)
+    result = ResponseParser._fix_malformed_json(raw)
     assert result == '[{"value": "ok"}]'
 
 
 def test_clean_input_unchanged():
     """Clean JSON input is returned unchanged."""
     clean = '{"value": "ok"}'
-    assert Labeler._fix_malformed_json(clean) == clean
+    assert ResponseParser._fix_malformed_json(clean) == clean
 
 
 # --- TestParseModelResponse ---
@@ -256,7 +257,7 @@ def test_clean_input_unchanged():
 def test_valid_json_returns_model():
     """Valid JSON string is parsed into DummyOutput instance."""
     agent = make_labeler()
-    result = agent._parse_model_response('{"value": "hello"}')
+    result = agent._parser.parse('{"value": "hello"}')
     assert isinstance(result, DummyOutput)
     assert result.value == "hello"
 
@@ -264,7 +265,7 @@ def test_valid_json_returns_model():
 def test_invalid_json_returns_none():
     """Invalid JSON returns None."""
     agent = make_labeler()
-    result = agent._parse_model_response("not json at all")
+    result = agent._parser.parse("not json at all")
     assert result is None
 
 
@@ -272,7 +273,7 @@ def test_batch_parse():
     """Batch mode parses list wrapper correctly."""
     agent = make_labeler()
     payload = json.dumps({"items": [{"value": "a"}, {"value": "b"}]})
-    result = agent._parse_model_response(payload, for_batch=True)
+    result = agent._parser.parse(payload, for_batch=True)
     assert result is not None
     assert len(result.items) == 2
     assert result.items[0].value == "a"
@@ -284,13 +285,13 @@ def test_batch_parse():
 def test_get_enum_mappings_no_enums():
     """Returns empty dict for model without StrEnum fields."""
     agent = make_labeler(output_model=DummyOutput)
-    assert agent._get_enum_mappings() == {}
+    assert agent._parser._get_enum_mappings() == {}
 
 
 def test_get_enum_mappings_with_enum():
     """Returns correct mapping for DummyOutputWithEnum."""
     agent = make_labeler(output_model=DummyOutputWithEnum)
-    mappings = agent._get_enum_mappings()
+    mappings = agent._parser._get_enum_mappings()
     assert "reason" in mappings
     assert mappings["reason"]["GOOD"] == "Good result."
     assert mappings["reason"]["BAD"] == "Bad result."
@@ -300,7 +301,7 @@ def test_convert_enum_names_to_values():
     """Converts enum name to value in JSON string."""
     agent = make_labeler(output_model=DummyOutputWithEnum)
     raw = json.dumps({"label": "test", "reason": "GOOD"})
-    converted = agent._convert_enum_names_to_values(raw)
+    converted = agent._parser._convert_enum_names_to_values(raw)
     data = json.loads(converted)
     assert data["reason"] == "Good result."
 
@@ -309,7 +310,7 @@ def test_convert_enum_names_invalid_json():
     """Invalid JSON is returned unchanged."""
     agent = make_labeler(output_model=DummyOutputWithEnum)
     raw = "not json"
-    assert agent._convert_enum_names_to_values(raw) == raw
+    assert agent._parser._convert_enum_names_to_values(raw) == raw
 
 
 def test_apply_enum_mappings_list():
@@ -319,7 +320,7 @@ def test_apply_enum_mappings_list():
         {"label": "a", "reason": "GOOD"},
         {"label": "b", "reason": "other"},
     ]
-    result = Labeler._apply_enum_mappings(data, mappings)
+    result = ResponseParser._apply_enum_mappings(data, mappings)
     assert result[0]["reason"] == "Good result."
     assert result[1]["reason"] == "other"
 
@@ -327,7 +328,7 @@ def test_apply_enum_mappings_list():
 def test_apply_enum_mappings_non_dict():
     """Non-dict input is returned unchanged."""
     mappings = {"reason": {"GOOD": "Good result."}}
-    assert Labeler._apply_enum_mappings("string", mappings) == "string"
+    assert ResponseParser._apply_enum_mappings("string", mappings) == "string"
 
 
 # --- TestBatchAsyncConcurrency ---

@@ -34,20 +34,20 @@ def test_no_validators_passthrough():
     """Model passes through unchanged when no validators."""
     agent = make_labeler(validators=None)
     model = DummyOutput(value="hello")
-    assert agent._run_validators(model) is model
+    assert agent._parser.run_validators(model) is model
 
 
 def test_none_model_passthrough():
     """None model passes through unchanged."""
     agent = make_labeler(validators=[_upper_validator])
-    assert agent._run_validators(None) is None
+    assert agent._parser.run_validators(None) is None
 
 
 def test_single_validator_transforms():
     """Single validator transforms the model."""
     agent = make_labeler(validators=[_upper_validator])
     model = DummyOutput(value="hello")
-    result = agent._run_validators(model)
+    result = agent._parser.run_validators(model)
     assert result.value == "HELLO"
 
 
@@ -55,14 +55,14 @@ def test_validator_rejects_returns_none():
     """Validator that raises returns None."""
     agent = make_labeler(validators=[_reject_validator])
     model = DummyOutput(value="hello")
-    assert agent._run_validators(model) is None
+    assert agent._parser.run_validators(model) is None
 
 
 def test_pipeline_order():
     """Validators run in order; output feeds into next."""
     agent = make_labeler(validators=[_upper_validator, _append_validator])
     model = DummyOutput(value="hello")
-    result = agent._run_validators(model)
+    result = agent._parser.run_validators(model)
     assert result.value == "HELLO!"
 
 
@@ -70,7 +70,7 @@ def test_pipeline_short_circuits_on_failure():
     """First failure short-circuits; later validators skipped."""
     agent = make_labeler(validators=[_reject_validator, _append_validator])
     model = DummyOutput(value="hello")
-    assert agent._run_validators(model) is None
+    assert agent._parser.run_validators(model) is None
 
 
 def _mock_chat_response(value: str = "hello") -> dict:

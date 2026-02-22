@@ -1,8 +1,6 @@
 import asyncio
-import json
 from asyncio import as_completed
 from dataclasses import dataclass
-from enum import StrEnum
 from math import ceil
 from typing import Callable
 
@@ -14,6 +12,7 @@ from cpinto.files import load_yaml
 from cpinto.functions import identity_func
 
 from agents7.agents.base import BaseAgent
+from agents7.agents.parsing import ResponseParser
 from agents7.agents.utils import (
     get_examples_str,
     import_from_path,
@@ -66,6 +65,16 @@ class Labeler(BaseAgent):
             raise AgentConfigurationError(
                 "`output_model` must be a subclass of `pydantic.BaseModel`"
             )
+        object.__setattr__(
+            self,
+            "_parser",
+            ResponseParser(
+                output_model=self.output_model,
+                output_model_list=self.output_model_list,
+                name=self.name,
+                validators=self.validators,
+            ),
+        )
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Labeler":
@@ -217,8 +226,8 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        response["model"] = self._run_validators(
-            self._parse_model_response(response["response"])
+        response["model"] = self._parser.run_validators(
+            self._parser.parse(response["response"])
         )
         return AgentResponse(**response)
 
@@ -254,8 +263,8 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        response["model"] = self._run_validators(
-            self._parse_model_response(response["response"])
+        response["model"] = self._parser.run_validators(
+            self._parser.parse(response["response"])
         )
         response["idx"] = _idx
         return AgentResponse(**response)
@@ -296,7 +305,7 @@ class Labeler(BaseAgent):
                 agent_responses.append(
                     AgentResponse(
                         response=chunk_response.response,
-                        model=self._run_validators(item),
+                        model=self._parser.run_validators(item),
                         thinking=chunk_response.thinking,
                         metrics=chunk_response.metrics,
                         idx=len(agent_responses),
@@ -370,7 +379,7 @@ class Labeler(BaseAgent):
                 agent_responses.append(
                     AgentResponse(
                         response=chunk_response.response,
-                        model=self._run_validators(item),
+                        model=self._parser.run_validators(item),
                         thinking=chunk_response.thinking,
                         metrics=chunk_response.metrics,
                         idx=len(agent_responses),
@@ -410,7 +419,7 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        response["model"] = self._parse_model_response(
+        response["model"] = self._parser.parse(
             response["response"], for_batch=True
         )
         response["idx"] = _idx
@@ -446,7 +455,7 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        response["model"] = self._parse_model_response(
+        response["model"] = self._parser.parse(
             response["response"], for_batch=True
         )
         return AgentResponse(**response)
@@ -590,69 +599,6 @@ class Labeler(BaseAgent):
             ) from e
         return examples
 
-    def _parse_model_response(
-        self, response: str, for_batch: bool = False
-    ) -> BaseModel | None:
-        """
-        Parse the response from the agent and validate it against the output
-        model.
-        :param response: The response string from the agent.
-        :param for_batch: Whether the response is for batch processing.
-            If True, will use `self.output_model_list`,
-            instead of `self.output_model`, to parse the response.
-            Defaults to False.
-        :return: The structured output validated by the output model.
-            Will return `None` if the response cannot be parsed.
-        """
-        if for_batch:
-            model_cls = self.output_model_list
-        else:
-            model_cls = self.output_model
-        model = None
-
-        # Fix common JSON malformations from some models
-        response = self._fix_malformed_json(response)
-
-        try:
-            model = model_cls.model_validate_json(response)
-        except Exception:
-            try:
-                # Try converting enum names to values for models that
-                # return enum names instead of values
-                converted = self._convert_enum_names_to_values(response)
-                model = model_cls.model_validate_json(converted)
-            except Exception as e:
-                logger.error(
-                    f"Agent `{self.name}`: error parsing structured "
-                    f"response:\n{e}"
-                )
-        return model
-
-    def _run_validators(
-        self,
-        model: BaseModel | None,
-    ) -> BaseModel | None:
-        """
-        Run the validator pipeline on a parsed model.
-        Each validator receives the model and returns it (possibly
-        modified). If a validator raises, the model is rejected
-        (returns None) and remaining validators are skipped.
-        :param model: The parsed model instance, or None.
-        :return: The validated (possibly transformed) model, or None.
-        """
-        if model is None or not self.validators:
-            return model
-        for validator in self.validators:
-            try:
-                model = validator(model)
-            except Exception as e:
-                logger.error(
-                    f"Agent `{self.name}`: validator "
-                    f"`{validator.__name__}` failed: {e}"
-                )
-                return None
-        return model
-
     @staticmethod
     def _sanitize_chat_kwargs(chat_kwargs: dict | None) -> dict:
         """
@@ -666,91 +612,3 @@ class Labeler(BaseAgent):
         for k in ["messages", "temperature", "output_format"]:
             chat_kwargs.pop(k, None)
         return chat_kwargs
-
-    @staticmethod
-    def _fix_malformed_json(response: str) -> str:
-        """
-        Fix common JSON malformations from LLM outputs.
-        Some models return malformed JSON like '{"{"reason":...' instead
-        of '{"reason":...'.
-        """
-        response = response.strip()
-
-        # Remove markdown code blocks: ```json ... ``` or ``` ... ```
-        if response.startswith("```"):
-            lines = response.split("\n")
-            # Remove first line (```json or ```)
-            lines = lines[1:]
-            # Remove last line if it's closing ```
-            if lines and lines[-1].strip() == "```":
-                lines = lines[:-1]
-            response = "\n".join(lines).strip()
-
-        # Fix double opening brace: {"{ -> {
-        if response.startswith('{"{'):
-            response = response[2:]
-
-        # Fix double opening bracket for arrays: ["[ -> [
-        if response.startswith('["['):
-            response = response[2:]
-
-        return response
-
-    def _get_enum_mappings(self) -> dict[str, dict[str, str]]:
-        """
-        Get enum name-to-value mappings for all StrEnum
-        fields in output_model.
-        :return: Dict mapping field names to their enum name->value dicts.
-        """
-        enum_mappings = {}
-        for field_name, field_info in self.output_model.model_fields.items():
-            field_type = field_info.annotation
-            # Handle Optional types
-            if hasattr(field_type, "__origin__"):
-                args = getattr(field_type, "__args__", ())
-                for arg in args:
-                    if isinstance(arg, type) and issubclass(arg, StrEnum):
-                        field_type = arg
-                        break
-            if isinstance(field_type, type) and issubclass(
-                field_type, StrEnum
-            ):
-                enum_mappings[field_name] = {
-                    member.name: member.value for member in field_type
-                }
-        return enum_mappings
-
-    def _convert_enum_names_to_values(self, response: str) -> str:
-        """
-        Convert enum names to values in a JSON response string.
-        Some models return enum names (e.g., 'TOO_COLD') instead of
-        values (e.g., 'The temperature is too cold.').
-        """
-        try:
-            data = json.loads(response)
-        except json.JSONDecodeError:
-            return response
-
-        enum_mappings = self._get_enum_mappings()
-        data = self._apply_enum_mappings(data, enum_mappings)
-        return json.dumps(data)
-
-    @staticmethod
-    def _apply_enum_mappings(
-        data: dict | list,
-        mappings: dict[str, dict[str, str]],
-    ) -> dict | list:
-        """Apply enum name-to-value mappings to data.
-
-        Handles single objects, lists, and non-dict values.
-        """
-        if isinstance(data, list):
-            return [
-                Labeler._apply_enum_mappings(item, mappings) for item in data
-            ]
-        if not isinstance(data, dict):
-            return data
-        for field_name, mapping in mappings.items():
-            if field_name in data and data[field_name] in mapping:
-                data[field_name] = mapping[data[field_name]]
-        return data
