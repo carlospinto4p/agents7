@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v1.3.10 - 22nd February 2026
+
+- Module `ui`:
+  - `app.py`: fixed double-click issue on sidebar navigation radio buttons — added explicit `key` parameter.
+
+
 ### v1.3.9 - 22nd February 2026
 
 - Module `ui`:
