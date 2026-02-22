@@ -43,7 +43,12 @@ class OllamaProvider(LLMProvider):
         :param seed: Seed for reproducibility, or None.
         :return: Options dictionary for the Ollama API.
         """
-        options = OllamaProvider._build_options(temperature, max_tokens, seed)
+        options = {
+            "temperature": temperature,
+            "num_predict": max_tokens,
+        }
+        if seed is not None:
+            options["seed"] = seed
         return options
 
     def chat(
