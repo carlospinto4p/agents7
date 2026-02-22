@@ -1,6 +1,31 @@
 
 ## Changelog - Agents7
 
+### v1.4.4 - 23rd February 2026
+
+- Module `agents`:
+  - `labeler.py`: standardized type hints (`dict = None` →
+    `dict | None = None`) on field and 6 method parameters;
+    single-line property docstrings for `prompt`, `prompt_for_batch`,
+    `output_model_list`.
+  - `pipeline.py`: standardized type hints on 4 method parameters;
+    moved `_default_mapper` into `PipelineStep` as `@staticmethod
+    default_mapper`.
+  - `base.py`: single-line property docstring for
+    `resolved_system_prompt`.
+  - `detector.py`: single-line property docstrings for
+    `possible_reasons`, `prompt`, `prompt_for_batch`.
+  - `classifier.py`: single-line property docstrings for
+    `possible_categories`, `possible_reasons`,
+    `category_reasons_constraints`.
+- Module `llm`:
+  - `streaming.py`: added `Any` type hint to `chunk` parameter in
+    `_extract`, `_read_final`, `_process_chunk`.
+- Tests:
+  - `test_pipeline.py`: updated imports and references to use
+    `PipelineStep.default_mapper`.
+
+
 ### v1.4.3 - 22nd February 2026
 
 - Module `ui`:

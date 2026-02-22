@@ -27,10 +27,10 @@
 
 #### Style & Consistency (low impact)
 
-- [ ] Standardize type hint style — some methods use `dict = None` while others use `dict | None = None`. Normalize to `dict | None = None` throughout.
-- [ ] Standardize docstring format — some properties use single-line docstrings, others use multi-line with `:return:`. Pick one style for properties vs full methods.
-- [ ] Add missing type hints in `streaming.py` — `_extract()` method `chunk` parameter lacks type annotation.
-- [ ] Move `_default_mapper` in `pipeline.py` to a `@staticmethod` on `PipelineStep` for better encapsulation.
+- [x] Standardize type hint style — done in v1.4.4 (normalized `dict = None` → `dict | None = None`).
+- [x] Standardize docstring format — done in v1.4.4 (single-line for properties).
+- [x] Add missing type hints in `streaming.py` — done in v1.4.4 (`Any` for `chunk` parameter).
+- [x] Move `_default_mapper` in `pipeline.py` — done in v1.4.4 (`PipelineStep.default_mapper` staticmethod).
 
 ### Infrastructure
 
