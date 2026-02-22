@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v1.4.2 - 22nd February 2026
+
+- Module `agents`:
+  - New file `parsing.py`: `ResponseParser` class extracted from `Labeler`,
+    encapsulating response parsing, JSON fixing, enum mapping, and validators.
+  - New file `config_loader.py`: `load_yaml_settings()`, `validate_yaml_config()`,
+    `build_engine()`, and `parse_yaml_examples()` extracted from `Labeler` as
+    plain functions. Used by all agent `from_yaml()` methods.
+  - `labeler.py`: delegates to `ResponseParser` and `config_loader`; reduced
+    from ~760 to ~470 lines.
+  - `detector.py`, `classifier.py`, `regressor.py`: `from_yaml()` now calls
+    `load_yaml_settings()` directly.
+- Module `llm`:
+  - `base.py`: consolidated 8 public `LLMEngine` methods via 4 private helpers
+    (`_execute`, `_execute_async`, `_stream`, `_stream_async`) that encapsulate
+    the cache-lookup/retry/cache-store boilerplate.
+
+
 ### v1.4.1 - 22nd February 2026
 
 - Module `ui`:
