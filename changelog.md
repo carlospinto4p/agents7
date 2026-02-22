@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v1.3.5 - 22nd February 2026
+
+- Module `ui`:
+  - New `safe_index()` helper in `_pages/__init__.py` — prevents `ValueError` from stale session state in selectbox widgets.
+  - `1_Define.py`: replaced 3 unsafe `.index()` calls with `safe_index()`.
+  - `ollama_utils.py`: narrowed bare `except Exception` to `(ImportError, httpx.HTTPError, ollama.ResponseError)` for better debugging.
+- `.claude/`: updated backlog marking 3 items as completed (item 5 was already done in v1.3.2).
+
+
 ### v1.3.4 - 22nd February 2026
 
 - Tests:

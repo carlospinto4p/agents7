@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from agents7.ui._pages import _state_from_dict, resize_list
+from agents7.ui._pages import _state_from_dict, resize_list, safe_index
 from agents7.ui.codegen.model_generator import (
     generate_model_code,
 )
@@ -16,12 +16,11 @@ def render() -> None:
     sd = st.session_state.state_dict
 
     # Agent type
+    _agent_types = ["classifier", "detector", "regressor", "labeler"]
     agent_type = st.selectbox(
         "Agent type",
-        ["classifier", "detector", "regressor", "labeler"],
-        index=["classifier", "detector", "regressor", "labeler"].index(
-            sd.get("agent_type", "classifier")
-        ),
+        _agent_types,
+        index=safe_index(_agent_types, sd.get("agent_type", "classifier")),
     )
     sd["agent_type"] = agent_type
 
@@ -74,12 +73,11 @@ def _classifier_form(sd: dict) -> None:
 
 
 def _property_form(sd: dict) -> None:
+    _value_types = ["float", "int", "str", "bool"]
     sd["value_type"] = st.selectbox(
         "Value type",
-        ["float", "int", "str", "bool"],
-        index=["float", "int", "str", "bool"].index(
-            sd.get("value_type", "float")
-        ),
+        _value_types,
+        index=safe_index(_value_types, sd.get("value_type", "float")),
     )
 
     st.subheader("Reasons")
@@ -113,12 +111,11 @@ def _labeler_form(sd: dict) -> None:
             value=f.get("name", ""),
             key=f"fn_{i}",
         )
+        _field_types = ["str", "int", "float", "bool"]
         f["field_type"] = cols[1].selectbox(
             "Type",
-            ["str", "int", "float", "bool"],
-            index=["str", "int", "float", "bool"].index(
-                f.get("field_type", "str")
-            ),
+            _field_types,
+            index=safe_index(_field_types, f.get("field_type", "str")),
             key=f"ft_{i}",
         )
         f["optional"] = cols[2].checkbox(

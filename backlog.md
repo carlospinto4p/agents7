@@ -51,9 +51,9 @@
 
 - [x] Extract cache callback setup into helper in `llm/base.py` — the `if key is not None: result._on_complete = functools.partial(...)` block is duplicated 4 times across streaming methods.
 - [x] Consolidate enum-handling methods in `labeler.py` — `_apply_enum_mappings` and `_apply_enum_mappings_to_item` could be merged to reduce the 4-method chain.
-- [ ] Make state dict `index()` calls safe in `1_Define.py` and `2_Configure.py` — `.index(value)` on selectbox options will raise `ValueError` if the value isn't in the list; use a safe fallback.
-- [ ] Add missing type hints to internal UI helper functions — `_classifier_form`, `_property_form`, `_labeler_form`, `_enum_editor` in `1_Define.py` and helpers in `2_Configure.py` lack `-> None` return types.
-- [ ] Narrow bare `except Exception` in `ollama_utils.py` — `check_connection()` and `list_available_models()` catch all exceptions; use specific exceptions (`ConnectionError`, `ImportError`) for better debugging.
+- [x] Make state dict `index()` calls safe in `1_Define.py` and `2_Configure.py` — `.index(value)` on selectbox options will raise `ValueError` if the value isn't in the list; use a safe fallback.
+- [x] Add missing type hints to internal UI helper functions — `_classifier_form`, `_property_form`, `_labeler_form`, `_enum_editor` in `1_Define.py` and helpers in `2_Configure.py` lack `-> None` return types.
+- [x] Narrow bare `except Exception` in `ollama_utils.py` — `check_connection()` and `list_available_models()` catch all exceptions; use specific exceptions (`ConnectionError`, `ImportError`) for better debugging.
 
 #### Infrastructure
 
