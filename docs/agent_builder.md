@@ -30,17 +30,19 @@ Requires Ollama running locally (`ollama serve`).
 
 ## Workflow Diagram
 
-```
- Home
-  |
-  v
-+----------+    +-------------+    +--------+    +----------+    +--------+
-| 1.Define |--->| 2.Configure |--->| 3.Test |--->|4.Evaluate|--->|5.Export|
-+----------+    +-------------+    +--------+    +----------+    +--------+
-  Agent type      Model, prompt     Single,       Labeled data    models.py
-  Output model    Examples          Batch, A/B    Accuracy,       config.yml
-                                    History       Confusion       usage_example.py
-                                                  matrix          eval data/results
+```mermaid
+flowchart LR
+    Home --> Define
+    Define --> Configure
+    Configure --> Test
+    Test --> Evaluate
+    Evaluate --> Export
+
+    Define["**1. Define**\nAgent type\nOutput model"]
+    Configure["**2. Configure**\nModel, prompt\nExamples"]
+    Test["**3. Test**\nSingle, Batch\nA/B, History"]
+    Evaluate["**4. Evaluate**\nLabeled data\nAccuracy, Confusion"]
+    Export["**5. Export**\nmodels.py, config.yml\nusage_example.py"]
 ```
 
 Agents are built in-memory during Test and Evaluate. No files are

@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v1.3.11 - 22nd February 2026
+
+- New file `docs/agent_builder.md`: full workflow documentation for the Agent Builder UI (overview, step-by-step guide, agent types, data flow, session state, file formats).
+- `README.md`: added link to the new documentation from the Agent Builder UI section.
+
+
 ### v1.3.10 - 22nd February 2026
 
 - Module `ui`:
