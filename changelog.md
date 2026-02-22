@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v1.4.5 - 23rd February 2026
+
+- Module `.claude`:
+  - `CLAUDE.md`: fixed stale function name (`_load_yaml_settings` →
+    `load_yaml_settings`), linked all 6 rule files, added
+    `ResponseParser`/`Pipeline`/`config_loader` to Code Patterns,
+    added single-line property docstring convention, merged
+    "ollama serve" into integration test step.
+  - `rules/testing.md`: clarified test class rule (unit: no classes,
+    integration: classes allowed), removed duplicated Running Tests
+    section.
+
+
 ### v1.4.4 - 23rd February 2026
 
 - Module `agents`:
