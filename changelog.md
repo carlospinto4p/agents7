@@ -1,6 +1,34 @@
 
 ## Changelog - Agents7
 
+### v1.3.2 - 22nd February 2026
+
+- Documentation & correctness:
+  - Fixed README.md regressor example (wrong variable name and
+    config file path).
+  - Added `BaseAgent` to `agents/__init__.py` `__all__` exports.
+  - Removed redundant manual `NOT_APPLICABLE` from demo
+    `TemperaturePropertyReason` (auto-added at runtime).
+  - Created `examples/regressor.py` example script.
+- Type hints:
+  - Added `-> None` to `BaseAgent.__post_init__`, `Any` param
+    types to abstract `act()`.
+  - Added return type hints to all UI page `render()` functions
+    and helper functions across `1_Define.py`, `2_Configure.py`,
+    `3_Test.py`, `4_Evaluate.py`, `5_Export.py`.
+  - Fixed `callable` -> `Callable`, bare `list` -> `list[dict]`,
+    `list` -> `list[EnumMember]`, removed extra parens in
+    `comparison/runner.py` union type.
+  - Added parameter type hints to `_compare_field()` in
+    `evaluation/runner.py`.
+- Tests:
+  - Updated `test_detector.py` and `test_regressor.py` to account
+    for auto-added `NOT_APPLICABLE` member.
+- Cleanup:
+  - Deleted leftover `.tmp` files from previous sessions.
+  - Updated backlog with refactoring sweep findings.
+
+
 ### v1.3.1 - 22nd February 2026
 
 - Module `llm`:
