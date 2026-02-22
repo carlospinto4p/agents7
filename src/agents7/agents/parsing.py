@@ -132,8 +132,8 @@ class ResponseParser:
             field_info,
         ) in self.output_model.model_fields.items():
             field_type = field_info.annotation
-            if hasattr(field_type, "__origin__"):
-                args = getattr(field_type, "__args__", ())
+            if hasattr(field_type, "__args__"):
+                args = field_type.__args__
                 for arg in args:
                     if isinstance(arg, type) and issubclass(arg, StrEnum):
                         field_type = arg
