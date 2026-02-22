@@ -13,7 +13,7 @@ from agents7.ui.ollama_utils import (
 )
 
 
-def render():
+def render() -> None:
     st.header("2. Configure the Agent")
 
     sd = st.session_state.state_dict

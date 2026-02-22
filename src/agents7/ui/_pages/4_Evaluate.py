@@ -19,11 +19,11 @@ from agents7.ui.evaluation.metrics import (
     build_confusion_matrix,
     compute_metrics,
 )
-from agents7.ui.evaluation.runner import run_evaluation
+from agents7.ui.evaluation.runner import EvalResult, run_evaluation
 from agents7.ui.helpers import build_agent_from_state
 
 
-def render():
+def render() -> None:
     st.header("4. Evaluate")
 
     sd = st.session_state.state_dict
@@ -158,7 +158,7 @@ def render():
             )
 
 
-def _show_confusion_matrix(results):
+def _show_confusion_matrix(results: list[EvalResult]) -> None:
     cm = build_confusion_matrix(results, "category")
     if not cm["labels"]:
         return

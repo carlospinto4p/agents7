@@ -8,6 +8,7 @@ import os
 import streamlit as st
 
 from agents7.ui._pages import _state_from_dict, get_expected_fields
+from agents7.ui.state import AgentBuilderState
 from agents7.ui.codegen.model_generator import generate_model_code
 from agents7.ui.codegen.yaml_generator import generate_yaml
 from agents7.ui.evaluation.export import (
@@ -16,7 +17,7 @@ from agents7.ui.evaluation.export import (
 )
 
 
-def render():
+def render() -> None:
     st.header("5. Export")
 
     sd = st.session_state.state_dict
@@ -66,13 +67,13 @@ def render():
             st.error(f"Export failed: {e}")
 
 
-def _write(directory: str, filename: str, content: str):
+def _write(directory: str, filename: str, content: str) -> None:
     path = os.path.join(directory, filename)
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
 
-def _write_csv(directory: str, data: list[dict]):
+def _write_csv(directory: str, data: list[dict]) -> None:
     path = os.path.join(directory, "eval_data.csv")
     if not data:
         return
@@ -83,7 +84,11 @@ def _write_csv(directory: str, data: list[dict]):
         writer.writerows(data)
 
 
-def _write_eval_results(directory: str, eval_results, state):
+def _write_eval_results(
+    directory: str,
+    eval_results: list,
+    state: AgentBuilderState,
+) -> None:
     expected_fields = get_expected_fields(state)
 
     csv_content = format_results_csv(eval_results, expected_fields)
@@ -97,7 +102,7 @@ def _write_eval_results(directory: str, eval_results, state):
         f.write(jsonl_content)
 
 
-def _generate_usage_example(state) -> str:
+def _generate_usage_example(state: AgentBuilderState) -> str:
     """Generate a usage_example.py showing how to use the agent."""
     agent_type = state.agent_type.capitalize()
 

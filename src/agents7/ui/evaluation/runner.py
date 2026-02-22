@@ -92,7 +92,7 @@ def _extract_fields(model: BaseModel, fields: list[str]) -> dict:
     return out
 
 
-def _compare_field(actual, expected) -> bool:
+def _compare_field(actual: object, expected: object) -> bool:
     """Case-insensitive string comparison."""
     if actual is None or expected is None:
         return actual == expected

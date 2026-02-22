@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 
 from agents7.ui.state import (
     AgentBuilderState,
@@ -11,7 +12,9 @@ from agents7.ui.state import (
 )
 
 
-def make_progress_callback(progress_bar) -> callable:
+def make_progress_callback(
+    progress_bar,
+) -> Callable[[int, int], None]:
     """Create a progress callback for a Streamlit progress bar.
     :param progress_bar: A `st.progress()` widget instance.
     :return: Callback accepting `(current, total)`.

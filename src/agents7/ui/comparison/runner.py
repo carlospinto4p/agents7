@@ -80,7 +80,7 @@ def run_comparison(
     version_a: PromptVersion,
     version_b: PromptVersion,
     inputs: list[dict],
-    progress_callback: (Callable[[int, int], None] | None) = None,
+    progress_callback: Callable[[int, int], None] | None = None,
 ) -> list[ComparisonResult]:
     """Run *inputs* against two prompt versions and collect
     paired results.

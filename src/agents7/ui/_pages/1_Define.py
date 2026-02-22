@@ -10,7 +10,7 @@ from agents7.ui.codegen.model_generator import (
 )
 
 
-def render():
+def render() -> None:
     st.header("1. Define the Output Model")
 
     sd = st.session_state.state_dict
@@ -48,7 +48,7 @@ def render():
     st.code(code, language="python")
 
 
-def _classifier_form(sd: dict):
+def _classifier_form(sd: dict) -> None:
     st.subheader("Categories")
     _enum_editor(sd, "categories", "Category")
 
@@ -73,7 +73,7 @@ def _classifier_form(sd: dict):
         sd["category_reasons"] = mapping
 
 
-def _property_form(sd: dict):
+def _property_form(sd: dict) -> None:
     sd["value_type"] = st.selectbox(
         "Value type",
         ["float", "int", "str", "bool"],
@@ -86,7 +86,7 @@ def _property_form(sd: dict):
     _enum_editor(sd, "reasons", "Reason")
 
 
-def _labeler_form(sd: dict):
+def _labeler_form(sd: dict) -> None:
     st.subheader("Output Fields")
     fields = sd.get("fields", [])
     num = st.number_input(
@@ -135,7 +135,7 @@ def _labeler_form(sd: dict):
     sd["fields"] = fields
 
 
-def _enum_editor(sd: dict, key: str, label: str):
+def _enum_editor(sd: dict, key: str, label: str) -> None:
     """Reusable editor for a list of EnumMember dicts."""
     members = sd.get(key, [])
     num = st.number_input(

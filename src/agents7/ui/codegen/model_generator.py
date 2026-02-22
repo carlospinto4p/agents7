@@ -15,7 +15,7 @@ from enum import StrEnum
 from pydantic import BaseModel, Field, create_model
 
 from agents7.models.base import ClassificationProperty, Property
-from agents7.ui.state import AgentBuilderState
+from agents7.ui.state import AgentBuilderState, EnumMember
 
 
 # ------------------------------------------------------------------
@@ -25,7 +25,7 @@ from agents7.ui.state import AgentBuilderState
 
 def _enum_code(
     class_name: str,
-    members: list,
+    members: list[EnumMember],
 ) -> list[str]:
     """Generate source lines for a StrEnum class."""
     lines = [f"class {class_name}(StrEnum):"]

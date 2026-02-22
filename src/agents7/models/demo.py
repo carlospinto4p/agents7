@@ -30,12 +30,14 @@ class TemperaturePropertyReason(StrEnum):
     """
     Reasons for the temperature property.
     This is a specific reason for the Temperature property.
+
+    Note: NOT_APPLICABLE is auto-added by the Detector/Regressor
+    via `_extend_enum_with_not_applicable()` at agent init time.
     """
 
     TOO_COLD = "The temperature is too cold."
     TOO_HOT = "The temperature is too hot."
     COMFORTABLE = "The temperature is comfortable."
-    NOT_APPLICABLE = "No reference nor context for any temperature detection."
 
 
 class Temperature(Property[float]):

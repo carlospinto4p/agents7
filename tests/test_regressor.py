@@ -1,6 +1,7 @@
 import pytest
 
 from agents7.agents.regressor import Regressor
+from agents7.models.base import NOT_APPLICABLE_DESCRIPTION
 from agents7.models.demo import TemperaturePropertyReason
 
 
@@ -31,6 +32,7 @@ def test_possible_reasons(temperature_regressor: Regressor) -> None:
     expected_reasons = {
         k: v for k, v in TemperaturePropertyReason.__members__.items()
     }
+    expected_reasons["NOT_APPLICABLE"] = NOT_APPLICABLE_DESCRIPTION
     assert temperature_regressor.possible_reasons == expected_reasons
 
 

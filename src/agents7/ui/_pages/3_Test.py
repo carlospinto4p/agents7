@@ -12,11 +12,13 @@ from agents7.ui._pages import (
     parse_jsonl,
 )
 from agents7.ui.comparison.models import PromptVersion
-from agents7.ui.comparison.runner import run_comparison
+from agents7.ui.comparison.runner import ComparisonResult, run_comparison
+from agents7.models import AgentResponse
 from agents7.ui.helpers import build_agent_from_state
+from agents7.ui.state import AgentBuilderState
 
 
-def render():
+def render() -> None:
     st.header("3. Quick Test")
 
     sd = st.session_state.state_dict
@@ -48,7 +50,7 @@ def render():
 # ----------------------------------------------------------------
 
 
-def _render_version_management(sd: dict):
+def _render_version_management(sd: dict) -> None:
     st.subheader("Prompt Versions")
 
     col_name, col_btn = st.columns([3, 1])
@@ -70,7 +72,7 @@ def _render_version_management(sd: dict):
     st.divider()
 
 
-def _save_version(sd: dict, version_name: str):
+def _save_version(sd: dict, version_name: str) -> None:
     """Validate and save a new prompt version."""
     if not version_name.strip():
         st.warning("Please enter a version name.")
@@ -89,7 +91,7 @@ def _save_version(sd: dict, version_name: str):
     st.success(f"Saved version '{version.name}'.")
 
 
-def _render_version_list(sd: dict):
+def _render_version_list(sd: dict) -> None:
     """Render the list of saved versions with load/delete."""
     for i, v in enumerate(st.session_state.prompt_versions):
         col_info, col_load, col_del = st.columns([4, 1, 1])
@@ -112,7 +114,7 @@ def _render_version_list(sd: dict):
 # ----------------------------------------------------------------
 
 
-def _render_single_test(state):
+def _render_single_test(state: AgentBuilderState) -> None:
     test_input = st.text_area(
         "Input (plain text or JSON dict)",
         height=80,
@@ -149,7 +151,7 @@ def _render_single_test(state):
 # ----------------------------------------------------------------
 
 
-def _render_batch_test(state):
+def _render_batch_test(state: AgentBuilderState) -> None:
     st.caption("One input per line (plain text) or a JSON array.")
     batch_input = st.text_area(
         "Batch inputs",
@@ -192,7 +194,7 @@ def _render_batch_test(state):
 # ----------------------------------------------------------------
 
 
-def _render_ab_compare(state):
+def _render_ab_compare(state: AgentBuilderState) -> None:
     versions = st.session_state.prompt_versions
     if len(versions) < 2:
         st.info(
@@ -249,7 +251,10 @@ def _render_ab_compare(state):
         _show_comparison(results, version_a, version_b)
 
 
-def _render_prompt_previews(version_a, version_b):
+def _render_prompt_previews(
+    version_a: PromptVersion,
+    version_b: PromptVersion,
+) -> None:
     """Show expandable prompt previews for both versions."""
     with st.expander("Prompt previews"):
         prev_a, prev_b = st.columns(2)
@@ -261,7 +266,11 @@ def _render_prompt_previews(version_a, version_b):
             st.text(version_b.system_prompt[:300])
 
 
-def _show_comparison(results, version_a, version_b):
+def _show_comparison(
+    results: list[ComparisonResult],
+    version_a: PromptVersion,
+    version_b: PromptVersion,
+) -> None:
     """Display comparison results with summary and
     per-input detail."""
     _show_comparison_summary(results)
@@ -290,7 +299,9 @@ def _show_comparison(results, version_a, version_b):
                 )
 
 
-def _show_comparison_summary(results):
+def _show_comparison_summary(
+    results: list[ComparisonResult],
+) -> None:
     """Render the summary metrics row."""
     total = len(results)
     matching = sum(1 for r in results if r.outputs_match)
@@ -311,7 +322,12 @@ def _show_comparison_summary(results):
     )
 
 
-def _show_version_output(name, error, output, metrics):
+def _show_version_output(
+    name: str,
+    error: str | None,
+    output: dict | None,
+    metrics: dict,
+) -> None:
     """Render one version's output in a comparison column."""
     st.markdown(f"**{name}**")
     if error:
@@ -329,7 +345,7 @@ def _show_version_output(name, error, output, metrics):
 # ----------------------------------------------------------------
 
 
-def _render_history():
+def _render_history() -> None:
     if not st.session_state.test_history:
         st.info("No test history yet.")
         return
@@ -344,7 +360,7 @@ def _render_history():
 # ----------------------------------------------------------------
 
 
-def _parse_input(text: str):
+def _parse_input(text: str) -> dict:
     """Try to parse as JSON dict, fall back to string."""
     text = text.strip()
     if text.startswith("{"):
@@ -355,7 +371,7 @@ def _parse_input(text: str):
     return {"text": text}
 
 
-def _parse_batch(text: str) -> list:
+def _parse_batch(text: str) -> list[dict]:
     """Parse batch input: JSON array or one-per-line."""
     text = text.strip()
     if not text:
@@ -374,7 +390,7 @@ def _parse_batch(text: str) -> list:
     ]
 
 
-def _show_response(response):
+def _show_response(response: AgentResponse) -> None:
     if response.model is not None:
         st.json(response.model.model_dump())
     else:

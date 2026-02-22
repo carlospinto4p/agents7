@@ -7,6 +7,7 @@ from agents7.agents.detector import Detector
 from agents7.exceptions import PropertyConfigurationError
 from agents7.llm import LLMEngine
 from agents7.models import Property
+from agents7.models.base import NOT_APPLICABLE_DESCRIPTION
 from agents7.models.demo import TemperaturePropertyReason
 
 
@@ -42,6 +43,7 @@ def test_possible_reasons(temperature_detector: Detector) -> None:
     expected_reasons = {
         k: v for k, v in TemperaturePropertyReason.__members__.items()
     }
+    expected_reasons["NOT_APPLICABLE"] = NOT_APPLICABLE_DESCRIPTION
     assert temperature_detector.possible_reasons == expected_reasons
 
 

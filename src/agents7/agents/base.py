@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from string import Template
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from agents7.exceptions import PromptParameterError
 from agents7.llm import LLMEngine
@@ -36,7 +36,7 @@ class BaseAgent(ABC):
         default=None, kw_only=True
     )
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.prompt_params is not None:
             if not isinstance(self.prompt_params, dict):
                 raise PromptParameterError(
@@ -80,7 +80,7 @@ class BaseAgent(ABC):
         raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
-    def act(self, *args, **kwargs) -> AgentResponse:
+    def act(self, *args: Any, **kwargs: Any) -> AgentResponse:
         """
         Perform an action based on the current state and input.
         This method should be overridden by subclasses.

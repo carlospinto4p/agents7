@@ -1,4 +1,4 @@
-from agents7.agents.base import Agent
+from agents7.agents.base import Agent, BaseAgent
 from agents7.agents.classifier import Classifier
 from agents7.agents.detector import Detector
 from agents7.agents.labeler import Labeler
@@ -8,6 +8,7 @@ from agents7.agents.regressor import Regressor
 
 __all__ = [
     "Agent",
+    "BaseAgent",
     "Classifier",
     "Detector",
     "Labeler",

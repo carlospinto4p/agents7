@@ -102,7 +102,7 @@ for response in responses:
 ```python
 from agents7.agents import Regressor
 
-detector = Regressor.from_yaml("configs/demo_detector.yml")
+regressor = Regressor.from_yaml("configs/demo_temperature_detector.yml")
 
 texts = [
     "It's freezing outside at -5 degrees!",
@@ -110,7 +110,7 @@ texts = [
 ]
 
 inputs = [{"text": text} for text in texts]
-responses = detector.act_in_batch(inputs)
+responses = regressor.act_in_batch(inputs)
 
 for response in responses:
     print(f"Value: {response.model.value}")
