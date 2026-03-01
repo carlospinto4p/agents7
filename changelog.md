@@ -1,6 +1,32 @@
 
 ## Changelog - Agents7
 
+### v1.4.17 - 1st March 2026
+
+- Integration tests:
+  - Moved `_OLLAMA_AVAILABLE` skip logic to `conftest.py` via
+    `pytest_collection_modifyitems` hook, removing ~14 duplicated
+    lines from each of 7 test files.
+  - New `integration_tests/data.py` with shared `TEMPERATURE_DATA`
+    and `SENTIMENT_DATA` constants. Removed duplicated data from
+    `test_detector`, `test_regressor`, `test_classifier`,
+    and `test_async`.
+  - Consolidated agent fixtures (`temperature_detector`,
+    `sentiment_classifier`, `temperature_regressor`) to
+    `conftest.py`. Removed duplicated fixtures from 4 test files.
+- Unit tests:
+  - Moved `_batch_chat_response` to `tests/helpers.py` as
+    `batch_chat_response` with optional `thinking` parameter.
+  - Moved `DummyReason` and `DummyOutputWithEnum` to
+    `tests/helpers.py`, removed from `test_labeler.py` and
+    `test_prompt_params.py`.
+  - Moved `_make_response` to `tests/helpers.py` as
+    `make_agent_response`, removed from `test_pipeline.py`.
+- `pyproject.toml`: Added `integration_tests` to `pythonpath` for
+  shared data module imports.
+- `backlog.md`: Marked items 5-10 from 1st March refactoring as done.
+
+
 ### v1.4.16 - 1st March 2026
 
 - Module `agents7.llm.ollama`:

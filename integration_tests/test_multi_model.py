@@ -13,22 +13,6 @@ from agents7.agents import Detector
 from agents7.llm import LLMEngine
 from agents7.models.demo import Temperature
 
-try:
-    _OLLAMA_AVAILABLE = (
-        subprocess.run(
-            ["ollama", "list"],
-            capture_output=True,
-            timeout=10,
-        ).returncode
-        == 0
-    )
-except Exception:
-    _OLLAMA_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not _OLLAMA_AVAILABLE, reason="Ollama is not available"
-)
-
 
 def is_model_available(model_name: str) -> bool:
     """Check if an Ollama model is available locally."""
@@ -102,23 +86,38 @@ def make_detector():
             examples=[
                 {
                     "input": "It is freezing outside.",
-                    "output": {"value": -5, "reason": "TOO_COLD"},
+                    "output": {
+                        "value": -5,
+                        "reason": "TOO_COLD",
+                    },
                 },
                 {
                     "input": "Nice weather for a walk.",
-                    "output": {"value": 22, "reason": "COMFORTABLE"},
+                    "output": {
+                        "value": 22,
+                        "reason": "COMFORTABLE",
+                    },
                 },
                 {
                     "input": "The asphalt is melting.",
-                    "output": {"value": 40, "reason": "TOO_HOT"},
+                    "output": {
+                        "value": 40,
+                        "reason": "TOO_HOT",
+                    },
                 },
                 {
                     "input": "She bought a new book.",
-                    "output": {"value": None, "reason": "NOT_APPLICABLE"},
+                    "output": {
+                        "value": None,
+                        "reason": "NOT_APPLICABLE",
+                    },
                 },
                 {
                     "input": "The meeting is at 3 PM.",
-                    "output": {"value": None, "reason": "NOT_APPLICABLE"},
+                    "output": {
+                        "value": None,
+                        "reason": "NOT_APPLICABLE",
+                    },
                 },
             ],
         )
@@ -131,7 +130,7 @@ def make_detector():
 def test_temperature_detection_across_models(
     make_detector, model_name: str, test_case: dict
 ) -> None:
-    """Test temperature detection works across different models."""
+    """Test temperature detection works across models."""
     detector = make_detector(model_name)
     input_data = {"text": test_case["text"]}
 
@@ -164,7 +163,7 @@ MODELS_FOR_BATCH = [
 def test_batch_processing_across_models(
     make_detector, model_name: str
 ) -> None:
-    """Test that batch processing works across different models."""
+    """Test batch processing works across different models."""
     detector = make_detector(model_name)
     inputs = [{"text": case["text"]} for case in SIMPLE_TEST_CASES]
 
@@ -188,7 +187,7 @@ def test_batch_processing_across_models(
 def test_response_structure_across_models(
     make_detector, model_name: str
 ) -> None:
-    """Test that response structure is consistent across models."""
+    """Test response structure is consistent across models."""
     detector = make_detector(model_name)
     input_data = {"text": "The thermometer reads 25 degrees."}
 

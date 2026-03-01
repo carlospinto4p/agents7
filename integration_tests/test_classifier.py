@@ -1,51 +1,11 @@
-import subprocess
-
 import pytest
 
 from agents7.agents import Classifier
 
-try:
-    _OLLAMA_AVAILABLE = (
-        subprocess.run(
-            ["ollama", "list"],
-            capture_output=True,
-            timeout=10,
-        ).returncode
-        == 0
-    )
-except Exception:
-    _OLLAMA_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not _OLLAMA_AVAILABLE, reason="Ollama is not available"
-)
+from data import SENTIMENT_DATA
 
 
-demo_sentiment_data = [
-    {
-        "text": "I absolutely love this! Best day ever!",
-        "expected_category": "POSITIVE",
-    },
-    {
-        "text": "This is terrible and I'm very disappointed.",
-        "expected_category": "NEGATIVE",
-    },
-    {
-        "text": "The meeting is at 3 PM in conference room B.",
-        "expected_category": "NEUTRAL",
-    },
-]
-
-
-@pytest.fixture
-def sentiment_classifier():
-    """Fixture to create a sentiment classifier instance."""
-    return Classifier.from_yaml(
-        "examples/configs/demo_sentiment_classifier.yml"
-    )
-
-
-@pytest.mark.parametrize("test_case", demo_sentiment_data)
+@pytest.mark.parametrize("test_case", SENTIMENT_DATA)
 def test_single_sentiment_classification(
     sentiment_classifier: Classifier, test_case: dict
 ) -> None:
@@ -65,17 +25,14 @@ def test_batch_sentiment_classification(
     sentiment_classifier: Classifier,
 ) -> None:
     """Test batch processing of sentiment classification cases."""
-    input_list = [{"text": case["text"]} for case in demo_sentiment_data]
+    input_list = [{"text": case["text"]} for case in SENTIMENT_DATA]
     response = sentiment_classifier.act_in_batch(input_list)
 
-    assert len(response) == len(demo_sentiment_data), (
-        f"Expected {len(demo_sentiment_data)} responses "
-        f"but got {len(response)}"
+    assert len(response) == len(SENTIMENT_DATA), (
+        f"Expected {len(SENTIMENT_DATA)} responses but got {len(response)}"
     )
 
-    for i, (test_case, output) in enumerate(
-        zip(demo_sentiment_data, response)
-    ):
+    for i, (test_case, output) in enumerate(zip(SENTIMENT_DATA, response)):
         assert test_case["expected_category"] == output.model.category.name, (
             f"Expected category '{test_case['expected_category']}' "
             f"but got '{output.model.category.name}' for case {i}:"

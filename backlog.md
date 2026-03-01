@@ -42,15 +42,15 @@
 
 #### Duplication — Tests (high impact)
 
-- [ ] Move `_OLLAMA_AVAILABLE` check to `integration_tests/conftest.py` using a `pytest_collection_modifyitems` hook or session-scoped fixture. Currently copy-pasted in all 7 integration test files (~14 lines each).
-- [ ] Move shared integration test data (temperature, sentiment) to `integration_tests/conftest.py`. Currently duplicated across `test_detector`, `test_regressor`, and `test_async`.
-- [ ] Consolidate integration test agent fixtures (`temperature_detector`, `sentiment_classifier`, `temperature_regressor`) to `integration_tests/conftest.py`. Currently duplicated between individual test files and `test_async.py`.
+- [x] Move `_OLLAMA_AVAILABLE` check to `integration_tests/conftest.py` — done in v1.4.17 (`pytest_collection_modifyitems` hook).
+- [x] Move shared integration test data (temperature, sentiment) to `integration_tests/data.py` — done in v1.4.17.
+- [x] Consolidate integration test agent fixtures to `integration_tests/conftest.py` — done in v1.4.17.
 
 #### Duplication — Unit Tests (medium impact)
 
-- [ ] Consolidate `_batch_chat_response()` helper — duplicated between `tests/test_labeler.py` and `tests/test_batch.py`. Move to `tests/helpers.py` or `tests/conftest.py`.
-- [ ] Consolidate shared test model classes (`DummyReason`, etc.) — defined independently in `test_labeler.py`, `test_prompt_params.py`, and `test_enum_parsing.py`. Define once in `tests/conftest.py`.
-- [ ] Consolidate `_make_response()` variants in `tests/test_pipeline.py` with `make_response()` in `tests/conftest.py`.
+- [x] Consolidate `_batch_chat_response()` helper — done in v1.4.17 (`batch_chat_response` in `tests/helpers.py`).
+- [x] Consolidate shared test model classes (`DummyReason`, `DummyOutputWithEnum`) — done in v1.4.17 (moved to `tests/helpers.py`).
+- [x] Consolidate `_make_response()` variants — done in v1.4.17 (`make_agent_response` in `tests/helpers.py`).
 
 #### Architecture (medium impact)
 

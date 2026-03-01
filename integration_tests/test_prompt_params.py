@@ -1,32 +1,14 @@
-import subprocess
-
 import pytest
 
 from agents7.agents import Labeler
 from agents7.models.demo import PersonInfo
-
-try:
-    _OLLAMA_AVAILABLE = (
-        subprocess.run(
-            ["ollama", "list"],
-            capture_output=True,
-            timeout=10,
-        ).returncode
-        == 0
-    )
-except Exception:
-    _OLLAMA_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not _OLLAMA_AVAILABLE, reason="Ollama is not available"
-)
 
 
 # --- Test data ---
 
 demo_company_data = [
     {
-        "text": "John is a 35-year-old engineer at Acme Corp in Berlin.",
+        "text": ("John is a 35-year-old engineer at Acme Corp in Berlin."),
         "expected_name": "John",
     },
     {
@@ -34,7 +16,7 @@ demo_company_data = [
         "expected_name": "Sara",
     },
     {
-        "text": "Maria works at a different company as a designer.",
+        "text": ("Maria works at a different company as a designer."),
         "expected_name": None,
     },
 ]
@@ -58,10 +40,10 @@ def test_prompt_params_resolved_in_prompt(
     assert "Acme Corp" in prompt, "Expected 'Acme Corp' in resolved prompt"
     assert "2026-02-01" in prompt, "Expected '2026-02-01' in resolved prompt"
     assert "$company" not in prompt, (
-        "Placeholder '$company' should not remain in resolved prompt"
+        "Placeholder '$company' should not remain"
     )
     assert "$current_date" not in prompt, (
-        "Placeholder '$current_date' should not remain in resolved prompt"
+        "Placeholder '$current_date' should not remain"
     )
 
 
@@ -70,7 +52,7 @@ def test_prompt_params_resolved_in_prompt(
 
 @pytest.mark.parametrize(
     "test_case",
-    [c for c in demo_company_data if c["expected_name"] is not None],
+    [c for c in demo_company_data if c["expected_name"]],
 )
 def test_extracts_company_person(
     company_labeler: Labeler, test_case: dict

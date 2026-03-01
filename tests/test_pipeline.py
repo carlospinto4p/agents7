@@ -17,7 +17,7 @@ from agents7.llm import LLMEngine
 from agents7.models import AgentResponse
 from agents7.settings import BatchSettings
 
-from helpers import DUMMY_METRICS, ENGINE
+from helpers import DUMMY_METRICS, ENGINE, make_agent_response
 
 
 # --- Helper models & fixtures ---
@@ -38,16 +38,6 @@ def _make_labeler(output_model: type[BaseModel] = StepOneOutput):
         engine=ENGINE,
         system_prompt="Test prompt.",
         output_model=output_model,
-    )
-
-
-def _make_response(model: BaseModel | None, idx: int = None) -> AgentResponse:
-    return AgentResponse(
-        response="raw",
-        model=model,
-        thinking=None,
-        metrics=DUMMY_METRICS,
-        idx=idx,
     )
 
 
@@ -121,7 +111,7 @@ def test_non_step_raises():
 def test_converts_model_to_dict():
     """Default mapper converts model to dict via model_dump."""
     model = StepOneOutput(name="Alice")
-    response = _make_response(model)
+    response = make_agent_response(model)
     result = PipelineStep.default_mapper(response)
     assert result == {"name": "Alice"}
 

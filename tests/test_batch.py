@@ -1,27 +1,13 @@
 """Unit tests for batch flattening logic (no LLM required)."""
 
 import asyncio
-import json
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from agents7.llm import LLMEngine
 
-from helpers import DUMMY_METRICS, make_labeler
-
-
-# --- Helpers ---
-
-
-def _batch_chat_response(items: list[dict]) -> dict:
-    """Build a mock chat return value for batch mode."""
-    return {
-        "role": "assistant",
-        "response": json.dumps({"items": items}),
-        "thinking": "some thinking",
-        "metrics": DUMMY_METRICS,
-    }
+from helpers import batch_chat_response, make_labeler
 
 
 # --- Sync: act_in_batch ---
@@ -30,7 +16,7 @@ def _batch_chat_response(items: list[dict]) -> dict:
 @patch.object(LLMEngine, "chat")
 def test_single_chunk_flattening(mock_chat):
     """3 items within one chunk → 1 LLM call, 3 responses."""
-    mock_chat.return_value = _batch_chat_response(
+    mock_chat.return_value = batch_chat_response(
         [{"value": "a"}, {"value": "b"}, {"value": "c"}]
     )
     agent = make_labeler()
@@ -50,9 +36,9 @@ def test_single_chunk_flattening(mock_chat):
 def test_multi_chunk_flattening(mock_chat):
     """5 items, requests_per_prompt=2 → 3 LLM calls, idx 0..4."""
     mock_chat.side_effect = [
-        _batch_chat_response([{"value": "a"}, {"value": "b"}]),
-        _batch_chat_response([{"value": "c"}, {"value": "d"}]),
-        _batch_chat_response([{"value": "e"}]),
+        batch_chat_response([{"value": "a"}, {"value": "b"}]),
+        batch_chat_response([{"value": "c"}, {"value": "d"}]),
+        batch_chat_response([{"value": "e"}]),
     ]
     agent = make_labeler()
     results = agent.act_in_batch(
@@ -76,8 +62,9 @@ def test_multi_chunk_flattening(mock_chat):
 @patch.object(LLMEngine, "chat")
 def test_shared_metadata_across_chunk(mock_chat):
     """All items in a chunk share response, thinking, metrics."""
-    mock_chat.return_value = _batch_chat_response(
-        [{"value": "a"}, {"value": "b"}]
+    mock_chat.return_value = batch_chat_response(
+        [{"value": "a"}, {"value": "b"}],
+        thinking="some thinking",
     )
     agent = make_labeler()
     results = agent.act_in_batch(
@@ -112,7 +99,7 @@ def test_empty_input_list(mock_chat):
 @pytest.mark.asyncio
 async def test_async_single_chunk_flattening(mock_chat):
     """3 items within one chunk → 1 LLM call, 3 responses."""
-    mock_chat.return_value = _batch_chat_response(
+    mock_chat.return_value = batch_chat_response(
         [{"value": "a"}, {"value": "b"}, {"value": "c"}]
     )
     agent = make_labeler()
@@ -144,7 +131,7 @@ async def test_async_multi_chunk_preserves_order(mock_chat):
         for marker, (items, delay) in chunk_map.items():
             if marker in content:
                 await asyncio.sleep(delay)
-                return _batch_chat_response(items)
+                return batch_chat_response(items)
 
     mock_chat.side_effect = _side_effect
 
@@ -170,8 +157,9 @@ async def test_async_multi_chunk_preserves_order(mock_chat):
 @pytest.mark.asyncio
 async def test_async_shared_metadata_across_chunk(mock_chat):
     """All items in a chunk share response, thinking, metrics."""
-    mock_chat.return_value = _batch_chat_response(
-        [{"value": "a"}, {"value": "b"}]
+    mock_chat.return_value = batch_chat_response(
+        [{"value": "a"}, {"value": "b"}],
+        thinking="some thinking",
     )
     agent = make_labeler()
     results = await agent.act_in_batch_async(

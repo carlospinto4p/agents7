@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-from enum import StrEnum
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -15,23 +14,11 @@ from agents7.llm import LLMEngine
 from agents7.settings import BatchSettings
 
 from helpers import (
-    DUMMY_METRICS,
     DummyOutput,
+    DummyOutputWithEnum,
+    batch_chat_response,
     make_labeler,
 )
-
-
-# --- Helper models ---
-
-
-class DummyReason(StrEnum):
-    GOOD = "Good result."
-    BAD = "Bad result."
-
-
-class DummyOutputWithEnum(BaseModel):
-    label: str
-    reason: DummyReason
 
 
 # --- TestInitialization ---
@@ -334,16 +321,6 @@ def test_apply_enum_mappings_non_dict():
 # --- TestBatchAsyncConcurrency ---
 
 
-def _batch_chat_response(items: list[dict]) -> dict:
-    """Build a mock chat_async return value for batch mode."""
-    return {
-        "role": "assistant",
-        "response": json.dumps({"items": items}),
-        "thinking": None,
-        "metrics": DUMMY_METRICS,
-    }
-
-
 @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
 @pytest.mark.asyncio
 async def test_max_concurrent_none_unlimited(mock_chat):
@@ -352,7 +329,7 @@ async def test_max_concurrent_none_unlimited(mock_chat):
     current = 0
     lock = asyncio.Lock()
 
-    original_return = _batch_chat_response([{"value": "x"}])
+    original_return = batch_chat_response([{"value": "x"}])
 
     async def _side_effect(**kwargs):
         nonlocal peak, current
@@ -385,7 +362,7 @@ async def test_max_concurrent_limits_parallelism(mock_chat):
     current = 0
     lock = asyncio.Lock()
 
-    original_return = _batch_chat_response([{"value": "x"}])
+    original_return = batch_chat_response([{"value": "x"}])
 
     async def _side_effect(**kwargs):
         nonlocal peak, current
@@ -417,7 +394,7 @@ async def test_max_concurrent_one_is_sequential(mock_chat):
     current = 0
     lock = asyncio.Lock()
 
-    original_return = _batch_chat_response([{"value": "x"}])
+    original_return = batch_chat_response([{"value": "x"}])
 
     async def _side_effect(**kwargs):
         nonlocal peak, current

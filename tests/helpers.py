@@ -1,11 +1,14 @@
 """Shared test helpers used across test files."""
 
+import json
+from enum import StrEnum
 from types import SimpleNamespace
 
 from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
 from agents7.llm import LLMEngine
+from agents7.models import AgentResponse
 
 
 # --- Shared constants ---
@@ -24,6 +27,46 @@ DUMMY_METRICS = {
 
 class DummyOutput(BaseModel):
     value: str
+
+
+class DummyReason(StrEnum):
+    GOOD = "Good result."
+    BAD = "Bad result."
+
+
+class DummyOutputWithEnum(BaseModel):
+    label: str
+    reason: DummyReason
+
+
+# --- Response factory helpers ---
+
+
+def batch_chat_response(
+    items: list[dict],
+    thinking: str | None = None,
+) -> dict:
+    """Build a mock chat return value for batch mode."""
+    return {
+        "role": "assistant",
+        "response": json.dumps({"items": items}),
+        "thinking": thinking,
+        "metrics": DUMMY_METRICS,
+    }
+
+
+def make_agent_response(
+    model: BaseModel | None,
+    idx: int | None = None,
+) -> AgentResponse:
+    """Build a mock AgentResponse with arbitrary model."""
+    return AgentResponse(
+        response="raw",
+        model=model,
+        thinking=None,
+        metrics=DUMMY_METRICS,
+        idx=idx,
+    )
 
 
 # --- Agent factory helpers ---

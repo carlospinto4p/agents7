@@ -9,12 +9,7 @@ from agents7.agents.regressor import Regressor
 from agents7.exceptions import PromptParameterError
 from agents7.models import ClassificationProperty, Property
 
-from helpers import ENGINE, make_labeler
-
-
-class DummyReason(StrEnum):
-    GOOD = "Good result."
-    BAD = "Bad result."
+from helpers import ENGINE, DummyReason, make_labeler
 
 
 class DummyProperty(Property[float]):
