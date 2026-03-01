@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v1.4.13 - 1st March 2026
+
+- Configs:
+  - New `demo_pipeline.yml`: 2-step pipeline config chaining
+    PersonExtractor and BioGenerator.
+- Integration tests:
+  - New `test_pipeline.py`: 5 tests covering Pipeline YAML loading,
+    single execution, intermediate step inspection, and batch processing.
+  - New `test_prompt_params.py`: 5 tests covering prompt parameter
+    resolution, company-scoped extraction, rejection of non-matching
+    inputs, and batch processing with prompt_params.
+
+
 ### v1.4.12 - 1st March 2026
 
 - Configs:
