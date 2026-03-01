@@ -1,6 +1,21 @@
 
 ## Changelog - Agents7
 
+### v1.4.12 - 1st March 2026
+
+- Configs:
+  - `demo_temperature_detector.yml`: switched from `qwen3:4b` to
+    `qwen2.5:3b` (1.9 GB, no thinking overhead). Updated COMFORTABLE
+    range from `~20 °C` to `11-29 °C`. Added 25 °C COMFORTABLE example.
+- Integration tests:
+  - `test_multi_model.py`: switched models to `qwen2.5:3b`/`gemma3:4b`.
+    Added explicit temperature range prompt and 5 examples to the
+    factory fixture for reliability with small models.
+  - `test_regressor.py`: updated `test_regressor_extracts_numeric_value`
+    input from clinical phrasing to natural language — `qwen2.5:3b`
+    needs contextual cues to classify borderline temperatures correctly.
+
+
 ### v1.4.11 - 1st March 2026
 
 - Integration tests:
