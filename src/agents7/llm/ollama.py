@@ -17,6 +17,7 @@ https://www.gpu-mart.com/blog/custom-llm-models-with-ollama-modelfile
 """
 
 from ollama import AsyncClient, ChatResponse, GenerateResponse, generate, chat
+from ollama import ResponseError
 
 from agents7.llm.base import LLMProvider
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
@@ -52,6 +53,16 @@ class OllamaProvider(LLMProvider):
         return options
 
     @staticmethod
+    def _think_kwargs(think: bool) -> dict:
+        """Return `{'think': True}` when enabled, else empty."""
+        return {"think": True} if think else {}
+
+    @staticmethod
+    def _is_thinking_not_supported(error: ResponseError) -> bool:
+        """Check if the error is due to thinking not supported."""
+        return "does not support thinking" in str(error)
+
+    @staticmethod
     def _needs_format_fallback(
         parsed: dict,
         output_format: str | dict | None,
@@ -77,8 +88,8 @@ class OllamaProvider(LLMProvider):
             "model": self.model_name,
             "messages": messages,
             "options": options,
-            "think": think,
             "format": output_format,
+            **self._think_kwargs(think),
         }
 
     def chat(
@@ -96,7 +107,14 @@ class OllamaProvider(LLMProvider):
             messages, options, think, output_format
         )
 
-        response = chat(**kwargs)
+        try:
+            response = chat(**kwargs)
+        except ResponseError as e:
+            if self._is_thinking_not_supported(e) and think:
+                kwargs.pop("think", None)
+                response = chat(**kwargs)
+            else:
+                raise
         parsed = parse_ollama_chat_response(response)
 
         if self._needs_format_fallback(parsed, output_format):
@@ -120,7 +138,14 @@ class OllamaProvider(LLMProvider):
             messages, options, think, output_format
         )
 
-        response = await AsyncClient().chat(**kwargs)
+        try:
+            response = await AsyncClient().chat(**kwargs)
+        except ResponseError as e:
+            if self._is_thinking_not_supported(e) and think:
+                kwargs.pop("think", None)
+                response = await AsyncClient().chat(**kwargs)
+            else:
+                raise
         parsed = parse_ollama_chat_response(response)
 
         if self._needs_format_fallback(parsed, output_format):
@@ -140,14 +165,26 @@ class OllamaProvider(LLMProvider):
     ) -> dict:
         """See `LLMProvider.generate` for documentation."""
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
+        think_kw = self._think_kwargs(think)
 
-        response = generate(
-            model=self.model_name,
-            prompt=prompt,
-            options=options,
-            think=think,
-            format=output_format,
-        )
+        try:
+            response = generate(
+                model=self.model_name,
+                prompt=prompt,
+                options=options,
+                format=output_format,
+                **think_kw,
+            )
+        except ResponseError as e:
+            if self._is_thinking_not_supported(e) and think:
+                response = generate(
+                    model=self.model_name,
+                    prompt=prompt,
+                    options=options,
+                    format=output_format,
+                )
+            else:
+                raise
         return parse_ollama_response(response)
 
     async def generate_async(
@@ -161,14 +198,26 @@ class OllamaProvider(LLMProvider):
     ) -> dict:
         """See `LLMProvider.generate` for documentation."""
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
+        think_kw = self._think_kwargs(think)
 
-        response = await AsyncClient().generate(
-            model=self.model_name,
-            prompt=prompt,
-            options=options,
-            think=think,
-            format=output_format,
-        )
+        try:
+            response = await AsyncClient().generate(
+                model=self.model_name,
+                prompt=prompt,
+                options=options,
+                format=output_format,
+                **think_kw,
+            )
+        except ResponseError as e:
+            if self._is_thinking_not_supported(e) and think:
+                response = await AsyncClient().generate(
+                    model=self.model_name,
+                    prompt=prompt,
+                    options=options,
+                    format=output_format,
+                )
+            else:
+                raise
         return parse_ollama_response(response)
 
     def chat_stream(
@@ -183,14 +232,26 @@ class OllamaProvider(LLMProvider):
         """Stream a chat response, yielding text chunks."""
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
-        iterator = chat(
-            model=self.model_name,
-            messages=messages,
-            options=options,
-            think=think,
-            format=output_format,
-            stream=True,
-        )
+        try:
+            iterator = chat(
+                model=self.model_name,
+                messages=messages,
+                options=options,
+                format=output_format,
+                stream=True,
+                **self._think_kwargs(think),
+            )
+        except ResponseError as e:
+            if self._is_thinking_not_supported(e) and think:
+                iterator = chat(
+                    model=self.model_name,
+                    messages=messages,
+                    options=options,
+                    format=output_format,
+                    stream=True,
+                )
+            else:
+                raise
         return StreamResult(iterator, "chat")
 
     async def chat_stream_async(
@@ -205,14 +266,26 @@ class OllamaProvider(LLMProvider):
         """Stream a chat response asynchronously."""
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
-        iterator = await AsyncClient().chat(
-            model=self.model_name,
-            messages=messages,
-            options=options,
-            think=think,
-            format=output_format,
-            stream=True,
-        )
+        try:
+            iterator = await AsyncClient().chat(
+                model=self.model_name,
+                messages=messages,
+                options=options,
+                format=output_format,
+                stream=True,
+                **self._think_kwargs(think),
+            )
+        except ResponseError as e:
+            if self._is_thinking_not_supported(e) and think:
+                iterator = await AsyncClient().chat(
+                    model=self.model_name,
+                    messages=messages,
+                    options=options,
+                    format=output_format,
+                    stream=True,
+                )
+            else:
+                raise
         return AsyncStreamResult(iterator, "chat")
 
     def generate_stream(
@@ -227,14 +300,26 @@ class OllamaProvider(LLMProvider):
         """Stream a generate response, yielding text chunks."""
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
-        iterator = generate(
-            model=self.model_name,
-            prompt=prompt,
-            options=options,
-            think=think,
-            format=output_format,
-            stream=True,
-        )
+        try:
+            iterator = generate(
+                model=self.model_name,
+                prompt=prompt,
+                options=options,
+                format=output_format,
+                stream=True,
+                **self._think_kwargs(think),
+            )
+        except ResponseError as e:
+            if self._is_thinking_not_supported(e) and think:
+                iterator = generate(
+                    model=self.model_name,
+                    prompt=prompt,
+                    options=options,
+                    format=output_format,
+                    stream=True,
+                )
+            else:
+                raise
         return StreamResult(iterator, "generate")
 
     async def generate_stream_async(
@@ -249,14 +334,26 @@ class OllamaProvider(LLMProvider):
         """Stream a generate response asynchronously."""
         options = OllamaProvider._build_options(temperature, max_tokens, seed)
 
-        iterator = await AsyncClient().generate(
-            model=self.model_name,
-            prompt=prompt,
-            options=options,
-            think=think,
-            format=output_format,
-            stream=True,
-        )
+        try:
+            iterator = await AsyncClient().generate(
+                model=self.model_name,
+                prompt=prompt,
+                options=options,
+                format=output_format,
+                stream=True,
+                **self._think_kwargs(think),
+            )
+        except ResponseError as e:
+            if self._is_thinking_not_supported(e) and think:
+                iterator = await AsyncClient().generate(
+                    model=self.model_name,
+                    prompt=prompt,
+                    options=options,
+                    format=output_format,
+                    stream=True,
+                )
+            else:
+                raise
         return AsyncStreamResult(iterator, "generate")
 
 
