@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v1.4.9 - 1st March 2026
+
+- Module `agents`:
+  - `ollama.py`: added automatic thinking fallback — when a model
+    does not support `think`, the provider catches the error and
+    retries without it. Applies to all chat, generate, and
+    streaming methods. Added `_think_kwargs` helper to only send
+    `think` when `True`. Added `_is_thinking_not_supported`
+    helper.
+- Module `.claude`:
+  - `rules/testing.md`: added Output Coverage section — test data
+    must cover every possible output category defined by the model.
+
+
 ### v1.4.8 - 1st March 2026
 
 - Module `.claude`:
