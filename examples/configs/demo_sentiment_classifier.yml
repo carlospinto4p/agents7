@@ -2,7 +2,7 @@ name: DemoSentimentClassifier
 version: 1
 engine:
     provider: ollama
-    model: qwen3
+    model: gemma3:12b
 system_prompt: |
   Analyze the input text and classify its sentiment.
 
@@ -31,3 +31,23 @@ system_examples:
       output:
         category: POSITIVE
         reason: GRATEFUL
+    - input: "I'm so disappointed with the quality, it broke after one day."
+      output:
+        category: NEGATIVE
+        reason: DISAPPOINTED
+    - input: "This is outrageous! How dare they charge this much!"
+      output:
+        category: NEGATIVE
+        reason: ANGRY
+    - input: "I believe things will get better soon, we're on the right track."
+      output:
+        category: POSITIVE
+        reason: HOPEFUL
+    - input: "The report contains 12 pages of quarterly results."
+      output:
+        category: NEUTRAL
+        reason: FACTUAL
+    - input: "The building is tall with a red brick facade and large windows."
+      output:
+        category: NEUTRAL
+        reason: DESCRIPTIVE

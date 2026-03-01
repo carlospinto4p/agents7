@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v1.4.10 - 1st March 2026
+
+- Config `demo_sentiment_classifier.yml`:
+  - Switched model from `qwen3` to `gemma3:12b` — qwen3
+    consistently returns invalid `DESCRIPTIVE` reason for
+    NEGATIVE category, ignoring category-reason constraints.
+  - Added system examples for all 9 `SentimentReason` values
+    (was 4/9). Ensures full enum coverage in the prompt.
+
+
 ### v1.4.9 - 1st March 2026
 
 - Module `agents`:
