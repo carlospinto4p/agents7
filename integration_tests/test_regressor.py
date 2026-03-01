@@ -74,7 +74,7 @@ def test_regressor_extracts_numeric_value(
 ) -> None:
     """Test that regressor extracts numeric values when present."""
     response = temperature_regressor.act(
-        {"text": "The temperature is exactly 25 degrees Celsius."}
+        {"text": "The thermometer shows 25 degrees, quite a nice day."}
     )
 
     assert response.model.value is not None

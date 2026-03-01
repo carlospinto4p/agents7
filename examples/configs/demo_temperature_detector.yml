@@ -2,7 +2,7 @@ name: DemoTemperatureDetector
 version: 1
 engine:
     provider: ollama
-    model: qwen3:4b
+    model: qwen2.5:3b
 system_prompt: |
   Analyze the input text and detect the temperature it refers to, expressed in degrees Celsius.
 
@@ -11,7 +11,7 @@ system_prompt: |
   1. If an exact temperature is explicitly stated, return that value.
   2. Infer temperature from context - consider what the situation implies:
     - TOO_COLD (≤10 °C): cold weather, freezing conditions, heating needed
-    - COMFORTABLE (~20 °C): pleasant weather, balanced temperature, neither extreme
+    - COMFORTABLE (11-29 °C): pleasant weather, balanced temperature, neither extreme
     - TOO_HOT (≥30 °C): hot weather, cooling needed, excessive heat
   3. Consider indirect indicators: appliances (heaters, AC), clothing choices, physical reactions, seasonal/location cues.
   4. Only use NOT_APPLICABLE when the text has no connection to temperature whatsoever.
@@ -24,6 +24,10 @@ system_examples:
     - input: The weather feels perfect for a walk.
       output:
         value: 20
+        reason: COMFORTABLE
+    - input: It’s 25 degrees and sunny, perfect for the park.
+      output:
+        value: 25
         reason: COMFORTABLE
     - input: We’re in the desert at noon.
       output:

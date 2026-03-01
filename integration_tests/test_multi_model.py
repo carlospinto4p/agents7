@@ -31,11 +31,11 @@ def is_model_available(model_name: str) -> bool:
 # Models to test - add more as needed
 MODELS_TO_TEST = [
     pytest.param(
-        "qwen3:4b",
-        id="qwen3-4b",
+        "qwen2.5:3b",
+        id="qwen2.5-3b",
         marks=pytest.mark.skipif(
-            not is_model_available("qwen3:4b"),
-            reason="qwen3:4b model not available",
+            not is_model_available("qwen2.5:3b"),
+            reason="qwen2.5:3b model not available",
         ),
     ),
     pytest.param(
@@ -76,9 +76,35 @@ def make_detector():
             version=1,
             engine=engine,
             system_prompt=(
-                "Detect temperature from text. Return temperature in Celsius."
+                "Detect temperature from text. Return "
+                "temperature in Celsius.\n\n"
+                "TOO_COLD: <=10 C. TOO_HOT: >=30 C. "
+                "COMFORTABLE: 11-29 C. "
+                "NOT_APPLICABLE: no temperature context."
             ),
             output_model=Temperature,
+            examples=[
+                {
+                    "input": "It is freezing outside.",
+                    "output": {"value": -5, "reason": "TOO_COLD"},
+                },
+                {
+                    "input": "Nice weather for a walk.",
+                    "output": {"value": 22, "reason": "COMFORTABLE"},
+                },
+                {
+                    "input": "The asphalt is melting.",
+                    "output": {"value": 40, "reason": "TOO_HOT"},
+                },
+                {
+                    "input": "She bought a new book.",
+                    "output": {"value": None, "reason": "NOT_APPLICABLE"},
+                },
+                {
+                    "input": "The meeting is at 3 PM.",
+                    "output": {"value": None, "reason": "NOT_APPLICABLE"},
+                },
+            ],
         )
 
     return _make_detector
@@ -108,11 +134,11 @@ def test_temperature_detection_across_models(
 # Models that support batch processing reliably
 MODELS_FOR_BATCH = [
     pytest.param(
-        "qwen3:4b",
-        id="qwen3-4b",
+        "qwen2.5:3b",
+        id="qwen2.5-3b",
         marks=pytest.mark.skipif(
-            not is_model_available("qwen3:4b"),
-            reason="qwen3:4b model not available",
+            not is_model_available("qwen2.5:3b"),
+            reason="qwen2.5:3b model not available",
         ),
     ),
 ]
