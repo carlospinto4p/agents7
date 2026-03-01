@@ -32,6 +32,35 @@
 - [x] Add missing type hints in `streaming.py` — done in v1.4.4 (`Any` for `chunk` parameter).
 - [x] Move `_default_mapper` in `pipeline.py` — done in v1.4.4 (`PipelineStep.default_mapper` staticmethod).
 
+### Refactoring — 1st March 2026
+
+#### Duplication — Source (high impact)
+
+- [ ] Extract OllamaProvider thinking-fallback into a shared helper. The `try/except ResponseError → retry without think` block is copy-pasted across 8 methods in `ollama.py` (~80 duplicated lines).
+- [ ] Deduplicate `retry_sync` / `retry_async` in `retry.py`. The retry loop, delay calculation, and error handling are near-identical (~90 lines each). Extract shared core logic.
+- [ ] Add missing `@staticmethod` on `ResponseParser._apply_enum_mappings` in `parsing.py` (doesn't use `self`).
+
+#### Duplication — Tests (high impact)
+
+- [ ] Move `_OLLAMA_AVAILABLE` check to `integration_tests/conftest.py` using a `pytest_collection_modifyitems` hook or session-scoped fixture. Currently copy-pasted in all 7 integration test files (~14 lines each).
+- [ ] Move shared integration test data (temperature, sentiment) to `integration_tests/conftest.py`. Currently duplicated across `test_detector`, `test_regressor`, and `test_async`.
+- [ ] Consolidate integration test agent fixtures (`temperature_detector`, `sentiment_classifier`, `temperature_regressor`) to `integration_tests/conftest.py`. Currently duplicated between individual test files and `test_async.py`.
+
+#### Duplication — Unit Tests (medium impact)
+
+- [ ] Consolidate `_batch_chat_response()` helper — duplicated between `tests/test_labeler.py` and `tests/test_batch.py`. Move to `tests/helpers.py` or `tests/conftest.py`.
+- [ ] Consolidate shared test model classes (`DummyReason`, etc.) — defined independently in `test_labeler.py`, `test_prompt_params.py`, and `test_enum_parsing.py`. Define once in `tests/conftest.py`.
+- [ ] Consolidate `_make_response()` variants in `tests/test_pipeline.py` with `make_response()` in `tests/conftest.py`.
+
+#### Architecture (medium impact)
+
+- [ ] Reduce sync/async duplication in `Labeler.act_in_batch` / `act_in_batch_async` (~120 lines each with near-identical structure). Consider extracting shared chunk-and-flatten logic.
+- [ ] Reduce sync/async duplication in `Pipeline.act` / `act_async` (~35 lines each with identical control flow). Consider a shared generator pattern.
+
+#### Complexity (medium impact)
+
+- [ ] Simplify enum mapping logic in `ResponseParser._get_enum_mappings` (`parsing.py`). The nested type extraction for `Optional[StrEnum]` fields could be a separate helper.
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.
