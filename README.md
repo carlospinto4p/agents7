@@ -600,8 +600,30 @@ uv pip install -e ".[dev]"
 uv run pytest tests/ -v
 
 # Run integration tests (requires Ollama running)
-cd integration_tests && uv run pytest -v
+uv run pytest integration_tests/ -v
 
 # Run linter
 ruff check .
+```
+
+### Integration Test Models
+
+The integration tests call Ollama with the following models.
+Pull them before running the suite:
+
+| Test file | Config | Model | Size |
+|---|---|---|---|
+| `test_detector` | `demo_temperature_detector.yml` | `qwen2.5:3b` | 1.9 GB |
+| `test_regressor` | `demo_temperature_detector.yml` | `qwen2.5:3b` | 1.9 GB |
+| `test_classifier` | `demo_sentiment_classifier.yml` | `gemma3:12b` | 8.1 GB |
+| `test_async` | all three configs above | `qwen2.5:3b`, `gemma3:12b` | — |
+| `test_multi_model` | built programmatically | `qwen2.5:3b`, `gemma3:4b` | 1.9 / 3.3 GB |
+| `test_pipeline` | `demo_pipeline.yml` (chains `demo_labeler.yml` → `demo_bio_generator.yml`) | `qwen3:4b` | 2.6 GB |
+| `test_prompt_params` | `demo_labeler_params.yml` | `qwen3:4b` | 2.6 GB |
+
+```bash
+ollama pull qwen2.5:3b
+ollama pull qwen3:4b
+ollama pull gemma3:4b
+ollama pull gemma3:12b
 ```
