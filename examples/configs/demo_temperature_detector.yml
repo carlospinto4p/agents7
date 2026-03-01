@@ -2,7 +2,7 @@ name: DemoTemperatureDetector
 version: 1
 engine:
     provider: ollama
-    model: qwen3
+    model: qwen3:4b
 system_prompt: |
   Analyze the input text and detect the temperature it refers to, expressed in degrees Celsius.
 

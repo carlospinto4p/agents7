@@ -2,7 +2,7 @@ name: BioGenerator
 version: 1
 engine:
     provider: ollama
-    model: qwen3
+    model: qwen3:4b
 system_prompt: |
   Generate a short biography (1-2 sentences) for a person based on
   the provided details.

@@ -1,6 +1,22 @@
 
 ## Changelog - Agents7
 
+### v1.4.11 - 1st March 2026
+
+- Integration tests:
+  - `test_multi_model.py`: switched models from `qwen3`/`gpt-oss:20b`
+    to lightweight `qwen3:4b`/`gemma3:4b` for faster execution.
+- Configs:
+  - `demo_temperature_detector.yml`: switched from `qwen3` to
+    `qwen3:4b` — fixes batch timeout (19 min → ~1 min).
+  - `demo_labeler.yml`, `demo_bio_generator.yml`,
+    `demo_labeler_params.yml`: switched from `qwen3` to `qwen3:4b`
+    for consistency.
+- Module `.claude`:
+  - `rules/testing.md`: added 5-minute time budget for the full
+    integration test suite.
+
+
 ### v1.4.10 - 1st March 2026
 
 - Config `demo_sentiment_classifier.yml`:

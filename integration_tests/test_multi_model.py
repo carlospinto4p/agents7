@@ -31,19 +31,19 @@ def is_model_available(model_name: str) -> bool:
 # Models to test - add more as needed
 MODELS_TO_TEST = [
     pytest.param(
-        "qwen3",
-        id="qwen3",
+        "qwen3:4b",
+        id="qwen3-4b",
         marks=pytest.mark.skipif(
-            not is_model_available("qwen3"),
-            reason="qwen3 model not available",
+            not is_model_available("qwen3:4b"),
+            reason="qwen3:4b model not available",
         ),
     ),
     pytest.param(
-        "gpt-oss:20b",
-        id="gpt-oss-20b",
+        "gemma3:4b",
+        id="gemma3-4b",
         marks=pytest.mark.skipif(
-            not is_model_available("gpt-oss:20b"),
-            reason="gpt-oss:20b model not available",
+            not is_model_available("gemma3:4b"),
+            reason="gemma3:4b model not available",
         ),
     ),
 ]
@@ -108,11 +108,11 @@ def test_temperature_detection_across_models(
 # Models that support batch processing reliably
 MODELS_FOR_BATCH = [
     pytest.param(
-        "qwen3",
-        id="qwen3",
+        "qwen3:4b",
+        id="qwen3-4b",
         marks=pytest.mark.skipif(
-            not is_model_available("qwen3"),
-            reason="qwen3 model not available",
+            not is_model_available("qwen3:4b"),
+            reason="qwen3:4b model not available",
         ),
     ),
 ]
