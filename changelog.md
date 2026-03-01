@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v1.4.14 - 1st March 2026
+
+- `README.md`:
+  - Added "Integration Test Models" section documenting which Ollama
+    models each integration test file uses, with sizes and pull commands.
+  - Fixed integration test run command (removed unnecessary `cd`).
+
+
 ### v1.4.13 - 1st March 2026
 
 - Configs:
