@@ -101,7 +101,7 @@ class Pipeline:
         step: PipelineStep,
         response: AgentResponse,
         executed_steps: list[AgentResponse],
-    ) -> tuple[bool, dict | None]:
+    ) -> "PipelineResponse | dict | None":
         """Evaluate a single pipeline step result.
 
         :param step_idx: Index of the current step.
@@ -109,22 +109,39 @@ class Pipeline:
         :param response: The agent response from the step.
         :param executed_steps: Accumulator for step
             responses (modified in place).
-        :return: ``(success, next_input)``. If success is
-            False, the pipeline should stop. next_input is
-            None on last step or on failure.
+        :return: PipelineResponse on failure (stops the
+            pipeline), a dict with the next input on
+            intermediate success, or None on final-step
+            success.
         """
         executed_steps.append(response)
         if response.model is None:
-            return False, None
+            return self._pipeline_result(executed_steps, False)
         if step_idx < len(self.steps) - 1:
             try:
-                return True, step.mapper(response)
+                return step.mapper(response)
             except Exception as e:
                 logger.error(
                     f"Pipeline mapper failed at step {step_idx}: {e}"
                 )
-                return False, None
-        return True, None
+                return self._pipeline_result(executed_steps, False)
+        return None
+
+    @staticmethod
+    def _pipeline_result(
+        executed_steps: list[AgentResponse],
+        success: bool,
+    ) -> "PipelineResponse":
+        """Build a PipelineResponse from executed steps."""
+        return PipelineResponse(
+            steps=executed_steps,
+            model=(
+                executed_steps[-1].model
+                if success and executed_steps
+                else None
+            ),
+            success=success,
+        )
 
     def _evaluate_batch_step(
         self,
@@ -168,26 +185,13 @@ class Pipeline:
         failed: dict[int, None],
     ) -> list[PipelineResponse]:
         """Assemble batch results in original input order."""
-        results: list[PipelineResponse] = []
-        for i in range(n):
-            steps = per_input_steps[i]
-            if i in failed:
-                results.append(
-                    PipelineResponse(
-                        steps=steps,
-                        model=None,
-                        success=False,
-                    )
-                )
-            else:
-                results.append(
-                    PipelineResponse(
-                        steps=steps,
-                        model=(steps[-1].model if steps else None),
-                        success=bool(steps),
-                    )
-                )
-        return results
+        return [
+            Pipeline._pipeline_result(
+                per_input_steps[i],
+                i not in failed and bool(per_input_steps[i]),
+            )
+            for i in range(n)
+        ]
 
     def act(
         self,
@@ -206,23 +210,15 @@ class Pipeline:
 
         for i, step in enumerate(self.steps):
             response = step.agent.act(current_input, chat_kwargs=chat_kwargs)
-            ok, next_input = self._process_step_result(
+            result = self._process_step_result(
                 i, step, response, executed_steps
             )
-            if not ok:
-                return PipelineResponse(
-                    steps=executed_steps,
-                    model=None,
-                    success=False,
-                )
-            if next_input is not None:
-                current_input = next_input
+            if isinstance(result, PipelineResponse):
+                return result
+            if result is not None:
+                current_input = result
 
-        return PipelineResponse(
-            steps=executed_steps,
-            model=executed_steps[-1].model,
-            success=True,
-        )
+        return self._pipeline_result(executed_steps, True)
 
     async def act_async(
         self,
@@ -244,23 +240,15 @@ class Pipeline:
             response = await step.agent.act_async(
                 current_input, chat_kwargs=chat_kwargs
             )
-            ok, next_input = self._process_step_result(
+            result = self._process_step_result(
                 i, step, response, executed_steps
             )
-            if not ok:
-                return PipelineResponse(
-                    steps=executed_steps,
-                    model=None,
-                    success=False,
-                )
-            if next_input is not None:
-                current_input = next_input
+            if isinstance(result, PipelineResponse):
+                return result
+            if result is not None:
+                current_input = result
 
-        return PipelineResponse(
-            steps=executed_steps,
-            model=executed_steps[-1].model,
-            success=True,
-        )
+        return self._pipeline_result(executed_steps, True)
 
     def act_in_batch(
         self,

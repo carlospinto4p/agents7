@@ -119,6 +119,18 @@ class ResponseParser:
 
         return response
 
+    @staticmethod
+    def _resolve_strenum(annotation: type) -> type | None:
+        """Unwrap Optional/Union and return the StrEnum
+        type, or None if not a StrEnum."""
+        if hasattr(annotation, "__args__"):
+            for arg in annotation.__args__:
+                if isinstance(arg, type) and issubclass(arg, StrEnum):
+                    return arg
+        if isinstance(annotation, type) and issubclass(annotation, StrEnum):
+            return annotation
+        return None
+
     def _get_enum_mappings(self) -> dict[str, dict[str, str]]:
         """Get enum name-to-value mappings for all StrEnum
         fields in output_model.
@@ -131,18 +143,10 @@ class ResponseParser:
             field_name,
             field_info,
         ) in self.output_model.model_fields.items():
-            field_type = field_info.annotation
-            if hasattr(field_type, "__args__"):
-                args = field_type.__args__
-                for arg in args:
-                    if isinstance(arg, type) and issubclass(arg, StrEnum):
-                        field_type = arg
-                        break
-            if isinstance(field_type, type) and issubclass(
-                field_type, StrEnum
-            ):
+            enum_type = self._resolve_strenum(field_info.annotation)
+            if enum_type is not None:
                 enum_mappings[field_name] = {
-                    member.name: member.value for member in field_type
+                    m.name: m.value for m in enum_type
                 }
         return enum_mappings
 

@@ -277,29 +277,12 @@ class Labeler(BaseAgent):
         """
         if iter_func is None:
             iter_func = identity_func
-        input_chunks = [
-            input_list[
-                i * requests_per_prompt : (i + 1) * requests_per_prompt
-            ]
-            for i in range(ceil(len(input_list) / requests_per_prompt))
+        input_chunks = self._chunk_inputs(input_list, requests_per_prompt)
+        chunk_responses = [
+            self._act_in_batch_request(input_data, chat_kwargs=chat_kwargs)
+            for input_data in iter_func(input_chunks)
         ]
-        agent_responses = []
-        for input_data in iter_func(input_chunks):
-            chunk_response = self._act_in_batch_request(
-                input_data, chat_kwargs=chat_kwargs
-            )
-            # Flatten: create individual AgentResponse for each item
-            for item in chunk_response.model.items:
-                agent_responses.append(
-                    AgentResponse(
-                        response=chunk_response.response,
-                        model=self._parser.run_validators(item),
-                        thinking=chunk_response.thinking,
-                        metrics=chunk_response.metrics,
-                        idx=len(agent_responses),
-                    )
-                )
-        return agent_responses
+        return self._flatten_batch_responses(chunk_responses)
 
     async def act_in_batch_async(
         self,
@@ -329,16 +312,13 @@ class Labeler(BaseAgent):
             else None
         )
 
-        input_chunks = [
-            input_list[
-                i * requests_per_prompt : (i + 1) * requests_per_prompt
-            ]
-            for i in range(ceil(len(input_list) / requests_per_prompt))
-        ]
+        input_chunks = self._chunk_inputs(input_list, requests_per_prompt)
         tasks = [
             run_with_semaphore(
                 self._act_in_batch_async_request(
-                    input_data, chat_kwargs=chat_kwargs, _idx=idx
+                    input_data,
+                    chat_kwargs=chat_kwargs,
+                    _idx=idx,
                 ),
                 sem,
             )
@@ -351,7 +331,7 @@ class Labeler(BaseAgent):
             for coro in async_tqdm.as_completed(
                 tasks,
                 total=len(tasks),
-                desc=f"Agent `{self.name}`: acting in batch",
+                desc=(f"Agent `{self.name}`: acting in batch"),
             ):
                 response = await coro
                 chunk_responses[response.idx] = response
@@ -360,20 +340,7 @@ class Labeler(BaseAgent):
                 response = await coro
                 chunk_responses[response.idx] = response
 
-        # Flatten: create individual AgentResponse for each item
-        agent_responses = []
-        for chunk_response in chunk_responses:
-            for item in chunk_response.model.items:
-                agent_responses.append(
-                    AgentResponse(
-                        response=chunk_response.response,
-                        model=self._parser.run_validators(item),
-                        thinking=chunk_response.thinking,
-                        metrics=chunk_response.metrics,
-                        idx=len(agent_responses),
-                    )
-                )
-        return agent_responses
+        return self._flatten_batch_responses(chunk_responses)
 
     async def _act_in_batch_async_request(
         self,
@@ -389,26 +356,9 @@ class Labeler(BaseAgent):
         :return: An `AgentResponse` wrapping the batch
             output model.
         """
-        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
-
-        logger.debug(
-            f"Agent `{self.name}`: processing batch input data:\n{input_list}"
-        )
-        response = await self.engine.chat_async(
-            messages=[
-                {"role": "system", "content": self.prompt_for_batch},
-                {
-                    "role": "user",
-                    "content": f"Process the following:\n{input_list}",
-                },
-            ],
-            temperature=0,
-            output_format=self.output_model_list.model_json_schema(),
-            **chat_kwargs,
-        )
-        response.pop("role")
-        response["model"] = self._parser.parse(
-            response["response"], for_batch=True
+        params = self._batch_chat_params(input_list, chat_kwargs)
+        response = self._parse_batch_response(
+            await self.engine.chat_async(**params)
         )
         response["idx"] = _idx
         return AgentResponse(**response)
@@ -425,28 +375,76 @@ class Labeler(BaseAgent):
         :return: An `AgentResponse` wrapping the batch
             output model.
         """
-        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        params = self._batch_chat_params(input_list, chat_kwargs)
+        response = self._parse_batch_response(self.engine.chat(**params))
+        return AgentResponse(**response)
 
+    @staticmethod
+    def _chunk_inputs(
+        input_list: list[dict | list[dict]],
+        requests_per_prompt: int,
+    ) -> list[list[dict | list[dict]]]:
+        """Split an input list into chunks."""
+        return [
+            input_list[
+                i * requests_per_prompt : (i + 1) * requests_per_prompt
+            ]
+            for i in range(ceil(len(input_list) / requests_per_prompt))
+        ]
+
+    def _batch_chat_params(
+        self,
+        input_list: list[dict | list[dict]],
+        chat_kwargs: dict | None = None,
+    ) -> dict:
+        """Build kwargs for a batch LLM chat call."""
+        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
         logger.debug(
             f"Agent `{self.name}`: processing batch input data:\n{input_list}"
         )
-        response = self.engine.chat(
-            messages=[
-                {"role": "system", "content": self.prompt_for_batch},
+        return {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": self.prompt_for_batch,
+                },
                 {
                     "role": "user",
-                    "content": f"Process the following:\n{input_list}",
+                    "content": (f"Process the following:\n{input_list}"),
                 },
             ],
-            temperature=0,
-            output_format=self.output_model_list.model_json_schema(),
+            "temperature": 0,
+            "output_format": (self.output_model_list.model_json_schema()),
             **chat_kwargs,
-        )
+        }
+
+    def _parse_batch_response(self, response: dict) -> dict:
+        """Parse a raw batch LLM response dict."""
         response.pop("role")
         response["model"] = self._parser.parse(
             response["response"], for_batch=True
         )
-        return AgentResponse(**response)
+        return response
+
+    def _flatten_batch_responses(
+        self,
+        chunk_responses: list[AgentResponse],
+    ) -> list[AgentResponse]:
+        """Flatten batch chunk responses into individual
+        AgentResponses."""
+        agent_responses = []
+        for chunk in chunk_responses:
+            for item in chunk.model.items:
+                agent_responses.append(
+                    AgentResponse(
+                        response=chunk.response,
+                        model=self._parser.run_validators(item),
+                        thinking=chunk.thinking,
+                        metrics=chunk.metrics,
+                        idx=len(agent_responses),
+                    )
+                )
+        return agent_responses
 
     @staticmethod
     def _sanitize_chat_kwargs(chat_kwargs: dict | None) -> dict:

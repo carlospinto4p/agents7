@@ -1,6 +1,23 @@
 
 ## Changelog - Agents7
 
+### v1.4.18 - 1st March 2026
+
+- Module `agents7.agents.labeler`:
+  - Extracted `_chunk_inputs`, `_batch_chat_params`,
+    `_parse_batch_response`, and `_flatten_batch_responses`
+    helpers to reduce sync/async duplication in batch methods.
+- Module `agents7.agents.pipeline`:
+  - Added `_pipeline_result` static method and refactored
+    `_process_step_result` to return `PipelineResponse | dict | None`,
+    reducing duplication in `act`, `act_async`, and
+    `_assemble_batch_results`.
+- Module `agents7.agents.parsing`:
+  - Extracted `_resolve_strenum` static method to simplify
+    `_get_enum_mappings` enum type unwrapping logic.
+- `backlog.md`: Marked items 11-13 as done.
+
+
 ### v1.4.17 - 1st March 2026
 
 - Integration tests:

@@ -54,12 +54,12 @@
 
 #### Architecture (medium impact)
 
-- [ ] Reduce sync/async duplication in `Labeler.act_in_batch` / `act_in_batch_async` (~120 lines each with near-identical structure). Consider extracting shared chunk-and-flatten logic.
-- [ ] Reduce sync/async duplication in `Pipeline.act` / `act_async` (~35 lines each with identical control flow). Consider a shared generator pattern.
+- [x] Reduce sync/async duplication in `Labeler.act_in_batch` / `act_in_batch_async` — done in v1.4.18 (`_chunk_inputs`, `_batch_chat_params`, `_parse_batch_response`, `_flatten_batch_responses`).
+- [x] Reduce sync/async duplication in `Pipeline.act` / `act_async` — done in v1.4.18 (`_pipeline_result`, refactored `_process_step_result`).
 
 #### Complexity (medium impact)
 
-- [ ] Simplify enum mapping logic in `ResponseParser._get_enum_mappings` (`parsing.py`). The nested type extraction for `Optional[StrEnum]` fields could be a separate helper.
+- [x] Simplify enum mapping logic in `ResponseParser._get_enum_mappings` — done in v1.4.18 (`_resolve_strenum` static method).
 
 ### Infrastructure
 
