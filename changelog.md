@@ -1,6 +1,27 @@
 
 ## Changelog - Agents7
 
+### v1.4.15 - 1st March 2026
+
+- Module `.claude`:
+  - `CLAUDE.md`: Integration tests now only required when relevant
+    (not for docs-only changes). Added prompt_params, validators,
+    and agent hierarchy to Code Patterns.
+  - `rules/testing.md`: Updated integration test flow list (added
+    pipeline, prompt_params). Dropped fixture parentheses rule.
+    Updated skipif rule to require module-level `pytestmark`.
+    Documented config-as-fixture convention.
+  - `rules/shell.md`: Removed misleading version in commit example.
+  - `rules/versioning.md`: Added `uv pip install` + `git add uv.lock`
+    step to version workflow.
+  - `rules/backlog.md`: Documented both category and date-based
+    section header conventions.
+  - `rules/ui.md`: Replaced generic `<package>` with `agents7`.
+- Integration tests:
+  - All 7 test modules now include `pytestmark` with
+    `pytest.mark.skipif` for Ollama availability.
+
+
 ### v1.4.14 - 1st March 2026
 
 - `README.md`:
