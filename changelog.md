@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v1.4.7 - 1st March 2026
+
+- Module `.claude`:
+  - `settings.json`: added hooks for automated code quality and
+    testing:
+    - `PostToolUse` hook: runs `ruff check --fix` and
+      `ruff format` on `.py` files after every Write/Edit.
+    - `PreToolUse` hook: runs unit tests before every
+      `git commit` command.
+
+
 ### v1.4.6 - 23rd February 2026
 
 - Module `.claude`:
