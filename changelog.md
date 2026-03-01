@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v1.4.8 - 1st March 2026
+
+- Module `.claude`:
+  - New file `rules/shell.md`: added shell command guidelines
+    to enforce simple, single-command Bash calls (no compound
+    commands, no `cd` prefix, no heredoc commit messages).
+  - `CLAUDE.md`: linked the new shell rules file.
+
+
 ### v1.4.7 - 1st March 2026
 
 - Module `.claude`:
