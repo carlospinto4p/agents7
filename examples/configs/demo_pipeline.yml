@@ -1,0 +1,3 @@
+steps:
+  - agent: examples/configs/demo_labeler.yml
+  - agent: examples/configs/demo_bio_generator.yml
