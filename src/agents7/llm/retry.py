@@ -59,6 +59,35 @@ def _is_retryable(error: Exception) -> bool:
     return False
 
 
+def _retry_delay(
+    error: Exception,
+    attempt: int,
+    config: RetryConfig,
+) -> float:
+    """Compute backoff delay, log, or raise if exhausted.
+
+    :param error: The retryable exception that was raised.
+    :param attempt: Zero-based attempt number.
+    :param config: Retry configuration.
+    :return: Delay in seconds before the next retry.
+    :raises LLMException: When all retries are exhausted.
+    """
+    if attempt >= config.max_retries:
+        raise LLMException(
+            f"All {config.max_retries} retries exhausted. Last error: {error}"
+        ) from error
+    delay = min(
+        config.base_delay * config.backoff_factor**attempt,
+        config.max_delay,
+    )
+    logger.warning(
+        f"Retry {attempt + 1}/{config.max_retries}"
+        f" after error: {error}. "
+        f"Retrying in {delay:.1f}s..."
+    )
+    return delay
+
+
 def retry_sync(
     fn: Callable,
     retry_config: RetryConfig | None,
@@ -76,7 +105,6 @@ def retry_sync(
     if retry_config is None or retry_config.max_retries == 0:
         return fn(**kwargs)
 
-    last_error: Exception | None = None
     for attempt in range(retry_config.max_retries + 1):
         try:
             return fn(**kwargs)
@@ -86,24 +114,8 @@ def retry_sync(
         ) as e:
             if not _is_retryable(e):
                 raise
-            last_error = e
-            if attempt < retry_config.max_retries:
-                delay = min(
-                    retry_config.base_delay
-                    * retry_config.backoff_factor**attempt,
-                    retry_config.max_delay,
-                )
-                logger.warning(
-                    f"Retry {attempt + 1}/{retry_config.max_retries}"
-                    f" after error: {e}. "
-                    f"Retrying in {delay:.1f}s..."
-                )
-                time.sleep(delay)
-
-    raise LLMException(
-        f"All {retry_config.max_retries} retries exhausted. "
-        f"Last error: {last_error}"
-    ) from last_error
+            delay = _retry_delay(e, attempt, retry_config)
+            time.sleep(delay)
 
 
 async def retry_async(
@@ -123,7 +135,6 @@ async def retry_async(
     if retry_config is None or retry_config.max_retries == 0:
         return await fn(**kwargs)
 
-    last_error: Exception | None = None
     for attempt in range(retry_config.max_retries + 1):
         try:
             return await fn(**kwargs)
@@ -133,21 +144,5 @@ async def retry_async(
         ) as e:
             if not _is_retryable(e):
                 raise
-            last_error = e
-            if attempt < retry_config.max_retries:
-                delay = min(
-                    retry_config.base_delay
-                    * retry_config.backoff_factor**attempt,
-                    retry_config.max_delay,
-                )
-                logger.warning(
-                    f"Retry {attempt + 1}/{retry_config.max_retries}"
-                    f" after error: {e}. "
-                    f"Retrying in {delay:.1f}s..."
-                )
-                await asyncio.sleep(delay)
-
-    raise LLMException(
-        f"All {retry_config.max_retries} retries exhausted. "
-        f"Last error: {last_error}"
-    ) from last_error
+            delay = _retry_delay(e, attempt, retry_config)
+            await asyncio.sleep(delay)

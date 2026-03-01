@@ -1,6 +1,22 @@
 
 ## Changelog - Agents7
 
+### v1.4.16 - 1st March 2026
+
+- Module `agents7.llm.ollama`:
+  - Extracted `_with_think_fallback` and `_with_think_fallback_async`
+    helpers to eliminate duplicated think-retry logic across 8 methods.
+  - Added `_generate_call_kwargs` builder and extended
+    `_chat_call_kwargs` with `stream` parameter.
+  - All 8 public methods now delegate to shared helpers.
+- Module `agents7.llm.retry`:
+  - Extracted `_retry_delay` helper that computes backoff delay, logs
+    the warning, and raises `LLMException` when exhausted.
+  - `retry_sync` and `retry_async` now use `_retry_delay` instead of
+    duplicated inline logic.
+- `backlog.md`: Marked items 1-3 from 1st March refactoring as done.
+
+
 ### v1.4.15 - 1st March 2026
 
 - Module `.claude`:

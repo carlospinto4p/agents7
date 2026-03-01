@@ -36,9 +36,9 @@
 
 #### Duplication — Source (high impact)
 
-- [ ] Extract OllamaProvider thinking-fallback into a shared helper. The `try/except ResponseError → retry without think` block is copy-pasted across 8 methods in `ollama.py` (~80 duplicated lines).
-- [ ] Deduplicate `retry_sync` / `retry_async` in `retry.py`. The retry loop, delay calculation, and error handling are near-identical (~90 lines each). Extract shared core logic.
-- [ ] Add missing `@staticmethod` on `ResponseParser._apply_enum_mappings` in `parsing.py` (doesn't use `self`).
+- [x] Extract OllamaProvider thinking-fallback into a shared helper — done in v1.4.16 (`_with_think_fallback`, `_with_think_fallback_async`, `_chat_call_kwargs`, `_generate_call_kwargs`).
+- [x] Deduplicate `retry_sync` / `retry_async` in `retry.py` — done in v1.4.16 (extracted `_retry_delay` helper).
+- [x] Add missing `@staticmethod` on `ResponseParser._apply_enum_mappings` in `parsing.py` — already correct, no change needed.
 
 #### Duplication — Tests (high impact)
 
