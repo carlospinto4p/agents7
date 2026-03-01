@@ -1,6 +1,24 @@
+import subprocess
+
 import pytest
 
 from agents7.agents import Classifier
+
+try:
+    _OLLAMA_AVAILABLE = (
+        subprocess.run(
+            ["ollama", "list"],
+            capture_output=True,
+            timeout=10,
+        ).returncode
+        == 0
+    )
+except Exception:
+    _OLLAMA_AVAILABLE = False
+
+pytestmark = pytest.mark.skipif(
+    not _OLLAMA_AVAILABLE, reason="Ollama is not available"
+)
 
 
 demo_sentiment_data = [

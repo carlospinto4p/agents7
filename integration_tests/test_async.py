@@ -1,6 +1,24 @@
+import subprocess
+
 import pytest
 
 from agents7.agents import Classifier, Detector, Regressor
+
+try:
+    _OLLAMA_AVAILABLE = (
+        subprocess.run(
+            ["ollama", "list"],
+            capture_output=True,
+            timeout=10,
+        ).returncode
+        == 0
+    )
+except Exception:
+    _OLLAMA_AVAILABLE = False
+
+pytestmark = pytest.mark.skipif(
+    not _OLLAMA_AVAILABLE, reason="Ollama is not available"
+)
 
 
 # --- Test data (3-item subsets) ---

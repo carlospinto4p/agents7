@@ -13,6 +13,22 @@ from agents7.agents import Detector
 from agents7.llm import LLMEngine
 from agents7.models.demo import Temperature
 
+try:
+    _OLLAMA_AVAILABLE = (
+        subprocess.run(
+            ["ollama", "list"],
+            capture_output=True,
+            timeout=10,
+        ).returncode
+        == 0
+    )
+except Exception:
+    _OLLAMA_AVAILABLE = False
+
+pytestmark = pytest.mark.skipif(
+    not _OLLAMA_AVAILABLE, reason="Ollama is not available"
+)
+
 
 def is_model_available(model_name: str) -> bool:
     """Check if an Ollama model is available locally."""
