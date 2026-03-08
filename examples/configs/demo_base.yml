@@ -1,0 +1,7 @@
+# Shared base config for agents that use the same engine.
+# Child configs inherit all keys and can override any of them.
+name: BaseAgent
+version: 1
+engine:
+    provider: ollama
+    model: qwen2.5:3b

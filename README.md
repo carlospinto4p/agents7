@@ -845,6 +845,31 @@ The wizard guides you through 5 steps:
 
 The UI constructs agents in-memory during Test/Evaluate (no files written until Export). This enables fast prompt iteration without import path issues.
 
+## Examples
+
+The `examples/` directory contains runnable scripts demonstrating each feature:
+
+| Script | Feature |
+|--------|---------|
+| `labeler.py` | Entity extraction with batch processing |
+| `classifier.py` | Sentiment classification |
+| `detector.py` | Temperature detection |
+| `regressor.py` | Numeric value extraction |
+| `labeler_params.py` | Prompt parameter substitution |
+| `pipeline.py` | Multi-step pipeline with custom mapper |
+| `config_inheritance.py` | YAML `base_config` inheritance |
+| `conditional_pipeline.py` | Conditional step execution |
+| `streaming.py` | Token-by-token streaming (sync + async) |
+| `sqlite_cache.py` | Persistent SQLite cache |
+| `export.py` | JSONL and CSV export |
+
+Run from the `examples/` directory:
+
+```bash
+cd examples
+python labeler.py
+```
+
 ## Docker
 
 Run the Agent Builder UI in Docker, connecting to Ollama on your host
