@@ -13,9 +13,12 @@ Requires Python >= 3.11.
 
 ## Design
 
-See [DESIGN.md](DESIGN.md) for the rationale behind the library's
-architecture: why reasons are required, how NOT_APPLICABLE works,
-the structured output flow, and other design decisions.
+See [docs/design.md](docs/design.md) for the rationale behind the
+library's architecture: why reasons are required, how NOT_APPLICABLE
+works, the structured output flow, and other design decisions.
+
+See [docs/model-selection.md](docs/model-selection.md) for guidance
+on choosing the right LLM for structured extraction tasks.
 
 ## Architecture
 

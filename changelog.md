@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v1.4.24 - 8th March 2026
+
+- Moved `DESIGN.md` to `docs/design.md`.
+- New file `docs/model-selection.md`: Explains why smaller LLMs
+  outperform larger ones for structured extraction tasks.
+- `README.md`: Updated design doc link and added link to
+  model selection guide.
+
+
 ### v1.4.23 - 8th March 2026
 
 - New file `DESIGN.md`: Library design document explaining the
