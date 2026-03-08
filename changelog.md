@@ -1,6 +1,43 @@
 
 ## Changelog - Agents7
 
+### v2.3.0 - 8th March 2026
+
+- Module `agents7.agents.pipeline`:
+  - New `Pipeline.from_agents(agents)` class method: wraps
+    each agent in a `PipelineStep` with the default mapper,
+    eliminating boilerplate for simple sequential chains.
+- Module `agents7.export` (new):
+  - `export_jsonl(responses, path)`: write agent responses to
+    a JSONL file.
+  - `export_csv(responses, path, fields=None)`: write agent
+    responses to a CSV file with auto-detected or explicit
+    field columns.
+- Module `agents7.llm.cache`:
+  - `CacheConfig` gains `backend` (``"memory"`` or
+    ``"sqlite"``) and `path` fields.
+  - New `SqliteCache` backend: persistent SQLite-backed cache
+    that survives process restarts. LRU eviction via
+    access counter.
+  - New `create_cache(config)` factory function.
+  - `_CacheKeyBuilder` base class shared between
+    `ResponseCache` and `SqliteCache`.
+- Module `agents7.agents.labeler`:
+  - New `output_schema` property: returns the JSON schema dict
+    for the output model.
+  - New `enum_values()` method: returns a dict mapping StrEnum
+    field names to their ``{name: value}`` member dicts.
+  - New `describe()` method: returns a human-readable summary
+    of the agent (name, version, model, output, enum fields).
+- Tests:
+  - New `test_export.py`: 7 tests for JSONL and CSV export.
+  - New `test_sqlite_cache.py`: 13 tests for SQLite cache
+    backend.
+  - `test_pipeline.py`: 2 tests for `Pipeline.from_agents()`.
+  - `test_labeler.py`: 5 tests for agent introspection
+    methods.
+
+
 ### v2.2.0 - 8th March 2026
 
 - Module `agents7.agents.streaming` (new):

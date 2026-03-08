@@ -372,3 +372,47 @@ async def test_max_concurrent_one_is_sequential(mock_chat):
         batch_settings=BatchSettings(max_concurrent=1),
     )
     assert tracker.peak == 1
+
+
+# --- Agent introspection ---
+
+
+def test_output_schema_returns_json_schema():
+    """output_schema returns a dict with JSON schema."""
+    agent = make_labeler()
+    schema = agent.output_schema
+    assert isinstance(schema, dict)
+    assert "properties" in schema
+    assert "value" in schema["properties"]
+
+
+def test_enum_values_with_enums():
+    """enum_values returns field→member mappings."""
+    agent = make_labeler(output_model=DummyOutputWithEnum)
+    enums = agent.enum_values()
+    assert "reason" in enums
+    assert "GOOD" in enums["reason"]
+    assert "BAD" in enums["reason"]
+
+
+def test_enum_values_no_enums():
+    """enum_values returns empty dict for plain models."""
+    agent = make_labeler()
+    assert agent.enum_values() == {}
+
+
+def test_describe_includes_name_and_model():
+    """describe() includes agent name and model id."""
+    agent = make_labeler()
+    desc = agent.describe()
+    assert "test" in desc
+    assert "ollama::qwen3" in desc
+    assert "DummyOutput" in desc
+
+
+def test_describe_includes_enum_fields():
+    """describe() lists enum fields when present."""
+    agent = make_labeler(output_model=DummyOutputWithEnum)
+    desc = agent.describe()
+    assert "reason" in desc
+    assert "GOOD" in desc

@@ -147,10 +147,10 @@
 
 #### MEDIUM impact
 
-- [ ] Pipeline convenience: add `Pipeline.from_agents(agents)` class method that auto-wraps each agent in a `PipelineStep` with identity mapper — eliminates boilerplate for simple sequential chains.
-- [ ] Batch export helpers: add `export_jsonl(responses, path)` and `export_csv(responses, path)` to a new `agents7.export` module — common workflow after `act_in_batch`.
-- [ ] Persistent cache backend: add SQLite-backed cache option alongside the in-memory LRU — survives process restarts, zero-config (`CacheConfig(backend="sqlite", path="cache.db")`).
-- [ ] Agent introspection: expose `agent.output_schema` (JSON schema dict), `agent.enum_values()` (field→values map), and `agent.describe()` (human-readable summary) — helps debugging and documentation.
+- [x] Pipeline convenience: `Pipeline.from_agents(agents)` — done in v2.3.0.
+- [x] Batch export helpers: `export_jsonl()` / `export_csv()` in `agents7.export` — done in v2.3.0.
+- [x] Persistent cache backend: `SqliteCache` with `CacheConfig(backend="sqlite")` — done in v2.3.0.
+- [x] Agent introspection: `output_schema`, `enum_values()`, `describe()` on `Labeler` — done in v2.3.0.
 
 #### LOW impact
 

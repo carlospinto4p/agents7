@@ -1,12 +1,18 @@
-"""In-memory LRU response cache for deterministic LLM calls."""
+"""Response cache backends for deterministic LLM calls.
+
+Provides two backends:
+- `ResponseCache`: in-memory LRU (default)
+- `SqliteCache`: SQLite-backed persistent cache
+"""
 
 from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 import threading
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from agents7.exceptions import LLMException
@@ -14,30 +20,44 @@ from agents7.exceptions import LLMException
 
 @dataclass(frozen=True)
 class CacheConfig:
-    """Configuration for in-memory LRU response cache.
+    """Configuration for LLM response caching.
 
     Attributes:
-        max_size: Maximum number of cached entries. 0 = unlimited.
+        max_size: Maximum number of cached entries.
+            0 = unlimited.
+        backend: Cache backend. ``"memory"`` for in-memory
+            LRU, ``"sqlite"`` for persistent SQLite storage.
+        path: File path for SQLite backend. Ignored when
+            ``backend="memory"``. Defaults to
+            ``"cache.db"``.
     """
 
     max_size: int = 128
+    backend: str = field(default="memory", kw_only=True)
+    path: str = field(default="cache.db", kw_only=True)
 
     def __post_init__(self):
         if self.max_size < 0:
             raise LLMException(f"max_size must be >= 0, got {self.max_size}")
+        if self.backend not in ("memory", "sqlite"):
+            raise LLMException(
+                f"backend must be 'memory' or 'sqlite', got '{self.backend}'"
+            )
 
 
-class ResponseCache:
-    """Thread-safe in-memory LRU cache for LLM responses.
+def create_cache(config: CacheConfig) -> ResponseCache | SqliteCache:
+    """Create a cache instance from configuration.
 
-    Entries are evicted in least-recently-used order when
-    `max_size > 0` and the limit is exceeded.
+    :param config: Cache configuration.
+    :return: A `ResponseCache` or `SqliteCache` instance.
     """
+    if config.backend == "sqlite":
+        return SqliteCache(config)
+    return ResponseCache(config)
 
-    def __init__(self, config: CacheConfig):
-        self._max_size = config.max_size
-        self._store: OrderedDict[str, Any] = OrderedDict()
-        self._lock = threading.Lock()
+
+class _CacheKeyBuilder:
+    """Shared cache key generation logic."""
 
     @staticmethod
     def make_key(
@@ -51,7 +71,8 @@ class ResponseCache:
         output_format: str | dict | None = None,
         think: bool = False,
     ) -> str:
-        """Build a deterministic cache key from call parameters.
+        """Build a deterministic cache key from call
+        parameters.
 
         Returns a hex SHA-256 digest.
         """
@@ -69,10 +90,24 @@ class ResponseCache:
         raw = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(raw.encode()).hexdigest()
 
-    def get(self, key: str) -> Any | None:
-        """Return cached value or `None` on miss.
 
-        On hit the entry is moved to the end (most-recently-used).
+class ResponseCache(_CacheKeyBuilder):
+    """Thread-safe in-memory LRU cache for LLM responses.
+
+    Entries are evicted in least-recently-used order when
+    ``max_size > 0`` and the limit is exceeded.
+    """
+
+    def __init__(self, config: CacheConfig):
+        self._max_size = config.max_size
+        self._store: OrderedDict[str, Any] = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, key: str) -> Any | None:
+        """Return cached value or ``None`` on miss.
+
+        On hit the entry is moved to the end
+        (most-recently-used).
         """
         with self._lock:
             if key not in self._store:
@@ -81,7 +116,8 @@ class ResponseCache:
             return self._store[key]
 
     def put(self, key: str, value: Any) -> None:
-        """Store *value* under *key*, evicting LRU if needed."""
+        """Store *value* under *key*, evicting LRU if
+        needed."""
         with self._lock:
             if key in self._store:
                 self._store.move_to_end(key)
@@ -101,3 +137,80 @@ class ResponseCache:
         """Remove all entries."""
         with self._lock:
             self._store.clear()
+
+
+class SqliteCache(_CacheKeyBuilder):
+    """Thread-safe SQLite-backed persistent cache.
+
+    Stores responses as JSON in a local SQLite database.
+    Survives process restarts. LRU eviction is applied
+    on ``put()`` when ``max_size > 0``.
+    """
+
+    def __init__(self, config: CacheConfig):
+        self._max_size = config.max_size
+        self._path = config.path
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(self._path, check_same_thread=False)
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS cache ("
+            "  key TEXT PRIMARY KEY,"
+            "  value TEXT NOT NULL,"
+            "  accessed INTEGER NOT NULL DEFAULT 0"
+            ")"
+        )
+        self._conn.commit()
+
+    def get(self, key: str) -> Any | None:
+        """Return cached value or ``None`` on miss."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT value, accessed FROM cache WHERE key = ?",
+                (key,),
+            ).fetchone()
+            if row is None:
+                return None
+            self._conn.execute(
+                "UPDATE cache SET accessed = accessed + 1 WHERE key = ?",
+                (key,),
+            )
+            self._conn.commit()
+            return json.loads(row[0])
+
+    def put(self, key: str, value: Any) -> None:
+        """Store *value* under *key*, evicting LRU if
+        needed."""
+        serialized = json.dumps(value, ensure_ascii=False)
+        with self._lock:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO cache "
+                "(key, value, accessed) VALUES (?, ?, 0)",
+                (key, serialized),
+            )
+            if self._max_size > 0:
+                count = self._conn.execute(
+                    "SELECT COUNT(*) FROM cache"
+                ).fetchone()[0]
+                if count > self._max_size:
+                    excess = count - self._max_size
+                    self._conn.execute(
+                        "DELETE FROM cache WHERE key IN ("
+                        "  SELECT key FROM cache "
+                        "  ORDER BY accessed ASC LIMIT ?"
+                        ")",
+                        (excess,),
+                    )
+            self._conn.commit()
+
+    @property
+    def size(self) -> int:
+        """Number of entries currently in the cache."""
+        with self._lock:
+            row = self._conn.execute("SELECT COUNT(*) FROM cache").fetchone()
+            return row[0]
+
+    def clear(self) -> None:
+        """Remove all entries."""
+        with self._lock:
+            self._conn.execute("DELETE FROM cache")
+            self._conn.commit()

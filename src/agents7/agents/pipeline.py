@@ -83,6 +83,18 @@ class Pipeline:
 
     steps: list[PipelineStep]
 
+    @classmethod
+    def from_agents(cls, agents: list[BaseAgent]) -> "Pipeline":
+        """Create a Pipeline from a list of agents.
+
+        Each agent is wrapped in a `PipelineStep` with the
+        default mapper (`model.model_dump()`).
+
+        :param agents: Ordered list of agents to chain.
+        :return: A Pipeline instance.
+        """
+        return cls(steps=[PipelineStep(agent=a) for a in agents])
+
     def __post_init__(self):
         if not self.steps:
             raise PipelineConfigurationError(

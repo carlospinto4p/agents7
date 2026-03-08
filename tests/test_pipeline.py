@@ -595,3 +595,23 @@ async def test_batch_async_max_concurrent(mock_chat):
         batch_settings=BatchSettings(max_concurrent=2),
     )
     assert tracker.peak <= 2
+
+
+# --- Pipeline.from_agents() Tests ---
+
+
+def test_from_agents_creates_pipeline():
+    """from_agents wraps each agent in a PipelineStep."""
+    a1 = _make_labeler(StepOneOutput)
+    a2 = _make_labeler(StepTwoOutput)
+    pipeline = Pipeline.from_agents([a1, a2])
+    assert len(pipeline.steps) == 2
+    assert pipeline.steps[0].agent is a1
+    assert pipeline.steps[1].agent is a2
+    assert pipeline.steps[0].mapper is PipelineStep.default_mapper
+
+
+def test_from_agents_empty_raises():
+    """from_agents with empty list raises."""
+    with pytest.raises(PipelineConfigurationError):
+        Pipeline.from_agents([])

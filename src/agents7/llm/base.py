@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 from abc import ABC, abstractmethod
 
-from agents7.llm.cache import CacheConfig, ResponseCache
+from agents7.llm.cache import CacheConfig, ResponseCache, create_cache
 from agents7.llm.retry import RetryConfig, retry_async, retry_sync
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 from agents7.logs import logger
@@ -48,7 +48,7 @@ class LLMEngine:
         self.model_id: str = f"{provider}::{model_name}"
         self.retry_config = retry
         self._cache: ResponseCache | None = (
-            ResponseCache(cache) if cache is not None else None
+            create_cache(cache) if cache is not None else None
         )
         self._fallback_provider = None
 

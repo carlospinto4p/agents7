@@ -53,7 +53,7 @@ Pipeline (chains multiple agents sequentially)
 - `Detector`: Specialized `Labeler` for property extraction (value + reason)
 - `Classifier`: For categorical classification with category + reason enums
 - `Regressor`: For numeric value extraction with reason enum
-- `Pipeline`: Chains multiple agents sequentially with optional custom mappers between steps (async batch supports `BatchSettings`)
+- `Pipeline`: Chains multiple agents sequentially with optional custom mappers between steps (async batch supports `BatchSettings`). Use `Pipeline.from_agents([a1, a2])` for simple sequential chains without custom mappers
 
 ### Models Layer (`agents7.models`)
 
@@ -482,7 +482,26 @@ Deterministic LLM calls (`temperature=0`) can be cached in memory with an LRU ev
 
 Streaming responses are also cached: on a miss the result is stored after the stream is fully consumed; on a hit the full response is returned as a single chunk.
 
-The cache is in-memory only and lost on process restart.
+The default in-memory cache is lost on process restart. For persistent caching, use the SQLite backend:
+
+```python
+from agents7.llm import LLMEngine, CacheConfig
+
+engine = LLMEngine(
+    provider="ollama",
+    model_name="qwen3",
+    cache=CacheConfig(backend="sqlite", path="cache.db"),
+)
+```
+
+```yaml
+engine:
+    provider: ollama
+    model: qwen3
+    cache:
+        backend: sqlite
+        path: cache.db
+```
 
 **YAML configuration:**
 
@@ -515,6 +534,8 @@ engine = LLMEngine(
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `max_size` | `128` | Maximum cached entries (0 = unlimited) |
+| `backend` | `"memory"` | `"memory"` for in-memory LRU, `"sqlite"` for persistent |
+| `path` | `"cache.db"` | SQLite file path (ignored for memory backend) |
 
 ### Validation Hooks
 
@@ -642,6 +663,13 @@ steps:
 - `agent_type`: Dotted import path to the agent class (optional, defaults to `Labeler`)
 - `mapper`: Dotted import path to a mapper function (optional, defaults to `model.model_dump()`)
 
+For simple sequential chains without custom mappers, use `from_agents`:
+
+```python
+pipeline = Pipeline.from_agents([agent1, agent2, agent3])
+result = pipeline.act({"text": "input"})
+```
+
 ### Batch Concurrency Control
 
 When using `act_in_batch_async`, you can limit the number of concurrent LLM requests via a `BatchSettings` instance. This prevents overwhelming the LLM server with large input lists.
@@ -677,6 +705,50 @@ results = await pipeline.act_in_batch_async(
 The default `max_concurrent` value can be overridden via the `BATCH_MAX_CONCURRENT` environment variable.
 
 The semaphore is created per call (not stored on the instance), so different calls can use different limits.
+
+### Agent Introspection
+
+Inspect agent configuration at runtime:
+
+```python
+agent = Classifier.from_yaml("configs/sentiment.yml")
+
+# JSON schema dict for the output model
+agent.output_schema
+# {"properties": {"category": ..., "reason": ...}, ...}
+
+# StrEnum field → member names mapping
+agent.enum_values()
+# {"category": {"POSITIVE": "Positive.", "NEGATIVE": "Negative."}, ...}
+
+# Human-readable summary
+print(agent.describe())
+# Agent: SentimentClassifier (v1)
+# Model: ollama::qwen3
+# Output: Sentiment
+# Enum fields:
+#   category: POSITIVE, NEGATIVE, NOT_APPLICABLE
+#   reason: ENTHUSIASTIC, FRUSTRATED, NOT_APPLICABLE
+```
+
+### Batch Export
+
+Export agent responses to JSONL or CSV files after `act_in_batch`:
+
+```python
+from agents7.export import export_jsonl, export_csv
+
+responses = agent.act_in_batch(inputs)
+
+# Export to JSONL (one JSON object per line)
+export_jsonl(responses, "results.jsonl")
+
+# Export to CSV (auto-detects model fields)
+export_csv(responses, "results.csv")
+
+# Export specific fields only
+export_csv(responses, "results.csv", fields=["category", "reason"])
+```
 
 ### Evaluation Metrics
 

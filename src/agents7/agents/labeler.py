@@ -187,6 +187,40 @@ class Labeler(BaseAgent):
         """Dynamic model wrapping ``output_model`` in a list."""
         return self._output_model_list
 
+    @property
+    def output_schema(self) -> dict:
+        """JSON schema dict for the output model."""
+        return self._output_schema
+
+    def enum_values(self) -> dict[str, dict[str, str]]:
+        """Map of StrEnum fields to their ``{name: value}``
+        members.
+
+        :return: Dict mapping field names to enum member dicts.
+            Empty dict if no StrEnum fields exist.
+        """
+        return self._parser._get_enum_mappings()
+
+    def describe(self) -> str:
+        """Human-readable summary of the agent.
+
+        :return: Multi-line string describing the agent's
+            name, version, model, output schema, and enum
+            values.
+        """
+        lines = [
+            f"Agent: {self.name} (v{self.version})",
+            f"Model: {self.engine.model_id}",
+            f"Output: {self.output_model.__name__}",
+        ]
+        enums = self.enum_values()
+        if enums:
+            lines.append("Enum fields:")
+            for field_name, members in enums.items():
+                vals = ", ".join(members.keys())
+                lines.append(f"  {field_name}: {vals}")
+        return "\n".join(lines)
+
     def act(
         self, input_data: dict | list[dict], chat_kwargs: dict = None
     ) -> AgentResponse:
