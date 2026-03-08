@@ -1,3 +1,5 @@
+import pytest
+
 from agents7.agents import Classifier, Detector, Regressor
 
 from data import SENTIMENT_DATA, TEMPERATURE_DATA
@@ -10,6 +12,7 @@ _regressor_data = TEMPERATURE_DATA[:3]
 # --- Detector async tests ---
 
 
+@pytest.mark.asyncio(loop_scope="module")
 class TestDetectorAsync:
     """Async tests for the Detector agent."""
 
@@ -47,6 +50,7 @@ class TestDetectorAsync:
 # --- Classifier async tests ---
 
 
+@pytest.mark.asyncio(loop_scope="module")
 class TestClassifierAsync:
     """Async tests for the Classifier agent."""
 
@@ -75,6 +79,7 @@ class TestClassifierAsync:
 # --- Regressor async tests ---
 
 
+@pytest.mark.asyncio(loop_scope="module")
 class TestRegressorAsync:
     """Async tests for the Regressor agent."""
 

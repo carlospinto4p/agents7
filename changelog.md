@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v2.1.4 - 8th March 2026
+
+- Integration tests:
+  - Fixed `RuntimeError: Event loop is closed` in async batch tests
+    by setting `loop_scope="module"` on async test classes to match
+    module-scoped agent fixtures.
+
+
 ### v2.1.3 - 8th March 2026
 
 - Module `agents7.llm.ollama`:
