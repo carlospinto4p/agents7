@@ -100,6 +100,23 @@
 - [x] Add model size recommendations to YAML configs — done in v2.0.0 (comments referencing `docs/model-selection.md`).
 - [x] Retry with fallback model — done in v2.0.0 (`fallback_model` on `LLMEngine`, parsed from YAML engine config).
 
+### Refactoring — 8th March 2026
+
+#### Source (high impact)
+
+- [ ] Consolidate enum helpers: `extract_enum_members()` in `utils.py` and `_resolve_strenum()`/`_get_enum_mappings()` in `parsing.py` do overlapping enum introspection — unify into a single utility.
+- [ ] Move function-level imports to module level in `model_selection.py` (`_create_agent` imports agents, types, models inside the function body).
+
+#### Tests (medium impact)
+
+- [ ] Extract async concurrency tracking helper from `test_labeler.py` and `test_pipeline.py` into `tests/helpers.py` (peak/current tracking with `asyncio.Lock` is duplicated).
+- [ ] Consolidate `_gen_chunk()` in `test_streaming.py` with `chat_chunk()` in `tests/helpers.py`.
+- [ ] Move agent fixtures (`temperature_detector`, `sentiment_classifier`, `temperature_regressor`) from individual test files to `tests/conftest.py`.
+
+#### Tests (low impact)
+
+- [ ] Generalize `_make_detector()`, `_make_classifier()`, `_make_regressor()` in `test_prompt_params.py` into a single parametrized factory in `helpers.py`.
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.
