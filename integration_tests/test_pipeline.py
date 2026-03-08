@@ -3,19 +3,7 @@ import pytest
 from agents7.agents.pipeline import Pipeline, PipelineResponse
 from agents7.models.demo import PersonBio, PersonInfo
 
-
-# --- Test data ---
-
-demo_pipeline_data = [
-    {
-        "text": ("John is a 35-year-old engineer living in Berlin."),
-        "expected_name": "John",
-    },
-    {
-        "text": "Maria is a CEO who recently moved to Tokyo.",
-        "expected_name": "Maria",
-    },
-]
+from data import PIPELINE_DATA
 
 
 @pytest.fixture
@@ -41,7 +29,7 @@ def test_pipeline_from_yaml_structure(
 # --- Single execution ---
 
 
-@pytest.mark.parametrize("test_case", demo_pipeline_data)
+@pytest.mark.parametrize("test_case", PIPELINE_DATA)
 def test_single_pipeline_execution(
     person_bio_pipeline: Pipeline, test_case: dict
 ) -> None:
@@ -69,7 +57,7 @@ def test_pipeline_intermediate_step(
     person_bio_pipeline: Pipeline,
 ) -> None:
     """Test that the intermediate step produces PersonInfo."""
-    input_data = {"text": demo_pipeline_data[0]["text"]}
+    input_data = {"text": PIPELINE_DATA[0]["text"]}
     response = person_bio_pipeline.act(input_data)
 
     assert response.success, "Pipeline should succeed"
@@ -91,17 +79,14 @@ def test_pipeline_batch(
     person_bio_pipeline: Pipeline,
 ) -> None:
     """Test batch pipeline execution."""
-    input_list = [{"text": case["text"]} for case in demo_pipeline_data]
+    input_list = [{"text": case["text"]} for case in PIPELINE_DATA]
     responses = person_bio_pipeline.act_in_batch(input_list)
 
-    assert len(responses) == len(demo_pipeline_data), (
-        f"Expected {len(demo_pipeline_data)} responses "
-        f"but got {len(responses)}"
+    assert len(responses) == len(PIPELINE_DATA), (
+        f"Expected {len(PIPELINE_DATA)} responses but got {len(responses)}"
     )
 
-    for i, (test_case, response) in enumerate(
-        zip(demo_pipeline_data, responses)
-    ):
+    for i, (test_case, response) in enumerate(zip(PIPELINE_DATA, responses)):
         assert isinstance(response, PipelineResponse)
         assert response.success, (
             f"Pipeline failed for case {i}: '{test_case['text']}'"

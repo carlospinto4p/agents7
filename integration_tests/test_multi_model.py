@@ -13,6 +13,8 @@ from agents7.agents import Detector
 from agents7.llm import LLMEngine
 from agents7.models.demo import Temperature
 
+from data import SIMPLE_TEMPERATURE_CASES
+
 
 def is_model_available(model_name: str) -> bool:
     """Check if an Ollama model is available locally."""
@@ -38,22 +40,6 @@ MODELS_TO_TEST = [
             reason="qwen2.5:3b model not available",
         ),
     ),
-]
-
-# Simple test cases that should work across all models
-SIMPLE_TEST_CASES = [
-    {
-        "text": "It is -10 degrees outside.",
-        "expected_reason": "TOO_COLD",
-    },
-    {
-        "text": "The temperature is 35 degrees in the shade.",
-        "expected_reason": "TOO_HOT",
-    },
-    {
-        "text": "She bought a new book.",
-        "expected_reason": "NOT_APPLICABLE",
-    },
 ]
 
 
@@ -118,7 +104,7 @@ def make_detector():
 
 
 @pytest.mark.parametrize("model_name", MODELS_TO_TEST)
-@pytest.mark.parametrize("test_case", SIMPLE_TEST_CASES)
+@pytest.mark.parametrize("test_case", SIMPLE_TEMPERATURE_CASES)
 def test_temperature_detection_across_models(
     make_detector, model_name: str, test_case: dict
 ) -> None:
@@ -157,13 +143,13 @@ def test_batch_processing_across_models(
 ) -> None:
     """Test batch processing works across different models."""
     detector = make_detector(model_name)
-    inputs = [{"text": case["text"]} for case in SIMPLE_TEST_CASES]
+    inputs = [{"text": case["text"]} for case in SIMPLE_TEMPERATURE_CASES]
 
     responses = detector.act_in_batch(inputs)
 
-    assert len(responses) == len(SIMPLE_TEST_CASES)
+    assert len(responses) == len(SIMPLE_TEMPERATURE_CASES)
     for i, (response, test_case) in enumerate(
-        zip(responses, SIMPLE_TEST_CASES)
+        zip(responses, SIMPLE_TEMPERATURE_CASES)
     ):
         assert response.model is not None, (
             f"Model {model_name} returned None for case {i}"

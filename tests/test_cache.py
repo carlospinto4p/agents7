@@ -1,28 +1,15 @@
 """Unit tests for in-memory LRU response cache (no LLM required)."""
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
 from agents7.agents.labeler import Labeler
 from agents7.exceptions import LLMException
-from agents7.llm.base import LLMEngine
 from agents7.llm.cache import CacheConfig, ResponseCache
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 
-from helpers import chat_chunk
-
-
-def _make_engine(cache: CacheConfig | None = None):
-    """Create an LLMEngine with a mocked provider."""
-    engine = object.__new__(LLMEngine)
-    engine.provider = "ollama"
-    engine.model_name = "test-model"
-    engine.model_id = "ollama::test-model"
-    engine.retry_config = None
-    engine._cache = ResponseCache(cache) if cache is not None else None
-    engine.llm_provider = Mock()
-    return engine
+from helpers import chat_chunk, make_engine
 
 
 # --- CacheConfig ---
@@ -192,7 +179,7 @@ def test_different_model_different_key():
 
 def test_cache_hit_skips_llm_call():
     """Second identical call returns cached result."""
-    engine = _make_engine(cache=CacheConfig())
+    engine = make_engine(cache=CacheConfig())
     engine.llm_provider.chat.return_value = {
         "response": "hello",
         "role": "assistant",
@@ -215,7 +202,7 @@ def test_cache_hit_skips_llm_call():
 
 def test_nonzero_temp_bypasses_cache():
     """Non-zero temperature never caches."""
-    engine = _make_engine(cache=CacheConfig())
+    engine = make_engine(cache=CacheConfig())
     engine.llm_provider.chat.return_value = {
         "response": "hello",
     }
@@ -234,7 +221,7 @@ def test_nonzero_temp_bypasses_cache():
 
 def test_no_cache_config_no_caching():
     """Without CacheConfig, every call hits the LLM."""
-    engine = _make_engine(cache=None)
+    engine = make_engine(cache=None)
     engine.llm_provider.chat.return_value = {
         "response": "hello",
     }
@@ -254,7 +241,7 @@ def test_no_cache_config_no_caching():
 @pytest.mark.asyncio
 async def test_cache_hit_skips_async_llm_call():
     """Async: second identical call returns cached result."""
-    engine = _make_engine(cache=CacheConfig())
+    engine = make_engine(cache=CacheConfig())
     engine.llm_provider.chat_async = AsyncMock(
         return_value={"response": "hello"}
     )
@@ -274,7 +261,7 @@ async def test_cache_hit_skips_async_llm_call():
 
 def test_generate_cache_hit():
     """Generate: second identical call returns cached result."""
-    engine = _make_engine(cache=CacheConfig())
+    engine = make_engine(cache=CacheConfig())
     engine.llm_provider.generate.return_value = {
         "response": "generated",
     }
@@ -291,7 +278,7 @@ def test_generate_cache_hit():
 
 def test_stream_cached_after_iteration():
     """After iterating a stream, result is stored in cache."""
-    engine = _make_engine(cache=CacheConfig())
+    engine = make_engine(cache=CacheConfig())
 
     chunks = [
         chat_chunk(content="Hello"),
@@ -319,7 +306,7 @@ def test_stream_cached_after_iteration():
 
 def test_stream_cache_hit_returns_cached():
     """Cache hit returns a pre-filled StreamResult."""
-    engine = _make_engine(cache=CacheConfig())
+    engine = make_engine(cache=CacheConfig())
 
     chunks = [
         chat_chunk(content="Hello"),

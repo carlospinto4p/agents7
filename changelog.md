@@ -1,6 +1,23 @@
 
 ## Changelog - Agents7
 
+### v2.1.3 - 8th March 2026
+
+- Module `agents7.llm.ollama`:
+  - Consolidated `_chat_call_kwargs` and `_generate_call_kwargs` into
+    a single `_build_call_kwargs` method parameterized by primary key.
+  - Extracted thinking-error string to class constant
+    `_THINKING_NOT_SUPPORTED_MSG`.
+- Tests:
+  - New `make_engine()` helper in `tests/helpers.py`; replaced local
+    `_make_engine()` in `test_cache.py` and `test_streaming.py`.
+  - Consolidated integration test data (`PIPELINE_DATA`,
+    `COMPANY_DATA`, `SIMPLE_TEMPERATURE_CASES`) into
+    `integration_tests/data.py`.
+  - Added `# --- Section ---` headers to `test_classifier.py`,
+    `test_detector.py`, `test_regressor.py`.
+
+
 ### v2.1.2 - 8th March 2026
 
 - Self-refinement pass:

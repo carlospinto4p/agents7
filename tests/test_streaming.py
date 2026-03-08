@@ -1,13 +1,12 @@
 """Unit tests for LLM streaming support (no LLM required)."""
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from agents7.llm.base import LLMEngine
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 
-from helpers import async_iter, chat_chunk, gen_chunk
+from helpers import async_iter, chat_chunk, gen_chunk, make_engine
 
 
 # --- StreamResult (sync) ---
@@ -205,21 +204,9 @@ async def test_thinking_accumulated_async():
 # --- LLMEngine delegation ---
 
 
-def _make_engine():
-    """Create an LLMEngine with a mocked provider."""
-    engine = object.__new__(LLMEngine)
-    engine.provider = "ollama"
-    engine.model_name = "test-model"
-    engine.model_id = "ollama::test-model"
-    engine.retry_config = None
-    engine._cache = None
-    engine.llm_provider = Mock()
-    return engine
-
-
 def test_chat_stream_delegates():
     """chat_stream delegates to provider.chat_stream."""
-    engine = _make_engine()
+    engine = make_engine()
     sentinel = StreamResult(iter([]), "chat")
     engine.llm_provider.chat_stream.return_value = sentinel
 
@@ -242,7 +229,7 @@ def test_chat_stream_delegates():
 @pytest.mark.asyncio
 async def test_chat_stream_async_delegates():
     """chat_stream_async delegates to provider."""
-    engine = _make_engine()
+    engine = make_engine()
     sentinel = AsyncStreamResult(async_iter([]), "chat")
     engine.llm_provider.chat_stream_async = AsyncMock(return_value=sentinel)
 
@@ -256,7 +243,7 @@ async def test_chat_stream_async_delegates():
 
 def test_generate_stream_delegates():
     """generate_stream delegates to provider."""
-    engine = _make_engine()
+    engine = make_engine()
     sentinel = StreamResult(iter([]), "generate")
     engine.llm_provider.generate_stream.return_value = sentinel
 
@@ -276,7 +263,7 @@ def test_generate_stream_delegates():
 @pytest.mark.asyncio
 async def test_generate_stream_async_delegates():
     """generate_stream_async delegates to provider."""
-    engine = _make_engine()
+    engine = make_engine()
     sentinel = AsyncStreamResult(async_iter([]), "generate")
     engine.llm_provider.generate_stream_async = AsyncMock(
         return_value=sentinel
@@ -291,7 +278,7 @@ async def test_generate_stream_async_delegates():
 @patch("agents7.llm.retry.retry_sync")
 def test_streaming_bypasses_retry(mock_retry):
     """Streaming methods do NOT use retry wrappers."""
-    engine = _make_engine()
+    engine = make_engine()
     sentinel = StreamResult(iter([]), "chat")
     engine.llm_provider.chat_stream.return_value = sentinel
 

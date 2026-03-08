@@ -3,6 +3,9 @@ from agents7.models.base import NOT_APPLICABLE_DESCRIPTION
 from agents7.models.demo import TemperaturePropertyReason
 
 
+# --- Initialization & prompt ---
+
+
 def test_regressor_initialization(temperature_regressor: Regressor) -> None:
     """Test that the regressor initializes from YAML config."""
     assert temperature_regressor is not None
@@ -17,6 +20,9 @@ def test_regressor_prompt_exists(temperature_regressor: Regressor) -> None:
     assert "value" in temperature_regressor.prompt.lower()
 
 
+# --- Enum properties ---
+
+
 def test_possible_reasons(temperature_regressor: Regressor) -> None:
     """Test that the regressor can return all possible reasons."""
     expected_reasons = {
@@ -24,6 +30,9 @@ def test_possible_reasons(temperature_regressor: Regressor) -> None:
     }
     expected_reasons["NOT_APPLICABLE"] = NOT_APPLICABLE_DESCRIPTION
     assert temperature_regressor.possible_reasons == expected_reasons
+
+
+# --- Edge cases ---
 
 
 def test_empty_input(temperature_regressor: Regressor) -> None:

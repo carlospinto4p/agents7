@@ -117,6 +117,26 @@
 
 - [x] Generalize agent factory as `make_agent()` in `helpers.py` — done in v2.1.1; replaced `_make_detector/classifier/regressor` in `test_prompt_params.py`.
 
+### Refactoring — 8th March 2026 (pass 2)
+
+#### Source (medium impact)
+
+- [x] Consolidate `_chat_call_kwargs` / `_generate_call_kwargs` in `OllamaProvider` into a single `_build_call_kwargs` method — done in v2.1.3.
+- [x] Extract thinking-error string `"does not support thinking"` to a class constant `_THINKING_NOT_SUPPORTED_MSG` in `OllamaProvider` — done in v2.1.3.
+
+#### Source (low impact)
+
+- [x] Add `@staticmethod` to `Labeler._chunk_inputs` — already present, no change needed.
+
+#### Tests (medium impact)
+
+- [x] Consolidate `_make_engine()` helpers from `test_cache.py` and `test_streaming.py` into `tests/helpers.py` as `make_engine()` — done in v2.1.3.
+- [x] Consolidate integration test data (`demo_pipeline_data`, `demo_company_data`, `SIMPLE_TEST_CASES`) into `integration_tests/data.py` — done in v2.1.3.
+
+#### Tests (low impact)
+
+- [x] Add `# --- Section ---` headers to `test_classifier.py`, `test_detector.py`, `test_regressor.py` — done in v2.1.3.
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.

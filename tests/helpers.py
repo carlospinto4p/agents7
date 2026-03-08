@@ -4,11 +4,13 @@ import asyncio
 import json
 from enum import StrEnum
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
 from agents7.llm import LLMEngine
+from agents7.llm.cache import CacheConfig, ResponseCache
 from agents7.models import AgentResponse
 
 
@@ -104,6 +106,21 @@ def make_agent(
     }
     defaults.update(kwargs)
     return agent_cls(**defaults)
+
+
+# --- Engine factory helpers ---
+
+
+def make_engine(cache: CacheConfig | None = None):
+    """Create an LLMEngine with a mocked provider."""
+    engine = object.__new__(LLMEngine)
+    engine.provider = "ollama"
+    engine.model_name = "test-model"
+    engine.model_id = "ollama::test-model"
+    engine.retry_config = None
+    engine._cache = ResponseCache(cache) if cache is not None else None
+    engine.llm_provider = Mock()
+    return engine
 
 
 # --- Streaming chunk helpers ---

@@ -11,6 +11,9 @@ from agents7.models.base import NOT_APPLICABLE_DESCRIPTION
 from agents7.models.demo import TemperaturePropertyReason
 
 
+# --- Initialization & prompt ---
+
+
 def test_detector_initialization(temperature_detector: Detector) -> None:
     """Test that the detector can be properly initialized from YAML config."""
     assert temperature_detector is not None
@@ -24,10 +27,16 @@ def test_detector_prompt_exists(temperature_detector: Detector) -> None:
     assert len(temperature_detector.prompt.strip()) > 0
 
 
+# --- Edge cases ---
+
+
 def test_empty_input(temperature_detector: Detector) -> None:
     """Test behavior with empty input."""
     response = temperature_detector.act_in_batch([])
     assert response == []
+
+
+# --- Enum properties ---
 
 
 def test_possible_reasons(temperature_detector: Detector) -> None:
@@ -37,6 +46,9 @@ def test_possible_reasons(temperature_detector: Detector) -> None:
     }
     expected_reasons["NOT_APPLICABLE"] = NOT_APPLICABLE_DESCRIPTION
     assert temperature_detector.possible_reasons == expected_reasons
+
+
+# --- NOT_APPLICABLE auto-extension ---
 
 
 def test_not_applicable_added_automatically() -> None:
@@ -75,6 +87,9 @@ def test_explicit_not_applicable_preserved() -> None:
 
     reason_enum = ExplicitProperty.__annotations__["reason"]
     assert reason_enum.NOT_APPLICABLE == "Custom N/A message."
+
+
+# --- Validation ---
 
 
 def test_detector_requires_property_subclass() -> None:

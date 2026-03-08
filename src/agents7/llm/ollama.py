@@ -66,10 +66,12 @@ class OllamaProvider(LLMProvider):
         """Return `{'think': True}` when enabled, else empty."""
         return {"think": True} if think else {}
 
+    _THINKING_NOT_SUPPORTED_MSG = "does not support thinking"
+
     @staticmethod
     def _is_thinking_not_supported(error: ResponseError) -> bool:
         """Check if the error is due to thinking not supported."""
-        return "does not support thinking" in str(error)
+        return OllamaProvider._THINKING_NOT_SUPPORTED_MSG in str(error)
 
     def _with_think_fallback(self, fn: Callable, think: bool, kwargs: dict):
         """Call ``fn(**kwargs)``, retrying without ``think``
@@ -109,40 +111,25 @@ class OllamaProvider(LLMProvider):
         """
         return not parsed["response"] and output_format is not None
 
-    def _chat_call_kwargs(
+    def _build_call_kwargs(
         self,
-        messages: list[dict[str, str]],
+        *,
+        primary_key: str,
+        primary_value: str | list[dict[str, str]],
         options: dict,
         think: bool,
         output_format: str | dict | None,
-        *,
         stream: bool = False,
     ) -> dict:
-        """Build kwargs for an Ollama chat call."""
-        kwargs = {
-            "model": self.model_name,
-            "messages": messages,
-            "options": options,
-            "format": output_format,
-            **self._think_kwargs(think),
-        }
-        if stream:
-            kwargs["stream"] = True
-        return kwargs
+        """Build kwargs for an Ollama chat or generate call.
 
-    def _generate_call_kwargs(
-        self,
-        prompt: str,
-        options: dict,
-        think: bool,
-        output_format: str | dict | None,
-        *,
-        stream: bool = False,
-    ) -> dict:
-        """Build kwargs for an Ollama generate call."""
+        :param primary_key: ``"messages"`` for chat,
+            ``"prompt"`` for generate.
+        :param primary_value: The messages list or prompt str.
+        """
         kwargs = {
             "model": self.model_name,
-            "prompt": prompt,
+            primary_key: primary_value,
             "options": options,
             "format": output_format,
             **self._think_kwargs(think),
@@ -162,8 +149,12 @@ class OllamaProvider(LLMProvider):
     ) -> dict:
         """See `LLMProvider.chat` for documentation."""
         options = self._build_options(temperature, max_tokens, seed)
-        kwargs = self._chat_call_kwargs(
-            messages, options, think, output_format
+        kwargs = self._build_call_kwargs(
+            primary_key="messages",
+            primary_value=messages,
+            options=options,
+            think=think,
+            output_format=output_format,
         )
         response = self._with_think_fallback(chat, think, kwargs)
         parsed = parse_ollama_chat_response(response)
@@ -185,8 +176,12 @@ class OllamaProvider(LLMProvider):
     ) -> dict:
         """See `LLMProvider.chat` for documentation."""
         options = self._build_options(temperature, max_tokens, seed)
-        kwargs = self._chat_call_kwargs(
-            messages, options, think, output_format
+        kwargs = self._build_call_kwargs(
+            primary_key="messages",
+            primary_value=messages,
+            options=options,
+            think=think,
+            output_format=output_format,
         )
         response = await self._with_think_fallback_async(
             self._async_client.chat, think, kwargs
@@ -212,8 +207,12 @@ class OllamaProvider(LLMProvider):
     ) -> dict:
         """See `LLMProvider.generate` for documentation."""
         options = self._build_options(temperature, max_tokens, seed)
-        kwargs = self._generate_call_kwargs(
-            prompt, options, think, output_format
+        kwargs = self._build_call_kwargs(
+            primary_key="prompt",
+            primary_value=prompt,
+            options=options,
+            think=think,
+            output_format=output_format,
         )
         response = self._with_think_fallback(generate, think, kwargs)
         return parse_ollama_response(response)
@@ -229,8 +228,12 @@ class OllamaProvider(LLMProvider):
     ) -> dict:
         """See `LLMProvider.generate` for documentation."""
         options = self._build_options(temperature, max_tokens, seed)
-        kwargs = self._generate_call_kwargs(
-            prompt, options, think, output_format
+        kwargs = self._build_call_kwargs(
+            primary_key="prompt",
+            primary_value=prompt,
+            options=options,
+            think=think,
+            output_format=output_format,
         )
         response = await self._with_think_fallback_async(
             self._async_client.generate, think, kwargs
@@ -248,8 +251,13 @@ class OllamaProvider(LLMProvider):
     ) -> StreamResult:
         """Stream a chat response, yielding text chunks."""
         options = self._build_options(temperature, max_tokens, seed)
-        kwargs = self._chat_call_kwargs(
-            messages, options, think, output_format, stream=True
+        kwargs = self._build_call_kwargs(
+            primary_key="messages",
+            primary_value=messages,
+            options=options,
+            think=think,
+            output_format=output_format,
+            stream=True,
         )
         iterator = self._with_think_fallback(chat, think, kwargs)
         return StreamResult(iterator, "chat")
@@ -265,8 +273,13 @@ class OllamaProvider(LLMProvider):
     ) -> AsyncStreamResult:
         """Stream a chat response asynchronously."""
         options = self._build_options(temperature, max_tokens, seed)
-        kwargs = self._chat_call_kwargs(
-            messages, options, think, output_format, stream=True
+        kwargs = self._build_call_kwargs(
+            primary_key="messages",
+            primary_value=messages,
+            options=options,
+            think=think,
+            output_format=output_format,
+            stream=True,
         )
         iterator = await self._with_think_fallback_async(
             self._async_client.chat, think, kwargs
@@ -284,8 +297,13 @@ class OllamaProvider(LLMProvider):
     ) -> StreamResult:
         """Stream a generate response, yielding text chunks."""
         options = self._build_options(temperature, max_tokens, seed)
-        kwargs = self._generate_call_kwargs(
-            prompt, options, think, output_format, stream=True
+        kwargs = self._build_call_kwargs(
+            primary_key="prompt",
+            primary_value=prompt,
+            options=options,
+            think=think,
+            output_format=output_format,
+            stream=True,
         )
         iterator = self._with_think_fallback(generate, think, kwargs)
         return StreamResult(iterator, "generate")
@@ -301,8 +319,13 @@ class OllamaProvider(LLMProvider):
     ) -> AsyncStreamResult:
         """Stream a generate response asynchronously."""
         options = self._build_options(temperature, max_tokens, seed)
-        kwargs = self._generate_call_kwargs(
-            prompt, options, think, output_format, stream=True
+        kwargs = self._build_call_kwargs(
+            primary_key="prompt",
+            primary_value=prompt,
+            options=options,
+            think=think,
+            output_format=output_format,
+            stream=True,
         )
         iterator = await self._with_think_fallback_async(
             self._async_client.generate, think, kwargs

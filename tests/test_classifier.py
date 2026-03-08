@@ -10,6 +10,9 @@ from agents7.models import ClassificationProperty
 from agents7.models.demo import Sentiment
 
 
+# --- Initialization & prompt ---
+
+
 def test_classifier_initialization(sentiment_classifier: Classifier) -> None:
     """Test that the classifier initializes from YAML config."""
     assert sentiment_classifier is not None
@@ -23,6 +26,9 @@ def test_classifier_prompt_exists(sentiment_classifier: Classifier) -> None:
     assert sentiment_classifier.prompt is not None
     assert len(sentiment_classifier.prompt.strip()) > 0
     assert "category" in sentiment_classifier.prompt.lower()
+
+
+# --- Enum properties ---
 
 
 def test_possible_categories(sentiment_classifier: Classifier) -> None:
@@ -43,10 +49,16 @@ def test_possible_reasons(sentiment_classifier: Classifier) -> None:
     assert "NOT_APPLICABLE" in reasons  # Auto-added
 
 
+# --- Edge cases ---
+
+
 def test_empty_input(sentiment_classifier: Classifier) -> None:
     """Test behavior with empty input."""
     response = sentiment_classifier.act_in_batch([])
     assert response == []
+
+
+# --- NOT_APPLICABLE auto-extension ---
 
 
 def test_not_applicable_added_to_category() -> None:
@@ -70,6 +82,9 @@ def test_not_applicable_added_to_category() -> None:
 
     assert hasattr(category_enum, "NOT_APPLICABLE")
     assert hasattr(reason_enum, "NOT_APPLICABLE")
+
+
+# --- Validation ---
 
 
 def test_category_reason_validation() -> None:
