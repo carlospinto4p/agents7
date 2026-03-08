@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
+import streamlit as st
+
+_cache_resource = st.cache_resource
+
 
 def render_model_selector(
     sd: dict,
@@ -18,8 +24,6 @@ def render_model_selector(
     :param key_prefix: Streamlit widget key prefix to
         avoid duplicate keys across pages.
     """
-    import streamlit as st
-
     connected = check_connection()
     if connected:
         models = list_available_models()
@@ -52,7 +56,17 @@ def render_model_selector(
 
 
 def check_connection() -> bool:
-    """Return True if the Ollama server is reachable."""
+    """Return True if the Ollama server is reachable.
+
+    Results are cached for 30 seconds via
+    ``_cached_check_connection``.
+    """
+    return _cached_check_connection()
+
+
+@_cache_resource(ttl=timedelta(seconds=30))
+def _cached_check_connection() -> bool:
+    """Check Ollama connectivity (cached)."""
     try:
         import httpx
         import ollama
@@ -68,8 +82,16 @@ def check_connection() -> bool:
 def list_available_models() -> list[str]:
     """Return sorted model names from the local Ollama server.
 
+    Results are cached for 30 seconds via
+    ``_cached_list_available_models``.
     Returns an empty list when Ollama is unreachable.
     """
+    return _cached_list_available_models()
+
+
+@_cache_resource(ttl=timedelta(seconds=30))
+def _cached_list_available_models() -> list[str]:
+    """Fetch Ollama model names (cached)."""
     try:
         import httpx
         import ollama

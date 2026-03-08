@@ -185,12 +185,8 @@ def _render_batch_test(state: AgentBuilderState) -> None:
         else:
             try:
                 agent = build_agent_from_state(state)
-                progress = st.progress(0)
-                results = []
-                for i, inp in enumerate(inputs):
-                    resp = agent.act(inp)
-                    results.append(resp)
-                    progress.progress((i + 1) / len(inputs))
+                with st.spinner("Running batch..."):
+                    results = agent.act_in_batch(inputs, iter_func=None)
                 for resp in results:
                     _show_response(resp)
                     st.divider()

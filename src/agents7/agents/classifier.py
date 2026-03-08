@@ -48,6 +48,16 @@ class Classifier(Detector):
                 "`agents7.models.ClassificationProperty`"
                 " for `Classifier` agents."
             )
+        object.__setattr__(
+            self,
+            "_possible_categories",
+            extract_enum_members(self.output_model, "category"),
+        )
+        object.__setattr__(
+            self,
+            "_possible_reasons",
+            extract_enum_members(self.output_model, "reason"),
+        )
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Classifier":
@@ -66,12 +76,12 @@ class Classifier(Detector):
     @property
     def possible_categories(self) -> dict[str, str]:
         """Possible categories from the output model's enum."""
-        return extract_enum_members(self.output_model, "category")
+        return self._possible_categories
 
     @property
     def possible_reasons(self) -> dict[str, str]:
         """Possible reasons from the output model's reason enum."""
-        return extract_enum_members(self.output_model, "reason")
+        return self._possible_reasons
 
     @property
     def category_reasons_constraints(self) -> str:

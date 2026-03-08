@@ -49,6 +49,11 @@ class Detector(Labeler):
                 "`output_model` must be a subclass of "
                 "`agents7.models.Property` for the `Detector` agents."
             )
+        object.__setattr__(
+            self,
+            "_possible_reasons",
+            extract_enum_members(self.output_model, "reason"),
+        )
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Detector":
@@ -69,7 +74,7 @@ class Detector(Labeler):
     @property
     def possible_reasons(self) -> dict[str, str]:
         """Possible reasons from the output model's reason enum."""
-        return extract_enum_members(self.output_model, "reason")
+        return self._possible_reasons
 
     @property
     def prompt(self) -> str:

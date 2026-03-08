@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v1.4.21 - 8th March 2026
+
+- Module `agents7.agents.detector`:
+  - Cache `possible_reasons` in `__post_init__` instead of
+    calling `extract_enum_members()` on every property access.
+- Module `agents7.agents.classifier`:
+  - Cache `possible_categories` and `possible_reasons` in
+    `__post_init__` instead of calling `extract_enum_members()`
+    on every property access.
+- Module `agents7.ui.ollama_utils`:
+  - Cache `check_connection()` and `list_available_models()`
+    with `@st.cache_resource` and 30-second TTL.
+  - Move `streamlit` import to module level.
+- Module `agents7.ui._pages.3_Test`:
+  - Replace per-item `act()` loop with `act_in_batch()` in
+    batch test tab.
+
+
 ### v1.4.20 - 8th March 2026
 
 - Module `agents7.agents.labeler`:

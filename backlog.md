@@ -71,14 +71,14 @@
 
 #### Library — MEDIUM impact
 
-- [ ] Cache `possible_categories` / `possible_reasons` in `Classifier.__post_init__` instead of calling `extract_enum_members()` on every property access (`classifier.py:67`).
-- [ ] Cache `prompt` / `prompt_for_batch` after first build instead of regenerating on every access (`labeler.py:110-121`).
-- [ ] Use `asyncio.gather` or batch calls in `Pipeline.act_async` where steps are independent (`pipeline.py:239`).
+- [x] Cache `possible_categories` / `possible_reasons` in `Classifier.__post_init__` and `Detector.__post_init__` — done in v1.4.21.
+- [ ] Cache `prompt` / `prompt_for_batch` after first build instead of regenerating on every access (`labeler.py:110-121`). **Skipped**: prompts can be dynamic when `prompt_params` contains callables.
+- [ ] ~~Use `asyncio.gather` or batch calls in `Pipeline.act_async` where steps are independent (`pipeline.py:239`).~~ **Not applicable**: pipeline steps are inherently sequential (each feeds into the next).
 
 #### UI — HIGH impact
 
-- [ ] Cache Ollama connection check and model list in `render_model_selector()` with `@st.cache_resource` and TTL (`ollama_utils.py:23-25`).
-- [ ] Use `agent.act_in_batch()` in batch test instead of calling `act()` in a loop (`3_Test.py:187`).
+- [x] Cache Ollama connection check and model list with `@st.cache_resource` and 30s TTL — done in v1.4.21.
+- [x] Use `agent.act_in_batch()` in batch test instead of calling `act()` in a loop — done in v1.4.21.
 
 #### UI — MEDIUM impact
 
