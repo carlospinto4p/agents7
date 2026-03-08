@@ -211,7 +211,7 @@ engine:
     provider: ollama
     model: qwen3
     fallback_model: qwen2.5:3b  # optional: retry with this model on failure
-think: false  # optional: disable thinking mode (default: true)
+think: true  # optional: enable thinking mode (default: false)
 system_prompt: |
   Analyze the sentiment of text collected on $date.
 prompt_params:
@@ -297,24 +297,24 @@ engine = LLMEngine(
 
 ### Thinking Mode
 
-Thinking mode (`think`) lets the model reason before answering. It defaults to `True` for all agents. Disable it per agent when the task is simple enough that reasoning adds latency without improving accuracy.
+Thinking mode (`think`) lets the model reason before answering. It defaults to `False` for all agents, since constrained extraction tasks rarely benefit from reasoning (see [docs/model-selection.md](docs/model-selection.md)). Enable it per agent when the task genuinely requires multi-step inference.
 
 **YAML configuration:**
 
 ```yaml
-think: false
+think: true
 ```
 
 **Python configuration:**
 
 ```python
 agent = Labeler(
-    name="FastExtractor",
+    name="ReasoningExtractor",
     version=1,
     engine=engine,
     system_prompt="Extract person info.",
     output_model=PersonInfo,
-    think=False,
+    think=True,
 )
 ```
 

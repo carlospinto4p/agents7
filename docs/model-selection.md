@@ -101,9 +101,10 @@ smaller models pick correctly more often.
 
 ### 5. Thinking mode amplifies the problem
 
-agents7 enables thinking mode (`think=True`) by default, which
-lets the model reason before answering. For large models, this
-extra reasoning step often leads to over-analysis:
+agents7 disables thinking mode (`think=False`) by default.
+When enabled, it lets the model reason before answering. For
+large models, this extra reasoning step often leads to
+over-analysis:
 
 - The model considers edge cases that don't exist
 - It second-guesses the obvious classification
@@ -113,6 +114,41 @@ Smaller models use the thinking step more directly: they
 restate the task, check the options, and pick one. Less
 reasoning capacity means less room for the model to convince
 itself of the wrong answer.
+
+Because thinking mode is harmful more often than helpful for
+constrained extraction, agents7 defaults to `think=False`.
+Users can opt in per agent (`think: true` in YAML) when the
+task genuinely requires multi-step reasoning.
+
+
+## How agents7 addresses these issues
+
+Based on these findings, agents7 includes several design features
+that improve structured extraction reliability:
+
+### NOT_APPLICABLE prompt guidance
+
+All Property-based agents (Detector, Classifier, Regressor) inject
+an explicit section into their prompts instructing the model to use
+NOT_APPLICABLE when the input has no connection to the property
+being detected, and to not infer, speculate, or make assumptions.
+This gives the model explicit permission to say "not applicable"
+rather than guessing.
+
+### Thinking mode off by default
+
+The `think` field defaults to `False`. Users can enable it per
+agent when the task genuinely benefits from reasoning, but for
+most classification and extraction tasks, disabling thinking
+produces better results with lower latency.
+
+### Fallback model
+
+The engine supports an optional `fallback_model`. When the primary
+model fails, the engine retries with the fallback. This enables
+using a larger model as primary with a smaller, more reliable
+fallback — or simply providing resilience against model-specific
+failures.
 
 
 ## Practical guidance

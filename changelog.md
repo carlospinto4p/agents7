@@ -4,7 +4,7 @@
 ### v1.4.25 - 8th March 2026
 
 - Module `agents7.agents.labeler`:
-  - New `think` field (default `True`) to control thinking mode
+  - New `think` field (default `False`) to control thinking mode
     per agent. Can be overridden per call via `chat_kwargs`.
   - `_sanitize_chat_kwargs` now uses agent's `think` default
     instead of hardcoding `True`.
@@ -30,6 +30,12 @@
   referencing `docs/model-selection.md`.
 - `README.md`: Added documentation for fallback model, thinking
   mode configuration, and updated YAML example.
+- `docs/design.md`: Added sections on thinking mode, NOT_APPLICABLE
+  prompt guidance, and fallback model. Updated structured output
+  flow and design principles table.
+- `docs/model-selection.md`: Updated thinking mode section to
+  reflect `think=False` default. Added "How agents7 addresses
+  these issues" section.
 - `backlog.md`: Added design improvement items.
 
 

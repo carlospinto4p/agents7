@@ -122,7 +122,7 @@ Every `act()` call follows the same pipeline:
 2. Call LLM
    ├── temperature = 0 (deterministic)
    ├── output_format = model JSON schema (structured output)
-   └── think = True (let the model reason before answering)
+   └── think = agent.think (default False; opt-in reasoning)
 
 3. Parse response
    ├── Fix malformed JSON (strip markdown fences, fix doubled braces)
@@ -292,14 +292,92 @@ or other backends requires only a new `LLMProvider` subclass,
 with no changes to agent code.
 
 
+## Thinking mode
+
+The `think` field on `Labeler` (and all subclasses) controls whether
+the LLM reasons before generating its structured output. It defaults
+to `False`.
+
+**Why default to False?**
+
+Thinking mode asks the model to produce a chain-of-thought before
+answering. For complex, open-ended tasks this improves quality.
+But for constrained extraction — which is what agents7 is designed
+for — thinking often hurts:
+
+- **Over-reasoning.** The model considers edge cases that don't
+  exist, second-guesses obvious classifications, and finds
+  creative justifications for wrong answers (see
+  [model-selection.md](model-selection.md)).
+- **NOT_APPLICABLE resistance.** Extra reasoning gives the model
+  more room to talk itself out of "not applicable" and into a
+  wrong answer.
+- **Latency.** Thinking tokens add to response time without
+  improving accuracy on classification and extraction tasks.
+
+Users can opt in per agent (`think: true` in YAML or
+`think=True` in Python) when the task genuinely benefits from
+reasoning — for example, tasks requiring domain knowledge or
+multi-step inference. The setting can also be overridden per
+call via `chat_kwargs={"think": True}`.
+
+
+## NOT_APPLICABLE prompt guidance
+
+All `Property`-based agents (Detector, Classifier, Regressor)
+inject an explicit guidance section into their prompts:
+
+> Use NOT_APPLICABLE when the input has no connection to the
+> property being detected. Do not infer, speculate, or make
+> assumptions beyond what is explicitly stated or clearly
+> implied.
+
+This guidance addresses a common failure mode: larger models
+resist saying "not applicable" because their RLHF training
+rewards providing an answer. The explicit instruction gives the
+model permission to classify as NOT_APPLICABLE and discourages
+speculative reasoning.
+
+See [model-selection.md](model-selection.md) for detailed
+analysis of why this matters.
+
+
+## Fallback model
+
+The `LLMEngine` supports an optional `fallback_model`:
+
+```yaml
+engine:
+    provider: ollama
+    model: gemma3:12b
+    fallback_model: qwen2.5:3b
+```
+
+When the primary model fails after exhausting retries, the engine
+automatically retries the same call with the fallback model. If
+the fallback also fails, the primary error is raised.
+
+**Use cases:**
+
+- **Resilience.** If the primary model is unavailable or
+  overloaded, the fallback provides continuity.
+- **Model-specific failures.** Some models fail on certain inputs
+  (structured output format issues, thinking mode not supported).
+  A fallback with different characteristics can handle these
+  cases.
+- **Cost/quality tradeoff.** Use a larger model as primary for
+  quality, with a smaller fallback for availability.
+
+
 ## Summary of design principles
 
 | Principle | How |
 |-----------|-----|
 | **Structured over free-text** | Pydantic models define the output shape; the LLM fills it |
 | **Explainable by default** | Reason enums force the LLM to justify every decision |
-| **Fail-safe** | NOT_APPLICABLE auto-injected; multi-stage parsing recovery |
+| **Fail-safe** | NOT_APPLICABLE auto-injected with prompt guidance; multi-stage parsing recovery; fallback model |
 | **Deterministic** | Temperature 0; response caching; frozen agent configs |
+| **Minimal reasoning** | Thinking mode off by default; smaller models preferred for constrained tasks |
 | **Config-driven** | YAML for prompts and examples; Python for models and logic |
 | **Scalable** | Batch chunking; async concurrency; semaphore limits |
 | **Composable** | Pipelines chain agents; validators add post-processing |

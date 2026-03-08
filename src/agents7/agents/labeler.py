@@ -46,14 +46,14 @@ class Labeler(BaseAgent):
             BaseModel and returns it (possibly modified). Raising
             rejects the model (sets it to None). Defaults to None.
         think (bool, optional): Whether to enable thinking mode
-            for LLM calls. Defaults to True. Can be overridden
+            for LLM calls. Defaults to False. Can be overridden
             per call via `chat_kwargs`.
     """
 
     output_model: type[BaseModel]
     examples: list[dict] | None = None
     validators: list[Callable[[BaseModel], BaseModel]] | None = None
-    think: bool = field(default=True, kw_only=True)
+    think: bool = field(default=False, kw_only=True)
 
     def __post_init__(self):
         """
