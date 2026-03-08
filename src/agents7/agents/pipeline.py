@@ -26,10 +26,17 @@ class PipelineStep:
             maps the agent response to the input dict for the
             next step. Defaults to `default_mapper` which
             calls `model.model_dump()`.
+        condition (Callable[[dict], bool] | None): Optional
+            gate evaluated *before* executing the step. It
+            receives the current input dict. If it returns
+            ``False``, the step is skipped and the input is
+            passed unchanged to the next step. Defaults to
+            ``None`` (always execute).
     """
 
     agent: BaseAgent
     mapper: Callable[[AgentResponse], dict] | None = None
+    condition: Callable[[dict], bool] | None = None
 
     def __post_init__(self):
         if not isinstance(self.agent, BaseAgent):
@@ -40,6 +47,8 @@ class PipelineStep:
             object.__setattr__(self, "mapper", PipelineStep.default_mapper)
         if not callable(self.mapper):
             raise PipelineConfigurationError("`mapper` must be callable.")
+        if self.condition is not None and not callable(self.condition):
+            raise PipelineConfigurationError("`condition` must be callable.")
 
     @staticmethod
     def default_mapper(response: AgentResponse) -> dict:
@@ -221,6 +230,10 @@ class Pipeline:
         executed_steps: list[AgentResponse] = []
 
         for i, step in enumerate(self.steps):
+            if step.condition is not None and not step.condition(
+                current_input
+            ):
+                continue
             response = step.agent.act(current_input, chat_kwargs=chat_kwargs)
             result = self._process_step_result(
                 i, step, response, executed_steps
@@ -249,6 +262,10 @@ class Pipeline:
         executed_steps: list[AgentResponse] = []
 
         for i, step in enumerate(self.steps):
+            if step.condition is not None and not step.condition(
+                current_input
+            ):
+                continue
             response = await step.agent.act_async(
                 current_input, chat_kwargs=chat_kwargs
             )
@@ -261,6 +278,31 @@ class Pipeline:
                 current_input = result
 
         return self._pipeline_result(executed_steps, True)
+
+    @staticmethod
+    def _partition_by_condition(
+        step: PipelineStep,
+        active: dict[int, dict],
+    ) -> tuple[list[int], dict[int, dict]]:
+        """Split active items into those that pass the
+        condition and those that are skipped.
+
+        :param step: The pipeline step with an optional
+            condition.
+        :param active: Currently active items.
+        :return: Tuple of (ordered indices to execute,
+            skipped items dict).
+        """
+        if step.condition is None:
+            return sorted(active.keys()), {}
+        to_run: list[int] = []
+        skipped: dict[int, dict] = {}
+        for idx in sorted(active.keys()):
+            if step.condition(active[idx]):
+                to_run.append(idx)
+            else:
+                skipped[idx] = active[idx]
+        return to_run, skipped
 
     def act_in_batch(
         self,
@@ -287,7 +329,10 @@ class Pipeline:
         for step_idx, step in enumerate(self.steps):
             if not active:
                 break
-            ordered = sorted(active.keys())
+            ordered, skipped = self._partition_by_condition(step, active)
+            if not ordered:
+                active = skipped
+                continue
             batch_inputs = [active[i] for i in ordered]
             batch_responses = [
                 step.agent.act(inp, chat_kwargs=chat_kwargs)
@@ -301,6 +346,7 @@ class Pipeline:
                 per_input_steps,
                 failed,
             )
+            active.update(skipped)
 
         return self._assemble_batch_results(n, per_input_steps, failed)
 
@@ -345,7 +391,10 @@ class Pipeline:
         for step_idx, step in enumerate(self.steps):
             if not active:
                 break
-            ordered = sorted(active.keys())
+            ordered, skipped = self._partition_by_condition(step, active)
+            if not ordered:
+                active = skipped
+                continue
             batch_inputs = [active[i] for i in ordered]
             batch_responses = list(
                 await asyncio.gather(
@@ -369,6 +418,7 @@ class Pipeline:
                 per_input_steps,
                 failed,
             )
+            active.update(skipped)
 
         return self._assemble_batch_results(n, per_input_steps, failed)
 
@@ -416,6 +466,18 @@ class Pipeline:
             else:
                 mapper = PipelineStep.default_mapper
 
-            pipeline_steps.append(PipelineStep(agent=agent, mapper=mapper))
+            # Resolve condition
+            condition_path = step_config.get("condition")
+            condition = (
+                import_from_path(condition_path) if condition_path else None
+            )
+
+            pipeline_steps.append(
+                PipelineStep(
+                    agent=agent,
+                    mapper=mapper,
+                    condition=condition,
+                )
+            )
 
         return cls(steps=pipeline_steps)

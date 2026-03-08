@@ -1,5 +1,7 @@
 """YAML configuration loading for agents."""
 
+import os
+
 from cpinto.files import load_yaml
 
 from agents7.agents.utils import (
@@ -12,11 +14,70 @@ from agents7.llm.cache import CacheConfig
 from agents7.llm.retry import RetryConfig
 
 
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge *override* into *base*.
+
+    For nested dicts, values are merged recursively.
+    For all other types, *override* wins.
+
+    :param base: Base configuration dictionary.
+    :param override: Override dictionary (takes priority).
+    :return: Merged dictionary (new dict, inputs unchanged).
+    """
+    merged = dict(base)
+    for key, value in override.items():
+        if (
+            key in merged
+            and isinstance(merged[key], dict)
+            and isinstance(value, dict)
+        ):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def _resolve_inheritance(
+    file_path: str,
+    _seen: set[str] | None = None,
+) -> dict:
+    """Load a YAML config, resolving ``base_config`` chain.
+
+    :param file_path: Path to the YAML file.
+    :param _seen: Set of already-visited paths (for
+        circular-reference detection).
+    :return: Fully merged configuration dictionary.
+    :raises AgentConfigurationError: On circular references.
+    """
+    resolved = os.path.abspath(file_path)
+    if _seen is None:
+        _seen = set()
+    if resolved in _seen:
+        raise AgentConfigurationError(
+            f"Circular base_config reference detected: "
+            f"`{file_path}` was already visited."
+        )
+    _seen.add(resolved)
+
+    config = load_yaml(file_path)
+    base_path = config.pop("base_config", None)
+    if base_path is None:
+        return config
+
+    # Resolve relative paths from the current file's directory
+    if not os.path.isabs(base_path):
+        base_path = os.path.join(os.path.dirname(resolved), base_path)
+
+    base_config = _resolve_inheritance(base_path, _seen)
+    return _deep_merge(base_config, config)
+
+
 def load_yaml_settings(file_path: str) -> dict:
     """Load agent settings from a YAML file.
 
     :param file_path: The path to the YAML file. Schema:
         ```yaml
+        base_config: <path to a base YAML config>
         name: <name of the agent>
         version: <version of the agent>
         engine:
@@ -37,8 +98,15 @@ def load_yaml_settings(file_path: str) -> dict:
         output_model: <path to the pydantic model class, e.g.
             "agents7.models.MyOutputModel">
         ```
-        The fields `prompt_params`, `system_examples`,
-        `think`, and `fallback_model` are optional.
+        The fields `base_config`, `prompt_params`,
+        `system_examples`, `think`, and `fallback_model`
+        are optional.
+
+        When ``base_config`` is specified, the base YAML is
+        loaded first and the current file's keys override
+        it. Nested dicts (e.g. ``engine``) are merged
+        recursively. Inheritance chains are supported
+        (A → B → C) but circular references raise an error.
     :return: Loaded configuration, as a dictionary. Keys:
         - name (str): The name of the agent.
         - version (int): The version of the agent.
@@ -50,7 +118,7 @@ def load_yaml_settings(file_path: str) -> dict:
             validate and structure the output.
         - examples (list[dict], optional): List of examples.
     """
-    config = load_yaml(file_path)
+    config = _resolve_inheritance(file_path)
     validate_yaml_config(config, file_path)
 
     examples = parse_yaml_examples(config, file_path)

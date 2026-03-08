@@ -53,7 +53,7 @@ Pipeline (chains multiple agents sequentially)
 - `Detector`: Specialized `Labeler` for property extraction (value + reason)
 - `Classifier`: For categorical classification with category + reason enums
 - `Regressor`: For numeric value extraction with reason enum
-- `Pipeline`: Chains multiple agents sequentially with optional custom mappers between steps (async batch supports `BatchSettings`). Use `Pipeline.from_agents([a1, a2])` for simple sequential chains without custom mappers
+- `Pipeline`: Chains multiple agents sequentially with optional custom mappers and conditional step execution (async batch supports `BatchSettings`). Use `Pipeline.from_agents([a1, a2])` for simple sequential chains without custom mappers
 
 ### Models Layer (`agents7.models`)
 
@@ -206,6 +206,7 @@ Unmatched `$placeholders` are left as-is (safe_substitute). Callable values are 
 ### YAML Configuration
 
 ```yaml
+base_config: configs/shared_base.yml  # optional: inherit from parent config
 name: MyClassifier
 version: 1
 engine:
@@ -226,6 +227,8 @@ system_examples:
 ```
 
 Note: YAML `prompt_params` only supports static values (cast to strings). For callable values, use Python code instantiation.
+
+**Config inheritance:** When `base_config` is specified, the base YAML is loaded first and the current file's keys override it. Nested dicts (e.g. `engine`) are merged recursively. Chains are supported (A inherits B inherits C) and circular references are detected.
 
 ### Retry / Resilience
 
@@ -662,6 +665,22 @@ steps:
 - `agent`: Path to the agent's YAML config file (required)
 - `agent_type`: Dotted import path to the agent class (optional, defaults to `Labeler`)
 - `mapper`: Dotted import path to a mapper function (optional, defaults to `model.model_dump()`)
+- `condition`: Dotted import path to a condition function (optional, defaults to always execute)
+
+**Conditional steps:** Add a `condition` callable to `PipelineStep` to gate execution. The condition receives the current input dict and returns `bool`. If `False`, the step is skipped and the input passes unchanged to the next step:
+
+```python
+def has_name(input_data: dict) -> bool:
+    return bool(input_data.get("name"))
+
+pipeline = Pipeline(steps=[
+    PipelineStep(agent=extractor),
+    PipelineStep(agent=enricher, condition=has_name),
+    PipelineStep(agent=formatter),
+])
+```
+
+In batch mode, conditions are evaluated per-item: items that fail the condition skip the step while others proceed normally.
 
 For simple sequential chains without custom mappers, use `from_agents`:
 

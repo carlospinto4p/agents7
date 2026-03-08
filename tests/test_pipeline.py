@@ -615,3 +615,204 @@ def test_from_agents_empty_raises():
     """from_agents with empty list raises."""
     with pytest.raises(PipelineConfigurationError):
         Pipeline.from_agents([])
+
+
+# --- Conditional PipelineStep Tests ---
+
+
+def _always_true(input_data: dict) -> bool:
+    return True
+
+
+def _always_false(input_data: dict) -> bool:
+    return False
+
+
+def _has_text(input_data: dict) -> bool:
+    return bool(input_data.get("text"))
+
+
+def test_condition_must_be_callable():
+    """Non-callable condition raises PipelineConfigurationError."""
+    agent = _make_labeler()
+    with pytest.raises(PipelineConfigurationError):
+        PipelineStep(agent=agent, condition="not-callable")
+
+
+def test_condition_none_allowed():
+    """None condition (default) is valid."""
+    agent = _make_labeler()
+    step = PipelineStep(agent=agent, condition=None)
+    assert step.condition is None
+
+
+def test_condition_callable_accepted():
+    """Callable condition is accepted."""
+    agent = _make_labeler()
+    step = PipelineStep(agent=agent, condition=_has_text)
+    assert step.condition is _has_text
+
+
+@patch.object(LLMEngine, "chat")
+def test_condition_true_executes_step(mock_chat):
+    """Step with condition=True is executed normally."""
+    mock_chat.return_value = {
+        "role": "assistant",
+        "response": json.dumps({"name": "Alice"}),
+        "thinking": None,
+        "metrics": DUMMY_METRICS,
+    }
+    agent = _make_labeler(StepOneOutput)
+    pipeline = Pipeline(
+        steps=[PipelineStep(agent=agent, condition=_always_true)]
+    )
+
+    result = pipeline.act({"text": "test"})
+
+    assert result.success is True
+    assert result.model.name == "Alice"
+    assert mock_chat.call_count == 1
+
+
+@patch.object(LLMEngine, "chat")
+def test_condition_false_skips_step(mock_chat):
+    """Step with condition=False is skipped."""
+    mock_chat.return_value = {
+        "role": "assistant",
+        "response": json.dumps({"name": "Alice"}),
+        "thinking": None,
+        "metrics": DUMMY_METRICS,
+    }
+    agent1 = _make_labeler(StepOneOutput)
+    agent2 = _make_labeler(StepOneOutput)
+    pipeline = Pipeline(
+        steps=[
+            PipelineStep(agent=agent1, condition=_always_false),
+            PipelineStep(agent=agent2),
+        ]
+    )
+
+    result = pipeline.act({"text": "test"})
+
+    assert result.success is True
+    # Only agent2 was called (agent1 was skipped)
+    assert mock_chat.call_count == 1
+    assert len(result.steps) == 1
+
+
+@patch.object(LLMEngine, "chat")
+def test_condition_skips_middle_step(mock_chat):
+    """Middle step skipped, first and last still execute."""
+    mock_chat.side_effect = [
+        {
+            "role": "assistant",
+            "response": json.dumps({"name": "Alice"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+        {
+            "role": "assistant",
+            "response": json.dumps({"greeting": "Hi"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+    ]
+    agent1 = _make_labeler(StepOneOutput)
+    agent_skip = _make_labeler(StepOneOutput)
+    agent3 = _make_labeler(StepTwoOutput)
+    pipeline = Pipeline(
+        steps=[
+            PipelineStep(
+                agent=agent1,
+                mapper=_step_one_to_step_two,
+            ),
+            PipelineStep(
+                agent=agent_skip,
+                condition=_always_false,
+            ),
+            PipelineStep(agent=agent3),
+        ]
+    )
+
+    result = pipeline.act({"text": "test"})
+
+    assert result.success is True
+    assert mock_chat.call_count == 2
+    assert len(result.steps) == 2
+
+
+@patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_async_condition_skips_step(mock_chat):
+    """Async pipeline respects step conditions."""
+    mock_chat.return_value = {
+        "role": "assistant",
+        "response": json.dumps({"name": "Bob"}),
+        "thinking": None,
+        "metrics": DUMMY_METRICS,
+    }
+    agent1 = _make_labeler(StepOneOutput)
+    agent2 = _make_labeler(StepOneOutput)
+    pipeline = Pipeline(
+        steps=[
+            PipelineStep(agent=agent1, condition=_always_false),
+            PipelineStep(agent=agent2),
+        ]
+    )
+
+    result = await pipeline.act_async({"text": "test"})
+
+    assert result.success is True
+    assert mock_chat.call_count == 1
+
+
+@patch.object(LLMEngine, "chat")
+def test_batch_condition_skips_for_some_items(mock_chat):
+    """Batch: condition filters items per step."""
+    mock_chat.side_effect = [
+        # Step 1 processes both items
+        {
+            "role": "assistant",
+            "response": json.dumps({"name": "Alice"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+        {
+            "role": "assistant",
+            "response": json.dumps({"name": ""}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+        # Step 2 only processes item 0 (has text)
+        {
+            "role": "assistant",
+            "response": json.dumps({"greeting": "Hi"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+    ]
+
+    def name_present(input_data: dict) -> bool:
+        return bool(input_data.get("name"))
+
+    agent1 = _make_labeler(StepOneOutput)
+    agent2 = _make_labeler(StepTwoOutput)
+    pipeline = Pipeline(
+        steps=[
+            PipelineStep(agent=agent1),
+            PipelineStep(
+                agent=agent2,
+                condition=name_present,
+            ),
+        ]
+    )
+
+    results = pipeline.act_in_batch([{"text": "a"}, {"text": "b"}])
+
+    assert len(results) == 2
+    # Item 0 went through both steps
+    assert results[0].success is True
+    assert results[0].model.greeting == "Hi"
+    # Item 1 skipped step 2, still succeeds with step 1 model
+    assert results[1].success is True
+    assert results[1].model.name == ""

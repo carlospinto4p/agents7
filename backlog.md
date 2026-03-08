@@ -154,8 +154,8 @@
 
 #### LOW impact
 
-- [ ] YAML config inheritance: support `base_config` key that merges a parent YAML into the current one — reduces duplication when many agents share engine/examples.
-- [ ] Conditional pipeline steps: add optional `condition: Callable` to `PipelineStep` — enables branching without custom code (skip step if condition returns False).
+- [x] YAML config inheritance: support `base_config` key that merges a parent YAML into the current one — done in v2.4.0.
+- [x] Conditional pipeline steps: add optional `condition: Callable` to `PipelineStep` — done in v2.4.0.
 
 ### Infrastructure
 

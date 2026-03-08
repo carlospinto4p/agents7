@@ -1,6 +1,34 @@
 
 ## Changelog - Agents7
 
+### v2.4.0 - 8th March 2026
+
+- Module `agents7.agents.config_loader`:
+  - New `base_config` key in YAML: inherits from a parent
+    config file. Nested dicts (e.g. `engine`) are merged
+    recursively. Chains supported; circular references
+    detected.
+  - New helpers `_deep_merge()` and `_resolve_inheritance()`.
+- Module `agents7.agents.pipeline`:
+  - `PipelineStep` gains optional `condition` field: a
+    callable receiving the current input dict. When it
+    returns `False`, the step is skipped and input passes
+    unchanged to the next step.
+  - `Pipeline.from_yaml()` supports `condition` key
+    (dotted import path).
+  - Batch modes (`act_in_batch`, `act_in_batch_async`)
+    evaluate conditions per-item via new
+    `_partition_by_condition()` helper.
+- Tests:
+  - New `test_config_inheritance.py` (11 tests): deep merge,
+    single/chained inheritance, circular detection, relative
+    paths.
+  - `test_pipeline.py`: 8 new tests for conditional steps
+    (validation, sync, async, batch with per-item filtering).
+- `README.md`: documented `base_config` inheritance and
+  conditional pipeline steps.
+
+
 ### v2.3.0 - 8th March 2026
 
 - Module `agents7.agents.pipeline`:
