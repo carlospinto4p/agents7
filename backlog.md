@@ -72,7 +72,7 @@
 #### Library — MEDIUM impact
 
 - [x] Cache `possible_categories` / `possible_reasons` in `Classifier.__post_init__` and `Detector.__post_init__` — done in v1.4.21.
-- [ ] Cache `prompt` / `prompt_for_batch` after first build instead of regenerating on every access (`labeler.py:110-121`). **Skipped**: prompts can be dynamic when `prompt_params` contains callables.
+- [x] ~~Cache `prompt` / `prompt_for_batch` after first build.~~ **Skipped**: prompt building is string concatenation — negligible cost compared to the LLM call. Not worth the complexity.
 - [ ] ~~Use `asyncio.gather` or batch calls in `Pipeline.act_async` where steps are independent (`pipeline.py:239`).~~ **Not applicable**: pipeline steps are inherently sequential (each feeds into the next).
 
 #### UI — HIGH impact
