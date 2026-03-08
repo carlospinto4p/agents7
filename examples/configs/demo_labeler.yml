@@ -4,7 +4,7 @@ name: PersonExtractor
 version: 1
 engine:
     provider: ollama
-    model: qwen3:4b
+    model: qwen2.5:3b
 system_prompt: |
   Extract information about people from the given text.
 

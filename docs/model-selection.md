@@ -202,8 +202,9 @@ suite, which runs real LLM calls against Ollama:
 
 | Model | Size | Structured extraction | NOT_APPLICABLE | Notes |
 |-------|------|----------------------|----------------|-------|
-| `qwen2.5:3b` | 3B | Reliable | Reliable | Good default for detection and regression |
-| `qwen3:4b` | 4B | Reliable | Reliable | Good for labeling and pipelines |
+| `qwen3:1.7b` | 1.7B | Reliable (single) | Reliable (single) | Fastest; unreliable under concurrent load |
+| `qwen2.5:3b` | 3B | Reliable | Reliable (single) | Good default for detection, regression, labeling |
+| `qwen3:4b` | 4B | Reliable | Reliable | Handles batch NOT_APPLICABLE; good for complex prompts |
 | `gemma3:4b` | 4B | Reliable | Reliable | Works for single-case detection |
 | `gemma3:12b` | 12B | Works | **Unreliable** | Over-interprets; avoids NOT_APPLICABLE |
 

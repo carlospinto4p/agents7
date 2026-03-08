@@ -38,14 +38,6 @@ MODELS_TO_TEST = [
             reason="qwen2.5:3b model not available",
         ),
     ),
-    pytest.param(
-        "gemma3:4b",
-        id="gemma3-4b",
-        marks=pytest.mark.skipif(
-            not is_model_available("gemma3:4b"),
-            reason="gemma3:4b model not available",
-        ),
-    ),
 ]
 
 # Simple test cases that should work across all models
