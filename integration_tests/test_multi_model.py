@@ -149,11 +149,11 @@ def test_temperature_detection_across_models(
 # Models that support batch processing reliably
 MODELS_FOR_BATCH = [
     pytest.param(
-        "qwen2.5:3b",
-        id="qwen2.5-3b",
+        "qwen3:4b",
+        id="qwen3-4b",
         marks=pytest.mark.skipif(
-            not is_model_available("qwen2.5:3b"),
-            reason="qwen2.5:3b model not available",
+            not is_model_available("qwen3:4b"),
+            reason="qwen3:4b model not available",
         ),
     ),
 ]
