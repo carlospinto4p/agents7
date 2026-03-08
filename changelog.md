@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v1.4.20 - 8th March 2026
+
+- Module `agents7.agents.labeler`:
+  - Cache `output_model_list` (`create_model`) and both
+    `model_json_schema()` results in `__post_init__` instead
+    of regenerating on every property access and `act()` call.
+- Module `agents7.llm.ollama`:
+  - Reuse a single `AsyncClient` instance per `OllamaProvider`
+    instead of creating a new one on every async call.
+
+
 ### v1.4.19 - 8th March 2026
 
 - Module `.claude`:

@@ -61,12 +61,28 @@ class Labeler(BaseAgent):
             raise AgentConfigurationError(
                 "`output_model` must be a subclass of `pydantic.BaseModel`"
             )
+        output_model_list = create_model(
+            f"{self.output_model.__name__}List",
+            items=(list[self.output_model], ...),
+            __base__=BaseModel,
+        )
+        object.__setattr__(self, "_output_model_list", output_model_list)
+        object.__setattr__(
+            self,
+            "_output_schema",
+            self.output_model.model_json_schema(),
+        )
+        object.__setattr__(
+            self,
+            "_output_list_schema",
+            output_model_list.model_json_schema(),
+        )
         object.__setattr__(
             self,
             "_parser",
             ResponseParser(
                 output_model=self.output_model,
-                output_model_list=self.output_model_list,
+                output_model_list=output_model_list,
                 name=self.name,
                 validators=self.validators,
             ),
@@ -160,12 +176,7 @@ class Labeler(BaseAgent):
     @property
     def output_model_list(self) -> type[BaseModel]:
         """Dynamic model wrapping ``output_model`` in a list."""
-        # Create a dynamic model that wraps the output_model in a list
-        return create_model(
-            f"{self.output_model.__name__}List",
-            items=(list[self.output_model], ...),
-            __base__=BaseModel,
-        )
+        return self._output_model_list
 
     def act(
         self, input_data: dict | list[dict], chat_kwargs: dict = None
@@ -210,7 +221,7 @@ class Labeler(BaseAgent):
                 },
             ],
             temperature=0,
-            output_format=self.output_model.model_json_schema(),
+            output_format=self._output_schema,
             **chat_kwargs,
         )
         response.pop("role")
@@ -247,7 +258,7 @@ class Labeler(BaseAgent):
                 },
             ],
             temperature=0,
-            output_format=self.output_model.model_json_schema(),
+            output_format=self._output_schema,
             **chat_kwargs,
         )
         response.pop("role")
@@ -414,7 +425,7 @@ class Labeler(BaseAgent):
                 },
             ],
             "temperature": 0,
-            "output_format": (self.output_model_list.model_json_schema()),
+            "output_format": self._output_list_schema,
             **chat_kwargs,
         }
 

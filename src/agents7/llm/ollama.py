@@ -38,6 +38,7 @@ class OllamaProvider(LLMProvider):
 
     def __init__(self, model_name: str):
         super().__init__("ollama", model_name)
+        self._async_client = AsyncClient()
 
     @staticmethod
     def _build_options(
@@ -188,12 +189,14 @@ class OllamaProvider(LLMProvider):
             messages, options, think, output_format
         )
         response = await self._with_think_fallback_async(
-            AsyncClient().chat, think, kwargs
+            self._async_client.chat, think, kwargs
         )
         parsed = parse_ollama_chat_response(response)
 
         if self._needs_format_fallback(parsed, output_format):
-            response = await AsyncClient().chat(**{**kwargs, "format": None})
+            response = await self._async_client.chat(
+                **{**kwargs, "format": None}
+            )
             parsed = parse_ollama_chat_response(response)
 
         return parsed
@@ -230,7 +233,7 @@ class OllamaProvider(LLMProvider):
             prompt, options, think, output_format
         )
         response = await self._with_think_fallback_async(
-            AsyncClient().generate, think, kwargs
+            self._async_client.generate, think, kwargs
         )
         return parse_ollama_response(response)
 
@@ -266,7 +269,7 @@ class OllamaProvider(LLMProvider):
             messages, options, think, output_format, stream=True
         )
         iterator = await self._with_think_fallback_async(
-            AsyncClient().chat, think, kwargs
+            self._async_client.chat, think, kwargs
         )
         return AsyncStreamResult(iterator, "chat")
 
@@ -302,7 +305,7 @@ class OllamaProvider(LLMProvider):
             prompt, options, think, output_format, stream=True
         )
         iterator = await self._with_think_fallback_async(
-            AsyncClient().generate, think, kwargs
+            self._async_client.generate, think, kwargs
         )
         return AsyncStreamResult(iterator, "generate")
 

@@ -61,6 +61,37 @@
 
 - [x] Simplify enum mapping logic in `ResponseParser._get_enum_mappings` — done in v1.4.18 (`_resolve_strenum` static method).
 
+### Optimization — 8th March 2026
+
+#### Library — HIGH impact
+
+- [x] Cache `output_model_list` in `Labeler.__post_init__` instead of recreating via `create_model()` on every property access — done in v1.4.20.
+- [x] Cache `output_model.model_json_schema()` result in `__post_init__` instead of regenerating on every `act()` / `act_async()` call — done in v1.4.20.
+- [x] Reuse `AsyncClient` instance in `OllamaProvider` instead of instantiating a new one per async call — done in v1.4.20.
+
+#### Library — MEDIUM impact
+
+- [ ] Cache `possible_categories` / `possible_reasons` in `Classifier.__post_init__` instead of calling `extract_enum_members()` on every property access (`classifier.py:67`).
+- [ ] Cache `prompt` / `prompt_for_batch` after first build instead of regenerating on every access (`labeler.py:110-121`).
+- [ ] Use `asyncio.gather` or batch calls in `Pipeline.act_async` where steps are independent (`pipeline.py:239`).
+
+#### UI — HIGH impact
+
+- [ ] Cache Ollama connection check and model list in `render_model_selector()` with `@st.cache_resource` and TTL (`ollama_utils.py:23-25`).
+- [ ] Use `agent.act_in_batch()` in batch test instead of calling `act()` in a loop (`3_Test.py:187`).
+
+#### UI — MEDIUM impact
+
+- [ ] Cache `generate_model_code()` / `generate_yaml()` output with `@st.cache_data` (`1_Define.py:79`, `2_Configure.py:67`).
+- [ ] Cap `test_history` with `collections.deque(maxlen=N)` to prevent unbounded growth (`app.py:67`).
+- [ ] Cache `build_agent_from_state()` to avoid rebuilding agent on every render (`2_Configure.py:75`, `3_Test.py:130`).
+- [ ] Use `act_in_batch()` per version in A/B comparison runner (`comparison/runner.py:113`).
+- [ ] Store only summary dicts in `eval_results` session state, not full `AgentResponse` objects (`app.py:69`).
+
+#### Tests — MEDIUM impact
+
+- [ ] Change integration test fixtures to `scope="module"` to reuse agent instances across tests (`integration_tests/conftest.py:57-78`).
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.
