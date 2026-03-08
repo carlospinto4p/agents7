@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v1.4.19 - 8th March 2026
+
+- Module `.claude`:
+  - `rules/shell.md`: Simplified shell rules, added `uv run`
+    requirement and git commit formatting guidance.
+  - `rules/optimization.md`: New periodic optimization guidelines
+    tailored to the project (Python/Streamlit, no React/DB).
+  - `commands/optimize.md`: New `/optimize` slash command for
+    codebase-wide performance review.
+- `CLAUDE.md`: Added optimization rules link.
+
+
 ### v1.4.18 - 1st March 2026
 
 - Module `agents7.agents.labeler`:
