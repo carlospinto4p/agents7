@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v2.1.2 - 8th March 2026
+
+- Self-refinement pass:
+  - `CLAUDE.md`: Fixed `pip` → `uv pip` in UI install command; added
+    `model_selection` to Code Patterns; removed stale "File Locations"
+    lesson.
+  - `.claude/rules/testing.md`: Updated integration test skip mechanism
+    to reflect `pytest_collection_modifyitems` in `conftest.py`.
+  - `.claude/rules/optimization.md`: Replaced "DB batching" example with
+    "LLM call batching".
+  - `.claude/rules/backlog.md`: Added section header naming convention.
+  - `.claude/rules/ui.md`: Trimmed to essential non-obvious rules.
+  - `.claude/rules/improvements.md`: Clarified "unchecked items" trigger.
+  - `.claude/settings.json`: Pre-commit test hook now skips when no `.py`
+    files are staged.
+- Cleanup: deleted 2 leftover `.tmp` files.
+
+
 ### v2.1.1 - 8th March 2026
 
 - Module `agents7.agents.utils`:
