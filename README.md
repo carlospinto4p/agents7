@@ -11,6 +11,12 @@ pip install agents7
 
 Requires Python >= 3.11.
 
+## Design
+
+See [DESIGN.md](DESIGN.md) for the rationale behind the library's
+architecture: why reasons are required, how NOT_APPLICABLE works,
+the structured output flow, and other design decisions.
+
 ## Architecture
 
 ### LLM Layer (`agents7.llm`)

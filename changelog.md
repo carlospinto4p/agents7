@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v1.4.23 - 8th March 2026
+
+- New file `DESIGN.md`: Library design document explaining the
+  agent hierarchy, why reasons are required, NOT_APPLICABLE
+  auto-injection, structured output flow, YAML configuration,
+  batch processing, pipelines, and design principles.
+- `README.md`: Added link to `DESIGN.md`.
+
+
 ### v1.4.22 - 8th March 2026
 
 - Module `agents7.ui._pages.1_Define`:
