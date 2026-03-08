@@ -1,6 +1,27 @@
 
 ## Changelog - Agents7
 
+### v2.1.0 - 8th March 2026
+
+- New module `agents7.model_selection`:
+  - `find_best_model()`: Automatically finds the smallest Ollama model
+    that passes all test cases for a given agent configuration.
+  - `TestCase`: Frozen dataclass for defining input/expected pairs.
+  - `ModelScore`: Per-model benchmark results (pass rate, duration, errors).
+  - `BenchmarkResult`: Full benchmark result with best model and all scores.
+  - `CaseResult`: Detailed result for each test case and run.
+  - `ModelSelectionError`: Custom exception for model selection failures.
+  - Supports multiple runs, batch mode testing, and early stopping.
+  - Auto-discovers locally available Ollama models sorted by size.
+  - Compares enum fields by name and regular fields by value.
+- Module `agents7.__init__`:
+  - Exports `find_best_model`, `TestCase`, `ModelScore`, `BenchmarkResult`.
+- Tests:
+  - New `tests/test_model_selection.py` with 35 unit tests covering
+    comparison logic, candidate resolution, and benchmark orchestration.
+- README: Added Model Selection section with usage example.
+
+
 ### v2.0.0 - 8th March 2026
 
 - Module `agents7.agents.labeler`:

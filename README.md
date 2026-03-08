@@ -320,6 +320,52 @@ agent = Labeler(
 
 The `think` setting can still be overridden per call via `chat_kwargs={"think": True}`.
 
+### Model Selection
+
+Automatically find the smallest Ollama model that passes all your test cases. This avoids manual trial-and-error when choosing between models of different sizes.
+
+```python
+from agents7 import find_best_model, TestCase
+
+# Define test cases covering every expected output
+cases = [
+    TestCase(
+        input={"text": "It is -10 degrees outside."},
+        expected={"reason": "TOO_COLD"},
+    ),
+    TestCase(
+        input={"text": "The temperature is 35 degrees."},
+        expected={"reason": "TOO_HOT"},
+    ),
+    TestCase(
+        input={"text": "She bought a new book."},
+        expected={"reason": "NOT_APPLICABLE"},
+    ),
+]
+
+# Find the smallest model that passes all cases
+result = find_best_model(
+    "configs/demo_temperature_detector.yml",
+    test_cases=cases,
+)
+
+print(result.best_model)       # e.g. "qwen2.5:3b"
+print(result.best_model_size)  # size in bytes
+for score in result.scores:
+    print(f"{score.model_name}: {score.pass_rate:.0%}")
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `yaml_path` | — | Path to the agent's YAML config |
+| `test_cases` | — | List of `TestCase(input, expected)` |
+| `models` | `None` | Candidate model names (None = all local) |
+| `runs` | `1` | Runs per test case (for reliability) |
+| `include_batch` | `False` | Also test `act_in_batch` |
+| `stop_on_first` | `True` | Stop after first passing model |
+
+Models are tested smallest-first. Only the fields present in `expected` are checked — enum fields are compared by name, other fields by value.
+
 ### Streaming
 
 LLM responses can be streamed token-by-token using the `_stream` methods. Streaming bypasses retry logic (a connection drop mid-stream cannot be retried meaningfully).
