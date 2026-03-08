@@ -1,6 +1,22 @@
 
 ## Changelog - Agents7
 
+### v1.4.22 - 8th March 2026
+
+- Module `agents7.ui._pages.1_Define`:
+  - Cache `generate_model_code()` with `@st.cache_data`.
+- Module `agents7.ui._pages.2_Configure`:
+  - Cache `generate_yaml()` with `@st.cache_data`.
+- Module `agents7.ui._pages.4_Evaluate`:
+  - Strip full `AgentResponse` from eval results before storing
+    in session state to reduce memory usage.
+- Module `agents7.ui.app`:
+  - Cap `test_history` at 50 items using `collections.deque`.
+- Integration tests:
+  - Change agent fixtures to `scope="module"` to reuse
+    instances across tests in the same file.
+
+
 ### v1.4.21 - 8th March 2026
 
 - Module `agents7.agents.detector`:

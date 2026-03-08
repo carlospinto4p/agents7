@@ -54,25 +54,25 @@ def _chdir_to_project_root():
 # --- Shared agent fixtures ---
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def temperature_detector():
-    """Create a temperature detector instance."""
+    """Create a temperature detector instance (shared per module)."""
     return Detector.from_yaml(
         "examples/configs/demo_temperature_detector.yml"
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sentiment_classifier():
-    """Create a sentiment classifier instance."""
+    """Create a sentiment classifier instance (shared per module)."""
     return Classifier.from_yaml(
         "examples/configs/demo_sentiment_classifier.yml"
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def temperature_regressor():
-    """Create a temperature regressor instance."""
+    """Create a temperature regressor instance (shared per module)."""
     return Regressor.from_yaml(
         "examples/configs/demo_temperature_detector.yml"
     )

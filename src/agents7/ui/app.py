@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+from collections import deque
 
 
 def main():
@@ -65,7 +66,7 @@ def _render_app():
     if "state_dict" not in st.session_state:
         st.session_state.state_dict = {}
     if "test_history" not in st.session_state:
-        st.session_state.test_history = []
+        st.session_state.test_history = deque(maxlen=50)
     if "eval_results" not in st.session_state:
         st.session_state.eval_results = None
     if "prompt_versions" not in st.session_state:

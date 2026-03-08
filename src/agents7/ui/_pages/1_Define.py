@@ -79,8 +79,13 @@ def render() -> None:
     # Preview
     st.subheader("Model Code Preview")
     state = _state_from_dict(sd)
-    code = generate_model_code(state)
-    st.code(code, language="python")
+    st.code(_cached_model_code(state), language="python")
+
+
+@st.cache_data
+def _cached_model_code(state):
+    """Memoised wrapper around `generate_model_code`."""
+    return generate_model_code(state)
 
 
 def _classifier_form(sd: dict) -> None:

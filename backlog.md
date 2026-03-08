@@ -82,15 +82,15 @@
 
 #### UI — MEDIUM impact
 
-- [ ] Cache `generate_model_code()` / `generate_yaml()` output with `@st.cache_data` (`1_Define.py:79`, `2_Configure.py:67`).
-- [ ] Cap `test_history` with `collections.deque(maxlen=N)` to prevent unbounded growth (`app.py:67`).
-- [ ] Cache `build_agent_from_state()` to avoid rebuilding agent on every render (`2_Configure.py:75`, `3_Test.py:130`).
-- [ ] Use `act_in_batch()` per version in A/B comparison runner (`comparison/runner.py:113`).
-- [ ] Store only summary dicts in `eval_results` session state, not full `AgentResponse` objects (`app.py:69`).
+- [x] Cache `generate_model_code()` / `generate_yaml()` output with `@st.cache_data` — done in v1.4.22.
+- [x] Cap `test_history` with `deque(maxlen=50)` — done in v1.4.22.
+- [ ] ~~Cache `build_agent_from_state()` to avoid rebuilding agent on every render.~~ **Skipped**: agent construction is lightweight (no I/O); caching adds complexity for minimal gain.
+- [ ] ~~Use `act_in_batch()` per version in A/B comparison runner.~~ **Skipped**: batching sacrifices per-item error isolation that `_run_single`'s try/except provides.
+- [x] Strip full `AgentResponse` from `eval_results` before storing in session state — done in v1.4.22.
 
 #### Tests — MEDIUM impact
 
-- [ ] Change integration test fixtures to `scope="module"` to reuse agent instances across tests (`integration_tests/conftest.py:57-78`).
+- [x] Change integration test fixtures to `scope="module"` — done in v1.4.22.
 
 ### Infrastructure
 

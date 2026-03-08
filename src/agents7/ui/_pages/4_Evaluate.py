@@ -100,6 +100,8 @@ def render() -> None:
                 expected_fields,
                 progress_callback=make_progress_callback(progress),
             )
+            for r in results:
+                r.response = None
             st.session_state.eval_results = results
 
         except Exception as e:

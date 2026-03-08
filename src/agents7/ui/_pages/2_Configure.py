@@ -66,8 +66,7 @@ def render() -> None:
     # --- YAML preview ---
     st.subheader("YAML Config Preview")
     state = _state_from_dict(sd)
-    yml = generate_yaml(state)
-    st.code(yml, language="yaml")
+    st.code(_cached_yaml(state), language="yaml")
 
     # --- Resolved prompt preview ---
     st.subheader("Resolved Prompt Preview")
@@ -76,6 +75,12 @@ def render() -> None:
         st.code(agent.prompt, language="text")
     except Exception as e:
         st.warning(f"Cannot preview prompt: {e}")
+
+
+@st.cache_data
+def _cached_yaml(state):
+    """Memoised wrapper around `generate_yaml`."""
+    return generate_yaml(state)
 
 
 def _prompt_generation_section(sd: dict) -> None:
