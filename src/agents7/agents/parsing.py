@@ -6,6 +6,7 @@ from typing import Callable
 from pydantic import BaseModel
 
 from agents7.agents.utils import enum_members, resolve_strenum
+from agents7.exceptions import ParseError
 from agents7.logs import logger
 
 
@@ -68,6 +69,11 @@ class ResponseParser:
                     f"Agent `{self.name}`: error parsing "
                     f"structured response:\n{e}"
                 )
+                raise ParseError(
+                    f"Agent `{self.name}`: failed to parse "
+                    f"response into "
+                    f"{model_cls.__name__}: {e}"
+                ) from e
         return model
 
     def run_validators(self, model: BaseModel | None) -> BaseModel | None:

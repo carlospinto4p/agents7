@@ -1,6 +1,47 @@
 
 ## Changelog - Agents7
 
+### v2.2.0 - 8th March 2026
+
+- Module `agents7.agents.streaming` (new):
+  - `AgentStreamResult`: sync streaming wrapper that yields text
+    chunks and exposes `agent_response` after iteration.
+  - `AgentAsyncStreamResult`: async version.
+- Module `agents7.agents.labeler`:
+  - `Labeler.act_stream()`: stream agent responses with real-time
+    text chunks, parsing structured output after completion.
+  - `Labeler.act_stream_async()`: async version.
+  - `act()`, `act_async()`, and batch methods now catch `ParseError`
+    internally to preserve backward compatibility (return `model=None`).
+- Module `agents7.exceptions`:
+  - New `ParseError(LLMException)`: raised when response parsing fails.
+  - New `ProviderError(LLMException)`: raised when the LLM provider errors.
+  - New `ModelUnavailableError(ProviderError)`: raised on 404 model not found.
+  - New `RateLimitError(ProviderError)`: raised on 429 rate limit.
+- Module `agents7.llm.retry`:
+  - Exhausted retries now raise specific exceptions (`ProviderError`,
+    `RateLimitError`, `ModelUnavailableError`) instead of generic
+    `LLMException`.
+- Module `agents7.agents.parsing`:
+  - `ResponseParser.parse()` now raises `ParseError` on failure
+    instead of returning `None`.
+- Module `agents7.metrics` (new):
+  - `EvalResult`: dataclass for evaluation results.
+  - `run_evaluation()`: run an agent against labeled data.
+  - `compute_metrics()`: aggregate accuracy and per-field metrics.
+  - `build_confusion_matrix()`: build confusion matrix for
+    categorical fields.
+- Module `agents7.ui.evaluation`:
+  - `runner.py` and `metrics.py` now re-export from `agents7.metrics`.
+- Tests:
+  - New `test_agent_streaming.py`: 4 tests for sync/async agent
+    streaming.
+  - New `test_exceptions.py`: 6 tests for exception hierarchy.
+  - New `test_metrics.py`: 12 tests for core evaluation metrics.
+  - Updated `test_labeler.py`: `test_invalid_json_returns_none` →
+    `test_invalid_json_raises_parse_error`.
+
+
 ### v2.1.4 - 8th March 2026
 
 - Integration tests:

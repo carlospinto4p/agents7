@@ -13,12 +13,16 @@ from cpinto.functions import identity_func
 from agents7.agents.base import BaseAgent
 from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.parsing import ResponseParser
+from agents7.agents.streaming import (
+    AgentAsyncStreamResult,
+    AgentStreamResult,
+)
 from agents7.agents.utils import (
     get_examples_str,
     model_class_to_string,
     run_with_semaphore,
 )
-from agents7.exceptions import AgentConfigurationError
+from agents7.exceptions import AgentConfigurationError, ParseError
 from agents7.logs import logger
 from agents7.models import AgentResponse
 from agents7.settings import BatchSettings
@@ -230,9 +234,11 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        response["model"] = self._parser.run_validators(
-            self._parser.parse(response["response"])
-        )
+        try:
+            parsed = self._parser.parse(response["response"])
+        except ParseError:
+            parsed = None
+        response["model"] = self._parser.run_validators(parsed)
         return AgentResponse(**response)
 
     async def act_async(
@@ -267,11 +273,81 @@ class Labeler(BaseAgent):
             **chat_kwargs,
         )
         response.pop("role")
-        response["model"] = self._parser.run_validators(
-            self._parser.parse(response["response"])
-        )
+        try:
+            parsed = self._parser.parse(response["response"])
+        except ParseError:
+            parsed = None
+        response["model"] = self._parser.run_validators(parsed)
         response["idx"] = _idx
         return AgentResponse(**response)
+
+    def act_stream(
+        self,
+        input_data: dict | list[dict],
+        chat_kwargs: dict | None = None,
+    ) -> AgentStreamResult:
+        """Stream the labeling response, yielding text chunks.
+
+        Returns an `AgentStreamResult` that yields text chunks
+        when iterated. After iteration, access the parsed
+        `AgentResponse` via `stream.agent_response`.
+
+        :param input_data: The input data to be processed.
+        :param chat_kwargs: See `act()` for details.
+        :return: An `AgentStreamResult` yielding text chunks.
+        """
+        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        logger.debug(
+            f"Agent `{self.name}`: streaming input data:\n{input_data}"
+        )
+        stream = self.engine.chat_stream(
+            messages=[
+                {"role": "system", "content": self.prompt},
+                {
+                    "role": "user",
+                    "content": (f"Process the following:\n{input_data}"),
+                },
+            ],
+            temperature=0,
+            output_format=self._output_schema,
+            **chat_kwargs,
+        )
+        return AgentStreamResult(stream, self._parser)
+
+    async def act_stream_async(
+        self,
+        input_data: dict | list[dict],
+        chat_kwargs: dict | None = None,
+    ) -> AgentAsyncStreamResult:
+        """Async version of `act_stream`.
+
+        Returns an `AgentAsyncStreamResult` that yields text
+        chunks when async-iterated. After iteration, access
+        the parsed `AgentResponse` via
+        `stream.agent_response`.
+
+        :param input_data: The input data to be processed.
+        :param chat_kwargs: See `act()` for details.
+        :return: An `AgentAsyncStreamResult` yielding text
+            chunks.
+        """
+        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        logger.debug(
+            f"Agent `{self.name}`: streaming input data:\n{input_data}"
+        )
+        stream = await self.engine.chat_stream_async(
+            messages=[
+                {"role": "system", "content": self.prompt},
+                {
+                    "role": "user",
+                    "content": (f"Process the following:\n{input_data}"),
+                },
+            ],
+            temperature=0,
+            output_format=self._output_schema,
+            **chat_kwargs,
+        )
+        return AgentAsyncStreamResult(stream, self._parser)
 
     def act_in_batch(
         self,
@@ -437,9 +513,12 @@ class Labeler(BaseAgent):
     def _parse_batch_response(self, response: dict) -> dict:
         """Parse a raw batch LLM response dict."""
         response.pop("role")
-        response["model"] = self._parser.parse(
-            response["response"], for_batch=True
-        )
+        try:
+            response["model"] = self._parser.parse(
+                response["response"], for_batch=True
+            )
+        except ParseError:
+            response["model"] = None
         return response
 
     def _flatten_batch_responses(

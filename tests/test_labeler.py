@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
 from agents7.agents.parsing import ResponseParser
-from agents7.exceptions import AgentConfigurationError
+from agents7.exceptions import AgentConfigurationError, ParseError
 from agents7.llm import LLMEngine
 from agents7.settings import BatchSettings
 
@@ -249,11 +249,11 @@ def test_valid_json_returns_model():
     assert result.value == "hello"
 
 
-def test_invalid_json_returns_none():
-    """Invalid JSON returns None."""
+def test_invalid_json_raises_parse_error():
+    """Invalid JSON raises ParseError."""
     agent = make_labeler()
-    result = agent._parser.parse("not json at all")
-    assert result is None
+    with pytest.raises(ParseError):
+        agent._parser.parse("not json at all")
 
 
 def test_batch_parse():

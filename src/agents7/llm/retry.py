@@ -7,7 +7,12 @@ from typing import Callable
 
 import ollama
 
-from agents7.exceptions import LLMException
+from agents7.exceptions import (
+    LLMException,
+    ModelUnavailableError,
+    ProviderError,
+    RateLimitError,
+)
 from agents7.logs import logger
 
 
@@ -73,9 +78,20 @@ def _retry_delay(
     :raises LLMException: When all retries are exhausted.
     """
     if attempt >= config.max_retries:
-        raise LLMException(
+        msg = (
             f"All {config.max_retries} retries exhausted. Last error: {error}"
-        ) from error
+        )
+        if (
+            isinstance(error, ollama.ResponseError)
+            and error.status_code == 429
+        ):
+            raise RateLimitError(msg) from error
+        if (
+            isinstance(error, ollama.ResponseError)
+            and error.status_code == 404
+        ):
+            raise ModelUnavailableError(msg) from error
+        raise ProviderError(msg) from error
     delay = min(
         config.base_delay * config.backoff_factor**attempt,
         config.max_delay,

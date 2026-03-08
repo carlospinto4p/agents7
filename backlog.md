@@ -137,6 +137,26 @@
 
 - [x] Add `# --- Section ---` headers to `test_classifier.py`, `test_detector.py`, `test_regressor.py` — done in v2.1.3.
 
+### Improvements — 8th March 2026
+
+#### HIGH impact
+
+- [x] Agent-level streaming: add `act_stream()` and `act_stream_async()` to `Labeler` — done in v2.2.0 (`agents7.agents.streaming`, `AgentStreamResult` / `AgentAsyncStreamResult`).
+- [x] Structured exception hierarchy: add `ParseError`, `ProviderError`, `ModelUnavailableError`, `RateLimitError` to `exceptions.py` — done in v2.2.0; wired through `retry.py` and `parsing.py`.
+- [x] Agent evaluation metrics in core: extract accuracy, confusion matrix logic from UI into `agents7.metrics` — done in v2.2.0; UI re-exports from core.
+
+#### MEDIUM impact
+
+- [ ] Pipeline convenience: add `Pipeline.from_agents(agents)` class method that auto-wraps each agent in a `PipelineStep` with identity mapper — eliminates boilerplate for simple sequential chains.
+- [ ] Batch export helpers: add `export_jsonl(responses, path)` and `export_csv(responses, path)` to a new `agents7.export` module — common workflow after `act_in_batch`.
+- [ ] Persistent cache backend: add SQLite-backed cache option alongside the in-memory LRU — survives process restarts, zero-config (`CacheConfig(backend="sqlite", path="cache.db")`).
+- [ ] Agent introspection: expose `agent.output_schema` (JSON schema dict), `agent.enum_values()` (field→values map), and `agent.describe()` (human-readable summary) — helps debugging and documentation.
+
+#### LOW impact
+
+- [ ] YAML config inheritance: support `base_config` key that merges a parent YAML into the current one — reduces duplication when many agents share engine/examples.
+- [ ] Conditional pipeline steps: add optional `condition: Callable` to `PipelineStep` — enables branching without custom code (skip step if condition returns False).
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.

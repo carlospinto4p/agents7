@@ -47,6 +47,7 @@ Pipeline (chains multiple agents sequentially)
 - `BaseAgent`: Abstract base defining common interface (`name`, `version`, `engine`, `system_prompt`, `prompt_params`)
 - `Labeler`: General-purpose agent that outputs structured data via a Pydantic `output_model`
   - Single processing: `act()`, `act_async()`
+  - Streaming: `act_stream()`, `act_stream_async()` (yields text chunks, then parses structured output)
   - Batch processing: `act_in_batch()`, `act_in_batch_async()` (with optional `BatchSettings` concurrency control)
   - YAML configuration support via `from_yaml()`
 - `Detector`: Specialized `Labeler` for property extraction (value + reason)
@@ -270,6 +271,43 @@ engine = LLMEngine(
 
 Delay formula: `min(base_delay * backoff_factor ^ attempt, max_delay)`.
 
+### Exception Hierarchy
+
+The library provides structured exceptions for fine-grained error handling:
+
+```
+Agents7Exception
+├── LLMException
+│   ├── ParseError              — response parsing failed
+│   └── ProviderError           — LLM provider returned an error
+│       ├── ModelUnavailableError — model not found (404)
+│       └── RateLimitError       — rate limit exceeded (429)
+├── AgentConfigurationError
+├── PipelineConfigurationError
+├── PropertyConfigurationError
+└── PromptParameterError
+```
+
+```python
+from agents7.exceptions import (
+    ProviderError,
+    RateLimitError,
+    ModelUnavailableError,
+    ParseError,
+)
+
+try:
+    response = agent.act({"text": "..."})
+except RateLimitError:
+    print("Rate limited — back off")
+except ModelUnavailableError:
+    print("Model not found")
+except ProviderError:
+    print("Other provider error")
+```
+
+Note: `act()` catches `ParseError` internally and returns `model=None` for backward compatibility. The exception is available for direct use with `ResponseParser.parse()`.
+
 ### Fallback Model
 
 When the primary model fails (after retries, if configured), the engine can automatically retry with a fallback model. If the fallback also fails, the primary error is raised.
@@ -407,6 +445,36 @@ After iteration, `StreamResult` / `AsyncStreamResult` expose:
 - `.metrics` — dict with `tokens`, `prompt_tokens`, `total_duration`
 
 The `generate_stream` and `generate_stream_async` methods work identically but accept a `prompt` string instead of `messages`.
+
+#### Agent-Level Streaming
+
+Agents expose `act_stream()` and `act_stream_async()` on `Labeler` (and all subclasses). These yield text chunks during generation and parse the structured output after the stream completes.
+
+```python
+from agents7.agents import Labeler
+
+agent = Labeler.from_yaml("configs/demo_labeler.yml")
+
+# Sync streaming
+stream = agent.act_stream({"text": "Sarah, 28, from London."})
+for chunk in stream:
+    print(chunk, end="", flush=True)
+
+print()
+response = stream.agent_response   # AgentResponse with parsed model
+print(response.model)
+```
+
+```python
+# Async streaming
+stream = await agent.act_stream_async({"text": "Sarah, 28."})
+async for chunk in stream:
+    print(chunk, end="", flush=True)
+
+print(stream.agent_response.model)
+```
+
+The `agent_response` property is `None` before iteration completes. After iteration, it contains the full `AgentResponse` with the parsed Pydantic model (or `model=None` if parsing failed).
 
 ### Caching
 
@@ -609,6 +677,40 @@ results = await pipeline.act_in_batch_async(
 The default `max_concurrent` value can be overridden via the `BATCH_MAX_CONCURRENT` environment variable.
 
 The semaphore is created per call (not stored on the instance), so different calls can use different limits.
+
+### Evaluation Metrics
+
+The `agents7.metrics` module provides evaluation primitives usable without Streamlit. Run an agent against labeled data and compute accuracy, per-field metrics, and confusion matrices.
+
+```python
+from agents7.metrics import (
+    EvalResult,
+    run_evaluation,
+    compute_metrics,
+    build_confusion_matrix,
+)
+
+# Labeled evaluation data
+eval_data = [
+    {"input": {"text": "Great product!"}, "category": "POSITIVE"},
+    {"input": {"text": "Terrible service."}, "category": "NEGATIVE"},
+]
+
+# Run agent against all rows
+results = run_evaluation(agent, eval_data, ["category"])
+
+# Compute aggregate metrics
+metrics = compute_metrics(results, ["category"])
+print(f"Accuracy: {metrics['accuracy']:.0%}")
+print(f"Per-field: {metrics['per_field']}")
+
+# Build confusion matrix
+cm = build_confusion_matrix(results, "category")
+print(f"Labels: {cm['labels']}")
+print(f"Matrix: {cm['matrix']}")
+```
+
+The UI evaluation module (`agents7.ui.evaluation`) re-exports from `agents7.metrics`, so existing UI code continues to work unchanged.
 
 ### Agent Builder UI
 

@@ -6,6 +6,22 @@ class LLMException(Agents7Exception):
     """Base exception for LLM-related errors."""
 
 
+class ParseError(LLMException):
+    """Raised when LLM response parsing fails."""
+
+
+class ProviderError(LLMException):
+    """Raised when the LLM provider returns an error."""
+
+
+class ModelUnavailableError(ProviderError):
+    """Raised when the requested model is not found."""
+
+
+class RateLimitError(ProviderError):
+    """Raised when the provider returns a rate-limit error."""
+
+
 class PropertyConfigurationError(Agents7Exception):
     """Exception raised when a Property subclass is misconfigured."""
 
