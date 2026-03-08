@@ -1,16 +1,6 @@
-import pytest
-
 from agents7.agents.regressor import Regressor
 from agents7.models.base import NOT_APPLICABLE_DESCRIPTION
 from agents7.models.demo import TemperaturePropertyReason
-
-
-@pytest.fixture
-def temperature_regressor():
-    """Fixture to create a temperature regressor instance."""
-    return Regressor.from_yaml(
-        "examples/configs/demo_temperature_detector.yml"
-    )
 
 
 def test_regressor_initialization(temperature_regressor: Regressor) -> None:

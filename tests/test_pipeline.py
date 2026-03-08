@@ -1,6 +1,5 @@
 """Unit tests for Pipeline agent chaining (no LLM required)."""
 
-import asyncio
 import json
 from unittest.mock import AsyncMock, patch
 
@@ -17,7 +16,12 @@ from agents7.llm import LLMEngine
 from agents7.models import AgentResponse
 from agents7.settings import BatchSettings
 
-from helpers import DUMMY_METRICS, ENGINE, make_agent_response
+from helpers import (
+    DUMMY_METRICS,
+    ENGINE,
+    ConcurrencyTracker,
+    make_agent_response,
+)
 
 
 # --- Helper models & fixtures ---
@@ -543,26 +547,15 @@ def test_missing_steps_raises(tmp_path):
 @pytest.mark.asyncio
 async def test_batch_async_concurrent_within_step(mock_chat):
     """Items within a step run concurrently (not sequentially)."""
-    peak = 0
-    current = 0
-    lock = asyncio.Lock()
-
-    async def _side_effect(**kwargs):
-        nonlocal peak, current
-        async with lock:
-            current += 1
-            peak = max(peak, current)
-        await asyncio.sleep(0.05)
-        async with lock:
-            current -= 1
-        return {
+    tracker = ConcurrencyTracker(
+        {
             "role": "assistant",
             "response": json.dumps({"name": "X"}),
             "thinking": None,
             "metrics": DUMMY_METRICS,
         }
-
-    mock_chat.side_effect = _side_effect
+    )
+    mock_chat.side_effect = tracker.side_effect
 
     agent = _make_labeler(StepOneOutput)
     pipeline = Pipeline(steps=[PipelineStep(agent=agent)])
@@ -571,34 +564,22 @@ async def test_batch_async_concurrent_within_step(mock_chat):
         [{"text": "a"}, {"text": "b"}, {"text": "c"}],
         batch_settings=BatchSettings(max_concurrent=None),
     )
-    # All 3 items should have been in-flight simultaneously
-    assert peak == 3
+    assert tracker.peak == 3
 
 
 @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
 @pytest.mark.asyncio
 async def test_batch_async_max_concurrent(mock_chat):
     """Semaphore limits concurrency within each step."""
-    peak = 0
-    current = 0
-    lock = asyncio.Lock()
-
-    async def _side_effect(**kwargs):
-        nonlocal peak, current
-        async with lock:
-            current += 1
-            peak = max(peak, current)
-        await asyncio.sleep(0.05)
-        async with lock:
-            current -= 1
-        return {
+    tracker = ConcurrencyTracker(
+        {
             "role": "assistant",
             "response": json.dumps({"name": "X"}),
             "thinking": None,
             "metrics": DUMMY_METRICS,
         }
-
-    mock_chat.side_effect = _side_effect
+    )
+    mock_chat.side_effect = tracker.side_effect
 
     agent = _make_labeler(StepOneOutput)
     pipeline = Pipeline(steps=[PipelineStep(agent=agent)])
@@ -613,4 +594,4 @@ async def test_batch_async_max_concurrent(mock_chat):
         ],
         batch_settings=BatchSettings(max_concurrent=2),
     )
-    assert peak <= 2
+    assert tracker.peak <= 2

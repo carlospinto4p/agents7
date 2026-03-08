@@ -1,11 +1,11 @@
 """Response parsing and enum-mapping utilities."""
 
 import json
-from enum import StrEnum
 from typing import Callable
 
 from pydantic import BaseModel
 
+from agents7.agents.utils import enum_members, resolve_strenum
 from agents7.logs import logger
 
 
@@ -119,18 +119,6 @@ class ResponseParser:
 
         return response
 
-    @staticmethod
-    def _resolve_strenum(annotation: type) -> type | None:
-        """Unwrap Optional/Union and return the StrEnum
-        type, or None if not a StrEnum."""
-        if hasattr(annotation, "__args__"):
-            for arg in annotation.__args__:
-                if isinstance(arg, type) and issubclass(arg, StrEnum):
-                    return arg
-        if isinstance(annotation, type) and issubclass(annotation, StrEnum):
-            return annotation
-        return None
-
     def _get_enum_mappings(self) -> dict[str, dict[str, str]]:
         """Get enum name-to-value mappings for all StrEnum
         fields in output_model.
@@ -143,11 +131,9 @@ class ResponseParser:
             field_name,
             field_info,
         ) in self.output_model.model_fields.items():
-            enum_type = self._resolve_strenum(field_info.annotation)
+            enum_type = resolve_strenum(field_info.annotation)
             if enum_type is not None:
-                enum_mappings[field_name] = {
-                    m.name: m.value for m in enum_type
-                }
+                enum_mappings[field_name] = enum_members(enum_type)
         return enum_mappings
 
     def _convert_enum_names_to_values(self, response: str) -> str:

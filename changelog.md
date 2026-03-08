@@ -1,6 +1,30 @@
 
 ## Changelog - Agents7
 
+### v2.1.1 - 8th March 2026
+
+- Module `agents7.agents.utils`:
+  - New `resolve_strenum()`: unwraps Optional/Union to find StrEnum type.
+  - New `enum_members()`: returns `{name: value}` for a StrEnum.
+  - `extract_enum_members()` now uses `resolve_strenum` internally.
+- Module `agents7.agents.parsing`:
+  - Removed duplicated `_resolve_strenum` static method; now imports
+    `resolve_strenum` and `enum_members` from `utils`.
+- Module `agents7.model_selection`:
+  - Moved function-level imports (`agents`, `types`, `ollama`, `LLMEngine`,
+    `Property`, `ClassificationProperty`) to module level.
+- Tests:
+  - New `ConcurrencyTracker` helper in `tests/helpers.py`; replaced
+    duplicate peak/current tracking in `test_labeler.py` and
+    `test_pipeline.py`.
+  - New `gen_chunk()` helper in `tests/helpers.py`; replaced local
+    `_gen_chunk()` in `test_streaming.py`.
+  - New `make_agent()` factory in `tests/helpers.py`; replaced
+    `_make_detector/classifier/regressor` in `test_prompt_params.py`.
+  - Moved `temperature_detector`, `sentiment_classifier`, and
+    `temperature_regressor` fixtures to `tests/conftest.py`.
+
+
 ### v2.1.0 - 8th March 2026
 
 - New module `agents7.model_selection`:

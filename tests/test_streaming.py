@@ -1,6 +1,5 @@
 """Unit tests for LLM streaming support (no LLM required)."""
 
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -8,29 +7,7 @@ import pytest
 from agents7.llm.base import LLMEngine
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 
-from helpers import async_iter, chat_chunk
-
-
-# --- Helpers — mock ollama chunk objects ---
-
-
-def _gen_chunk(
-    response: str = "",
-    thinking: str = "",
-    done: bool = False,
-    eval_count: int | None = None,
-    prompt_eval_count: int | None = None,
-    total_duration: int | None = None,
-) -> SimpleNamespace:
-    """Build a mock ollama generate streaming chunk."""
-    return SimpleNamespace(
-        response=response,
-        thinking=thinking,
-        done=done,
-        eval_count=eval_count,
-        prompt_eval_count=prompt_eval_count,
-        total_duration=total_duration,
-    )
+from helpers import async_iter, chat_chunk, gen_chunk
 
 
 # --- StreamResult (sync) ---
@@ -58,9 +35,9 @@ def test_yields_chat_content_chunks():
 def test_yields_generate_content_chunks():
     """Generate chunks yield response strings."""
     chunks = [
-        _gen_chunk(response="foo"),
-        _gen_chunk(response="bar"),
-        _gen_chunk(
+        gen_chunk(response="foo"),
+        gen_chunk(response="bar"),
+        gen_chunk(
             done=True,
             eval_count=8,
             prompt_eval_count=3,
@@ -143,8 +120,8 @@ def test_role_captured_for_chat():
 def test_role_is_none_for_generate():
     """Generate mode has no role."""
     chunks = [
-        _gen_chunk(response="out"),
-        _gen_chunk(
+        gen_chunk(response="out"),
+        gen_chunk(
             done=True,
             eval_count=1,
             prompt_eval_count=1,

@@ -11,14 +11,6 @@ from agents7.models.base import NOT_APPLICABLE_DESCRIPTION
 from agents7.models.demo import TemperaturePropertyReason
 
 
-@pytest.fixture
-def temperature_detector():
-    """Fixture to create a temperature detector instance."""
-    return Detector.from_yaml(
-        "examples/configs/demo_temperature_detector.yml"
-    )
-
-
 def test_detector_initialization(temperature_detector: Detector) -> None:
     """Test that the detector can be properly initialized from YAML config."""
     assert temperature_detector is not None

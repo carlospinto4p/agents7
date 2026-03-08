@@ -9,7 +9,7 @@ from agents7.agents.regressor import Regressor
 from agents7.exceptions import PromptParameterError
 from agents7.models import ClassificationProperty, Property
 
-from helpers import ENGINE, DummyReason, make_labeler
+from helpers import DummyReason, make_agent, make_labeler
 
 
 class DummyProperty(Property[float]):
@@ -34,42 +34,6 @@ class DummyClassification(ClassificationProperty):
         DummyCategory.CAT_A: [DummyClassReason.REASON_A],
         DummyCategory.CAT_B: [DummyClassReason.REASON_B],
     }
-
-
-def _make_detector(**kwargs) -> Detector:
-    defaults = {
-        "name": "test",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "Test prompt.",
-        "output_model": DummyProperty,
-    }
-    defaults.update(kwargs)
-    return Detector(**defaults)
-
-
-def _make_classifier(**kwargs) -> Classifier:
-    defaults = {
-        "name": "test",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "Test prompt.",
-        "output_model": DummyClassification,
-    }
-    defaults.update(kwargs)
-    return Classifier(**defaults)
-
-
-def _make_regressor(**kwargs) -> Regressor:
-    defaults = {
-        "name": "test",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "Test prompt.",
-        "output_model": DummyProperty,
-    }
-    defaults.update(kwargs)
-    return Regressor(**defaults)
 
 
 # --- Backward compatibility ---
@@ -198,7 +162,9 @@ def test_params_applied_to_prompt_for_batch():
 
 def test_detector_param_substitution():
     """Detector resolves prompt_params in prompt."""
-    agent = _make_detector(
+    agent = make_agent(
+        Detector,
+        output_model=DummyProperty,
         system_prompt="Detect for $target.",
         prompt_params={"target": "anomalies"},
     )
@@ -210,7 +176,9 @@ def test_detector_param_substitution():
 
 def test_classifier_param_substitution():
     """Classifier resolves prompt_params in prompt."""
-    agent = _make_classifier(
+    agent = make_agent(
+        Classifier,
+        output_model=DummyClassification,
         system_prompt="Classify $domain data.",
         prompt_params={"domain": "finance"},
     )
@@ -222,7 +190,9 @@ def test_classifier_param_substitution():
 
 def test_regressor_param_substitution():
     """Regressor resolves prompt_params in prompt."""
-    agent = _make_regressor(
+    agent = make_agent(
+        Regressor,
+        output_model=DummyProperty,
         system_prompt="Extract $metric values.",
         prompt_params={"metric": "temperature"},
     )

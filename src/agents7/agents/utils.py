@@ -24,6 +24,35 @@ async def run_with_semaphore(coro, sem: asyncio.Semaphore | None):
     return await coro
 
 
+def resolve_strenum(annotation: type) -> type | None:
+    """Unwrap Optional/Union and return the StrEnum type.
+
+    Handles plain StrEnum subclasses as well as
+    ``Optional[SomeEnum]`` (i.e. ``SomeEnum | None``).
+
+    :param annotation: A type annotation from a Pydantic
+        model field.
+    :return: The StrEnum subclass, or None if the annotation
+        is not a StrEnum.
+    """
+    if hasattr(annotation, "__args__"):
+        for arg in annotation.__args__:
+            if isinstance(arg, type) and issubclass(arg, StrEnum):
+                return arg
+    if isinstance(annotation, type) and issubclass(annotation, StrEnum):
+        return annotation
+    return None
+
+
+def enum_members(enum_cls: type[StrEnum]) -> dict[str, str]:
+    """Return ``{name: value}`` for all members of a StrEnum.
+
+    :param enum_cls: A StrEnum subclass.
+    :return: Dictionary mapping member names to string values.
+    """
+    return {m.name: str(m.value) for m in enum_cls}
+
+
 def extract_enum_members(
     output_model: type[BaseModel],
     field_name: str,
@@ -38,14 +67,15 @@ def extract_enum_members(
     :raises PropertyConfigurationError: If the field annotation is
         not a `StrEnum` subclass.
     """
-    enum_cls = output_model.model_fields[field_name].annotation
-    if not issubclass(enum_cls, StrEnum):
+    annotation = output_model.model_fields[field_name].annotation
+    enum_cls = resolve_strenum(annotation)
+    if enum_cls is None:
         raise PropertyConfigurationError(
             f"`{field_name}` field in the output_model "
             f"must be a `StrEnum`. "
-            f"Got `{enum_cls}` instead."
+            f"Got `{annotation}` instead."
         )
-    return {k: str(v) for k, v in enum_cls.__members__.items()}
+    return enum_members(enum_cls)
 
 
 def get_examples_str(examples: list[dict]) -> str:

@@ -7,6 +7,9 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import BaseModel
 
+from agents7.agents.classifier import Classifier
+from agents7.agents.detector import Detector
+from agents7.agents.regressor import Regressor
 from agents7.models.base import AgentResponse, LLMMetrics
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -23,6 +26,33 @@ def _chdir_to_project_root():
     os.chdir(PROJECT_ROOT)
     yield
     os.chdir(original)
+
+
+# --- Shared agent fixtures ---
+
+
+@pytest.fixture
+def temperature_detector():
+    """Create a temperature detector from YAML config."""
+    return Detector.from_yaml(
+        "examples/configs/demo_temperature_detector.yml"
+    )
+
+
+@pytest.fixture
+def sentiment_classifier():
+    """Create a sentiment classifier from YAML config."""
+    return Classifier.from_yaml(
+        "examples/configs/demo_sentiment_classifier.yml"
+    )
+
+
+@pytest.fixture
+def temperature_regressor():
+    """Create a temperature regressor from YAML config."""
+    return Regressor.from_yaml(
+        "examples/configs/demo_temperature_detector.yml"
+    )
 
 
 # --- Shared UI test helpers ---

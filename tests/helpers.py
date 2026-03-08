@@ -1,5 +1,6 @@
 """Shared test helpers used across test files."""
 
+import asyncio
 import json
 from enum import StrEnum
 from types import SimpleNamespace
@@ -85,6 +86,26 @@ def make_labeler(**kwargs) -> Labeler:
     return Labeler(**defaults)
 
 
+def make_agent(
+    agent_cls: type = Labeler,
+    **kwargs,
+):
+    """Create any agent type with sensible test defaults.
+
+    Works for Labeler, Detector, Classifier, Regressor.
+    Pass ``output_model`` to override the default.
+    """
+    defaults = {
+        "name": "test",
+        "version": 1,
+        "engine": ENGINE,
+        "system_prompt": "Test prompt.",
+        "output_model": DummyOutput,
+    }
+    defaults.update(kwargs)
+    return agent_cls(**defaults)
+
+
 # --- Streaming chunk helpers ---
 
 
@@ -112,7 +133,56 @@ def chat_chunk(
     )
 
 
+def gen_chunk(
+    response: str = "",
+    thinking: str = "",
+    done: bool = False,
+    eval_count: int | None = None,
+    prompt_eval_count: int | None = None,
+    total_duration: int | None = None,
+) -> SimpleNamespace:
+    """Build a mock ollama generate streaming chunk."""
+    return SimpleNamespace(
+        response=response,
+        thinking=thinking,
+        done=done,
+        eval_count=eval_count,
+        prompt_eval_count=prompt_eval_count,
+        total_duration=total_duration,
+    )
+
+
 async def async_iter(items):
     """Turn a list into an async iterator."""
     for item in items:
         yield item
+
+
+class ConcurrencyTracker:
+    """Track peak concurrent async calls.
+
+    Usage in tests::
+
+        tracker = ConcurrencyTracker(return_value)
+
+        mock_chat.side_effect = tracker.side_effect
+        # ... run async code ...
+        assert tracker.peak == expected_peak
+    """
+
+    def __init__(self, return_value: dict, delay: float = 0.05):
+        self.peak = 0
+        self._current = 0
+        self._lock = asyncio.Lock()
+        self._return_value = return_value
+        self._delay = delay
+
+    async def side_effect(self, **kwargs):
+        """Use as ``mock.side_effect``."""
+        async with self._lock:
+            self._current += 1
+            self.peak = max(self.peak, self._current)
+        await asyncio.sleep(self._delay)
+        async with self._lock:
+            self._current -= 1
+        return dict(self._return_value)

@@ -10,14 +10,6 @@ from agents7.models import ClassificationProperty
 from agents7.models.demo import Sentiment
 
 
-@pytest.fixture
-def sentiment_classifier():
-    """Fixture to create a sentiment classifier instance."""
-    return Classifier.from_yaml(
-        "examples/configs/demo_sentiment_classifier.yml"
-    )
-
-
 def test_classifier_initialization(sentiment_classifier: Classifier) -> None:
     """Test that the classifier initializes from YAML config."""
     assert sentiment_classifier is not None

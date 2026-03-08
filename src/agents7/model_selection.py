@@ -28,14 +28,19 @@ Usage::
 
 from __future__ import annotations
 
+import types
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+import ollama as ollama_client
 from pydantic import BaseModel
 
+from agents7.agents import Classifier, Detector, Labeler, Regressor
 from agents7.agents.config_loader import load_yaml_settings
 from agents7.exceptions import Agents7Exception
+from agents7.llm import LLMEngine
 from agents7.logs import logger
+from agents7.models.base import ClassificationProperty, Property
 
 
 # --- Data classes ---
@@ -182,9 +187,7 @@ def _list_ollama_models() -> list[dict]:
     Returns a list of dicts with keys ``name`` and ``size``.
     Sorted by size ascending.
     """
-    import ollama
-
-    response = ollama.list()
+    response = ollama_client.list()
     models = []
     for m in response.models:
         models.append(
@@ -333,8 +336,6 @@ def _benchmark_model(
     include_batch: bool,
 ) -> ModelScore:
     """Benchmark a single model against all test cases."""
-    from agents7.llm import LLMEngine
-
     try:
         engine = LLMEngine(provider="ollama", model_name=model_name)
     except Exception as e:
@@ -395,29 +396,14 @@ def _benchmark_model(
 
 def _create_agent(config: dict):
     """Create the appropriate agent type from config."""
-    from agents7.agents import (
-        Classifier,
-        Detector,
-        Labeler,
-        Regressor,
-    )
-    from agents7.models.base import (
-        ClassificationProperty,
-        Property,
-    )
-
     output_model = config["output_model"]
 
     if issubclass(output_model, ClassificationProperty):
         return Classifier(**config)
     if issubclass(output_model, Property):
-        # Detect if the model has a `value` field with a numeric type
         value_type = output_model.model_fields.get("value")
         if value_type and hasattr(value_type, "annotation"):
-            import types
-
             ann = value_type.annotation
-            # Check for float, int, or Optional[float/int]
             origin = getattr(ann, "__origin__", None)
             if origin is types.UnionType:
                 args = [a for a in ann.__args__ if a is not type(None)]

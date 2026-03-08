@@ -104,18 +104,18 @@
 
 #### Source (high impact)
 
-- [ ] Consolidate enum helpers: `extract_enum_members()` in `utils.py` and `_resolve_strenum()`/`_get_enum_mappings()` in `parsing.py` do overlapping enum introspection — unify into a single utility.
-- [ ] Move function-level imports to module level in `model_selection.py` (`_create_agent` imports agents, types, models inside the function body).
+- [x] Consolidate enum helpers — done in v2.1.1: extracted `resolve_strenum()` and `enum_members()` to `utils.py`; `parsing.py` now uses them instead of duplicated `_resolve_strenum`.
+- [x] Move function-level imports to module level in `model_selection.py` — done in v2.1.1.
 
 #### Tests (medium impact)
 
-- [ ] Extract async concurrency tracking helper from `test_labeler.py` and `test_pipeline.py` into `tests/helpers.py` (peak/current tracking with `asyncio.Lock` is duplicated).
-- [ ] Consolidate `_gen_chunk()` in `test_streaming.py` with `chat_chunk()` in `tests/helpers.py`.
-- [ ] Move agent fixtures (`temperature_detector`, `sentiment_classifier`, `temperature_regressor`) from individual test files to `tests/conftest.py`.
+- [x] Extract `ConcurrencyTracker` helper into `tests/helpers.py` — done in v2.1.1; replaced duplicate tracking in `test_labeler.py` and `test_pipeline.py`.
+- [x] Consolidate `_gen_chunk()` as `gen_chunk()` in `tests/helpers.py` — done in v2.1.1.
+- [x] Move agent fixtures to `tests/conftest.py` — done in v2.1.1 (`temperature_detector`, `sentiment_classifier`, `temperature_regressor`).
 
 #### Tests (low impact)
 
-- [ ] Generalize `_make_detector()`, `_make_classifier()`, `_make_regressor()` in `test_prompt_params.py` into a single parametrized factory in `helpers.py`.
+- [x] Generalize agent factory as `make_agent()` in `helpers.py` — done in v2.1.1; replaced `_make_detector/classifier/regressor` in `test_prompt_params.py`.
 
 ### Infrastructure
 
