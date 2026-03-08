@@ -52,7 +52,8 @@ class Regressor(Detector):
             "Extract the numeric value from the input. "
             "Then classify the extracted value using one "
             "of the reasons defined above. Use "
-            "NOT_APPLICABLE if no value can be extracted."
+            "NOT_APPLICABLE if no value can be extracted.",
+            extra_sections=[self._not_applicable_guidance],
         )
 
     @property
@@ -64,5 +65,6 @@ class Regressor(Detector):
             "reasons defined above. Use NOT_APPLICABLE "
             "if no value can be extracted. Respond with "
             "a JSON array of objects, each matching the "
-            "schema."
+            "schema.",
+            extra_sections=[self._not_applicable_guidance],
         )

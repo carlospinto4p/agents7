@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from agents7.llm.cache import CacheConfig, ResponseCache
 from agents7.llm.retry import RetryConfig, retry_async, retry_sync
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
+from agents7.logs import logger
 
 
 def _cache_store_callback(
@@ -27,6 +28,10 @@ class LLMEngine:
         provider (str): The provider of the LLM engine (e.g., "ollama").
         model_name (str): The name of the model being used.
         retry_config (RetryConfig | None): Optional retry configuration.
+        fallback_model (str | None): Optional fallback model name.
+            When the primary model fails after retries, the engine
+            retries the call with this model. If the fallback also
+            fails, the primary error is raised.
     """
 
     def __init__(
@@ -35,6 +40,7 @@ class LLMEngine:
         model_name: str,
         retry: RetryConfig | None = None,
         cache: CacheConfig | None = None,
+        fallback_model: str | None = None,
     ):
         provider = provider.lower()
         self.provider = provider
@@ -44,11 +50,14 @@ class LLMEngine:
         self._cache: ResponseCache | None = (
             ResponseCache(cache) if cache is not None else None
         )
+        self._fallback_provider = None
 
         if provider == "ollama":
             from agents7.llm.ollama import OllamaProvider
 
             self.llm_provider = OllamaProvider(model_name)
+            if fallback_model:
+                self._fallback_provider = OllamaProvider(fallback_model)
 
     def _cache_lookup(
         self,
@@ -109,7 +118,7 @@ class LLMEngine:
         input_val,
         **common,
     ) -> dict:
-        """Sync cache-lookup → retry → cache-store."""
+        """Sync cache-lookup → retry → fallback → cache-store."""
         key, cached = self._cache_lookup(
             method_name,
             common["temperature"],
@@ -121,12 +130,23 @@ class LLMEngine:
         )
         if cached is not None:
             return cached
-        result = retry_sync(
-            provider_fn,
-            self.retry_config,
-            **{input_kwarg: input_val},
-            **common,
-        )
+        try:
+            result = retry_sync(
+                provider_fn,
+                self.retry_config,
+                **{input_kwarg: input_val},
+                **common,
+            )
+        except Exception as primary_error:
+            if self._fallback_provider is None:
+                raise
+            result = self._fallback_sync(
+                method_name,
+                primary_error,
+                input_kwarg,
+                input_val,
+                **common,
+            )
         self._cache_store(key, result)
         return result
 
@@ -138,7 +158,7 @@ class LLMEngine:
         input_val,
         **common,
     ) -> dict:
-        """Async cache-lookup → retry → cache-store."""
+        """Async cache-lookup → retry → fallback → cache-store."""
         key, cached = self._cache_lookup(
             method_name,
             common["temperature"],
@@ -150,12 +170,23 @@ class LLMEngine:
         )
         if cached is not None:
             return cached
-        result = await retry_async(
-            provider_fn,
-            self.retry_config,
-            **{input_kwarg: input_val},
-            **common,
-        )
+        try:
+            result = await retry_async(
+                provider_fn,
+                self.retry_config,
+                **{input_kwarg: input_val},
+                **common,
+            )
+        except Exception as primary_error:
+            if self._fallback_provider is None:
+                raise
+            result = await self._fallback_async(
+                method_name,
+                primary_error,
+                input_kwarg,
+                input_val,
+                **common,
+            )
         self._cache_store(key, result)
         return result
 
@@ -214,6 +245,55 @@ class LLMEngine:
         )
         self._set_stream_cache_callback(result, key)
         return result
+
+    # --- Fallback helpers ---
+
+    def _fallback_sync(
+        self,
+        method_name: str,
+        primary_error: Exception,
+        input_kwarg: str,
+        input_val,
+        **common,
+    ) -> dict:
+        """Try the fallback provider after primary failure."""
+        logger.warning(
+            f"Primary model failed: {primary_error}. Trying fallback model..."
+        )
+        fallback_fn = getattr(self._fallback_provider, method_name)
+        try:
+            return retry_sync(
+                fallback_fn,
+                self.retry_config,
+                **{input_kwarg: input_val},
+                **common,
+            )
+        except Exception:
+            raise primary_error
+
+    async def _fallback_async(
+        self,
+        method_name: str,
+        primary_error: Exception,
+        input_kwarg: str,
+        input_val,
+        **common,
+    ) -> dict:
+        """Try the fallback provider after primary failure
+        (async)."""
+        logger.warning(
+            f"Primary model failed: {primary_error}. Trying fallback model..."
+        )
+        fallback_fn = getattr(self._fallback_provider, method_name)
+        try:
+            return await retry_async(
+                fallback_fn,
+                self.retry_config,
+                **{input_kwarg: input_val},
+                **common,
+            )
+        except Exception:
+            raise primary_error
 
     # --- Public API ---
 

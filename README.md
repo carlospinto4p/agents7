@@ -24,13 +24,13 @@ on choosing the right LLM for structured extraction tasks.
 
 ### LLM Layer (`agents7.llm`)
 
-- `LLMEngine`: Facade class that routes to specific providers
+- `LLMEngine`: Facade class that routes to specific providers (supports optional `fallback_model`)
 - `LLMProvider`: Abstract base class defining the interface
 - `OllamaProvider`: Concrete implementation using Ollama (local LLM server)
 
 Supports both sync and async methods: `chat`, `chat_async`, `generate`, `generate_async`, plus streaming variants: `chat_stream`, `chat_stream_async`, `generate_stream`, `generate_stream_async`.
 
-Features: temperature control, structured output via JSON schema, "thinking" mode, seed for reproducibility, streaming responses, in-memory LRU caching.
+Features: temperature control, structured output via JSON schema, "thinking" mode, seed for reproducibility, streaming responses, in-memory LRU caching, fallback model support.
 
 ### Agents Layer (`agents7.agents`)
 
@@ -210,6 +210,8 @@ version: 1
 engine:
     provider: ollama
     model: qwen3
+    fallback_model: qwen2.5:3b  # optional: retry with this model on failure
+think: false  # optional: disable thinking mode (default: true)
 system_prompt: |
   Analyze the sentiment of text collected on $date.
 prompt_params:
@@ -267,6 +269,56 @@ engine = LLMEngine(
 | `backoff_factor` | `2.0` | Multiplier applied after each retry |
 
 Delay formula: `min(base_delay * backoff_factor ^ attempt, max_delay)`.
+
+### Fallback Model
+
+When the primary model fails (after retries, if configured), the engine can automatically retry with a fallback model. If the fallback also fails, the primary error is raised.
+
+**YAML configuration:**
+
+```yaml
+engine:
+    provider: ollama
+    model: gemma3:12b
+    fallback_model: qwen2.5:3b
+```
+
+**Python configuration:**
+
+```python
+from agents7.llm import LLMEngine
+
+engine = LLMEngine(
+    provider="ollama",
+    model_name="gemma3:12b",
+    fallback_model="qwen2.5:3b",
+)
+```
+
+### Thinking Mode
+
+Thinking mode (`think`) lets the model reason before answering. It defaults to `True` for all agents. Disable it per agent when the task is simple enough that reasoning adds latency without improving accuracy.
+
+**YAML configuration:**
+
+```yaml
+think: false
+```
+
+**Python configuration:**
+
+```python
+agent = Labeler(
+    name="FastExtractor",
+    version=1,
+    engine=engine,
+    system_prompt="Extract person info.",
+    output_model=PersonInfo,
+    think=False,
+)
+```
+
+The `think` setting can still be overridden per call via `chat_kwargs={"think": True}`.
 
 ### Streaming
 

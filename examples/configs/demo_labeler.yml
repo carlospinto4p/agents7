@@ -1,3 +1,5 @@
+# Recommended model size: 3B-4B parameters.
+# See docs/model-selection.md.
 name: PersonExtractor
 version: 1
 engine:

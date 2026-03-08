@@ -77,11 +77,26 @@ class Detector(Labeler):
         return self._possible_reasons
 
     @property
+    def _not_applicable_guidance(self) -> str:
+        """Guidance section for NOT_APPLICABLE classification."""
+        return (
+            "## NOT_APPLICABLE Guidance\n\n"
+            "Use NOT_APPLICABLE when the input has no "
+            "connection to the property being detected. "
+            "Do not infer, speculate, or make assumptions "
+            "beyond what is explicitly stated or clearly "
+            "implied. If the information is not present, "
+            "classify as NOT_APPLICABLE rather than "
+            "guessing."
+        )
+
+    @property
     def prompt(self) -> str:
         """Full prompt used by the agent."""
         return self._build_prompt(
             "You need to stick to the reasons defined "
-            "in the output model schema above."
+            "in the output model schema above.",
+            extra_sections=[self._not_applicable_guidance],
         )
 
     @property
@@ -91,5 +106,6 @@ class Detector(Labeler):
             "You need to stick to the reasons defined "
             "in the output model schema above. Respond "
             "with a JSON array of objects, each one "
-            "matching the schema above."
+            "matching the schema above.",
+            extra_sections=[self._not_applicable_guidance],
         )

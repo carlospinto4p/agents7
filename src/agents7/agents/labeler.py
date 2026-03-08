@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import ceil
 from typing import Callable
 
@@ -45,11 +45,15 @@ class Labeler(BaseAgent):
             run after the LLM response is parsed. Each receives a
             BaseModel and returns it (possibly modified). Raising
             rejects the model (sets it to None). Defaults to None.
+        think (bool, optional): Whether to enable thinking mode
+            for LLM calls. Defaults to True. Can be overridden
+            per call via `chat_kwargs`.
     """
 
     output_model: type[BaseModel]
     examples: list[dict] | None = None
     validators: list[Callable[[BaseModel], BaseModel]] | None = None
+    think: bool = field(default=True, kw_only=True)
 
     def __post_init__(self):
         """
@@ -116,7 +120,8 @@ class Labeler(BaseAgent):
             output_model: <path to the pydantic model class, e.g.
                 "agents7.models.MyOutputModel">
             ```
-            The fields `prompt_params` and `system_examples` are optional.
+            The fields `prompt_params`, `system_examples`, and
+            `think` are optional.
         :return: An instance of the agent.
         """
         config = load_yaml_settings(file_path)
@@ -457,16 +462,18 @@ class Labeler(BaseAgent):
                 )
         return agent_responses
 
-    @staticmethod
-    def _sanitize_chat_kwargs(chat_kwargs: dict | None) -> dict:
+    def _sanitize_chat_kwargs(self, chat_kwargs: dict | None) -> dict:
         """
         Prepare `chat_kwargs` for an LLM call.
-        Sets `think=True` by default and removes keys managed
-        internally (`messages`, `temperature`, `output_format`).
+        Sets `think` to the agent's default and removes keys
+        managed internally (`messages`, `temperature`,
+        `output_format`). Users can override `think` via
+        `chat_kwargs`.
         :param chat_kwargs: Raw keyword arguments, or None.
         :return: Sanitized copy of the keyword arguments.
         """
-        chat_kwargs = chat_kwargs or {"think": True}
+        chat_kwargs = dict(chat_kwargs) if chat_kwargs else {}
+        chat_kwargs.setdefault("think", self.think)
         for k in ["messages", "temperature", "output_format"]:
             chat_kwargs.pop(k, None)
         return chat_kwargs

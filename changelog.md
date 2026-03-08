@@ -1,6 +1,38 @@
 
 ## Changelog - Agents7
 
+### v1.4.25 - 8th March 2026
+
+- Module `agents7.agents.labeler`:
+  - New `think` field (default `True`) to control thinking mode
+    per agent. Can be overridden per call via `chat_kwargs`.
+  - `_sanitize_chat_kwargs` now uses agent's `think` default
+    instead of hardcoding `True`.
+- Module `agents7.agents.detector`:
+  - New `_not_applicable_guidance` property injected into prompts
+    for Detector, Classifier, and Regressor. Instructs the model
+    to not infer or speculate when classifying NOT_APPLICABLE.
+- Module `agents7.agents.classifier`:
+  - Added NOT_APPLICABLE guidance to prompt extra sections.
+- Module `agents7.agents.regressor`:
+  - Added NOT_APPLICABLE guidance to prompt extra sections.
+- Module `agents7.agents.config_loader`:
+  - Parse `think` from YAML agent config (optional, default true).
+  - Parse `fallback_model` from YAML engine config.
+- Module `agents7.llm.base`:
+  - `LLMEngine` now accepts `fallback_model` parameter. When the
+    primary model fails after retries, the engine retries the call
+    with the fallback model. If both fail, the primary error is
+    raised.
+- New file `integration_tests/helpers.py`:
+  - `assert_not_applicable()` utility for integration tests.
+- Example YAML configs: Added model size recommendation comments
+  referencing `docs/model-selection.md`.
+- `README.md`: Added documentation for fallback model, thinking
+  mode configuration, and updated YAML example.
+- `backlog.md`: Added design improvement items.
+
+
 ### v1.4.24 - 8th March 2026
 
 - Moved `DESIGN.md` to `docs/design.md`.

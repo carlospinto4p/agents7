@@ -1,3 +1,7 @@
+# Recommended model size: 3B-4B parameters.
+# This config uses gemma3:12b for demonstration, but smaller
+# models (e.g. qwen3:4b) are more reliable for classification.
+# See docs/model-selection.md.
 name: DemoSentimentClassifier
 version: 1
 engine:

@@ -1,3 +1,6 @@
+# Recommended model size: 3B-4B parameters.
+# Smaller models handle constrained extraction tasks more
+# reliably than larger ones. See docs/model-selection.md.
 name: DemoTemperatureDetector
 version: 1
 engine:

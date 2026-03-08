@@ -22,7 +22,9 @@ def load_yaml_settings(file_path: str) -> dict:
         engine:
             provider: <llm provider>
             model: <llm model>
+            fallback_model: <optional fallback model name>
         system_prompt: <system prompt for the agent>
+        think: <optional, default true>
         prompt_params:
             <key>: <value to substitute $key in system_prompt>
             ...
@@ -35,8 +37,8 @@ def load_yaml_settings(file_path: str) -> dict:
         output_model: <path to the pydantic model class, e.g.
             "agents7.models.MyOutputModel">
         ```
-        The fields `prompt_params` and `system_examples` are
-        optional.
+        The fields `prompt_params`, `system_examples`,
+        `think`, and `fallback_model` are optional.
     :return: Loaded configuration, as a dictionary. Keys:
         - name (str): The name of the agent.
         - version (int): The version of the agent.
@@ -61,7 +63,7 @@ def load_yaml_settings(file_path: str) -> dict:
     if validator_paths := config.get("validators"):
         validators = [import_from_path(path) for path in validator_paths]
 
-    return {
+    result = {
         "name": config["name"],
         "version": config["version"],
         "engine": build_engine(config["engine"]),
@@ -71,6 +73,11 @@ def load_yaml_settings(file_path: str) -> dict:
         "examples": examples,
         "validators": validators,
     }
+
+    if "think" in config:
+        result["think"] = bool(config["think"])
+
+    return result
 
 
 def validate_yaml_config(config: dict, file_path: str) -> None:
@@ -108,7 +115,8 @@ def build_engine(engine_config: dict) -> LLMEngine:
     """Build an `LLMEngine` from the engine section of YAML.
 
     :param engine_config: Dictionary with keys `provider`,
-        `model`, and optional `retry` / `cache` sections.
+        `model`, and optional `retry`, `cache`, and
+        `fallback_model` fields.
     :return: Configured `LLMEngine` instance.
     """
     retry_config = None
@@ -125,6 +133,7 @@ def build_engine(engine_config: dict) -> LLMEngine:
         engine_config["model"],
         retry=retry_config,
         cache=cache_config,
+        fallback_model=engine_config.get("fallback_model"),
     )
 
 

@@ -92,6 +92,14 @@
 
 - [x] Change integration test fixtures to `scope="module"` — done in v1.4.22.
 
+### Design Improvements — 8th March 2026
+
+- [x] Make `think` configurable per agent — done in v1.4.25 (`think` field on `Labeler`, parsed from YAML, wired through `_sanitize_chat_kwargs`).
+- [x] Strengthen NOT_APPLICABLE guidance in prompts — done in v1.4.25 (`_not_applicable_guidance` property on `Detector`, added to all Property-based agent prompts).
+- [x] Add NOT_APPLICABLE integration test helper — done in v1.4.25 (`assert_not_applicable()` in `integration_tests/helpers.py`).
+- [x] Add model size recommendations to YAML configs — done in v1.4.25 (comments referencing `docs/model-selection.md`).
+- [x] Retry with fallback model — done in v1.4.25 (`fallback_model` on `LLMEngine`, parsed from YAML engine config).
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.

@@ -107,6 +107,7 @@ class Classifier(Detector):
             "classified.",
             extra_sections=[
                 self.category_reasons_constraints,
+                self._not_applicable_guidance,
             ],
         )
 
@@ -122,5 +123,6 @@ class Classifier(Detector):
             "objects, each matching the schema.",
             extra_sections=[
                 self.category_reasons_constraints,
+                self._not_applicable_guidance,
             ],
         )
