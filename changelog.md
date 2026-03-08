@@ -18,6 +18,12 @@
   - New `tests/test_model_selection.py` with 35 unit tests covering
     comparison logic, candidate resolution, and benchmark orchestration.
 - README: Added Model Selection section with usage example.
+- Module `.claude`:
+  - New `/improvements` command for suggesting new capabilities and features.
+  - New `.claude/rules/improvements.md` with trigger conditions (low backlog,
+    long sessions, noticed gaps) and guidance on what to look for.
+  - Updated `.claude/rules/refactoring.md` to include `/improvements` in the
+    periodic pass alongside `/refactor` and `/self-refinement`.
 
 
 ### v2.0.0 - 8th March 2026
