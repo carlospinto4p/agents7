@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v2.4.1 - 8th March 2026
+
+- Examples:
+  - New `config_inheritance.py`: demonstrates `base_config`
+    YAML inheritance with `demo_base.yml` and
+    `demo_labeler_inherited.yml`.
+  - New `conditional_pipeline.py`: demonstrates conditional
+    step execution with `condition` on `PipelineStep`.
+  - New `streaming.py`: demonstrates `act_stream()` and
+    `act_stream_async()` for token-by-token output.
+  - New `sqlite_cache.py`: demonstrates persistent SQLite
+    cache via `CacheConfig(backend="sqlite")`.
+  - New `export.py`: demonstrates `export_jsonl()` and
+    `export_csv()` for batch result export.
+- `README.md`: added examples table linking all runnable
+  scripts.
+
+
 ### v2.4.0 - 8th March 2026
 
 - Module `agents7.agents.config_loader`:
