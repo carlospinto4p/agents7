@@ -1,7 +1,7 @@
 
 ## Changelog - Agents7
 
-### v1.4.25 - 8th March 2026
+### v2.0.0 - 8th March 2026
 
 - Module `agents7.agents.labeler`:
   - New `think` field (default `False`) to control thinking mode
