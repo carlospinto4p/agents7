@@ -14,8 +14,6 @@
   - Supports multiple runs, batch mode testing, and early stopping.
   - Auto-discovers locally available Ollama models sorted by size.
   - Compares enum fields by name and regular fields by value.
-- Module `agents7.__init__`:
-  - Exports `find_best_model`, `TestCase`, `ModelScore`, `BenchmarkResult`.
 - Tests:
   - New `tests/test_model_selection.py` with 35 unit tests covering
     comparison logic, candidate resolution, and benchmark orchestration.

@@ -325,7 +325,7 @@ The `think` setting can still be overridden per call via `chat_kwargs={"think": 
 Automatically find the smallest Ollama model that passes all your test cases. This avoids manual trial-and-error when choosing between models of different sizes.
 
 ```python
-from agents7 import find_best_model, TestCase
+from agents7.model_selection import find_best_model, TestCase
 
 # Define test cases covering every expected output
 cases = [
