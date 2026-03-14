@@ -29,7 +29,8 @@ class Classifier(Detector):
 
     Note:
         Both category and reason enums will automatically include a
-        NOT_APPLICABLE member for fallback classification.
+        NOT_APPLICABLE member for fallback classification, unless
+        the output model sets ``NOT_APPLICABLE = False``.
     """
 
     output_model: type[ClassificationProperty]
@@ -93,36 +94,45 @@ class Classifier(Detector):
         for category, reasons in self.output_model.CATEGORY_REASONS.items():
             reason_names = [r.name for r in reasons]
             lines.append(f"- {category.name}: {', '.join(reason_names)}")
-        lines.append("- NOT_APPLICABLE: NOT_APPLICABLE")
+        if self._has_not_applicable:
+            lines.append("- NOT_APPLICABLE: NOT_APPLICABLE")
         return "\n".join(lines)
 
     @property
     def prompt(self) -> str:
         """Get the full prompt used by the agent."""
+        na_suffix = (
+            " Use NOT_APPLICABLE if the input cannot be classified."
+            if self._has_not_applicable
+            else ""
+        )
+        extra = [self.category_reasons_constraints]
+        if self._has_not_applicable:
+            extra.append(self._not_applicable_guidance)
         return self._build_prompt(
             "Classify the input into one of the "
             "categories defined above. Then provide a "
-            "reason that justifies your classification. "
-            "Use NOT_APPLICABLE if the input cannot be "
-            "classified.",
-            extra_sections=[
-                self.category_reasons_constraints,
-                self._not_applicable_guidance,
-            ],
+            "reason that justifies your classification." + na_suffix,
+            extra_sections=extra,
         )
 
     @property
     def prompt_for_batch(self) -> str:
         """Get the full prompt for batch processing."""
+        na_suffix = (
+            " Use NOT_APPLICABLE if an input cannot be classified."
+            if self._has_not_applicable
+            else ""
+        )
+        extra = [self.category_reasons_constraints]
+        if self._has_not_applicable:
+            extra.append(self._not_applicable_guidance)
         return self._build_prompt(
             "Classify each input into one of the "
             "categories defined above. Provide a reason "
-            "that justifies each classification. Use "
-            "NOT_APPLICABLE if an input cannot be "
-            "classified. Respond with a JSON array of "
+            "that justifies each classification."
+            + na_suffix
+            + " Respond with a JSON array of "
             "objects, each matching the schema.",
-            extra_sections=[
-                self.category_reasons_constraints,
-                self._not_applicable_guidance,
-            ],
+            extra_sections=extra,
         )

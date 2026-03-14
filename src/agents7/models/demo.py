@@ -82,7 +82,12 @@ class Sentiment(ClassificationProperty):
     """
     Sentiment classification property for text analysis.
     Classifies text into sentiment categories with justification.
+
+    NOT_APPLICABLE is disabled because the NEUTRAL category
+    already covers texts with no clear sentiment.
     """
+
+    NOT_APPLICABLE = False
 
     category: SentimentCategory
     reason: SentimentReason

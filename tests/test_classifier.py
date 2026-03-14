@@ -37,7 +37,8 @@ def test_possible_categories(sentiment_classifier: Classifier) -> None:
     assert "POSITIVE" in categories
     assert "NEGATIVE" in categories
     assert "NEUTRAL" in categories
-    assert "NOT_APPLICABLE" in categories  # Auto-added
+    # Sentiment model sets NOT_APPLICABLE = False
+    assert "NOT_APPLICABLE" not in categories
 
 
 def test_possible_reasons(sentiment_classifier: Classifier) -> None:
@@ -46,7 +47,8 @@ def test_possible_reasons(sentiment_classifier: Classifier) -> None:
     assert "ENTHUSIASTIC" in reasons
     assert "FRUSTRATED" in reasons
     assert "FACTUAL" in reasons
-    assert "NOT_APPLICABLE" in reasons  # Auto-added
+    # Sentiment model sets NOT_APPLICABLE = False
+    assert "NOT_APPLICABLE" not in reasons
 
 
 # --- Edge cases ---

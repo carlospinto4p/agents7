@@ -1,7 +1,6 @@
 # gemma3:12b handles POSITIVE/NEGATIVE/NEUTRAL reliably.
-# NOT_APPLICABLE is not tested for classifiers because no
-# locally available model (gemma3:12b, qwen3:4b, qwen2.5:3b)
-# can reliably distinguish it from NEUTRAL.
+# The Sentiment model sets NOT_APPLICABLE = False because
+# NEUTRAL already covers the "no sentiment" case.
 # See docs/model-selection.md.
 name: DemoSentimentClassifier
 version: 1
@@ -16,7 +15,7 @@ system_prompt: |
   1. Determine the overall sentiment of the text: positive, negative, or neutral.
   2. Select the most appropriate category based on the dominant tone.
   3. Provide a reason that justifies your classification.
-  4. If the text has no clear sentiment, use NOT_APPLICABLE.
+  4. If the text has no clear sentiment, classify it as NEUTRAL.
 
 output_model: agents7.models.demo.Sentiment
 system_examples:

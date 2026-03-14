@@ -31,7 +31,8 @@ class Detector(Labeler):
 
     Note:
         The reason enum will automatically include a NOT_APPLICABLE member
-        for fallback classification, even if not explicitly declared.
+        for fallback classification, unless the output model sets
+        ``NOT_APPLICABLE = False``.
     """
 
     output_model: type[Property]
@@ -91,21 +92,32 @@ class Detector(Labeler):
         )
 
     @property
+    def _has_not_applicable(self) -> bool:
+        """Whether the output model includes NOT_APPLICABLE."""
+        return getattr(self.output_model, "NOT_APPLICABLE", True)
+
+    @property
     def prompt(self) -> str:
         """Full prompt used by the agent."""
+        extra = []
+        if self._has_not_applicable:
+            extra.append(self._not_applicable_guidance)
         return self._build_prompt(
             "You need to stick to the reasons defined "
             "in the output model schema above.",
-            extra_sections=[self._not_applicable_guidance],
+            extra_sections=extra,
         )
 
     @property
     def prompt_for_batch(self) -> str:
         """Full prompt for batch processing."""
+        extra = []
+        if self._has_not_applicable:
+            extra.append(self._not_applicable_guidance)
         return self._build_prompt(
             "You need to stick to the reasons defined "
             "in the output model schema above. Respond "
             "with a JSON array of objects, each one "
             "matching the schema above.",
-            extra_sections=[self._not_applicable_guidance],
+            extra_sections=extra,
         )

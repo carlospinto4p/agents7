@@ -32,9 +32,8 @@ SENTIMENT_DATA = [
         "text": "The meeting is at 3 PM in conference room B.",
         "expected_category": "NEUTRAL",
     },
-    # NOT_APPLICABLE is not tested: no locally available model
-    # (gemma3:12b, qwen3:4b, qwen2.5:3b) can reliably
-    # distinguish it from NEUTRAL for sentiment classifiers.
+    # NOT_APPLICABLE is disabled on the Sentiment model
+    # (NOT_APPLICABLE = False) since NEUTRAL covers that case.
 ]
 
 PIPELINE_DATA = [

@@ -66,8 +66,9 @@ class Property(BaseModel, Generic[T]):
     extraction. The reason field must be a StrEnum defining the possible
     classification reasons.
 
-    A NOT_APPLICABLE member is automatically added to all reason enums
-    for cases where the property cannot be detected from the input.
+    By default, a NOT_APPLICABLE member is automatically added to the
+    reason enum. Set ``NOT_APPLICABLE = False`` on the subclass to
+    disable this behavior.
 
     Example:
         class TemperatureReason(StrEnum):
@@ -78,7 +79,14 @@ class Property(BaseModel, Generic[T]):
 
         class Temperature(Property[float]):
             reason: TemperatureReason
+
+        # Opt out:
+        class StrictTemp(Property[float]):
+            NOT_APPLICABLE = False
+            reason: TemperatureReason
     """
+
+    NOT_APPLICABLE: ClassVar[bool] = True
 
     value: T | None = Field(
         default=None, description="The extracted value of the property."
@@ -89,12 +97,16 @@ class Property(BaseModel, Generic[T]):
 
     def __init_subclass__(cls, **kwargs):
         """
-        Automatically extend the reason enum with NOT_APPLICABLE.
+        Automatically extend the reason enum with NOT_APPLICABLE
+        unless ``NOT_APPLICABLE = False`` is set on the subclass.
 
         This hook runs before Pydantic processes the class, allowing
         us to modify the reason annotation to include the fallback.
         """
         super().__init_subclass__(**kwargs)
+
+        if not cls.__dict__.get("NOT_APPLICABLE", True):
+            return
 
         if "reason" not in cls.__annotations__:
             return
@@ -113,8 +125,9 @@ class ClassificationProperty(BaseModel):
     Subclasses should define category and reason StrEnums, plus a
     CATEGORY_REASONS mapping that links valid reasons to each category.
 
-    A NOT_APPLICABLE member is automatically added to both category and
-    reason enums for cases where the input cannot be classified.
+    By default, a NOT_APPLICABLE member is automatically added to both
+    category and reason enums. Set ``NOT_APPLICABLE = False`` on the
+    subclass to disable this behavior.
 
     Example:
         class SentimentCategory(StrEnum):
@@ -133,7 +146,15 @@ class ClassificationProperty(BaseModel):
                 SentimentCategory.POSITIVE: [SentimentReason.ENTHUSIASTIC],
                 SentimentCategory.NEGATIVE: [SentimentReason.FRUSTRATED],
             }
+
+        # Opt out:
+        class StrictSentiment(ClassificationProperty):
+            NOT_APPLICABLE = False
+            category: SentimentCategory
+            reason: SentimentReason
     """
+
+    NOT_APPLICABLE: ClassVar[bool] = True
 
     category: StrEnum = Field(description="The classification category.")
     reason: StrEnum = Field(
@@ -146,12 +167,15 @@ class ClassificationProperty(BaseModel):
     def __init_subclass__(cls, **kwargs):
         """
         Automatically extend category and reason enums with
-        NOT_APPLICABLE.
+        NOT_APPLICABLE unless ``NOT_APPLICABLE = False`` is set.
 
         This hook runs before Pydantic processes the class, allowing
         us to modify the annotations to include the fallback members.
         """
         super().__init_subclass__(**kwargs)
+
+        if not cls.__dict__.get("NOT_APPLICABLE", True):
+            return
 
         for field in ("category", "reason"):
             if field not in cls.__annotations__:
@@ -169,12 +193,18 @@ class ClassificationProperty(BaseModel):
             return self  # No validation if mapping not defined
 
         # NOT_APPLICABLE category can have any reason
-        if self.category.name == "NOT_APPLICABLE":
+        if (
+            hasattr(self.category, "name")
+            and self.category.name == "NOT_APPLICABLE"
+        ):
             return self
 
         valid_reasons = self.CATEGORY_REASONS.get(self.category, [])
         # Allow NOT_APPLICABLE reason for any category
-        if self.reason.name == "NOT_APPLICABLE":
+        if (
+            hasattr(self.reason, "name")
+            and self.reason.name == "NOT_APPLICABLE"
+        ):
             return self
 
         if valid_reasons and self.reason not in valid_reasons:

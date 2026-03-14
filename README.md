@@ -63,7 +63,7 @@ Pipeline (chains multiple agents sequentially)
 - `Property[T]`: Generic base for value extraction (value of type T + reason enum)
 - `ClassificationProperty`: Base for classification tasks (category enum + reason enum)
 
-Both `Property` and `ClassificationProperty` automatically add `NOT_APPLICABLE` to their reason enums.
+Both `Property` and `ClassificationProperty` automatically add `NOT_APPLICABLE` to their enum fields by default. Set `NOT_APPLICABLE = False` on the subclass to disable this (e.g., when a NEUTRAL category already covers the "no match" case).
 
 ## Quick Start
 
@@ -165,6 +165,17 @@ class Sentiment(ClassificationProperty):
         ],
     }
 ```
+
+To disable the automatic `NOT_APPLICABLE` member (e.g., when NEUTRAL already covers the "no match" case):
+
+```python
+class Sentiment(ClassificationProperty):
+    NOT_APPLICABLE = False  # don't add NOT_APPLICABLE
+    category: SentimentCategory
+    reason: SentimentReason
+```
+
+This also works on `Property` subclasses for detectors/regressors.
 
 **For Value Extraction (Regressor):**
 
