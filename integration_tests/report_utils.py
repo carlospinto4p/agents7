@@ -20,6 +20,7 @@ def write_eval_report_from_responses(
     reports_dir: Path,
     filename: str,
     confusion_field: str | None = None,
+    notes: list[str] | None = None,
 ) -> None:
     """Build an eval report from already-collected responses.
 
@@ -37,6 +38,8 @@ def write_eval_report_from_responses(
     :param filename: Report filename.
     :param confusion_field: Optional field for confusion
         matrix.
+    :param notes: Optional list of note strings for the
+        report.
     """
     results: list[EvalResult] = []
     for case, resp in zip(test_data, responses):
@@ -68,4 +71,5 @@ def write_eval_report_from_responses(
         agent_name=agent.name,
         model_id=agent.engine.model_id,
         confusion_field=confusion_field,
+        notes=notes,
     )

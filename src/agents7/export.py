@@ -151,6 +151,7 @@ def export_eval_report(
     agent_name: str | None = None,
     model_id: str | None = None,
     confusion_field: str | None = None,
+    notes: list[str] | None = None,
 ) -> None:
     """Write an evaluation report as a Markdown file.
 
@@ -164,6 +165,8 @@ def export_eval_report(
         matrix for this categorical field (e.g.
         ``"category"``). Requires
         ``agents7.metrics.build_confusion_matrix``.
+    :param notes: Optional list of note strings to include
+        in a "Notes" section after the header.
     """
     path = Path(path)
     lines: list[str] = []
@@ -178,6 +181,14 @@ def export_eval_report(
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lines.append(f"- **Date**: {now}")
     lines.append("")
+
+    # --- Notes ---
+    if notes:
+        lines.append("## Notes")
+        lines.append("")
+        for note in notes:
+            lines.append(f"- {note}")
+        lines.append("")
 
     # --- Overall metrics ---
     lines.append("## Overall Metrics")

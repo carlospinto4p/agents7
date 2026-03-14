@@ -49,4 +49,8 @@ def test_batch_temperature_detection(
         "expected_reason",
         reports_dir,
         "detector.md",
+        notes=[
+            "NOT_APPLICABLE is **enabled** on the output model "
+            "and **tested** (included in test data).",
+        ],
     )

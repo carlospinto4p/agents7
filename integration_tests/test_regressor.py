@@ -49,6 +49,10 @@ def test_batch_temperature_regression(
         "expected_reason",
         reports_dir,
         "regressor.md",
+        notes=[
+            "NOT_APPLICABLE is **enabled** on the output model "
+            "and **tested** (included in test data).",
+        ],
     )
 
 

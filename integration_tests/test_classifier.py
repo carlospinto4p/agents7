@@ -50,4 +50,9 @@ def test_batch_sentiment_classification(
         reports_dir,
         "classifier.md",
         confusion_field="category",
+        notes=[
+            "NOT_APPLICABLE is **disabled** on the Sentiment "
+            "model (`NOT_APPLICABLE = False`). The NEUTRAL "
+            "category covers inputs with no clear sentiment.",
+        ],
     )
