@@ -89,7 +89,8 @@ def test_model_none():
         model=None,
         metrics=mock_metrics(),
     )
-    agent = make_agent_mock([response])
+    agent = MagicMock()
+    agent.act_in_batch = MagicMock(return_value=[response])
     eval_data = [
         {
             "input": {"text": "bad"},
@@ -103,6 +104,7 @@ def test_model_none():
 
 def test_agent_exception():
     agent = MagicMock()
+    agent.act_in_batch = MagicMock(side_effect=RuntimeError("batch error"))
     agent.act = MagicMock(side_effect=RuntimeError("connection error"))
     eval_data = [
         {
@@ -129,9 +131,7 @@ def test_progress_callback():
         ["category"],
         progress_callback=callback,
     )
-    assert callback.call_count == 2
-    callback.assert_any_call(1, 2)
-    callback.assert_any_call(2, 2)
+    callback.assert_called_once_with(2, 2)
 
 
 def test_empty_eval_data():

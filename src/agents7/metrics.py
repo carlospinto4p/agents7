@@ -1,8 +1,8 @@
 """Agent evaluation metrics.
 
 Provides evaluation primitives usable without Streamlit:
-`EvalResult`, `run_evaluation`, `compute_metrics`, and
-`build_confusion_matrix`.
+`EvalResult`, `run_evaluation`, `run_evaluation_async`,
+`compute_metrics`, and `build_confusion_matrix`.
 """
 
 from __future__ import annotations
@@ -40,17 +40,59 @@ class EvalResult:
     error: str | None = None
 
 
+def _build_eval_result(
+    row: dict,
+    expected_fields: list[str],
+    response: AgentResponse | None,
+    error: str | None = None,
+) -> EvalResult:
+    """Build an `EvalResult` from a row and agent response.
+
+    :param row: Original eval data row.
+    :param expected_fields: Fields to compare.
+    :param response: Agent response, or None on error.
+    :param error: Error message, or None.
+    :return: Populated `EvalResult`.
+    """
+    input_data = row.get("input", row)
+    expected = {k: row[k] for k in expected_fields if k in row}
+    result = EvalResult(input_data=input_data, expected=expected)
+
+    if error is not None:
+        result.error = error
+        return result
+
+    result.response = response
+    if response.model is not None:
+        actual = _extract_fields(response.model, expected_fields)
+        result.actual = actual
+        result.field_results = {
+            k: _compare_field(actual.get(k), expected.get(k))
+            for k in expected_fields
+        }
+        result.passed = all(result.field_results.values())
+    else:
+        result.error = "Model parsing failed"
+
+    return result
+
+
 def run_evaluation(
     agent: Labeler,
     eval_data: list[dict],
     expected_fields: list[str],
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> list[EvalResult]:
-    """Run *agent* against every row in *eval_data*.
+    """Run *agent* against every row in *eval_data* using
+    batch processing.
 
     Each row must have an ``"input"`` key (the agent input)
     and keys matching *expected_fields* holding the expected
     outputs.
+
+    Uses ``act_in_batch()`` for efficient processing. Rows
+    that cause exceptions are individually retried with
+    ``act()`` so a single failure doesn't break the batch.
 
     :param agent: Any `Labeler`-subclass agent instance.
     :param eval_data: List of dicts with ``input`` + expected
@@ -58,40 +100,87 @@ def run_evaluation(
     :param expected_fields: Field names to compare (e.g.
         ``["category", "reason"]``).
     :param progress_callback: Optional ``(current, total)``
-        callable invoked after each row.
+        callable invoked after the batch completes.
+    :return: List of `EvalResult`, one per row.
+    """
+    inputs = [row.get("input", row) for row in eval_data]
+    total = len(eval_data)
+
+    try:
+        responses = agent.act_in_batch(inputs, iter_func=None)
+        results = [
+            _build_eval_result(row, expected_fields, resp)
+            for row, resp in zip(eval_data, responses)
+        ]
+    except Exception:
+        results = _fallback_sequential(agent, eval_data, expected_fields)
+
+    if progress_callback is not None:
+        progress_callback(total, total)
+
+    return results
+
+
+async def run_evaluation_async(
+    agent: Labeler,
+    eval_data: list[dict],
+    expected_fields: list[str],
+    progress_callback: Callable[[int, int], None] | None = None,
+) -> list[EvalResult]:
+    """Async version of `run_evaluation`.
+
+    Uses ``act_in_batch_async()`` for concurrent processing.
+
+    :param agent: Any `Labeler`-subclass agent instance.
+    :param eval_data: List of dicts with ``input`` + expected
+        fields.
+    :param expected_fields: Field names to compare (e.g.
+        ``["category", "reason"]``).
+    :param progress_callback: Optional ``(current, total)``
+        callable invoked after the batch completes.
+    :return: List of `EvalResult`, one per row.
+    """
+    inputs = [row.get("input", row) for row in eval_data]
+    total = len(eval_data)
+
+    try:
+        responses = await agent.act_in_batch_async(inputs, with_tqdm=False)
+        results = [
+            _build_eval_result(row, expected_fields, resp)
+            for row, resp in zip(eval_data, responses)
+        ]
+    except Exception:
+        results = _fallback_sequential(agent, eval_data, expected_fields)
+
+    if progress_callback is not None:
+        progress_callback(total, total)
+
+    return results
+
+
+def _fallback_sequential(
+    agent: Labeler,
+    eval_data: list[dict],
+    expected_fields: list[str],
+) -> list[EvalResult]:
+    """Fall back to sequential ``act()`` calls when batch
+    fails.
+
+    :param agent: Agent instance.
+    :param eval_data: Original eval data rows.
+    :param expected_fields: Fields to compare.
     :return: List of `EvalResult`, one per row.
     """
     results: list[EvalResult] = []
-    total = len(eval_data)
-
-    for idx, row in enumerate(eval_data):
+    for row in eval_data:
         input_data = row.get("input", row)
-        expected = {k: row[k] for k in expected_fields if k in row}
-
-        result = EvalResult(input_data=input_data, expected=expected)
-
         try:
             response = agent.act(input_data)
-            result.response = response
-
-            if response.model is not None:
-                actual = _extract_fields(response.model, expected_fields)
-                result.actual = actual
-                result.field_results = {
-                    k: _compare_field(actual.get(k), expected.get(k))
-                    for k in expected_fields
-                }
-                result.passed = all(result.field_results.values())
-            else:
-                result.error = "Model parsing failed"
+            results.append(_build_eval_result(row, expected_fields, response))
         except Exception as e:
-            result.error = str(e)
-
-        results.append(result)
-
-        if progress_callback is not None:
-            progress_callback(idx + 1, total)
-
+            results.append(
+                _build_eval_result(row, expected_fields, None, error=str(e))
+            )
     return results
 
 

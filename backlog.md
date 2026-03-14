@@ -161,8 +161,8 @@
 
 #### HIGH impact
 
-- [ ] OpenAI-compatible LLM provider — new `openai_provider.py` implementing `LLMProvider` ABC for OpenAI, Azure, vLLM, LM Studio, etc. Optional dependency.
-- [ ] Retry on parse failure — configurable `max_parse_retries` on `Labeler` that re-prompts the LLM with error feedback when `ResponseParser` fails.
+- [x] OpenAI-compatible LLM provider — done in v2.5.0 (`openai_compat.py`, `provider="openai_compat"` in LLMEngine, optional `openai` dependency).
+- [x] Retry on parse failure — done in v2.5.0 (`max_parse_retries` on `Labeler`, re-prompts LLM with error feedback).
 - [ ] Batch evaluation — `run_evaluation()` should use `act_in_batch()` instead of looping `act()`. Add `run_evaluation_async()`.
 - [ ] Agent cloning with overrides — `Labeler.with_overrides(**kwargs)` returns a new instance with selected fields replaced. Useful for A/B testing and model comparison.
 

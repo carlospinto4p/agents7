@@ -5,6 +5,7 @@ from agents7.metrics import (
     _compare_field,
     _extract_fields,
     run_evaluation,
+    run_evaluation_async,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "_compare_field",
     "_extract_fields",
     "run_evaluation",
+    "run_evaluation_async",
 ]

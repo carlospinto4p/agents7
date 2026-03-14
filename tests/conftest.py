@@ -66,9 +66,14 @@ def mock_metrics() -> LLMMetrics:
 def make_agent_mock(
     responses: list[AgentResponse],
 ) -> MagicMock:
-    """Return a mock agent that returns responses in order."""
+    """Return a mock agent that returns responses in order.
+
+    Mocks both ``act`` (sequential fallback) and
+    ``act_in_batch`` (used by ``run_evaluation``).
+    """
     agent = MagicMock()
     agent.act = MagicMock(side_effect=responses)
+    agent.act_in_batch = MagicMock(return_value=list(responses))
     return agent
 
 

@@ -824,6 +824,36 @@ print(agent.describe())
 #   reason: ENTHUSIASTIC, FRUSTRATED, NOT_APPLICABLE
 ```
 
+### Agent Cloning with Overrides
+
+Create agent variants with selected fields replaced, without rebuilding from scratch. Useful for A/B testing, model comparison, and prompt experimentation:
+
+```python
+agent = Labeler.from_yaml("configs/my_agent.yml")
+
+# Swap model
+variant = agent.with_overrides(
+    engine=LLMEngine(provider="ollama", model_name="llama3")
+)
+
+# Change prompt
+variant = agent.with_overrides(
+    system_prompt="New extraction instructions."
+)
+
+# Enable parse retries
+variant = agent.with_overrides(max_parse_retries=2)
+
+# Multiple overrides at once
+variant = agent.with_overrides(
+    name="experiment-v2",
+    think=True,
+    max_parse_retries=1,
+)
+```
+
+The original agent is unchanged (frozen dataclass). Works with all agent types (`Labeler`, `Detector`, `Classifier`, `Regressor`).
+
 ### Batch Export
 
 Export agent responses to JSONL or CSV files after `act_in_batch`:
@@ -847,10 +877,13 @@ export_csv(responses, "results.csv", fields=["category", "reason"])
 
 The `agents7.metrics` module provides evaluation primitives usable without Streamlit. Run an agent against labeled data and compute accuracy, per-field metrics, and confusion matrices.
 
+`run_evaluation` uses `act_in_batch()` internally for efficient processing. If the batch fails, it falls back to sequential `act()` calls so individual errors don't break the entire evaluation. An async variant `run_evaluation_async` is also available.
+
 ```python
 from agents7.metrics import (
     EvalResult,
     run_evaluation,
+    run_evaluation_async,
     compute_metrics,
     build_confusion_matrix,
 )
@@ -861,8 +894,11 @@ eval_data = [
     {"input": {"text": "Terrible service."}, "category": "NEGATIVE"},
 ]
 
-# Run agent against all rows
+# Run agent against all rows (uses batch processing)
 results = run_evaluation(agent, eval_data, ["category"])
+
+# Or use async for concurrent processing
+results = await run_evaluation_async(agent, eval_data, ["category"])
 
 # Compute aggregate metrics
 metrics = compute_metrics(results, ["category"])
