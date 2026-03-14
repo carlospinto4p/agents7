@@ -96,28 +96,41 @@ class Detector(Labeler):
         """Whether the output model includes NOT_APPLICABLE."""
         return getattr(self.output_model, "NOT_APPLICABLE", True)
 
-    @property
-    def prompt(self) -> str:
-        """Full prompt used by the agent."""
+    def _agent_instruction(self) -> str:
+        """Single-input instruction text for the prompt."""
+        return (
+            "You need to stick to the reasons defined "
+            "in the output model schema above."
+        )
+
+    def _batch_instruction(self) -> str:
+        """Batch instruction text for the prompt."""
+        return (
+            "You need to stick to the reasons defined "
+            "in the output model schema above. Respond "
+            "with a JSON array of objects, each one "
+            "matching the schema above."
+        )
+
+    def _extra_prompt_sections(self) -> list[str]:
+        """Extra sections appended to the prompt."""
         extra = []
         if self._has_not_applicable:
             extra.append(self._not_applicable_guidance)
+        return extra
+
+    @property
+    def prompt(self) -> str:
+        """Full prompt used by the agent."""
         return self._build_prompt(
-            "You need to stick to the reasons defined "
-            "in the output model schema above.",
-            extra_sections=extra,
+            self._agent_instruction(),
+            extra_sections=self._extra_prompt_sections(),
         )
 
     @property
     def prompt_for_batch(self) -> str:
         """Full prompt for batch processing."""
-        extra = []
-        if self._has_not_applicable:
-            extra.append(self._not_applicable_guidance)
         return self._build_prompt(
-            "You need to stick to the reasons defined "
-            "in the output model schema above. Respond "
-            "with a JSON array of objects, each one "
-            "matching the schema above.",
-            extra_sections=extra,
+            self._batch_instruction(),
+            extra_sections=self._extra_prompt_sections(),
         )

@@ -134,6 +134,24 @@ class LLMEngine:
 
     # --- Internal dispatch helpers ---
 
+    def _cache_check(
+        self,
+        method_name: str,
+        input_kwarg: str,
+        input_val,
+        **common,
+    ) -> tuple[str | None, object | None]:
+        """Shared cache-lookup for all dispatch methods."""
+        return self._cache_lookup(
+            method_name,
+            common["temperature"],
+            **{input_kwarg: input_val},
+            seed=common["seed"],
+            max_tokens=common["max_tokens"],
+            output_format=common["output_format"],
+            think=common["think"],
+        )
+
     def _execute(
         self,
         method_name: str,
@@ -143,14 +161,8 @@ class LLMEngine:
         **common,
     ) -> dict:
         """Sync cache-lookup → retry → fallback → cache-store."""
-        key, cached = self._cache_lookup(
-            method_name,
-            common["temperature"],
-            **{input_kwarg: input_val},
-            seed=common["seed"],
-            max_tokens=common["max_tokens"],
-            output_format=common["output_format"],
-            think=common["think"],
+        key, cached = self._cache_check(
+            method_name, input_kwarg, input_val, **common
         )
         if cached is not None:
             return cached
@@ -183,14 +195,8 @@ class LLMEngine:
         **common,
     ) -> dict:
         """Async cache-lookup → retry → fallback → cache-store."""
-        key, cached = self._cache_lookup(
-            method_name,
-            common["temperature"],
-            **{input_kwarg: input_val},
-            seed=common["seed"],
-            max_tokens=common["max_tokens"],
-            output_format=common["output_format"],
-            think=common["think"],
+        key, cached = self._cache_check(
+            method_name, input_kwarg, input_val, **common
         )
         if cached is not None:
             return cached
@@ -224,14 +230,8 @@ class LLMEngine:
         **common,
     ):
         """Sync stream: cache-lookup → call → callback."""
-        key, cached = self._cache_lookup(
-            method_name,
-            common["temperature"],
-            **{input_kwarg: input_val},
-            seed=common["seed"],
-            max_tokens=common["max_tokens"],
-            output_format=common["output_format"],
-            think=common["think"],
+        key, cached = self._cache_check(
+            method_name, input_kwarg, input_val, **common
         )
         if cached is not None:
             return cached_cls.from_cached(cached)
@@ -252,14 +252,8 @@ class LLMEngine:
         **common,
     ):
         """Async stream: cache-lookup → await → callback."""
-        key, cached = self._cache_lookup(
-            method_name,
-            common["temperature"],
-            **{input_kwarg: input_val},
-            seed=common["seed"],
-            max_tokens=common["max_tokens"],
-            output_format=common["output_format"],
-            think=common["think"],
+        key, cached = self._cache_check(
+            method_name, input_kwarg, input_val, **common
         )
         if cached is not None:
             return cached_cls.from_cached(cached)

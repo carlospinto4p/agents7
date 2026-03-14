@@ -257,24 +257,27 @@ class Labeler(BaseAgent):
         """
         if self.engine.provider != "ollama":
             return
-        logger.info(
-            f"Agent `{self.name}`: warming up model "
-            f"`{self.engine.model_name}`..."
-        )
+        self._log_warm_up_start()
         self.engine.generate(prompt="ping", max_tokens=1)
-        logger.info(
-            f"Agent `{self.name}`: model `{self.engine.model_name}` ready."
-        )
+        self._log_warm_up_done()
 
     async def warm_up_async(self) -> None:
         """Async version of `warm_up`."""
         if self.engine.provider != "ollama":
             return
+        self._log_warm_up_start()
+        await self.engine.generate_async(prompt="ping", max_tokens=1)
+        self._log_warm_up_done()
+
+    def _log_warm_up_start(self) -> None:
+        """Log warm-up start."""
         logger.info(
             f"Agent `{self.name}`: warming up model "
             f"`{self.engine.model_name}`..."
         )
-        await self.engine.generate_async(prompt="ping", max_tokens=1)
+
+    def _log_warm_up_done(self) -> None:
+        """Log warm-up completion."""
         logger.info(
             f"Agent `{self.name}`: model `{self.engine.model_name}` ready."
         )
