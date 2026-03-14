@@ -2,7 +2,7 @@ import pytest
 
 from agents7.agents import Classifier
 
-from conftest import generate_eval_report
+from conftest import write_eval_report_from_responses
 from data import SENTIMENT_DATA
 
 
@@ -23,36 +23,30 @@ def test_single_sentiment_classification(
 
 
 def test_batch_sentiment_classification(
-    sentiment_classifier: Classifier,
+    sentiment_classifier: Classifier, reports_dir
 ) -> None:
-    """Test batch processing of sentiment classification cases."""
+    """Test batch processing and generate eval report."""
     input_list = [{"text": case["text"]} for case in SENTIMENT_DATA]
-    response = sentiment_classifier.act_in_batch(input_list)
+    responses = sentiment_classifier.act_in_batch(input_list)
 
-    assert len(response) == len(SENTIMENT_DATA), (
-        f"Expected {len(SENTIMENT_DATA)} responses but got {len(response)}"
+    assert len(responses) == len(SENTIMENT_DATA), (
+        f"Expected {len(SENTIMENT_DATA)} responses but got {len(responses)}"
     )
 
-    for i, (test_case, output) in enumerate(zip(SENTIMENT_DATA, response)):
+    for i, (test_case, output) in enumerate(zip(SENTIMENT_DATA, responses)):
         assert test_case["expected_category"] == output.model.category.name, (
             f"Expected category '{test_case['expected_category']}' "
             f"but got '{output.model.category.name}' for case {i}:"
             f" '{test_case['text']}'"
         )
 
-
-def test_classifier_eval_report(
-    sentiment_classifier: Classifier, reports_dir
-) -> None:
-    """Generate an evaluation report for sentiment classification."""
-    eval_data = [
-        {"input": {"text": c["text"]}, "category": c["expected_category"]}
-        for c in SENTIMENT_DATA
-    ]
-    generate_eval_report(
+    # Generate report from already-collected responses
+    write_eval_report_from_responses(
         sentiment_classifier,
-        eval_data,
-        ["category"],
+        responses,
+        SENTIMENT_DATA,
+        "category",
+        "expected_category",
         reports_dir,
         "classifier.md",
         confusion_field="category",

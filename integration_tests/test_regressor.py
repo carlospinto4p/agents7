@@ -2,7 +2,7 @@ import pytest
 
 from agents7.agents import Regressor
 
-from conftest import generate_eval_report
+from conftest import write_eval_report_from_responses
 from data import TEMPERATURE_DATA
 
 
@@ -23,22 +23,33 @@ def test_single_temperature_regression(
 
 
 def test_batch_temperature_regression(
-    temperature_regressor: Regressor,
+    temperature_regressor: Regressor, reports_dir
 ) -> None:
-    """Test batch processing of temperature regression cases."""
+    """Test batch processing and generate eval report."""
     input_list = [{"text": case["text"]} for case in TEMPERATURE_DATA]
-    response = temperature_regressor.act_in_batch(input_list)
+    responses = temperature_regressor.act_in_batch(input_list)
 
-    assert len(response) == len(TEMPERATURE_DATA), (
-        f"Expected {len(TEMPERATURE_DATA)} responses but got {len(response)}"
+    assert len(responses) == len(TEMPERATURE_DATA), (
+        f"Expected {len(TEMPERATURE_DATA)} responses but got {len(responses)}"
     )
 
-    for i, (test_case, output) in enumerate(zip(TEMPERATURE_DATA, response)):
+    for i, (test_case, output) in enumerate(zip(TEMPERATURE_DATA, responses)):
         assert test_case["expected_reason"] == output.model.reason.name, (
             f"Expected reason '{test_case['expected_reason']}' "
             f"but got '{output.model.reason.name}' for case {i}:"
             f" '{test_case['text']}'"
         )
+
+    # Generate report from already-collected responses
+    write_eval_report_from_responses(
+        temperature_regressor,
+        responses,
+        TEMPERATURE_DATA,
+        "reason",
+        "expected_reason",
+        reports_dir,
+        "regressor.md",
+    )
 
 
 def test_regressor_extracts_numeric_value(
@@ -52,20 +63,3 @@ def test_regressor_extracts_numeric_value(
     assert response.model.value is not None
     assert 20 <= response.model.value <= 30
     assert response.model.reason.name == "COMFORTABLE"
-
-
-def test_regressor_eval_report(
-    temperature_regressor: Regressor, reports_dir
-) -> None:
-    """Generate an evaluation report for temperature regression."""
-    eval_data = [
-        {"input": {"text": c["text"]}, "reason": c["expected_reason"]}
-        for c in TEMPERATURE_DATA
-    ]
-    generate_eval_report(
-        temperature_regressor,
-        eval_data,
-        ["reason"],
-        reports_dir,
-        "regressor.md",
-    )
