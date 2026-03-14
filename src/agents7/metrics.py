@@ -204,6 +204,13 @@ def compute_metrics(
             "failed": 0,
             "accuracy": 0.0,
             "per_field": {},
+            "timing": {
+                "total_s": 0.0,
+                "avg_s": 0.0,
+                "min_s": 0.0,
+                "max_s": 0.0,
+                "per_case": [],
+            },
         }
 
     passed = sum(1 for r in results if r.passed)
@@ -215,12 +222,39 @@ def compute_metrics(
         )
         per_field[field_name] = correct / total
 
+    timing = _compute_timing(results)
+
     return {
         "total": total,
         "passed": passed,
         "failed": total - passed,
         "accuracy": passed / total,
         "per_field": per_field,
+        "timing": timing,
+    }
+
+
+def _compute_timing(results: list[EvalResult]) -> dict:
+    """Extract timing statistics from evaluation results.
+
+    :param results: List of `EvalResult`.
+    :return: Dict with ``total_s``, ``avg_s``, ``min_s``,
+        ``max_s``, and ``per_case`` (list of durations).
+    """
+    durations: list[float] = []
+    for r in results:
+        if r.response is not None and hasattr(r.response, "metrics"):
+            durations.append(r.response.metrics.total_duration)
+        else:
+            durations.append(0.0)
+
+    total_s = sum(durations)
+    return {
+        "total_s": total_s,
+        "avg_s": total_s / len(durations) if durations else 0.0,
+        "min_s": min(durations) if durations else 0.0,
+        "max_s": max(durations) if durations else 0.0,
+        "per_case": durations,
     }
 
 

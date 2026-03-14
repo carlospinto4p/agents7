@@ -213,6 +213,19 @@ def export_eval_report(
             lines.append(f"| {fname} | {acc:.1%} |")
         lines.append("")
 
+    # --- Timing ---
+    timing = metrics.get("timing", {})
+    if timing and timing.get("total_s", 0) > 0:
+        lines.append("## Response Times")
+        lines.append("")
+        lines.append("| Metric | Value |")
+        lines.append("|--------|-------|")
+        lines.append(f"| Total | {timing['total_s']:.2f}s |")
+        lines.append(f"| Average | {timing['avg_s']:.2f}s |")
+        lines.append(f"| Min | {timing['min_s']:.2f}s |")
+        lines.append(f"| Max | {timing['max_s']:.2f}s |")
+        lines.append("")
+
     # --- Confusion matrix ---
     if confusion_field:
         _append_confusion_matrix(lines, results, confusion_field)
@@ -220,9 +233,13 @@ def export_eval_report(
     # --- Per-case detail ---
     lines.append("## Per-Case Results")
     lines.append("")
+    per_case_times = timing.get("per_case", [])
     for i, r in enumerate(results):
         icon = "PASS" if r.passed else "FAIL"
-        lines.append(f"### Case {i + 1} — {icon}")
+        duration = (
+            f" ({per_case_times[i]:.2f}s)" if i < len(per_case_times) else ""
+        )
+        lines.append(f"### Case {i + 1} — {icon}{duration}")
         lines.append("")
         lines.append(f"- **Input**: {r.input_data}")
         lines.append(f"- **Expected**: {r.expected}")
