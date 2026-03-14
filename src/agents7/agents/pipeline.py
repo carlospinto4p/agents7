@@ -8,6 +8,10 @@ from cpinto.files import load_yaml
 
 from agents7.agents.base import BaseAgent
 from agents7.agents.labeler import Labeler
+from agents7.agents.streaming import (
+    AgentAsyncStreamResult,
+    AgentStreamResult,
+)
 from agents7.agents.utils import import_from_path, run_with_semaphore
 from agents7.exceptions import PipelineConfigurationError
 from agents7.logs import logger
@@ -278,6 +282,96 @@ class Pipeline:
                 current_input = result
 
         return self._pipeline_result(executed_steps, True)
+
+    def act_stream(
+        self,
+        input_data: dict,
+        chat_kwargs: dict | None = None,
+    ) -> AgentStreamResult:
+        """Execute the pipeline, streaming the final step.
+
+        All steps except the last are executed with ``act()``.
+        The last step uses ``act_stream()`` to yield text
+        chunks as they arrive.
+
+        If an intermediate step fails (``model=None`` or
+        mapper error), a pre-filled ``AgentStreamResult``
+        with ``success=False`` is returned.
+
+        :param input_data: Input dict for the first step.
+        :param chat_kwargs: Extra kwargs passed to each
+            agent.
+        :return: An `AgentStreamResult` for the final step.
+        """
+        current_input = input_data
+        for i, step in enumerate(self.steps[:-1]):
+            if step.condition is not None and not step.condition(
+                current_input
+            ):
+                continue
+            response = step.agent.act(current_input, chat_kwargs=chat_kwargs)
+            if response.model is None:
+                return AgentStreamResult.from_failed(response)
+            try:
+                current_input = step.mapper(response)
+            except Exception as e:
+                logger.error(f"Pipeline mapper failed at step {i}: {e}")
+                return AgentStreamResult.from_failed(response)
+
+        last_step = self.steps[-1]
+        if last_step.condition is not None and not last_step.condition(
+            current_input
+        ):
+            return AgentStreamResult.from_failed(None)
+
+        return last_step.agent.act_stream(
+            current_input, chat_kwargs=chat_kwargs
+        )
+
+    async def act_stream_async(
+        self,
+        input_data: dict,
+        chat_kwargs: dict | None = None,
+    ) -> AgentAsyncStreamResult:
+        """Execute the pipeline, streaming the final step
+        asynchronously.
+
+        All steps except the last are executed with
+        ``act_async()``. The last step uses
+        ``act_stream_async()``.
+
+        :param input_data: Input dict for the first step.
+        :param chat_kwargs: Extra kwargs passed to each
+            agent.
+        :return: An `AgentAsyncStreamResult` for the final
+            step.
+        """
+        current_input = input_data
+        for i, step in enumerate(self.steps[:-1]):
+            if step.condition is not None and not step.condition(
+                current_input
+            ):
+                continue
+            response = await step.agent.act_async(
+                current_input, chat_kwargs=chat_kwargs
+            )
+            if response.model is None:
+                return AgentAsyncStreamResult.from_failed(response)
+            try:
+                current_input = step.mapper(response)
+            except Exception as e:
+                logger.error(f"Pipeline mapper failed at step {i}: {e}")
+                return AgentAsyncStreamResult.from_failed(response)
+
+        last_step = self.steps[-1]
+        if last_step.condition is not None and not last_step.condition(
+            current_input
+        ):
+            return AgentAsyncStreamResult.from_failed(None)
+
+        return await last_step.agent.act_stream_async(
+            current_input, chat_kwargs=chat_kwargs
+        )
 
     @staticmethod
     def _partition_by_condition(

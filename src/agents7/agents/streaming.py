@@ -43,6 +43,8 @@ class AgentStreamResult:
         self._agent_response: AgentResponse | None = None
 
     def __iter__(self) -> Iterator[str]:
+        if self._stream is None:
+            return iter(())
         for chunk in self._stream:
             yield chunk
         self._finalize()
@@ -65,6 +67,31 @@ class AgentStreamResult:
             thinking=self._stream.thinking,
             metrics=LLMMetrics(**self._stream.metrics),
         )
+
+    @classmethod
+    def from_failed(
+        cls, response: AgentResponse | None
+    ) -> "AgentStreamResult":
+        """Create a pre-filled failed result.
+
+        Used by `Pipeline.act_stream` when an intermediate
+        step fails.
+
+        :param response: The failed step's response, or
+            None.
+        :return: An `AgentStreamResult` that yields nothing.
+        """
+        obj = cls.__new__(cls)
+        obj._stream = None
+        obj._parser = None
+        failed = response or AgentResponse(
+            response="",
+            model=None,
+            thinking=None,
+            metrics=LLMMetrics(tokens=0, prompt_tokens=0, total_duration=0.0),
+        )
+        obj._agent_response = failed
+        return obj
 
 
 class AgentAsyncStreamResult:
@@ -93,7 +120,15 @@ class AgentAsyncStreamResult:
         self._agent_response: AgentResponse | None = None
 
     def __aiter__(self) -> AsyncIterator[str]:
+        if self._stream is None:
+            return self._empty()
         return self._iterate()
+
+    @staticmethod
+    async def _empty() -> AsyncIterator[str]:
+        """Yield nothing (used for failed results)."""
+        return
+        yield  # noqa: RET504
 
     async def _iterate(self) -> AsyncIterator[str]:
         async for chunk in self._stream:
@@ -118,3 +153,29 @@ class AgentAsyncStreamResult:
             thinking=self._stream.thinking,
             metrics=LLMMetrics(**self._stream.metrics),
         )
+
+    @classmethod
+    def from_failed(
+        cls, response: AgentResponse | None
+    ) -> "AgentAsyncStreamResult":
+        """Create a pre-filled failed result.
+
+        Used by `Pipeline.act_stream_async` when an
+        intermediate step fails.
+
+        :param response: The failed step's response, or
+            None.
+        :return: An `AgentAsyncStreamResult` that yields
+            nothing.
+        """
+        obj = cls.__new__(cls)
+        obj._stream = None
+        obj._parser = None
+        failed = response or AgentResponse(
+            response="",
+            model=None,
+            thinking=None,
+            metrics=LLMMetrics(tokens=0, prompt_tokens=0, total_duration=0.0),
+        )
+        obj._agent_response = failed
+        return obj

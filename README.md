@@ -763,6 +763,23 @@ pipeline = Pipeline.from_agents([agent1, agent2, agent3])
 result = pipeline.act({"text": "input"})
 ```
 
+**Pipeline streaming:** Stream the final step's output while running intermediate steps normally:
+
+```python
+stream = pipeline.act_stream({"text": "input"})
+for chunk in stream:
+    print(chunk, end="", flush=True)
+
+print(stream.agent_response.model)
+
+# Async version
+stream = await pipeline.act_stream_async({"text": "input"})
+async for chunk in stream:
+    print(chunk, end="", flush=True)
+```
+
+If an intermediate step fails, the stream yields nothing and `agent_response.model` is `None`.
+
 ### Batch Concurrency Control
 
 When using `act_in_batch_async`, you can limit the number of concurrent LLM requests via a `BatchSettings` instance. This prevents overwhelming the LLM server with large input lists.
@@ -871,6 +888,12 @@ export_csv(responses, "results.csv")
 
 # Export specific fields only
 export_csv(responses, "results.csv", fields=["category", "reason"])
+
+# Export to Polars DataFrame (requires polars)
+from agents7.export import export_dataframe
+
+df = export_dataframe(responses)
+df = export_dataframe(responses, fields=["category", "reason"])
 ```
 
 ### Evaluation Metrics
