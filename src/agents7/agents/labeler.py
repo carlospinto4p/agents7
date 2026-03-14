@@ -342,13 +342,14 @@ class Labeler(BaseAgent):
                 "content": f"Process the following:\n{input_data}",
             },
         ]
-        response = self.engine.chat(
-            messages=messages,
-            temperature=0,
-            output_format=self._output_schema,
-            **chat_kwargs,
+        response = self._strip_role(
+            self.engine.chat(
+                messages=messages,
+                temperature=0,
+                output_format=self._output_schema,
+                **chat_kwargs,
+            )
         )
-        response.pop("role")
         try:
             parsed = self._parser.parse(response["response"])
         except ParseError as first_error:
@@ -387,13 +388,14 @@ class Labeler(BaseAgent):
                 "content": f"Process the following:\n{input_data}",
             },
         ]
-        response = await self.engine.chat_async(
-            messages=messages,
-            temperature=0,
-            output_format=self._output_schema,
-            **chat_kwargs,
+        response = self._strip_role(
+            await self.engine.chat_async(
+                messages=messages,
+                temperature=0,
+                output_format=self._output_schema,
+                **chat_kwargs,
+            )
         )
-        response.pop("role")
         try:
             parsed = self._parser.parse(response["response"])
         except ParseError as first_error:
@@ -641,7 +643,7 @@ class Labeler(BaseAgent):
 
     def _parse_batch_response(self, response: dict) -> dict:
         """Parse a raw batch LLM response dict."""
-        response.pop("role")
+        self._strip_role(response)
         try:
             response["model"] = self._parser.parse(
                 response["response"], for_batch=True
@@ -678,37 +680,14 @@ class Labeler(BaseAgent):
     ) -> "BaseModel | None":
         """Retry LLM call when parsing fails (sync).
 
-        Appends the failed response and error message to the
-        conversation so the model can self-correct.
-
         :param error: The parse error from the first attempt.
         :param messages: Original messages list.
         :param chat_kwargs: Sanitized chat kwargs.
         :return: Parsed model or None if all retries fail.
         """
-        if self.max_parse_retries <= 0:
-            return None
-        retry_messages = list(messages)
-        last_error = error
-        for attempt in range(self.max_parse_retries):
-            logger.warning(
-                f"Agent `{self.name}`: parse retry "
-                f"{attempt + 1}/{self.max_parse_retries} "
-                f"after error: {last_error}"
-            )
-            retry_messages.append(self._parse_retry_message(last_error))
-            response = self.engine.chat(
-                messages=retry_messages,
-                temperature=0,
-                output_format=self._output_schema,
-                **chat_kwargs,
-            )
-            response.pop("role")
-            try:
-                return self._parser.parse(response["response"])
-            except ParseError as e:
-                last_error = e
-        return None
+        return self._retry_parse_loop(
+            error, messages, chat_kwargs, self.engine.chat
+        )
 
     async def _retry_parse_async(
         self,
@@ -723,6 +702,25 @@ class Labeler(BaseAgent):
         :param chat_kwargs: Sanitized chat kwargs.
         :return: Parsed model or None if all retries fail.
         """
+        return await self._retry_parse_loop_async(
+            error, messages, chat_kwargs, self.engine.chat_async
+        )
+
+    def _retry_parse_loop(
+        self,
+        error: ParseError,
+        messages: list[dict[str, str]],
+        chat_kwargs: dict,
+        chat_fn,
+    ) -> "BaseModel | None":
+        """Shared retry loop for parse failures (sync).
+
+        :param error: Initial parse error.
+        :param messages: Original messages list.
+        :param chat_kwargs: Sanitized chat kwargs.
+        :param chat_fn: Sync chat callable.
+        :return: Parsed model or None.
+        """
         if self.max_parse_retries <= 0:
             return None
         retry_messages = list(messages)
@@ -734,13 +732,54 @@ class Labeler(BaseAgent):
                 f"after error: {last_error}"
             )
             retry_messages.append(self._parse_retry_message(last_error))
-            response = await self.engine.chat_async(
-                messages=retry_messages,
-                temperature=0,
-                output_format=self._output_schema,
-                **chat_kwargs,
+            response = self._strip_role(
+                chat_fn(
+                    messages=retry_messages,
+                    temperature=0,
+                    output_format=self._output_schema,
+                    **chat_kwargs,
+                )
             )
-            response.pop("role")
+            try:
+                return self._parser.parse(response["response"])
+            except ParseError as e:
+                last_error = e
+        return None
+
+    async def _retry_parse_loop_async(
+        self,
+        error: ParseError,
+        messages: list[dict[str, str]],
+        chat_kwargs: dict,
+        chat_fn,
+    ) -> "BaseModel | None":
+        """Shared retry loop for parse failures (async).
+
+        :param error: Initial parse error.
+        :param messages: Original messages list.
+        :param chat_kwargs: Sanitized chat kwargs.
+        :param chat_fn: Async chat callable.
+        :return: Parsed model or None.
+        """
+        if self.max_parse_retries <= 0:
+            return None
+        retry_messages = list(messages)
+        last_error = error
+        for attempt in range(self.max_parse_retries):
+            logger.warning(
+                f"Agent `{self.name}`: parse retry "
+                f"{attempt + 1}/{self.max_parse_retries} "
+                f"after error: {last_error}"
+            )
+            retry_messages.append(self._parse_retry_message(last_error))
+            response = self._strip_role(
+                await chat_fn(
+                    messages=retry_messages,
+                    temperature=0,
+                    output_format=self._output_schema,
+                    **chat_kwargs,
+                )
+            )
             try:
                 return self._parser.parse(response["response"])
             except ParseError as e:
@@ -784,6 +823,16 @@ class Labeler(BaseAgent):
             error=error,
         )
         self.call_logger(record)
+
+    @staticmethod
+    def _strip_role(response: dict) -> dict:
+        """Remove the ``role`` key from a chat response dict.
+
+        :param response: Raw chat response from the engine.
+        :return: The same dict with ``role`` removed.
+        """
+        response.pop("role", None)
+        return response
 
     def _preprocess(self, input_data):
         """Apply the preprocessor if set.

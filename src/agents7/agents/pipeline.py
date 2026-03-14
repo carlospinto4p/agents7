@@ -233,14 +233,14 @@ class Pipeline:
         current_input = input_data
         executed_steps: list[AgentResponse] = []
 
-        for i, step in enumerate(self.steps):
+        for step_idx, step in enumerate(self.steps):
             if step.condition is not None and not step.condition(
                 current_input
             ):
                 continue
             response = step.agent.act(current_input, chat_kwargs=chat_kwargs)
             result = self._process_step_result(
-                i, step, response, executed_steps
+                step_idx, step, response, executed_steps
             )
             if isinstance(result, PipelineResponse):
                 return result
@@ -265,7 +265,7 @@ class Pipeline:
         current_input = input_data
         executed_steps: list[AgentResponse] = []
 
-        for i, step in enumerate(self.steps):
+        for step_idx, step in enumerate(self.steps):
             if step.condition is not None and not step.condition(
                 current_input
             ):
@@ -274,7 +274,7 @@ class Pipeline:
                 current_input, chat_kwargs=chat_kwargs
             )
             result = self._process_step_result(
-                i, step, response, executed_steps
+                step_idx, step, response, executed_steps
             )
             if isinstance(result, PipelineResponse):
                 return result
@@ -304,7 +304,7 @@ class Pipeline:
         :return: An `AgentStreamResult` for the final step.
         """
         current_input = input_data
-        for i, step in enumerate(self.steps[:-1]):
+        for step_idx, step in enumerate(self.steps[:-1]):
             if step.condition is not None and not step.condition(
                 current_input
             ):
@@ -315,7 +315,9 @@ class Pipeline:
             try:
                 current_input = step.mapper(response)
             except Exception as e:
-                logger.error(f"Pipeline mapper failed at step {i}: {e}")
+                logger.error(
+                    f"Pipeline mapper failed at step {step_idx}: {e}"
+                )
                 return AgentStreamResult.from_failed(response)
 
         last_step = self.steps[-1]
@@ -347,7 +349,7 @@ class Pipeline:
             step.
         """
         current_input = input_data
-        for i, step in enumerate(self.steps[:-1]):
+        for step_idx, step in enumerate(self.steps[:-1]):
             if step.condition is not None and not step.condition(
                 current_input
             ):
@@ -360,7 +362,9 @@ class Pipeline:
             try:
                 current_input = step.mapper(response)
             except Exception as e:
-                logger.error(f"Pipeline mapper failed at step {i}: {e}")
+                logger.error(
+                    f"Pipeline mapper failed at step {step_idx}: {e}"
+                )
                 return AgentAsyncStreamResult.from_failed(response)
 
         last_step = self.steps[-1]
