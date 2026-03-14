@@ -175,7 +175,7 @@
 
 #### LOW impact
 
-- [ ] Input preprocessor on Labeler — optional `preprocessor: Callable[[str], str]` that transforms input before building the prompt.
+- [x] Input preprocessor on Labeler — done in v3.3.1 (`preprocessor` field on `Labeler`, applied in all act/stream/batch methods).
 - [ ] Evaluation report export — `export_eval_report(results, metrics, path)` writes a formatted Markdown/HTML evaluation report.
 
 ### Infrastructure

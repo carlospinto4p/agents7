@@ -1,6 +1,25 @@
 
 ## Changelog - Agents7
 
+### v3.3.1 - 14th March 2026
+
+- Module `agents7.agents.labeler`:
+  - New `preprocessor` field (optional, default None):
+    callable that transforms input data before it reaches
+    the LLM. Applied in `act()`, `act_async()`,
+    `act_stream()`, `act_stream_async()`, and batch methods
+    (per item).
+  - New `_preprocess()` internal method.
+- Module `agents7.agents.config_loader`:
+  - YAML configs support `preprocessor` key (dotted import
+    path).
+- Tests:
+  - New `test_preprocessor.py` (8 tests): default no-op,
+    act/act_async/batch application, truncation, dict
+    replacement, YAML loading.
+- `README.md`: documented input preprocessor.
+
+
 ### v3.3.0 - 14th March 2026
 
 - Module `agents7.agents.labeler`:
