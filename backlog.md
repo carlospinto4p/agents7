@@ -182,9 +182,9 @@
 
 #### Source (medium impact)
 
-- [ ] Consolidate `_retry_parse_sync` / `_retry_parse_async` in `labeler.py` — 88% duplication, only difference is `chat()` vs `await chat_async()`. Extract shared retry loop with a callable parameter.
-- [ ] Extract `response.pop("role")` into a `_strip_role(response)` helper in `labeler.py` — appears 5 times across act, act_async, batch, and retry methods.
-- [ ] Standardize loop variable naming in `pipeline.py` — uses `i` in some places, `step_idx` in others. Use `step_idx` throughout.
+- [x] Consolidate `_retry_parse_sync` / `_retry_parse_async` in `labeler.py` — done in v3.4.2 (`_retry_parse_loop` / `_retry_parse_loop_async` with callable parameter).
+- [x] Extract `response.pop("role")` into `_strip_role()` in `labeler.py` — done in v3.4.2 (static method, 5 call sites).
+- [x] Standardize loop variable naming in `pipeline.py` — done in v3.4.2 (`i` → `step_idx` in act, act_async, act_stream, act_stream_async).
 
 #### Architecture (low impact)
 

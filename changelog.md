@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v3.4.2 - 14th March 2026
+
+- Module `agents7.agents.labeler`:
+  - Consolidated `_retry_parse_sync` / `_retry_parse_async`
+    into shared `_retry_parse_loop` /
+    `_retry_parse_loop_async` that accept a chat callable.
+  - New `_strip_role()` static method replaces 5 scattered
+    `response.pop("role")` calls.
+- Module `agents7.agents.pipeline`:
+  - Standardized loop variable from `i` to `step_idx` in
+    `act()`, `act_async()`, `act_stream()`, and
+    `act_stream_async()`.
+
+
 ### v3.4.1 - 14th March 2026
 
 - Module `agents7.metrics`:
