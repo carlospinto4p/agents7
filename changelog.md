@@ -1,6 +1,31 @@
 
 ## Changelog - Agents7
 
+### v3.3.2 - 14th March 2026
+
+- Module `agents7.export`:
+  - New `export_eval_report(results, metrics, path, ...)`:
+    generates a Markdown evaluation report with agent info,
+    date, overall metrics, per-field accuracy, optional
+    confusion matrix, and per-case detail.
+  - Internal helper `_append_confusion_matrix()`.
+- Integration tests:
+  - `conftest.py`: new `reports_dir` fixture and
+    `generate_eval_report()` helper that runs evaluation and
+    writes a Markdown report to
+    `integration_tests/reports/`.
+  - `test_detector.py`: new `test_detector_eval_report`.
+  - `test_classifier.py`: new `test_classifier_eval_report`
+    (includes confusion matrix).
+  - `test_regressor.py`: new `test_regressor_eval_report`.
+- Tests:
+  - New `test_eval_report.py` (8 tests): basic report, agent
+    info, per-field accuracy, confusion matrix on/off, error
+    handling, empty results, date stamp.
+- `.gitignore`: added `integration_tests/reports/`.
+- `README.md`: documented `export_eval_report()`.
+
+
 ### v3.3.1 - 14th March 2026
 
 - Module `agents7.agents.labeler`:

@@ -176,7 +176,7 @@
 #### LOW impact
 
 - [x] Input preprocessor on Labeler — done in v3.3.1 (`preprocessor` field on `Labeler`, applied in all act/stream/batch methods).
-- [ ] Evaluation report export — `export_eval_report(results, metrics, path)` writes a formatted Markdown/HTML evaluation report.
+- [x] Evaluation report export — done in v3.3.2 (`export_eval_report()` in `agents7.export`, integration test reports in `integration_tests/reports/`).
 
 ### Infrastructure
 
