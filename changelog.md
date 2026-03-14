@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.4.1 - 14th March 2026
+
+- Module `agents7.metrics`:
+  - `compute_metrics()` now includes a ``timing`` dict with
+    ``total_s``, ``avg_s``, ``min_s``, ``max_s``, and
+    ``per_case`` (list of per-case durations in seconds).
+  - New internal `_compute_timing()` helper.
+- Module `agents7.export`:
+  - `export_eval_report()` includes a "Response Times"
+    summary table (total, average, min, max) and per-case
+    duration in seconds in the case headers.
+
+
 ### v3.4.0 - 14th March 2026
 
 - Module `agents7.models.base`:
