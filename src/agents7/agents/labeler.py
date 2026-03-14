@@ -165,8 +165,12 @@ class Labeler(BaseAgent):
         """Full prompt for batch processing."""
         return self._build_prompt(
             "You will receive multiple inputs. Process "
-            "each one independently and return an array "
-            "of outputs in the same order as the inputs."
+            "each one independently — apply the exact same "
+            "analysis to each item as you would for a "
+            "single input. Do not default to a safe or "
+            "neutral answer just because there are multiple "
+            "items. Return an array of outputs in the same "
+            "order as the inputs."
         )
 
     def _build_prompt(

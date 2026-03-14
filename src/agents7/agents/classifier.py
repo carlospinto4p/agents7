@@ -118,9 +118,13 @@ class Classifier(Detector):
     def _batch_instruction(self) -> str:
         """Batch instruction for classification."""
         return (
-            "Classify each input into one of the "
-            "categories defined above. Provide a reason "
-            "that justifies each classification."
+            "You will receive multiple inputs. Classify "
+            "EACH input independently into one of the "
+            "categories defined above. Apply the same "
+            "rules to each item as you would for a single "
+            "input — do not be more conservative just "
+            "because there are multiple items. Provide a "
+            "reason that justifies each classification."
             + self._na_suffix(
                 " Use NOT_APPLICABLE if an input cannot be classified."
             )

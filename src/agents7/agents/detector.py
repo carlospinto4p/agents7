@@ -106,9 +106,13 @@ class Detector(Labeler):
     def _batch_instruction(self) -> str:
         """Batch instruction text for the prompt."""
         return (
-            "You need to stick to the reasons defined "
-            "in the output model schema above. Respond "
-            "with a JSON array of objects, each one "
+            "You will receive multiple inputs. Process "
+            "each one independently — apply the exact "
+            "same analysis as for a single input. Do not "
+            "default to a safe answer just because there "
+            "are multiple items. Stick to the reasons "
+            "defined in the output model schema above. "
+            "Respond with a JSON array of objects, each "
             "matching the schema above."
         )
 
