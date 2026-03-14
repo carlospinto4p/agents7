@@ -237,6 +237,40 @@ class Labeler(BaseAgent):
                 lines.append(f"  {field_name}: {vals}")
         return "\n".join(lines)
 
+    def warm_up(self) -> None:
+        """Pre-load the LLM model by sending a trivial prompt.
+
+        Ollama loads models lazily on first call, which can
+        cause a multi-second cold-start delay. Call this
+        method at application startup to pay that cost
+        upfront.
+
+        For non-Ollama providers this is a no-op.
+        """
+        if self.engine.provider != "ollama":
+            return
+        logger.info(
+            f"Agent `{self.name}`: warming up model "
+            f"`{self.engine.model_name}`..."
+        )
+        self.engine.generate(prompt="ping", max_tokens=1)
+        logger.info(
+            f"Agent `{self.name}`: model `{self.engine.model_name}` ready."
+        )
+
+    async def warm_up_async(self) -> None:
+        """Async version of `warm_up`."""
+        if self.engine.provider != "ollama":
+            return
+        logger.info(
+            f"Agent `{self.name}`: warming up model "
+            f"`{self.engine.model_name}`..."
+        )
+        await self.engine.generate_async(prompt="ping", max_tokens=1)
+        logger.info(
+            f"Agent `{self.name}`: model `{self.engine.model_name}` ready."
+        )
+
     def with_overrides(self, **kwargs) -> "Labeler":
         """Create a copy of this agent with selected fields
         replaced.

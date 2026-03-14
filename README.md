@@ -936,6 +936,23 @@ print(f"Matrix: {cm['matrix']}")
 
 The UI evaluation module (`agents7.ui.evaluation`) re-exports from `agents7.metrics`, so existing UI code continues to work unchanged.
 
+### Model Warm-Up
+
+Ollama loads models lazily on first call, causing a cold-start delay. Use `warm_up()` to preload the model at startup:
+
+```python
+agent = Labeler.from_yaml("configs/my_agent.yml")
+agent.warm_up()  # blocks until model is loaded
+
+# First real call is fast
+response = agent.act({"text": "..."})
+
+# Async version
+await agent.warm_up_async()
+```
+
+For non-Ollama providers (e.g. `openai_compat`), `warm_up()` is a no-op.
+
 ### Structured Call Logging
 
 Optional per-call logging that captures trace ID, agent name, model, tokens, duration, and success/failure. Useful for debugging, observability, and cost tracking.
