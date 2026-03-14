@@ -168,8 +168,8 @@
 
 #### MEDIUM impact
 
-- [ ] Pipeline streaming — `Pipeline.act_stream()` that streams the final step's output.
-- [ ] Export to Polars DataFrame — `export_dataframe(responses) -> pl.DataFrame` with polars as optional dependency.
+- [x] Pipeline streaming — done in v3.1.0 (`Pipeline.act_stream()`, `Pipeline.act_stream_async()`, `AgentStreamResult.from_failed()`).
+- [x] Export to Polars DataFrame — done in v3.1.0 (`export_dataframe(responses, fields)` in `agents7.export`, optional polars dependency).
 - [ ] Structured call logging — optional structured logging with trace IDs, agent name, model, duration, tokens, success/failure per call. JSON format for observability tools.
 - [ ] Model warm-up helper — `Labeler.warm_up()` sends a trivial prompt to preload the Ollama model.
 

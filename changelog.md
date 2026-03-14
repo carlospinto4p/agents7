@@ -1,6 +1,41 @@
 
 ## Changelog - Agents7
 
+### v3.1.0 - 14th March 2026
+
+- Module `agents7.agents.pipeline`:
+  - New `Pipeline.act_stream(input_data, chat_kwargs)`:
+    executes all steps except the last with `act()`, then
+    streams the final step via `act_stream()`. Returns an
+    `AgentStreamResult`.
+  - New `Pipeline.act_stream_async(input_data, chat_kwargs)`:
+    async version using `act_async()` + `act_stream_async()`.
+  - On intermediate failure (model=None or mapper error),
+    returns a pre-filled `AgentStreamResult` that yields
+    nothing.
+- Module `agents7.agents.streaming`:
+  - New `AgentStreamResult.from_failed(response)`: creates a
+    pre-filled failed result (used by pipeline streaming).
+  - New `AgentAsyncStreamResult.from_failed(response)`: async
+    version.
+  - Both stream classes now handle `_stream=None` gracefully
+    in `__iter__` / `__aiter__`.
+- Module `agents7.export`:
+  - New `export_dataframe(responses, fields)`: converts agent
+    responses to a Polars `DataFrame`. Requires the `polars`
+    package (optional).
+- Tests:
+  - New `test_pipeline_stream.py` (9 tests): two-step sync,
+    single-step, intermediate failure, mapper failure,
+    condition skip, async two-step, async failure,
+    `from_failed` for both stream types.
+  - New `test_export_dataframe.py` (7 tests): basic export,
+    explicit fields, None model, empty, mixed, response
+    column, no-fields fallback.
+- `README.md`: documented pipeline streaming and
+  `export_dataframe()`.
+
+
 ### v3.0.0 - 14th March 2026
 
 - **BREAKING**: `pyproject.toml`: replaced `pandas` with
