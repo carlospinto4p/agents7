@@ -1,6 +1,47 @@
 
 ## Changelog - Agents7
 
+### v2.5.0 - 14th March 2026
+
+- Module `agents7.llm`:
+  - New `OpenAICompatProvider` (`openai_compat.py`): LLM
+    provider for any OpenAI-compatible API (OpenAI, Azure,
+    vLLM, LM Studio, etc.). Supports chat, generate,
+    streaming (sync + async), and structured output via JSON
+    schema. Requires optional `openai` package (`uv pip
+    install agents7[openai]`).
+  - `LLMEngine`: new `provider="openai_compat"` option with
+    `base_url` and `api_key` kwargs. Fallback model support
+    included.
+  - `retry.py`: retries now also catch OpenAI `APIError`
+    when the `openai` package is installed. Transport retry
+    logic extended with generic `status_code` check for
+    non-Ollama providers.
+- Module `agents7.agents`:
+  - `Labeler`: new `max_parse_retries` field (default 0).
+    When parsing fails, re-prompts the LLM with the error
+    message so it can self-correct. Works in `act()` and
+    `act_async()`; batch methods do not retry.
+  - `config_loader`: YAML configs support
+    `max_parse_retries`, `base_url`, and `api_key` fields.
+- `pyproject.toml`: new `[openai]` optional dependency
+  extra.
+- Tests:
+  - New `test_openai_compat.py` (15 tests): provider
+    creation, response parsing, parameter building, chat
+    sync/async, generate, stream adapter, LLMEngine
+    integration.
+  - New `test_parse_retry.py` (10 tests): no-retry default,
+    retry success, retry exhaustion, message accumulation,
+    async retry, YAML loading.
+- `README.md`: documented OpenAI-compatible provider,
+  parse retry, updated requirements.
+- `CLAUDE.md`: updated project overview to mention OpenAI
+  support.
+- `backlog.md`: added Improvements — 14th March 2026
+  section with 10 items.
+
+
 ### v2.4.1 - 8th March 2026
 
 - Examples:
