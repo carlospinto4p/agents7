@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v3.3.0 - 14th March 2026
+
+- Module `agents7.agents.labeler`:
+  - New `warm_up()`: sends a trivial `generate` call to
+    preload the Ollama model into memory, avoiding cold-start
+    latency on the first real `act()` call. No-op for
+    non-Ollama providers.
+  - New `warm_up_async()`: async version.
+- Tests:
+  - New `test_warm_up.py` (4 tests): sync/async warm-up,
+    no-op for openai_compat.
+- `README.md`: documented model warm-up.
+
+
 ### v3.2.0 - 14th March 2026
 
 - Module `agents7.call_log` (new):
