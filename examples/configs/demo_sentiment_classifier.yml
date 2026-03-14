@@ -1,6 +1,7 @@
-# Recommended model size: 3B-4B parameters.
-# This config uses gemma3:12b for demonstration, but smaller
-# models (e.g. qwen3:4b) are more reliable for classification.
+# gemma3:12b handles POSITIVE/NEGATIVE/NEUTRAL reliably.
+# NOT_APPLICABLE is not tested for classifiers because no
+# locally available model (gemma3:12b, qwen3:4b, qwen2.5:3b)
+# can reliably distinguish it from NEUTRAL.
 # See docs/model-selection.md.
 name: DemoSentimentClassifier
 version: 1
