@@ -151,6 +151,9 @@ def load_yaml_settings(file_path: str) -> dict:
     if call_logger_path := config.get("call_logger"):
         result["call_logger"] = import_from_path(call_logger_path)
 
+    if preprocessor_path := config.get("preprocessor"):
+        result["preprocessor"] = import_from_path(preprocessor_path)
+
     return result
 
 

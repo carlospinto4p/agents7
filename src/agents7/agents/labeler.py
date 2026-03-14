@@ -66,6 +66,13 @@ class Labeler(BaseAgent):
             duration, and success/failure. Defaults to None
             (no logging). Use `JsonCallLogger` for JSON
             output.
+        preprocessor (Callable, optional): Callable that
+            transforms input data before it is sent to the
+            LLM. Receives the raw input (dict or list) and
+            must return the transformed input. Applied in
+            ``act()``, ``act_async()``, ``act_stream()``,
+            ``act_stream_async()``, and batch methods.
+            Defaults to None (no preprocessing).
     """
 
     output_model: type[BaseModel]
@@ -74,6 +81,7 @@ class Labeler(BaseAgent):
     think: bool = field(default=False, kw_only=True)
     max_parse_retries: int = field(default=0, kw_only=True)
     call_logger: Callable | None = field(default=None, kw_only=True)
+    preprocessor: Callable | None = field(default=None, kw_only=True)
 
     def __post_init__(self):
         """
@@ -322,6 +330,7 @@ class Labeler(BaseAgent):
             - idx: Optional index for tracking purposes.
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        input_data = self._preprocess(input_data)
 
         logger.debug(
             f"Agent `{self.name}`: processing input data:\n{input_data}"
@@ -366,6 +375,7 @@ class Labeler(BaseAgent):
         :return: See `act()` for return schema.
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        input_data = self._preprocess(input_data)
 
         logger.debug(
             f"Agent `{self.name}`: processing input data:\n{input_data}"
@@ -412,6 +422,7 @@ class Labeler(BaseAgent):
         :return: An `AgentStreamResult` yielding text chunks.
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        input_data = self._preprocess(input_data)
         logger.debug(
             f"Agent `{self.name}`: streaming input data:\n{input_data}"
         )
@@ -447,6 +458,7 @@ class Labeler(BaseAgent):
             chunks.
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        input_data = self._preprocess(input_data)
         logger.debug(
             f"Agent `{self.name}`: streaming input data:\n{input_data}"
         )
@@ -606,6 +618,8 @@ class Labeler(BaseAgent):
     ) -> dict:
         """Build kwargs for a batch LLM chat call."""
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        if self.preprocessor is not None:
+            input_list = [self._preprocess(item) for item in input_list]
         logger.debug(
             f"Agent `{self.name}`: processing batch input data:\n{input_list}"
         )
@@ -770,6 +784,17 @@ class Labeler(BaseAgent):
             error=error,
         )
         self.call_logger(record)
+
+    def _preprocess(self, input_data):
+        """Apply the preprocessor if set.
+
+        :param input_data: Raw input data.
+        :return: Transformed input data, or original if no
+            preprocessor is set.
+        """
+        if self.preprocessor is None:
+            return input_data
+        return self.preprocessor(input_data)
 
     def _sanitize_chat_kwargs(self, chat_kwargs: dict | None) -> dict:
         """

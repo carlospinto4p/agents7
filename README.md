@@ -936,6 +936,32 @@ print(f"Matrix: {cm['matrix']}")
 
 The UI evaluation module (`agents7.ui.evaluation`) re-exports from `agents7.metrics`, so existing UI code continues to work unchanged.
 
+### Input Preprocessor
+
+An optional callable that transforms input data before it reaches the LLM. Applied consistently across `act()`, `act_async()`, `act_stream()`, `act_stream_async()`, and batch methods.
+
+```python
+def clean_input(data):
+    """Strip HTML and truncate."""
+    data = dict(data)
+    data["text"] = strip_html(data["text"])[:2000]
+    return data
+
+agent = Labeler(
+    ...,
+    preprocessor=clean_input,
+)
+
+# Preprocessing happens automatically
+response = agent.act({"text": "<p>Very long HTML...</p>"})
+```
+
+**YAML configuration:**
+
+```yaml
+preprocessor: mymodule.clean_input
+```
+
 ### Model Warm-Up
 
 Ollama loads models lazily on first call, causing a cold-start delay. Use `warm_up()` to preload the model at startup:
