@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v3.0.0 - 14th March 2026
+
+- **BREAKING**: `pyproject.toml`: replaced `pandas` with
+  `polars` in the `[ui]` optional dependency. Users
+  installing `agents7[ui]` now get `polars>=1.0.0` instead
+  of `pandas>=2.2.0`.
+- Module `agents7.ui._pages.4_Evaluate`:
+  - Migrated from pandas to polars: `pd.DataFrame` →
+    `pl.DataFrame`, `pd.read_csv` → `pl.read_csv`,
+    `.to_dict(orient="records")` → `.to_dicts()`.
+  - Confusion matrix display uses an explicit `expected`
+    column instead of a pandas index.
+
+
 ### v2.6.0 - 14th March 2026
 
 - Module `agents7.metrics`:
