@@ -20,6 +20,9 @@ dev = [
     "ruff>=0.13.0",
     "pytest>=8.4.2",
 ]
+openai = [
+    "openai>=1.0.0",
+]
 ui = [
     "streamlit>=1.45.0",
     "pandas>=2.2.0",

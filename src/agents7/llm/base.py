@@ -25,13 +25,22 @@ class LLMEngine:
     for generating text and retrieving model information.
 
     Attributes:
-        provider (str): The provider of the LLM engine (e.g., "ollama").
+        provider (str): The LLM provider. Supported values:
+            ``"ollama"`` (local Ollama server) and
+            ``"openai_compat"`` (any OpenAI-compatible API).
         model_name (str): The name of the model being used.
-        retry_config (RetryConfig | None): Optional retry configuration.
-        fallback_model (str | None): Optional fallback model name.
-            When the primary model fails after retries, the engine
-            retries the call with this model. If the fallback also
-            fails, the primary error is raised.
+        retry_config (RetryConfig | None): Optional retry
+            configuration.
+        fallback_model (str | None): Optional fallback model
+            name. When the primary model fails after retries,
+            the engine retries the call with this model. If
+            the fallback also fails, the primary error is
+            raised.
+
+    Keyword Args (``openai_compat`` only):
+        base_url (str | None): Custom API base URL.
+        api_key (str | None): API key (falls back to
+            ``OPENAI_API_KEY`` env var).
     """
 
     def __init__(
@@ -41,6 +50,7 @@ class LLMEngine:
         retry: RetryConfig | None = None,
         cache: CacheConfig | None = None,
         fallback_model: str | None = None,
+        **kwargs,
     ):
         provider = provider.lower()
         self.provider = provider
@@ -58,6 +68,20 @@ class LLMEngine:
             self.llm_provider = OllamaProvider(model_name)
             if fallback_model:
                 self._fallback_provider = OllamaProvider(fallback_model)
+        elif provider == "openai_compat":
+            from agents7.llm.openai_compat import OpenAICompatProvider
+
+            self.llm_provider = OpenAICompatProvider(
+                model_name,
+                base_url=kwargs.get("base_url"),
+                api_key=kwargs.get("api_key"),
+            )
+            if fallback_model:
+                self._fallback_provider = OpenAICompatProvider(
+                    fallback_model,
+                    base_url=kwargs.get("base_url"),
+                    api_key=kwargs.get("api_key"),
+                )
 
     def _cache_lookup(
         self,

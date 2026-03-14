@@ -157,6 +157,27 @@
 - [x] YAML config inheritance: support `base_config` key that merges a parent YAML into the current one — done in v2.4.0.
 - [x] Conditional pipeline steps: add optional `condition: Callable` to `PipelineStep` — done in v2.4.0.
 
+### Improvements — 14th March 2026
+
+#### HIGH impact
+
+- [ ] OpenAI-compatible LLM provider — new `openai_provider.py` implementing `LLMProvider` ABC for OpenAI, Azure, vLLM, LM Studio, etc. Optional dependency.
+- [ ] Retry on parse failure — configurable `max_parse_retries` on `Labeler` that re-prompts the LLM with error feedback when `ResponseParser` fails.
+- [ ] Batch evaluation — `run_evaluation()` should use `act_in_batch()` instead of looping `act()`. Add `run_evaluation_async()`.
+- [ ] Agent cloning with overrides — `Labeler.with_overrides(**kwargs)` returns a new instance with selected fields replaced. Useful for A/B testing and model comparison.
+
+#### MEDIUM impact
+
+- [ ] Pipeline streaming — `Pipeline.act_stream()` that streams the final step's output.
+- [ ] Export to pandas DataFrame — `export_dataframe(responses) -> pd.DataFrame` with pandas as optional dependency.
+- [ ] Structured call logging — optional structured logging with trace IDs, agent name, model, duration, tokens, success/failure per call. JSON format for observability tools.
+- [ ] Model warm-up helper — `Labeler.warm_up()` sends a trivial prompt to preload the Ollama model.
+
+#### LOW impact
+
+- [ ] Input preprocessor on Labeler — optional `preprocessor: Callable[[str], str]` that transforms input before building the prompt.
+- [ ] Evaluation report export — `export_eval_report(results, metrics, path)` writes a formatted Markdown/HTML evaluation report.
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.

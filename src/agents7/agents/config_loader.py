@@ -145,6 +145,9 @@ def load_yaml_settings(file_path: str) -> dict:
     if "think" in config:
         result["think"] = bool(config["think"])
 
+    if "max_parse_retries" in config:
+        result["max_parse_retries"] = int(config["max_parse_retries"])
+
     return result
 
 
@@ -196,12 +199,19 @@ def build_engine(engine_config: dict) -> LLMEngine:
     if cache_settings is not None:
         cache_config = CacheConfig(**cache_settings)
 
+    extra_kwargs = {}
+    if engine_config.get("base_url"):
+        extra_kwargs["base_url"] = engine_config["base_url"]
+    if engine_config.get("api_key"):
+        extra_kwargs["api_key"] = engine_config["api_key"]
+
     return LLMEngine(
         engine_config["provider"],
         engine_config["model"],
         retry=retry_config,
         cache=cache_config,
         fallback_model=engine_config.get("fallback_model"),
+        **extra_kwargs,
     )
 
 

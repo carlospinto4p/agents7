@@ -27,6 +27,7 @@ on choosing the right LLM for structured extraction tasks.
 - `LLMEngine`: Facade class that routes to specific providers (supports optional `fallback_model`)
 - `LLMProvider`: Abstract base class defining the interface
 - `OllamaProvider`: Concrete implementation using Ollama (local LLM server)
+- `OpenAICompatProvider`: Provider for any OpenAI-compatible API (OpenAI, Azure, vLLM, LM Studio, etc.)
 
 Supports both sync and async methods: `chat`, `chat_async`, `generate`, `generate_async`, plus streaming variants: `chat_stream`, `chat_stream_async`, `generate_stream`, `generate_stream_async`.
 
@@ -232,7 +233,7 @@ Note: YAML `prompt_params` only supports static values (cast to strings). For ca
 
 ### Retry / Resilience
 
-LLM transport errors (connection failures, server 5xx) can be retried automatically with exponential backoff. Client errors (4xx) and parse failures are **not** retried.
+LLM transport errors (connection failures, server 5xx) can be retried automatically with exponential backoff. Client errors (4xx) are **not** retried. Parse failures can be retried separately via `max_parse_retries` (see below).
 
 **YAML configuration:**
 
@@ -360,6 +361,79 @@ agent = Labeler(
 ```
 
 The `think` setting can still be overridden per call via `chat_kwargs={"think": True}`.
+
+### Parse Retry
+
+When an LLM returns malformed JSON that can't be parsed, `max_parse_retries` re-prompts the model with the error message so it can self-correct. This is separate from transport retries and only applies to `act()` and `act_async()`.
+
+**YAML configuration:**
+
+```yaml
+name: MyAgent
+version: 1
+engine:
+    provider: ollama
+    model: qwen3
+system_prompt: Extract person info.
+output_model: mymodule.PersonInfo
+max_parse_retries: 2
+```
+
+**Python configuration:**
+
+```python
+agent = Labeler(
+    name="ResilientExtractor",
+    version=1,
+    engine=engine,
+    system_prompt="Extract person info.",
+    output_model=PersonInfo,
+    max_parse_retries=2,
+)
+```
+
+On each retry, the conversation history is extended with the error feedback, allowing the model to see what went wrong and correct its output. If all retries fail, `model=None` is returned.
+
+### OpenAI-Compatible Provider
+
+The library supports any server exposing the OpenAI chat/completions API (OpenAI, Azure OpenAI, vLLM, LM Studio, Ollama in OpenAI mode, etc.). Install the optional `openai` package:
+
+```bash
+uv pip install agents7[openai]
+```
+
+**Python configuration:**
+
+```python
+from agents7.llm import LLMEngine
+
+# OpenAI
+engine = LLMEngine(
+    provider="openai_compat",
+    model_name="gpt-4o",
+    api_key="sk-...",
+)
+
+# Local vLLM / LM Studio
+engine = LLMEngine(
+    provider="openai_compat",
+    model_name="meta-llama/Llama-3-8b",
+    base_url="http://localhost:8000/v1",
+    api_key="not-needed",
+)
+```
+
+**YAML configuration:**
+
+```yaml
+engine:
+    provider: openai_compat
+    model: gpt-4o
+    base_url: http://localhost:8000/v1
+    api_key: sk-...
+```
+
+The `api_key` falls back to the `OPENAI_API_KEY` environment variable when omitted. All agent features (streaming, caching, retry, fallback, batch) work identically with the OpenAI-compatible provider.
 
 ### Model Selection
 
@@ -898,8 +972,9 @@ docker compose down
 
 ## Requirements
 
-- Ollama running locally (default: `http://localhost:11434`)
-- Dependencies: `pydantic`, `ollama`, `tqdm`, `pyyaml`, `cpinto`
+- **Ollama provider**: Ollama running locally (default: `http://localhost:11434`)
+- **OpenAI-compatible provider**: `uv pip install agents7[openai]` (requires `openai` package)
+- Core dependencies: `pydantic`, `ollama`, `tqdm`, `pyyaml`, `cpinto`
 
 ## Model Compatibility
 

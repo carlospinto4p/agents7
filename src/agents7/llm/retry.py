@@ -16,6 +16,16 @@ from agents7.exceptions import (
 from agents7.logs import logger
 
 
+def _openai_errors() -> tuple:
+    """Return OpenAI error classes if the package is installed."""
+    try:
+        import openai
+
+        return (openai.APIError,)
+    except ImportError:
+        return ()
+
+
 @dataclass(frozen=True)
 class RetryConfig:
     """Configuration for retry with exponential backoff.
@@ -52,15 +62,18 @@ class RetryConfig:
 def _is_retryable(error: Exception) -> bool:
     """Check whether an exception is retryable.
 
-    Retryable: ollama.RequestError (connection failures) and
-    ollama.ResponseError with status_code >= 500 (server errors).
-    Non-retryable: ollama.ResponseError with status_code < 500
-    (client errors like 404).
+    Retryable: ollama.RequestError (connection failures),
+    ollama.ResponseError with status_code >= 500 (server errors),
+    and OpenAI API errors with status >= 500 or status 429.
+    Non-retryable: client errors like 404.
     """
     if isinstance(error, ollama.RequestError):
         return True
     if isinstance(error, ollama.ResponseError):
         return error.status_code >= 500
+    status = getattr(error, "status_code", None)
+    if status is not None:
+        return status >= 500 or status == 429
     return False
 
 
@@ -127,6 +140,7 @@ def retry_sync(
         except (
             ollama.RequestError,
             ollama.ResponseError,
+            *_openai_errors(),
         ) as e:
             if not _is_retryable(e):
                 raise
@@ -157,6 +171,7 @@ async def retry_async(
         except (
             ollama.RequestError,
             ollama.ResponseError,
+            *_openai_errors(),
         ) as e:
             if not _is_retryable(e):
                 raise
