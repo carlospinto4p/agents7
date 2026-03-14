@@ -2,6 +2,7 @@ import pytest
 
 from agents7.agents import Detector
 
+from conftest import generate_eval_report
 from data import TEMPERATURE_DATA
 
 
@@ -38,3 +39,20 @@ def test_batch_temperature_detection(
             f"'{output.model.reason.name}' for case {i}:"
             f" '{test_case['text']}'"
         )
+
+
+def test_detector_eval_report(
+    temperature_detector: Detector, reports_dir
+) -> None:
+    """Generate an evaluation report for temperature detection."""
+    eval_data = [
+        {"input": {"text": c["text"]}, "reason": c["expected_reason"]}
+        for c in TEMPERATURE_DATA
+    ]
+    generate_eval_report(
+        temperature_detector,
+        eval_data,
+        ["reason"],
+        reports_dir,
+        "detector.md",
+    )

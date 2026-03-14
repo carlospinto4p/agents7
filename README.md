@@ -934,6 +934,23 @@ print(f"Labels: {cm['labels']}")
 print(f"Matrix: {cm['matrix']}")
 ```
 
+**Evaluation reports:** Generate a formatted Markdown report from evaluation results:
+
+```python
+from agents7.export import export_eval_report
+
+export_eval_report(
+    results,
+    metrics,
+    "report.md",
+    agent_name="SentimentClassifier",
+    model_id="ollama::qwen3",
+    confusion_field="category",  # optional
+)
+```
+
+The report includes: agent/model info, date, overall accuracy, per-field breakdown, optional confusion matrix, and per-case detail with pass/fail status.
+
 The UI evaluation module (`agents7.ui.evaluation`) re-exports from `agents7.metrics`, so existing UI code continues to work unchanged.
 
 ### Input Preprocessor

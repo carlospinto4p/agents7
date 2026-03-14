@@ -38,3 +38,6 @@ workspace/
 
 # Build artifacts
 build/
+
+# Integration test reports (generated)
+integration_tests/reports/

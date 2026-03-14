@@ -2,6 +2,7 @@ import pytest
 
 from agents7.agents import Regressor
 
+from conftest import generate_eval_report
 from data import TEMPERATURE_DATA
 
 
@@ -51,3 +52,20 @@ def test_regressor_extracts_numeric_value(
     assert response.model.value is not None
     assert 20 <= response.model.value <= 30
     assert response.model.reason.name == "COMFORTABLE"
+
+
+def test_regressor_eval_report(
+    temperature_regressor: Regressor, reports_dir
+) -> None:
+    """Generate an evaluation report for temperature regression."""
+    eval_data = [
+        {"input": {"text": c["text"]}, "reason": c["expected_reason"]}
+        for c in TEMPERATURE_DATA
+    ]
+    generate_eval_report(
+        temperature_regressor,
+        eval_data,
+        ["reason"],
+        reports_dir,
+        "regressor.md",
+    )

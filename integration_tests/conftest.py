@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 
 from agents7.agents import Classifier, Detector, Regressor
+from agents7.export import export_eval_report
+from agents7.metrics import compute_metrics, run_evaluation
 
 # Project root is one level up from integration_tests/
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -75,4 +77,44 @@ def temperature_regressor():
     """Create a temperature regressor instance (shared per module)."""
     return Regressor.from_yaml(
         "examples/configs/demo_temperature_detector.yml"
+    )
+
+
+@pytest.fixture(scope="session")
+def reports_dir():
+    """Create and return the integration test reports dir."""
+    path = PROJECT_ROOT / "integration_tests" / "reports"
+    path.mkdir(exist_ok=True)
+    return path
+
+
+def generate_eval_report(
+    agent,
+    eval_data: list[dict],
+    expected_fields: list[str],
+    reports_dir: Path,
+    filename: str,
+    confusion_field: str | None = None,
+) -> None:
+    """Run evaluation and write a Markdown report.
+
+    :param agent: Agent instance.
+    :param eval_data: Evaluation data rows with ``input``
+        and expected field keys.
+    :param expected_fields: Fields to compare.
+    :param reports_dir: Directory to write the report.
+    :param filename: Report filename (e.g.
+        ``"detector.md"``).
+    :param confusion_field: Optional field for confusion
+        matrix.
+    """
+    results = run_evaluation(agent, eval_data, expected_fields)
+    metrics = compute_metrics(results, expected_fields)
+    export_eval_report(
+        results,
+        metrics,
+        reports_dir / filename,
+        agent_name=agent.name,
+        model_id=agent.engine.model_id,
+        confusion_field=confusion_field,
     )

@@ -1,9 +1,11 @@
-"""Export agent responses to JSONL and CSV files."""
+"""Export agent responses to JSONL, CSV, DataFrame, and
+evaluation reports."""
 
 from __future__ import annotations
 
 import csv
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from agents7.models.base import AgentResponse
@@ -140,3 +142,113 @@ def export_dataframe(
                 data[f].append(None)
 
     return pl.DataFrame(data)
+
+
+def export_eval_report(
+    results: list,
+    metrics: dict,
+    path: str | Path,
+    agent_name: str | None = None,
+    model_id: str | None = None,
+    confusion_field: str | None = None,
+) -> None:
+    """Write an evaluation report as a Markdown file.
+
+    :param results: List of `EvalResult` from
+        ``run_evaluation()``.
+    :param metrics: Dict from ``compute_metrics()``.
+    :param path: Output file path.
+    :param agent_name: Agent name for the header.
+    :param model_id: Model identifier for the header.
+    :param confusion_field: If set, include a confusion
+        matrix for this categorical field (e.g.
+        ``"category"``). Requires
+        ``agents7.metrics.build_confusion_matrix``.
+    """
+    path = Path(path)
+    lines: list[str] = []
+
+    # --- Header ---
+    lines.append("# Evaluation Report")
+    lines.append("")
+    if agent_name:
+        lines.append(f"- **Agent**: {agent_name}")
+    if model_id:
+        lines.append(f"- **Model**: {model_id}")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    lines.append(f"- **Date**: {now}")
+    lines.append("")
+
+    # --- Overall metrics ---
+    lines.append("## Overall Metrics")
+    lines.append("")
+    lines.append("| Metric | Value |")
+    lines.append("|--------|-------|")
+    lines.append(f"| Total | {metrics.get('total', 0)} |")
+    lines.append(f"| Passed | {metrics.get('passed', 0)} |")
+    lines.append(f"| Failed | {metrics.get('failed', 0)} |")
+    accuracy = metrics.get("accuracy", 0.0)
+    lines.append(f"| Accuracy | {accuracy:.1%} |")
+    lines.append("")
+
+    # --- Per-field accuracy ---
+    per_field = metrics.get("per_field", {})
+    if per_field:
+        lines.append("## Per-Field Accuracy")
+        lines.append("")
+        lines.append("| Field | Accuracy |")
+        lines.append("|-------|----------|")
+        for fname, acc in per_field.items():
+            lines.append(f"| {fname} | {acc:.1%} |")
+        lines.append("")
+
+    # --- Confusion matrix ---
+    if confusion_field:
+        _append_confusion_matrix(lines, results, confusion_field)
+
+    # --- Per-case detail ---
+    lines.append("## Per-Case Results")
+    lines.append("")
+    for i, r in enumerate(results):
+        icon = "PASS" if r.passed else "FAIL"
+        lines.append(f"### Case {i + 1} — {icon}")
+        lines.append("")
+        lines.append(f"- **Input**: {r.input_data}")
+        lines.append(f"- **Expected**: {r.expected}")
+        lines.append(f"- **Actual**: {r.actual}")
+        if r.error:
+            lines.append(f"- **Error**: {r.error}")
+        lines.append("")
+
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _append_confusion_matrix(
+    lines: list[str],
+    results: list,
+    field_name: str,
+) -> None:
+    """Append a confusion matrix section to the report.
+
+    :param lines: Report lines to append to.
+    :param results: List of `EvalResult`.
+    :param field_name: The categorical field name.
+    """
+    from agents7.metrics import build_confusion_matrix
+
+    cm = build_confusion_matrix(results, field_name)
+    if not cm["labels"]:
+        return
+    labels = cm["labels"]
+    matrix = cm["matrix"]
+
+    lines.append(f"## Confusion Matrix ({field_name})")
+    lines.append("")
+    header = "| Expected \\\\ Actual | " + " | ".join(labels) + " |"
+    lines.append(header)
+    sep = "|" + "|".join(["---"] * (len(labels) + 1)) + "|"
+    lines.append(sep)
+    for label, row in zip(labels, matrix):
+        vals = " | ".join(str(v) for v in row)
+        lines.append(f"| {label} | {vals} |")
+    lines.append("")

@@ -2,6 +2,7 @@ import pytest
 
 from agents7.agents import Classifier
 
+from conftest import generate_eval_report
 from data import SENTIMENT_DATA
 
 
@@ -38,3 +39,21 @@ def test_batch_sentiment_classification(
             f"but got '{output.model.category.name}' for case {i}:"
             f" '{test_case['text']}'"
         )
+
+
+def test_classifier_eval_report(
+    sentiment_classifier: Classifier, reports_dir
+) -> None:
+    """Generate an evaluation report for sentiment classification."""
+    eval_data = [
+        {"input": {"text": c["text"]}, "category": c["expected_category"]}
+        for c in SENTIMENT_DATA
+    ]
+    generate_eval_report(
+        sentiment_classifier,
+        eval_data,
+        ["category"],
+        reports_dir,
+        "classifier.md",
+        confusion_field="category",
+    )
