@@ -1,6 +1,28 @@
 
 ## Changelog - Agents7
 
+### v3.4.3 - 14th March 2026
+
+- Module `agents7.llm.base`:
+  - Extracted `_cache_check()` helper — shared cache-lookup
+    logic used by `_execute`, `_execute_async`, `_stream`,
+    and `_stream_async` (was duplicated 4 times).
+- Module `agents7.agents.detector`:
+  - Refactored prompt building into template methods:
+    `_agent_instruction()`, `_batch_instruction()`, and
+    `_extra_prompt_sections()`. `prompt` and
+    `prompt_for_batch` now delegate to these.
+- Module `agents7.agents.classifier`:
+  - Overrides only the template methods instead of
+    duplicating the full `prompt` / `prompt_for_batch`
+    properties. Inherits `prompt` and `prompt_for_batch`
+    from Detector unchanged.
+- Module `agents7.agents.labeler`:
+  - Extracted `_log_warm_up_start()` / `_log_warm_up_done()`
+    helpers — `warm_up` and `warm_up_async` now share
+    logging logic.
+
+
 ### v3.4.2 - 14th March 2026
 
 - Module `agents7.agents.labeler`:

@@ -188,9 +188,9 @@
 
 #### Architecture (low impact)
 
-- [ ] Consolidate `_execute` / `_execute_async` and `_stream` / `_stream_async` cache patterns in `llm/base.py` — identical cache-lookup → op → cache-store logic duplicated across sync/async.
-- [ ] Template method for Detector/Classifier prompt building — both override `prompt` and `prompt_for_batch` with near-identical logic. Extract a shared pattern.
-- [ ] Consolidate `warm_up` / `warm_up_async` in `labeler.py` — identical logic except for `generate()` vs `await generate_async()`.
+- [x] Consolidate cache patterns in `llm/base.py` — done in v3.4.3 (`_cache_check()` helper shared by all 4 dispatch methods).
+- [x] Template method for Detector/Classifier prompt building — done in v3.4.3 (`_agent_instruction`, `_batch_instruction`, `_extra_prompt_sections`).
+- [x] Consolidate `warm_up` / `warm_up_async` in `labeler.py` — done in v3.4.3 (`_log_warm_up_start`, `_log_warm_up_done` shared helpers).
 
 ### Infrastructure
 
