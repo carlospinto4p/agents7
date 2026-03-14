@@ -1,6 +1,30 @@
 
 ## Changelog - Agents7
 
+### v3.2.0 - 14th March 2026
+
+- Module `agents7.call_log` (new):
+  - `CallRecord`: frozen dataclass capturing per-call
+    metadata (trace_id, agent_name, agent_version, model_id,
+    success, tokens, prompt_tokens, total_duration, error).
+  - `JsonCallLogger`: writes `CallRecord` as JSON lines to a
+    file or stream. Defaults to stdout.
+  - `generate_trace_id()`: produces 12-char hex trace IDs.
+- Module `agents7.agents.labeler`:
+  - New `call_logger` field (optional, default None): callable
+    invoked after each `act()` / `act_async()` with a
+    `CallRecord`.
+  - New `_emit_call_log()` internal method.
+- Module `agents7.agents.config_loader`:
+  - YAML configs support `call_logger` key (dotted import
+    path to a callable).
+- Tests:
+  - New `test_call_log.py` (11 tests): CallRecord, trace ID
+    generation, JsonCallLogger (file, stream, stdout),
+    integration with act/act_async.
+- `README.md`: documented structured call logging.
+
+
 ### v3.1.0 - 14th March 2026
 
 - Module `agents7.agents.pipeline`:
