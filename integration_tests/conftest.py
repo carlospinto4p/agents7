@@ -29,13 +29,38 @@ def _check_ollama() -> bool:
 _OLLAMA_AVAILABLE = _check_ollama()
 
 
+_PER_TEST_TIMEOUT = 60  # seconds
+_SESSION_TIMEOUT = 300  # 5 minutes total
+
+
 def pytest_collection_modifyitems(items):
-    """Skip all integration tests when Ollama is unavailable."""
-    if _OLLAMA_AVAILABLE:
+    """Skip all integration tests when Ollama is unavailable.
+    Add a 60-second timeout to every test."""
+    if not _OLLAMA_AVAILABLE:
+        skip = pytest.mark.skip(reason="Ollama is not available")
+        for item in items:
+            item.add_marker(skip)
         return
-    skip = pytest.mark.skip(reason="Ollama is not available")
+    timeout_marker = pytest.mark.timeout(_PER_TEST_TIMEOUT)
     for item in items:
-        item.add_marker(skip)
+        item.add_marker(timeout_marker)
+
+
+def pytest_sessionstart(session):
+    """Record session start time for the global timeout."""
+    session._start_time = __import__("time").monotonic()
+
+
+def pytest_runtest_setup(item):
+    """Fail fast if the session has exceeded 5 minutes."""
+    import time
+
+    elapsed = time.monotonic() - item.session._start_time
+    if elapsed > _SESSION_TIMEOUT:
+        pytest.fail(
+            f"Session timeout: {elapsed:.0f}s exceeded "
+            f"{_SESSION_TIMEOUT}s limit."
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
