@@ -1,6 +1,36 @@
 
 ## Changelog - Agents7
 
+### v2.6.0 - 14th March 2026
+
+- Module `agents7.metrics`:
+  - `run_evaluation()` now uses `act_in_batch()` for
+    efficient batch processing instead of calling `act()` in
+    a loop. Falls back to sequential `act()` calls if the
+    batch fails.
+  - New `run_evaluation_async()`: async variant using
+    `act_in_batch_async()`.
+  - Internal refactor: extracted `_build_eval_result()` and
+    `_fallback_sequential()` helpers.
+- Module `agents7.agents.labeler`:
+  - New `with_overrides(**kwargs)` method: creates a copy of
+    the agent with selected fields replaced. Uses
+    `dataclasses.replace()`. Works with all agent types
+    (Labeler, Detector, Classifier, Regressor).
+- Module `agents7.ui.evaluation.runner`:
+  - Re-exports `run_evaluation_async` from core.
+- Tests:
+  - New `test_with_overrides.py` (11 tests): single/multiple
+    field override, output model swap, engine swap, type
+    preservation, independence.
+  - `test_metrics.py`: rewritten to test batch-based
+    evaluation, fallback, async, and progress callback.
+  - `test_ui_evaluation.py`: updated mocks for batch-based
+    `run_evaluation`.
+- `README.md`: documented `with_overrides()`, batch
+  evaluation, and `run_evaluation_async()`.
+
+
 ### v2.5.0 - 14th March 2026
 
 - Module `agents7.llm`:

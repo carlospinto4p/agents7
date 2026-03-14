@@ -163,8 +163,8 @@
 
 - [x] OpenAI-compatible LLM provider — done in v2.5.0 (`openai_compat.py`, `provider="openai_compat"` in LLMEngine, optional `openai` dependency).
 - [x] Retry on parse failure — done in v2.5.0 (`max_parse_retries` on `Labeler`, re-prompts LLM with error feedback).
-- [ ] Batch evaluation — `run_evaluation()` should use `act_in_batch()` instead of looping `act()`. Add `run_evaluation_async()`.
-- [ ] Agent cloning with overrides — `Labeler.with_overrides(**kwargs)` returns a new instance with selected fields replaced. Useful for A/B testing and model comparison.
+- [x] Batch evaluation — done in v2.6.0 (`run_evaluation()` uses `act_in_batch()`, new `run_evaluation_async()`).
+- [x] Agent cloning with overrides — done in v2.6.0 (`Labeler.with_overrides(**kwargs)` using `dataclasses.replace()`).
 
 #### MEDIUM impact
 
