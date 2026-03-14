@@ -1,6 +1,37 @@
 
 ## Changelog - Agents7
 
+### v3.4.0 - 14th March 2026
+
+- Module `agents7.models.base`:
+  - `Property` and `ClassificationProperty` now support
+    `NOT_APPLICABLE = False` on subclasses to disable the
+    automatic addition of NOT_APPLICABLE to enum fields.
+    Default remains `True` (backward compatible).
+  - `ClassificationProperty.validate_category_reason_link`
+    uses safe `hasattr` checks for NOT_APPLICABLE name
+    lookups.
+- Module `agents7.agents.detector`:
+  - `Detector` prompt conditionally includes NOT_APPLICABLE
+    guidance based on `output_model.NOT_APPLICABLE`.
+- Module `agents7.agents.classifier`:
+  - `Classifier` prompt and constraints conditionally include
+    NOT_APPLICABLE references.
+- Module `agents7.models.demo`:
+  - `Sentiment` model now sets `NOT_APPLICABLE = False`
+    since NEUTRAL already covers the "no sentiment" case.
+- Integration tests:
+  - Classifier tests updated to reflect Sentiment model
+    without NOT_APPLICABLE.
+- Tests:
+  - New `test_not_applicable_opt_out.py` (10 tests): opt-out
+    for Property, ClassificationProperty, validation, and
+    prompt generation.
+  - `test_classifier.py`: updated assertions for Sentiment
+    without NOT_APPLICABLE.
+- `README.md`: documented NOT_APPLICABLE opt-out.
+
+
 ### v3.3.2 - 14th March 2026
 
 - Module `agents7.export`:
