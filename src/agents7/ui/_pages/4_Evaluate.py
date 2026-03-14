@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import pandas as pd
+import polars as pl
 import streamlit as st
 
 from agents7.ui._pages import (
@@ -43,10 +43,10 @@ def render() -> None:
             if name.endswith(".jsonl"):
                 raw = uploaded.read().decode("utf-8")
                 records = parse_jsonl(raw)
-                df = pd.DataFrame(records)
+                df = pl.DataFrame(records)
             else:
-                df = pd.read_csv(uploaded)
-            sd["eval_data"] = df.to_dict(orient="records")
+                df = pl.read_csv(uploaded)
+            sd["eval_data"] = df.to_dicts()
             st.dataframe(df, use_container_width=True)
 
     with tab_inline:
@@ -169,11 +169,10 @@ def _show_confusion_matrix(results: list[EvalResult]) -> None:
 
     st.subheader("Confusion Matrix (category)")
     try:
-        df = pd.DataFrame(
-            cm["matrix"],
-            index=cm["labels"],
-            columns=cm["labels"],
-        )
+        data = {"expected": cm["labels"]}
+        for col_label, col_idx in zip(cm["labels"], range(len(cm["labels"]))):
+            data[col_label] = [row[col_idx] for row in cm["matrix"]]
+        df = pl.DataFrame(data)
         st.dataframe(df, use_container_width=True)
     except ImportError:
         st.json(cm)
