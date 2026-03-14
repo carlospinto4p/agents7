@@ -178,6 +178,20 @@
 - [x] Input preprocessor on Labeler — done in v3.3.1 (`preprocessor` field on `Labeler`, applied in all act/stream/batch methods).
 - [x] Evaluation report export — done in v3.3.2 (`export_eval_report()` in `agents7.export`, integration test reports in `integration_tests/reports/`).
 
+### Refactoring — 14th March 2026
+
+#### Source (medium impact)
+
+- [ ] Consolidate `_retry_parse_sync` / `_retry_parse_async` in `labeler.py` — 88% duplication, only difference is `chat()` vs `await chat_async()`. Extract shared retry loop with a callable parameter.
+- [ ] Extract `response.pop("role")` into a `_strip_role(response)` helper in `labeler.py` — appears 5 times across act, act_async, batch, and retry methods.
+- [ ] Standardize loop variable naming in `pipeline.py` — uses `i` in some places, `step_idx` in others. Use `step_idx` throughout.
+
+#### Architecture (low impact)
+
+- [ ] Consolidate `_execute` / `_execute_async` and `_stream` / `_stream_async` cache patterns in `llm/base.py` — identical cache-lookup → op → cache-store logic duplicated across sync/async.
+- [ ] Template method for Detector/Classifier prompt building — both override `prompt` and `prompt_for_batch` with near-identical logic. Extract a shared pattern.
+- [ ] Consolidate `warm_up` / `warm_up_async` in `labeler.py` — identical logic except for `generate()` vs `await generate_async()`.
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.
