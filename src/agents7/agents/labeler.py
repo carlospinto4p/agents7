@@ -22,6 +22,7 @@ from agents7.agents.utils import (
     model_class_to_string,
     run_with_semaphore,
 )
+from agents7.call_log import CallRecord, generate_trace_id
 from agents7.exceptions import AgentConfigurationError, ParseError
 from agents7.logs import logger
 from agents7.models import AgentResponse
@@ -58,6 +59,13 @@ class Labeler(BaseAgent):
             model so it can correct its output. Defaults to 0
             (no retries). Only applies to ``act()`` and
             ``act_async()``; batch methods do not retry.
+        call_logger (Callable[[CallRecord], None], optional):
+            Callable invoked after each ``act()`` /
+            ``act_async()`` call with a `CallRecord`
+            containing trace ID, agent name, model, tokens,
+            duration, and success/failure. Defaults to None
+            (no logging). Use `JsonCallLogger` for JSON
+            output.
     """
 
     output_model: type[BaseModel]
@@ -65,6 +73,7 @@ class Labeler(BaseAgent):
     validators: list[Callable[[BaseModel], BaseModel]] | None = None
     think: bool = field(default=False, kw_only=True)
     max_parse_retries: int = field(default=0, kw_only=True)
+    call_logger: Callable | None = field(default=None, kw_only=True)
 
     def __post_init__(self):
         """
@@ -304,7 +313,9 @@ class Labeler(BaseAgent):
                 first_error, messages, chat_kwargs
             )
         response["model"] = self._parser.run_validators(parsed)
-        return AgentResponse(**response)
+        agent_response = AgentResponse(**response)
+        self._emit_call_log(agent_response)
+        return agent_response
 
     async def act_async(
         self,
@@ -347,7 +358,9 @@ class Labeler(BaseAgent):
             )
         response["model"] = self._parser.run_validators(parsed)
         response["idx"] = _idx
-        return AgentResponse(**response)
+        agent_response = AgentResponse(**response)
+        self._emit_call_log(agent_response)
+        return agent_response
 
     def act_stream(
         self,
@@ -698,6 +711,31 @@ class Labeler(BaseAgent):
                 "the schema exactly."
             ),
         }
+
+    def _emit_call_log(
+        self,
+        response: AgentResponse,
+        error: str | None = None,
+    ) -> None:
+        """Emit a `CallRecord` to the call logger if set.
+
+        :param response: The agent response.
+        :param error: Optional error message.
+        """
+        if self.call_logger is None:
+            return
+        record = CallRecord(
+            trace_id=generate_trace_id(),
+            agent_name=self.name,
+            agent_version=self.version,
+            model_id=self.engine.model_id,
+            success=response.model is not None,
+            tokens=response.metrics.tokens,
+            prompt_tokens=response.metrics.prompt_tokens,
+            total_duration=response.metrics.total_duration,
+            error=error,
+        )
+        self.call_logger(record)
 
     def _sanitize_chat_kwargs(self, chat_kwargs: dict | None) -> dict:
         """

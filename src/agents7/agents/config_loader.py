@@ -148,6 +148,9 @@ def load_yaml_settings(file_path: str) -> dict:
     if "max_parse_retries" in config:
         result["max_parse_retries"] = int(config["max_parse_retries"])
 
+    if call_logger_path := config.get("call_logger"):
+        result["call_logger"] = import_from_path(call_logger_path)
+
     return result
 
 

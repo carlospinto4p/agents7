@@ -936,6 +936,49 @@ print(f"Matrix: {cm['matrix']}")
 
 The UI evaluation module (`agents7.ui.evaluation`) re-exports from `agents7.metrics`, so existing UI code continues to work unchanged.
 
+### Structured Call Logging
+
+Optional per-call logging that captures trace ID, agent name, model, tokens, duration, and success/failure. Useful for debugging, observability, and cost tracking.
+
+```python
+from agents7.call_log import JsonCallLogger
+
+# Log to file (JSON lines)
+logger = JsonCallLogger("calls.jsonl")
+agent = Labeler(..., call_logger=logger)
+
+# Log to stdout
+logger = JsonCallLogger()
+agent = Labeler(..., call_logger=logger)
+
+# Custom logger — any callable accepting CallRecord
+agent = Labeler(..., call_logger=lambda r: print(r.to_dict()))
+```
+
+Each `act()` / `act_async()` call emits one `CallRecord`:
+
+```json
+{
+  "trace_id": "a1b2c3d4e5f6",
+  "agent_name": "Extractor",
+  "agent_version": 1,
+  "model_id": "ollama::qwen3",
+  "success": true,
+  "tokens": 42,
+  "prompt_tokens": 128,
+  "total_duration": 1.23,
+  "error": null
+}
+```
+
+**YAML configuration:**
+
+```yaml
+call_logger: mymodule.my_logger
+```
+
+The `call_logger` value is a dotted import path to any callable accepting a `CallRecord`.
+
 ### Agent Builder UI
 
 > Full workflow documentation: [docs/agent_builder.md](docs/agent_builder.md)
