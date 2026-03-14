@@ -2,7 +2,7 @@ import pytest
 
 from agents7.agents import Classifier
 
-from conftest import write_eval_report_from_responses
+from report_utils import write_eval_report_from_responses
 from data import SENTIMENT_DATA
 
 
