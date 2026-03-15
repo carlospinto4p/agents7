@@ -123,8 +123,12 @@ class Classifier(Detector):
             "categories defined above. Apply the same "
             "rules to each item as you would for a single "
             "input — do not be more conservative just "
-            "because there are multiple items. Provide a "
-            "reason that justifies each classification."
+            "because there are multiple items.\n\n"
+            "IMPORTANT: Choose the reason for EACH item "
+            "individually based on what you actually found "
+            "in that specific input. Different inputs will "
+            "have different reasons — do NOT repeat the "
+            "same reason for every item."
             + self._na_suffix(
                 " Use NOT_APPLICABLE if an input cannot be classified."
             )
