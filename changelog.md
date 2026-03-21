@@ -1,6 +1,21 @@
 
 ## Changelog - Agents7
 
+### v3.5.0 - 21st March 2026
+
+- New module `agents7.suggestions`:
+  - `Suggestion` frozen dataclass for proposed corrections
+    (agent, input_data, expected, note, timestamp).
+  - `SuggestionQueue` file-based JSONL queue with add,
+    list, count, remove, and clear operations. Default
+    storage: `~/.agents_catalog/suggestions/<agent>.jsonl`.
+- Module `agents7.exceptions`:
+  - Added `SuggestionError` for invalid suggestion
+    operations.
+- Tests:
+  - 20 unit tests for the suggestions module.
+
+
 ### v3.4.4 - 21st March 2026
 
 - Docs `README.md`:

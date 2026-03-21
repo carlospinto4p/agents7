@@ -36,3 +36,7 @@ class AgentConfigurationError(Agents7Exception):
 
 class PipelineConfigurationError(Agents7Exception):
     """Exception raised when a Pipeline is misconfigured."""
+
+
+class SuggestionError(Agents7Exception):
+    """Raised for invalid suggestion operations."""
