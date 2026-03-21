@@ -1,10 +1,21 @@
 # Design — agents7
 
-agents7 turns **unstructured text into structured data** using LLMs.
-You describe the shape of the output you want (a Pydantic model),
-write a system prompt, and the library handles the rest: prompt
-construction, LLM invocation, response parsing, enum mapping,
-validation, batching, and async support.
+agents7 turns **unstructured text into structured data**. The
+typical path is through an LLM: you describe the output shape
+(a Pydantic model), write a system prompt, and the library
+handles prompt construction, LLM invocation, response parsing,
+enum mapping, validation, batching, and async support.
+
+However, **not every agent needs an LLM**. The framework's
+output models (`Property`, `ClassificationProperty`) and
+evaluation tooling work equally well for rule-based or hybrid
+agents. When the signal space is well-defined — name
+dictionaries, keyword matching, grammatical patterns — a
+deterministic classifier can be orders of magnitude faster
+and fully transparent. The `classifier_agent` agent in the
+catalog demonstrates this: it started as an LLM-based
+classifier and evolved into a pure rule-based pipeline that
+is 1000x faster with the same accuracy.
 
 This document explains the design decisions behind the library.
 

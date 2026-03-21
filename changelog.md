@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.4.4 - 21st March 2026
+
+- Docs `README.md`:
+  - Updated library description to acknowledge that agents
+    can be rule-based or hybrid, not only LLM-powered.
+- Docs `docs/design.md`:
+  - Added paragraph explaining when deterministic agents
+    outperform LLM-based ones, with classifier_agent as
+    a concrete example.
+
+
 ### v3.4.3 - 14th March 2026
 
 - Module `agents7.llm.base`:

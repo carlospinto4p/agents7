@@ -1,7 +1,11 @@
 
 # Agents7
 
-A Python library for managing LLM-based agents that process and label data using structured outputs (Pydantic models).
+A Python library for building agents that process and label
+data using structured outputs (Pydantic models). Agents are
+typically LLM-powered, but the framework's models and output
+structure work equally well for rule-based or hybrid agents
+where deterministic logic is faster or more reliable.
 
 ## Installation
 
