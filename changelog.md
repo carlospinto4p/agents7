@@ -23,7 +23,7 @@
     can be rule-based or hybrid, not only LLM-powered.
 - Docs `docs/design.md`:
   - Added paragraph explaining when deterministic agents
-    outperform LLM-based ones, with classifier_agent as
+    outperform LLM-based ones, with tagger_agent as
     a concrete example.
 
 

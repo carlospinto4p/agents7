@@ -12,7 +12,7 @@ evaluation tooling work equally well for rule-based or hybrid
 agents. When the signal space is well-defined — name
 dictionaries, keyword matching, grammatical patterns — a
 deterministic classifier can be orders of magnitude faster
-and fully transparent. The `classifier_agent` agent in the
+and fully transparent. The `tagger_agent` agent in the
 catalog demonstrates this: it started as an LLM-based
 classifier and evolved into a pure rule-based pipeline that
 is 1000x faster with the same accuracy.
