@@ -157,9 +157,10 @@ class Chatter(BaseAgent):
             Defaults to 0.7.
         think (bool): Enable thinking mode. Defaults to
             False.
-        max_history (int): Maximum number of message pairs
-            (user + assistant) to keep. Older messages are
-            trimmed from the front. Defaults to 50.
+        max_history (int, optional): Maximum number of message
+            pairs (user + assistant) to keep. Older messages
+            are trimmed from the front. None means unlimited.
+            Defaults to 50.
         memory (MemoryBackend, optional): Pluggable memory
             backend for persisting conversation history
             across sessions. When set, history is loaded on
@@ -182,7 +183,7 @@ class Chatter(BaseAgent):
 
     temperature: float = field(default=0.7, kw_only=True)
     think: bool = field(default=False, kw_only=True)
-    max_history: int = field(default=50, kw_only=True)
+    max_history: int | None = field(default=50, kw_only=True)
     memory: MemoryBackend | None = field(default=None, kw_only=True)
     conversation_id: str = field(default="default", kw_only=True)
     max_turns: int | None = field(default=None, kw_only=True)
@@ -504,7 +505,10 @@ class Chatter(BaseAgent):
         Removes the oldest messages from the front,
         keeping at most ``max_history * 2`` individual
         messages (each turn = 1 user + 1 assistant).
+        Does nothing when ``max_history`` is None.
         """
+        if self.max_history is None:
+            return
         max_messages = self.max_history * 2
         if len(self._history) > max_messages:
             excess = len(self._history) - max_messages

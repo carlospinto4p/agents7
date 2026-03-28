@@ -271,6 +271,19 @@ def test_history_trimming(mock_chat):
     assert agent.history[3]["content"] == "R"
 
 
+@patch.object(LLMEngine, "chat")
+def test_max_history_none_means_unlimited(mock_chat):
+    """max_history=None keeps all messages."""
+    mock_chat.return_value = chat_response_dict("R")
+    agent = make_chatter(max_history=None)
+
+    for i in range(20):
+        agent.chat(f"Msg {i}")
+
+    # 20 turns = 40 messages, all kept
+    assert len(agent.history) == 40
+
+
 def test_reset_clears_history():
     """reset() empties the conversation history."""
     agent = make_chatter()
