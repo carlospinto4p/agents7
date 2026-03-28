@@ -1,6 +1,36 @@
 
 ## Changelog - Agents7
 
+### v3.6.0 - 28th March 2026
+
+- New module `agents7.agents.chatter`:
+  - `Chatter` conversational agent extending `BaseAgent`
+    for multi-turn chat interactions with configurable
+    personality via system prompt.
+  - Supports sync/async chat: `chat()`, `chat_async()`.
+  - Supports sync/async streaming: `chat_stream()`,
+    `chat_stream_async()`.
+  - Manages conversation history with configurable
+    `max_history` (automatic trimming).
+  - Configurable `temperature` (default 0.7) and `think`
+    mode.
+  - `reset()` to clear conversation history.
+  - `from_yaml()` for YAML-based configuration.
+  - `ChatterStreamResult` and `ChatterAsyncStreamResult`
+    streaming wrappers.
+- New model `agents7.models.ChatResponse`:
+  - Lightweight response model for Chatter (response,
+    thinking, metrics — no structured output).
+- Module `agents7.agents.config_loader`:
+  - Added `load_chatter_yaml_settings()` and
+    `validate_chatter_yaml_config()` for Chatter YAML
+    loading.
+- Examples:
+  - Added `demo_chatter.yml` example configuration.
+- Tests:
+  - 27 unit tests for the Chatter agent.
+
+
 ### v3.5.0 - 21st March 2026
 
 - New module `agents7.suggestions`:
