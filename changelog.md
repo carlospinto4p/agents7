@@ -1,6 +1,31 @@
 
 ## Changelog - Agents7
 
+### v3.7.0 - 28th March 2026
+
+- New module `agents7.agents.memory`:
+  - `MemoryConfig` frozen dataclass for memory backend
+    configuration (backend, path).
+  - `MemoryBackend` ABC with `load()`, `save()`, `clear()`,
+    and `list_conversations()` methods.
+  - `JsonFileMemory` — JSON file-backed conversation memory.
+  - `SqliteMemory` — SQLite-backed conversation memory.
+  - `create_memory()` factory function.
+- Module `agents7.agents.chatter`:
+  - `Chatter` now accepts optional `memory` (MemoryBackend)
+    and `conversation_id` (str) fields.
+  - History auto-loads from backend on init and auto-saves
+    after each turn (chat, async, streaming).
+  - `reset()` now also clears the memory backend.
+  - `from_yaml()` supports `memory` section in YAML config.
+- Module `agents7.agents.config_loader`:
+  - `load_chatter_yaml_settings()` parses optional `memory`
+    and `conversation_id` YAML fields.
+- Tests:
+  - 23 unit tests for memory backends.
+  - 10 integration tests for Chatter + memory.
+
+
 ### v3.6.0 - 28th March 2026
 
 - New module `agents7.agents.chatter`:
