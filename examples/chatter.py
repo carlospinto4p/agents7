@@ -28,7 +28,10 @@ if __name__ == "__main__":
         print(f"\nYou: {msg}")
         response = chatter.chat(msg)
         print(f"Bot: {response.response}")
-        print(f"  ({response.metrics.tokens} tokens)")
+        print(
+            f"  ({response.metrics.tokens} tokens, "
+            f"{response.metrics.total_duration:.1f}s)"
+        )
 
     print(f"\nHistory length: {len(chatter.history)} messages")
 
@@ -44,7 +47,8 @@ if __name__ == "__main__":
     for chunk in stream:
         print(chunk, end="", flush=True)
 
-    print(f"\n  ({stream.chat_response.metrics.tokens} tokens)")
+    m = stream.chat_response.metrics
+    print(f"\n  ({m.tokens} tokens, {m.total_duration:.1f}s)")
 
     # --- Reset and new conversation ---
     print("\n" + "=" * 60)

@@ -21,6 +21,12 @@ from agents7.llm import LLMEngine
 MEMORY_FILE = "chatter_history.json"
 
 
+def fmt_metrics(response) -> str:
+    """Format token count and duration."""
+    m = response.metrics
+    return f"({m.tokens} tokens, {m.total_duration:.1f}s)"
+
+
 def make_chatter_for_user(
     user_id: str,
     memory: JsonFileMemory,
@@ -64,15 +70,18 @@ if __name__ == "__main__":
         response = alice.chat("Hi! My name is Alice.")
         print("  Alice: Hi! My name is Alice.")
         print(f"  Bot:   {response.response}")
+        print(f"         {fmt_metrics(response)}")
 
         response = alice.chat("I'm a data scientist working on NLP.")
         print("  Alice: I'm a data scientist working on NLP.")
         print(f"  Bot:   {response.response}")
+        print(f"         {fmt_metrics(response)}")
     else:
         print(f"  History: {len(alice.history)} messages")
         response = alice.chat("What do you remember about me?")
         print("  Alice: What do you remember about me?")
         print(f"  Bot:   {response.response}")
+        print(f"         {fmt_metrics(response)}")
 
     # --- Bob's conversation (isolated from Alice) ---
     print("\n[Bob]")
@@ -83,11 +92,13 @@ if __name__ == "__main__":
         response = bob.chat("Hey, I'm Bob. I'm learning to cook.")
         print("  Bob: Hey, I'm Bob. I'm learning to cook.")
         print(f"  Bot: {response.response}")
+        print(f"       {fmt_metrics(response)}")
     else:
         print(f"  History: {len(bob.history)} messages")
         response = bob.chat("What do you remember about me?")
         print("  Bob: What do you remember about me?")
         print(f"  Bot: {response.response}")
+        print(f"       {fmt_metrics(response)}")
 
     # --- Show stored conversations ---
     print("\n" + "=" * 60)
