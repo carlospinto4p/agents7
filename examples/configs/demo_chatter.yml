@@ -13,3 +13,9 @@ system_prompt: |
 
 temperature: 0.7
 max_history: 30
+
+# Persistent memory (optional). Uncomment to enable:
+# memory:
+#     backend: json        # or "sqlite"
+#     path: history.json   # or "history.db"
+# conversation_id: session-1

@@ -265,6 +265,19 @@ def load_chatter_yaml_settings(file_path: str) -> dict:
         result["think"] = bool(config["think"])
     if "max_history" in config:
         result["max_history"] = int(config["max_history"])
+    if "conversation_id" in config:
+        result["conversation_id"] = str(config["conversation_id"])
+    if memory_settings := config.get("memory"):
+        from agents7.agents.memory import (
+            MemoryConfig,
+            create_memory,
+        )
+
+        memory_config = MemoryConfig(
+            backend=memory_settings.get("backend", "json"),
+            path=memory_settings.get("path", ""),
+        )
+        result["memory"] = create_memory(memory_config)
 
     return result
 

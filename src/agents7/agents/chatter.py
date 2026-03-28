@@ -15,6 +15,7 @@ from agents7.agents.base import BaseAgent
 from agents7.agents.config_loader import (
     load_chatter_yaml_settings,
 )
+from agents7.agents.memory import MemoryBackend
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 from agents7.logs import logger
 from agents7.models import AgentResponse, ChatResponse, LLMMetrics
@@ -157,15 +158,29 @@ class Chatter(BaseAgent):
         max_history (int): Maximum number of message pairs
             (user + assistant) to keep. Older messages are
             trimmed from the front. Defaults to 50.
+        memory (MemoryBackend, optional): Pluggable memory
+            backend for persisting conversation history
+            across sessions. When set, history is loaded on
+            init and auto-saved after each turn. Defaults
+            to None (in-memory only).
+        conversation_id (str): Identifier for the
+            conversation in the memory backend. Defaults
+            to ``"default"``.
     """
 
     temperature: float = field(default=0.7, kw_only=True)
     think: bool = field(default=False, kw_only=True)
     max_history: int = field(default=50, kw_only=True)
+    memory: MemoryBackend | None = field(default=None, kw_only=True)
+    conversation_id: str = field(default="default", kw_only=True)
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        object.__setattr__(self, "_history", [])
+        if self.memory is not None:
+            history = self.memory.load(self.conversation_id)
+            object.__setattr__(self, "_history", history)
+        else:
+            object.__setattr__(self, "_history", [])
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Chatter":
@@ -184,6 +199,10 @@ class Chatter(BaseAgent):
             max_history: <optional, default 50>
             prompt_params:
                 <key>: <value>
+            memory:
+                backend: <json | sqlite>
+                path: <file path>
+            conversation_id: <optional, default "default">
             ```
         :return: A configured Chatter instance.
         """
@@ -327,8 +346,14 @@ class Chatter(BaseAgent):
         return ChatterAsyncStreamResult(stream, self, message)
 
     def reset(self) -> None:
-        """Clear the conversation history."""
+        """Clear the conversation history.
+
+        If a memory backend is configured, also clears the
+        persisted history for this conversation.
+        """
         self._history.clear()
+        if self.memory is not None:
+            self.memory.clear(self.conversation_id)
 
     @property
     def history(self) -> list[dict[str, str]]:
@@ -411,6 +436,7 @@ class Chatter(BaseAgent):
         """Append an assistant message to history."""
         self._history.append({"role": "assistant", "content": message})
         self._trim_history()
+        self._persist()
 
     def _trim_history(self) -> None:
         """Trim history to max_history message pairs.
@@ -423,3 +449,11 @@ class Chatter(BaseAgent):
         if len(self._history) > max_messages:
             excess = len(self._history) - max_messages
             del self._history[:excess]
+
+    def _persist(self) -> None:
+        """Save history to the memory backend if set."""
+        if self.memory is not None:
+            self.memory.save(
+                self.conversation_id,
+                self._history,
+            )
