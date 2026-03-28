@@ -41,6 +41,22 @@ class AgentResponse(BaseModel):
     )
 
 
+class ChatResponse(BaseModel):
+    """Response from a conversational Chatter agent.
+
+    Unlike `AgentResponse`, this has no structured output
+    model — just the raw text reply, optional thinking
+    tokens, and LLM metrics.
+    """
+
+    response: str = Field(description="The assistant's text reply.")
+    thinking: str | None = Field(
+        default=None,
+        description="The thinking part of the response, if any.",
+    )
+    metrics: LLMMetrics = Field(description="Metrics of the LLM request.")
+
+
 NOT_APPLICABLE_DESCRIPTION = "No applicable reason for this classification."
 
 

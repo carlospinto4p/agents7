@@ -1,4 +1,9 @@
 from agents7.agents.base import Agent, BaseAgent
+from agents7.agents.chatter import (
+    Chatter,
+    ChatterAsyncStreamResult,
+    ChatterStreamResult,
+)
 from agents7.agents.classifier import Classifier
 from agents7.agents.detector import Detector
 from agents7.agents.labeler import Labeler
@@ -15,6 +20,9 @@ __all__ = [
     "AgentAsyncStreamResult",
     "AgentStreamResult",
     "BaseAgent",
+    "Chatter",
+    "ChatterAsyncStreamResult",
+    "ChatterStreamResult",
     "Classifier",
     "Detector",
     "Labeler",

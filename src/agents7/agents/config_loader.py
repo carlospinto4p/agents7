@@ -221,6 +221,82 @@ def build_engine(engine_config: dict) -> LLMEngine:
     )
 
 
+def load_chatter_yaml_settings(file_path: str) -> dict:
+    """Load Chatter agent settings from a YAML file.
+
+    :param file_path: The path to the YAML file. Schema:
+        ```yaml
+        base_config: <path to a base YAML config>
+        name: <name of the agent>
+        version: <version of the agent>
+        engine:
+            provider: <llm provider>
+            model: <llm model>
+        system_prompt: <system prompt / personality>
+        temperature: <optional, default 0.7>
+        think: <optional, default false>
+        max_history: <optional, default 50>
+        prompt_params:
+            <key>: <value>
+        ```
+        The fields `base_config`, `prompt_params`,
+        `temperature`, `think`, and `max_history` are
+        optional.
+    :return: Configuration dictionary for Chatter.
+    """
+    config = _resolve_inheritance(file_path)
+    validate_chatter_yaml_config(config, file_path)
+
+    prompt_params = None
+    if raw_params := config.get("prompt_params"):
+        prompt_params = {str(k): str(v) for k, v in raw_params.items()}
+
+    result = {
+        "name": config["name"],
+        "version": config["version"],
+        "engine": build_engine(config["engine"]),
+        "system_prompt": config["system_prompt"].strip(),
+        "prompt_params": prompt_params,
+    }
+
+    if "temperature" in config:
+        result["temperature"] = float(config["temperature"])
+    if "think" in config:
+        result["think"] = bool(config["think"])
+    if "max_history" in config:
+        result["max_history"] = int(config["max_history"])
+
+    return result
+
+
+def validate_chatter_yaml_config(
+    config: dict,
+    file_path: str,
+) -> None:
+    """Validate mandatory keys in a Chatter YAML config.
+
+    :param config: Parsed YAML configuration dictionary.
+    :param file_path: Path to the YAML file (for error
+        messages).
+    :raises AgentConfigurationError: If a mandatory key is
+        missing.
+    """
+    for key in ("name", "version", "engine", "system_prompt"):
+        if key not in config:
+            raise AgentConfigurationError(
+                f"Missing mandatory key `{key}` in the "
+                f"configuration yaml `{file_path}`"
+            )
+    engine = config["engine"]
+    for key in ("provider", "model"):
+        if key not in engine:
+            raise AgentConfigurationError(
+                f"Missing mandatory key `{key}` in the "
+                f"engine configuration yaml "
+                f"`{file_path}`"
+            )
+
+
 def parse_yaml_examples(config: dict, file_path: str) -> list[dict] | None:
     """Extract and validate examples from YAML config.
 

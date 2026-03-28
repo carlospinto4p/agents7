@@ -1,5 +1,6 @@
 from agents7.models.base import (
     AgentResponse,
+    ChatResponse,
     ClassificationProperty,
     LLMMetrics,
     Property,
@@ -8,6 +9,7 @@ from agents7.models.base import (
 
 __all__ = [
     "AgentResponse",
+    "ChatResponse",
     "ClassificationProperty",
     "LLMMetrics",
     "Property",
