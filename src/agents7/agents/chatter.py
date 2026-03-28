@@ -8,6 +8,7 @@ responses and maintains message history across turns.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -16,6 +17,7 @@ from agents7.agents.config_loader import (
     load_chatter_yaml_settings,
 )
 from agents7.agents.memory import MemoryBackend
+from agents7.exceptions import ChatEndedError
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 from agents7.logs import logger
 from agents7.models import AgentResponse, ChatResponse, LLMMetrics
@@ -166,6 +168,16 @@ class Chatter(BaseAgent):
         conversation_id (str): Identifier for the
             conversation in the memory backend. Defaults
             to ``"default"``.
+        max_turns (int, optional): Maximum number of
+            complete turns (user + assistant pairs). When
+            reached, further chat calls raise
+            ``ChatEndedError``. None means unlimited.
+            Defaults to None.
+        end_condition (Callable, optional): A callable
+            that receives the conversation history
+            (list of message dicts) and returns True to
+            end the conversation. Checked before each
+            turn. Defaults to None.
     """
 
     temperature: float = field(default=0.7, kw_only=True)
@@ -173,6 +185,10 @@ class Chatter(BaseAgent):
     max_history: int = field(default=50, kw_only=True)
     memory: MemoryBackend | None = field(default=None, kw_only=True)
     conversation_id: str = field(default="default", kw_only=True)
+    max_turns: int | None = field(default=None, kw_only=True)
+    end_condition: Callable[[list[dict[str, str]]], bool] | None = field(
+        default=None, kw_only=True
+    )
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -243,7 +259,9 @@ class Chatter(BaseAgent):
 
         :param message: The user's message.
         :return: The assistant's ChatResponse.
+        :raises ChatEndedError: If the conversation has ended.
         """
+        self._check_ended()
         self._append_user(message)
         messages = self._build_messages()
 
@@ -270,7 +288,9 @@ class Chatter(BaseAgent):
 
         :param message: The user's message.
         :return: The assistant's ChatResponse.
+        :raises ChatEndedError: If the conversation has ended.
         """
+        self._check_ended()
         self._append_user(message)
         messages = self._build_messages()
 
@@ -306,7 +326,9 @@ class Chatter(BaseAgent):
 
         :param message: The user's message.
         :return: A ChatterStreamResult yielding text chunks.
+        :raises ChatEndedError: If the conversation has ended.
         """
+        self._check_ended()
         self._append_user(message)
         messages = self._build_messages()
 
@@ -330,7 +352,9 @@ class Chatter(BaseAgent):
         :param message: The user's message.
         :return: A ChatterAsyncStreamResult yielding text
             chunks.
+        :raises ChatEndedError: If the conversation has ended.
         """
+        self._check_ended()
         self._append_user(message)
         messages = self._build_messages()
 
@@ -397,19 +421,55 @@ class Chatter(BaseAgent):
             f"Chatter `{self.name}`: model `{self.engine.model_name}` ready."
         )
 
+    @property
+    def turns(self) -> int:
+        """Number of complete turns (user + assistant pairs).
+
+        :return: Number of completed turns.
+        """
+        return sum(1 for m in self._history if m["role"] == "assistant")
+
+    @property
+    def ended(self) -> bool:
+        """Whether the conversation has ended.
+
+        :return: True if max_turns reached or end_condition
+            returns True.
+        """
+        if self.max_turns is not None and self.turns >= self.max_turns:
+            return True
+        if self.end_condition is not None and self.end_condition(
+            self._history
+        ):
+            return True
+        return False
+
     def describe(self) -> str:
         """Human-readable summary of the agent.
 
         :return: Multi-line string describing the Chatter.
         """
-        return (
-            f"Chatter: {self.name} (v{self.version})\n"
-            f"Model: {self.engine.model_id}\n"
-            f"Temperature: {self.temperature}\n"
-            f"Max history: {self.max_history} turns"
-        )
+        lines = [
+            f"Chatter: {self.name} (v{self.version})",
+            f"Model: {self.engine.model_id}",
+            f"Temperature: {self.temperature}",
+            f"Max history: {self.max_history} turns",
+        ]
+        if self.max_turns is not None:
+            lines.append(f"Max turns: {self.max_turns}")
+        if self.end_condition is not None:
+            lines.append("End condition: custom")
+        return "\n".join(lines)
 
     # --- Private helpers ---
+
+    def _check_ended(self) -> None:
+        """Raise ChatEndedError if the conversation is over."""
+        if self.ended:
+            raise ChatEndedError(
+                f"Chatter `{self.name}`: conversation "
+                f"`{self.conversation_id}` has ended."
+            )
 
     def _build_messages(self) -> list[dict[str, str]]:
         """Build the full message list for the LLM call.

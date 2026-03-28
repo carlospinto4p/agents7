@@ -40,3 +40,7 @@ class PipelineConfigurationError(Agents7Exception):
 
 class SuggestionError(Agents7Exception):
     """Raised for invalid suggestion operations."""
+
+
+class ChatEndedError(Agents7Exception):
+    """Raised when a Chatter conversation has ended."""
