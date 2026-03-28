@@ -1,6 +1,29 @@
 
 ## Changelog - Agents7
 
+### v3.8.0 - 28th March 2026
+
+- Module `agents7.agents.chatter`:
+  - Added `max_turns` field — limits the number of complete
+    conversation turns. Raises `ChatEndedError` when reached.
+  - Added `end_condition` field — callable that receives
+    conversation history and returns True to end the chat.
+  - Added `turns` property — count of completed turns.
+  - Added `ended` property — whether the conversation has
+    ended (by max_turns or end_condition).
+  - All chat methods (`chat`, `chat_async`, `chat_stream`,
+    `chat_stream_async`) check end conditions before
+    processing.
+  - `reset()` clears turn count, allowing new turns.
+- Module `agents7.exceptions`:
+  - Added `ChatEndedError` exception.
+- Module `agents7.agents.config_loader`:
+  - `load_chatter_yaml_settings()` supports `max_turns`
+    and `end_condition` YAML fields.
+- Tests:
+  - 15 unit tests for end conditions.
+
+
 ### v3.7.0 - 28th March 2026
 
 - New module `agents7.agents.memory`:
