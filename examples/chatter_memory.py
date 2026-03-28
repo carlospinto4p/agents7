@@ -32,7 +32,7 @@ def make_chatter_for_user(
     memory: JsonFileMemory,
 ) -> Chatter:
     """Create a Chatter instance for a specific user."""
-    engine = LLMEngine("ollama", "qwen3")
+    engine = LLMEngine("ollama", "qwen3:1.7b")
     return Chatter(
         name="FriendlyBot",
         version=1,
