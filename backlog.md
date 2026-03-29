@@ -209,13 +209,13 @@
 
 - [x] Add return type hints to `ChatterStreamResult.__iter__`, `ChatterAsyncStreamResult.__aiter__` / `_iterate` — done in v3.8.1.
 - [x] Add `-> None` return type to all `__post_init__` methods across `detector.py`, `classifier.py`, `pipeline.py`, `cache.py`, `retry.py` — done in v3.8.2 (also `labeler.py`).
-- [ ] Add type hints to `OpenAICompatChunk.__init__` and `OpenAICompatMessage.__init__` in `openai_compat.py`.
-- [ ] Add return type hints to UI functions in `app.py`, `1_Define.py`, `2_Configure.py`.
+- [x] Add type hints to `OpenAICompatChunk.__init__` and `OpenAICompatMessage.__init__` — done in v3.8.3.
+- [x] Add return type hints to UI functions in `app.py`, `__init__.py`, `1_Define.py`, `2_Configure.py` — done in v3.8.3.
 
 #### Tests (low impact)
 
-- [ ] Parametrize type validation tests in `test_labeler.py` — multiple similar test functions.
-- [ ] Add `# --- Section ---` headers to `test_chatter.py` and `test_cache.py` for consistency.
+- [x] Parametrize type validation tests in `test_labeler.py` — done in v3.8.3 (YAML validation and fix-malformed-json tests).
+- [x] Add `# --- Section ---` headers to `test_chatter.py` and `test_cache.py` — already present, no change needed.
 
 ### Infrastructure
 

@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v3.8.3 - 29th March 2026
+
+- Module `agents7.llm.openai_compat`:
+  - Added type hints to `_OAIChunk.__init__` (`chunk: Any`)
+    and `_OAIMessage.__init__` (`content: str`,
+    `role: str | None`, `thinking: str | None`).
+- Module `agents7.ui`:
+  - Added `-> None` return type to `launch()`,
+    `main()`, `_render_app()`, `_home_page()`.
+  - Added type hints to `_cached_model_code(state: dict)`
+    and `_cached_yaml(state: dict)`.
+- Tests:
+  - Parametrized YAML validation tests in `test_labeler.py`
+    (3 cases into `test_yaml_validation_errors`).
+  - Parametrized fix-malformed-json tests (4 cases into
+    `test_fix_malformed_json`).
+
+
 ### v3.8.2 - 29th March 2026
 
 - Module `agents7.agents.labeler`:
