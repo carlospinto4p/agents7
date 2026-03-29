@@ -104,6 +104,7 @@ def create_mock_engine(
     engine.model_name = model_name
     engine.model_id = f"mock::{model_name}"
     engine.retry_config = None
+    engine.cost_per_1m_tokens = None
     engine._cache = None
     engine._fallback_provider = None
 

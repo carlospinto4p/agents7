@@ -118,6 +118,7 @@ def make_engine(cache: CacheConfig | None = None):
     engine.model_name = "test-model"
     engine.model_id = "ollama::test-model"
     engine.retry_config = None
+    engine.cost_per_1m_tokens = None
     engine._cache = ResponseCache(cache) if cache is not None else None
     engine.llm_provider = Mock()
     return engine

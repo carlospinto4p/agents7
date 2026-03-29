@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import functools
 from abc import ABC, abstractmethod
 
+from agents7.exceptions import LLMException
 from agents7.llm.cache import CacheConfig, ResponseCache, create_cache
 from agents7.llm.retry import RetryConfig, retry_async, retry_sync
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
@@ -52,6 +54,7 @@ class LLMEngine:
         retry: RetryConfig | None = None,
         cache: CacheConfig | None = None,
         fallback_model: str | None = None,
+        cost_per_1m_tokens: float | None = None,
         **kwargs,
     ):
         provider = provider.lower()
@@ -59,6 +62,7 @@ class LLMEngine:
         self.model_name = model_name
         self.model_id: str = f"{provider}::{model_name}"
         self.retry_config = retry
+        self.cost_per_1m_tokens = cost_per_1m_tokens
         self._cache: ResponseCache | None = (
             create_cache(cache) if cache is not None else None
         )
@@ -150,6 +154,18 @@ class LLMEngine:
                 key,
             )
 
+    def _inject_cost(self, result: dict) -> dict:
+        """Add cost_cents to the metrics dict if configured."""
+        if self.cost_per_1m_tokens is not None:
+            metrics = result.get("metrics", {})
+            total_tokens = metrics.get("tokens", 0) + metrics.get(
+                "prompt_tokens", 0
+            )
+            metrics["cost_cents"] = (
+                total_tokens * self.cost_per_1m_tokens / 1_000_000
+            )
+        return result
+
     # --- Internal dispatch helpers ---
 
     def _cache_check(
@@ -179,6 +195,7 @@ class LLMEngine:
         **common,
     ) -> dict:
         """Sync cache-lookup → retry → fallback → cache-store."""
+        common.pop("timeout", None)
         key, cached = self._cache_check(
             method_name, input_kwarg, input_val, **common
         )
@@ -201,6 +218,7 @@ class LLMEngine:
                 input_val,
                 **common,
             )
+        self._inject_cost(result)
         self._cache_store(key, result)
         return result
 
@@ -212,29 +230,47 @@ class LLMEngine:
         input_val,
         **common,
     ) -> dict:
-        """Async cache-lookup → retry → fallback → cache-store."""
+        """Async cache-lookup → retry → fallback →
+        cache-store. Applies timeout if set."""
+        timeout = common.pop("timeout", None)
         key, cached = self._cache_check(
             method_name, input_kwarg, input_val, **common
         )
         if cached is not None:
             return cached
+
+        async def _inner() -> dict:
+            try:
+                return await retry_async(
+                    provider_fn,
+                    self.retry_config,
+                    **{input_kwarg: input_val},
+                    **common,
+                )
+            except Exception as primary_error:
+                if self._fallback_provider is None:
+                    raise
+                return await self._fallback_async(
+                    method_name,
+                    primary_error,
+                    input_kwarg,
+                    input_val,
+                    **common,
+                )
+
         try:
-            result = await retry_async(
-                provider_fn,
-                self.retry_config,
-                **{input_kwarg: input_val},
-                **common,
-            )
-        except Exception as primary_error:
-            if self._fallback_provider is None:
-                raise
-            result = await self._fallback_async(
-                method_name,
-                primary_error,
-                input_kwarg,
-                input_val,
-                **common,
-            )
+            if timeout is not None:
+                result = await asyncio.wait_for(
+                    _inner(),
+                    timeout=timeout,
+                )
+            else:
+                result = await _inner()
+        except asyncio.TimeoutError:
+            raise LLMException(
+                f"Request timed out after {timeout}s"
+            ) from None
+        self._inject_cost(result)
         self._cache_store(key, result)
         return result
 
@@ -248,6 +284,7 @@ class LLMEngine:
         **common,
     ):
         """Sync stream: cache-lookup → call → callback."""
+        common.pop("timeout", None)
         key, cached = self._cache_check(
             method_name, input_kwarg, input_val, **common
         )
@@ -270,6 +307,7 @@ class LLMEngine:
         **common,
     ):
         """Async stream: cache-lookup → await → callback."""
+        common.pop("timeout", None)
         key, cached = self._cache_check(
             method_name, input_kwarg, input_val, **common
         )
@@ -341,11 +379,16 @@ class LLMEngine:
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        timeout: float | None = None,
     ) -> dict:
         """Generate a chat response.
 
         See `LLMProvider.chat` for parameter and return
         value documentation.
+
+        :param timeout: Per-call timeout in seconds. Only
+            enforced for async calls. ``None`` means no
+            timeout.
         """
         return self._execute(
             "chat",
@@ -357,6 +400,7 @@ class LLMEngine:
             output_format=output_format,
             think=think,
             seed=seed,
+            timeout=timeout,
         )
 
     async def chat_async(
@@ -367,11 +411,15 @@ class LLMEngine:
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        timeout: float | None = None,
     ) -> dict:
         """Async version of `chat`.
 
         See `LLMProvider.chat` for parameter and return
         value documentation.
+
+        :param timeout: Per-call timeout in seconds.
+            Raises ``LLMException`` on expiry.
         """
         return await self._execute_async(
             "chat",
@@ -383,6 +431,7 @@ class LLMEngine:
             output_format=output_format,
             think=think,
             seed=seed,
+            timeout=timeout,
         )
 
     def generate(
@@ -393,11 +442,14 @@ class LLMEngine:
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        timeout: float | None = None,
     ) -> dict:
         """Generate text from a prompt.
 
         See `LLMProvider.generate` for parameter and
         return value documentation.
+
+        :param timeout: Per-call timeout in seconds.
         """
         return self._execute(
             "generate",
@@ -409,6 +461,7 @@ class LLMEngine:
             output_format=output_format,
             think=think,
             seed=seed,
+            timeout=timeout,
         )
 
     async def generate_async(
@@ -419,11 +472,14 @@ class LLMEngine:
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        timeout: float | None = None,
     ) -> dict:
         """Async version of `generate`.
 
         See `LLMProvider.generate` for parameter and
         return value documentation.
+
+        :param timeout: Per-call timeout in seconds.
         """
         return await self._execute_async(
             "generate",
@@ -435,6 +491,7 @@ class LLMEngine:
             output_format=output_format,
             think=think,
             seed=seed,
+            timeout=timeout,
         )
 
     def chat_stream(

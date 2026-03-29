@@ -21,6 +21,10 @@ class LLMMetrics(BaseModel):
     total_duration: float = Field(
         description="The total duration of the response, in seconds."
     )
+    cost_cents: float | None = Field(
+        default=None,
+        description="Estimated cost in cents, or None if cost tracking is not configured.",
+    )
 
 
 class AgentResponse(BaseModel):
