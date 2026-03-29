@@ -42,7 +42,7 @@ class PipelineStep:
     mapper: Callable[[AgentResponse], dict] | None = None
     condition: Callable[[dict], bool] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not isinstance(self.agent, BaseAgent):
             raise PipelineConfigurationError(
                 "`agent` must be a BaseAgent instance."
@@ -108,7 +108,7 @@ class Pipeline:
         """
         return cls(steps=[PipelineStep(agent=a) for a in agents])
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.steps:
             raise PipelineConfigurationError(
                 "`steps` must be a non-empty list."

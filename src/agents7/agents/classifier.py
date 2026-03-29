@@ -35,7 +35,7 @@ class Classifier(Detector):
 
     output_model: type[ClassificationProperty]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """
         Post-initialization method to validate the agent.
 

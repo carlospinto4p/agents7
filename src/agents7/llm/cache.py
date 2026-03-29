@@ -36,7 +36,7 @@ class CacheConfig:
     backend: str = field(default="memory", kw_only=True)
     path: str = field(default="cache.db", kw_only=True)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.max_size < 0:
             raise LLMException(f"max_size must be >= 0, got {self.max_size}")
         if self.backend not in ("memory", "sqlite"):

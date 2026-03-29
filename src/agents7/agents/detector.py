@@ -37,7 +37,7 @@ class Detector(Labeler):
 
     output_model: type[Property]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """
         Post-initialization method to validate the agent.
         This method is called after the agent is initialized.

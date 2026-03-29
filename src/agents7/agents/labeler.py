@@ -83,7 +83,7 @@ class Labeler(BaseAgent):
     call_logger: Callable | None = field(default=None, kw_only=True)
     preprocessor: Callable | None = field(default=None, kw_only=True)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """
         Post-initialization method to validate the agent.
         This method is called after the agent is initialized.
@@ -301,17 +301,7 @@ class Labeler(BaseAgent):
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
         input_data = self._preprocess(input_data)
-
-        logger.debug(
-            f"Agent `{self.name}`: processing input data:\n{input_data}"
-        )
-        messages = [
-            {"role": "system", "content": self.prompt},
-            {
-                "role": "user",
-                "content": f"Process the following:\n{input_data}",
-            },
-        ]
+        messages = self._build_act_messages(input_data)
         response = self._strip_role(
             self.engine.chat(
                 messages=messages,
@@ -322,14 +312,13 @@ class Labeler(BaseAgent):
         )
         try:
             parsed = self._parser.parse(response["response"])
-        except ParseError as first_error:
+        except ParseError as err:
             parsed = self._retry_parse_sync(
-                first_error, messages, chat_kwargs
+                err,
+                messages,
+                chat_kwargs,
             )
-        response["model"] = self._parser.run_validators(parsed)
-        agent_response = AgentResponse(**response)
-        self._emit_call_log(agent_response)
-        return agent_response
+        return self._finalize_response(response, parsed)
 
     async def act_async(
         self,
@@ -347,17 +336,7 @@ class Labeler(BaseAgent):
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
         input_data = self._preprocess(input_data)
-
-        logger.debug(
-            f"Agent `{self.name}`: processing input data:\n{input_data}"
-        )
-        messages = [
-            {"role": "system", "content": self.prompt},
-            {
-                "role": "user",
-                "content": f"Process the following:\n{input_data}",
-            },
-        ]
+        messages = self._build_act_messages(input_data)
         response = self._strip_role(
             await self.engine.chat_async(
                 messages=messages,
@@ -368,15 +347,17 @@ class Labeler(BaseAgent):
         )
         try:
             parsed = self._parser.parse(response["response"])
-        except ParseError as first_error:
+        except ParseError as err:
             parsed = await self._retry_parse_async(
-                first_error, messages, chat_kwargs
+                err,
+                messages,
+                chat_kwargs,
             )
-        response["model"] = self._parser.run_validators(parsed)
-        response["idx"] = _idx
-        agent_response = AgentResponse(**response)
-        self._emit_call_log(agent_response)
-        return agent_response
+        return self._finalize_response(
+            response,
+            parsed,
+            idx=_idx,
+        )
 
     def act_stream(
         self,
@@ -395,17 +376,9 @@ class Labeler(BaseAgent):
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
         input_data = self._preprocess(input_data)
-        logger.debug(
-            f"Agent `{self.name}`: streaming input data:\n{input_data}"
-        )
+        messages = self._build_act_messages(input_data)
         stream = self.engine.chat_stream(
-            messages=[
-                {"role": "system", "content": self.prompt},
-                {
-                    "role": "user",
-                    "content": (f"Process the following:\n{input_data}"),
-                },
-            ],
+            messages=messages,
             temperature=0,
             output_format=self._output_schema,
             **chat_kwargs,
@@ -431,17 +404,9 @@ class Labeler(BaseAgent):
         """
         chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
         input_data = self._preprocess(input_data)
-        logger.debug(
-            f"Agent `{self.name}`: streaming input data:\n{input_data}"
-        )
+        messages = self._build_act_messages(input_data)
         stream = await self.engine.chat_stream_async(
-            messages=[
-                {"role": "system", "content": self.prompt},
-                {
-                    "role": "user",
-                    "content": (f"Process the following:\n{input_data}"),
-                },
-            ],
+            messages=messages,
             temperature=0,
             output_format=self._output_schema,
             **chat_kwargs,
@@ -642,6 +607,48 @@ class Labeler(BaseAgent):
                 )
         return agent_responses
 
+    def _build_act_messages(
+        self,
+        input_data: dict | list[dict],
+    ) -> list[dict[str, str]]:
+        """Build the system + user message list for act().
+
+        :param input_data: Preprocessed input data.
+        :return: Messages list for engine.chat().
+        """
+        logger.debug(
+            f"Agent `{self.name}`: processing input data:\n{input_data}"
+        )
+        return [
+            {"role": "system", "content": self.prompt},
+            {
+                "role": "user",
+                "content": (f"Process the following:\n{input_data}"),
+            },
+        ]
+
+    def _finalize_response(
+        self,
+        response: dict,
+        parsed: "BaseModel | None",
+        idx: int = 0,
+    ) -> AgentResponse:
+        """Validate, wrap, and log a parsed LLM response.
+
+        :param response: Raw chat response (role-stripped).
+        :param parsed: Parsed model from the response, or
+            None if parsing failed.
+        :param idx: Optional index for batch tracking.
+        :return: Fully built AgentResponse.
+        """
+        response["model"] = self._parser.run_validators(
+            parsed,
+        )
+        response["idx"] = idx
+        agent_response = AgentResponse(**response)
+        self._emit_call_log(agent_response)
+        return agent_response
+
     def _retry_parse_sync(
         self,
         error: ParseError,
@@ -683,7 +690,7 @@ class Labeler(BaseAgent):
         chat_kwargs: dict,
         chat_fn,
     ) -> "BaseModel | None":
-        """Shared retry loop for parse failures (sync).
+        """Retry loop for parse failures (sync).
 
         :param error: Initial parse error.
         :param messages: Original messages list.
@@ -696,24 +703,19 @@ class Labeler(BaseAgent):
         retry_messages = list(messages)
         last_error = error
         for attempt in range(self.max_parse_retries):
-            logger.warning(
-                f"Agent `{self.name}`: parse retry "
-                f"{attempt + 1}/{self.max_parse_retries} "
-                f"after error: {last_error}"
+            self._log_retry(attempt, last_error)
+            retry_messages.append(
+                self._parse_retry_message(last_error),
             )
-            retry_messages.append(self._parse_retry_message(last_error))
-            response = self._strip_role(
-                chat_fn(
-                    messages=retry_messages,
-                    temperature=0,
-                    output_format=self._output_schema,
-                    **chat_kwargs,
+            raw = chat_fn(
+                **self._retry_chat_kwargs(
+                    retry_messages,
+                    chat_kwargs,
                 )
             )
-            try:
-                return self._parser.parse(response["response"])
-            except ParseError as e:
-                last_error = e
+            parsed, last_error = self._try_parse(raw)
+            if parsed is not None:
+                return parsed
         return None
 
     async def _retry_parse_loop_async(
@@ -723,7 +725,7 @@ class Labeler(BaseAgent):
         chat_kwargs: dict,
         chat_fn,
     ) -> "BaseModel | None":
-        """Shared retry loop for parse failures (async).
+        """Retry loop for parse failures (async).
 
         :param error: Initial parse error.
         :param messages: Original messages list.
@@ -736,25 +738,65 @@ class Labeler(BaseAgent):
         retry_messages = list(messages)
         last_error = error
         for attempt in range(self.max_parse_retries):
-            logger.warning(
-                f"Agent `{self.name}`: parse retry "
-                f"{attempt + 1}/{self.max_parse_retries} "
-                f"after error: {last_error}"
+            self._log_retry(attempt, last_error)
+            retry_messages.append(
+                self._parse_retry_message(last_error),
             )
-            retry_messages.append(self._parse_retry_message(last_error))
-            response = self._strip_role(
-                await chat_fn(
-                    messages=retry_messages,
-                    temperature=0,
-                    output_format=self._output_schema,
-                    **chat_kwargs,
+            raw = await chat_fn(
+                **self._retry_chat_kwargs(
+                    retry_messages,
+                    chat_kwargs,
                 )
             )
-            try:
-                return self._parser.parse(response["response"])
-            except ParseError as e:
-                last_error = e
+            parsed, last_error = self._try_parse(raw)
+            if parsed is not None:
+                return parsed
         return None
+
+    def _log_retry(
+        self,
+        attempt: int,
+        error: ParseError,
+    ) -> None:
+        """Log a parse retry attempt."""
+        logger.warning(
+            f"Agent `{self.name}`: parse retry "
+            f"{attempt + 1}/{self.max_parse_retries} "
+            f"after error: {error}"
+        )
+
+    def _retry_chat_kwargs(
+        self,
+        retry_messages: list[dict[str, str]],
+        chat_kwargs: dict,
+    ) -> dict:
+        """Build kwargs for a retry chat call."""
+        return {
+            "messages": retry_messages,
+            "temperature": 0,
+            "output_format": self._output_schema,
+            **chat_kwargs,
+        }
+
+    def _try_parse(
+        self,
+        raw_response: dict,
+    ) -> "tuple[BaseModel | None, ParseError | None]":
+        """Try parsing a retry response.
+
+        :param raw_response: Raw chat response from the
+            engine.
+        :return: (parsed_model, None) on success, or
+            (None, error) on failure.
+        """
+        self._strip_role(raw_response)
+        try:
+            parsed = self._parser.parse(
+                raw_response["response"],
+            )
+            return parsed, None
+        except ParseError as e:
+            return None, e
 
     @staticmethod
     def _parse_retry_message(error: ParseError) -> dict[str, str]:

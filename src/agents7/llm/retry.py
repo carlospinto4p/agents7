@@ -42,7 +42,7 @@ class RetryConfig:
     max_delay: float = 30.0
     backoff_factor: float = 2.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.max_retries < 0:
             raise LLMException(
                 f"max_retries must be >= 0, got {self.max_retries}"
