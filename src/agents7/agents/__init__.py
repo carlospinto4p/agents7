@@ -14,6 +14,11 @@ from agents7.agents.memory import (
     SqliteMemory,
     create_memory,
 )
+from agents7.agents.personality import (
+    Persona,
+    PersonalityChatter,
+    PhysicalTraits,
+)
 from agents7.agents.pipeline import Pipeline, PipelineResponse, PipelineStep
 from agents7.agents.regressor import Regressor
 from agents7.agents.streaming import (
@@ -34,6 +39,9 @@ __all__ = [
     "Detector",
     "JsonFileMemory",
     "Labeler",
+    "Persona",
+    "PersonalityChatter",
+    "PhysicalTraits",
     "MemoryBackend",
     "MemoryConfig",
     "Pipeline",
