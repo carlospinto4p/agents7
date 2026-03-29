@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.11.1 - 29th March 2026
+
+- Module `agents7.agents.personality`:
+  - Added `language` field to `Persona` (e.g.
+    ``"Spanish"``). When set, the agent is instructed
+    to ALWAYS respond in that language regardless of
+    the user's language. Appears in both the character
+    profile and the instructions section of the
+    auto-generated system prompt.
+
+
 ### v3.11.0 - 29th March 2026
 
 - New module `agents7.agents.personality`:
