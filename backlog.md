@@ -232,9 +232,9 @@
 
 #### HIGH impact
 
-- [ ] Add `agents7.testing` module with evaluation helpers — `assert_accuracy_above(agent, cases, min_accuracy)`, `create_mock_engine(responses)` for unit testing without LLM calls.
+- [x] Add `agents7.testing` module — done in v3.9.0 (`create_mock_engine`, `assert_accuracy_above`, 8 tests).
 - [ ] Native Anthropic/Claude provider (`agents7.llm.anthropic`) — use the official `anthropic` SDK instead of routing through `openai_compat`. Cleaner API for Claude models.
-- [ ] `simple_classifier()` convenience function — auto-generate output model from a list of category strings + system prompt + engine. Reduces boilerplate for the most common use case.
+- [x] `simple_classifier()` convenience function — done in v3.9.0 (`agents7.simple`, auto-generates enums + ClassificationProperty, 11 tests).
 
 #### MEDIUM impact
 

@@ -1054,6 +1054,51 @@ call_logger: mymodule.my_logger
 
 The `call_logger` value is a dotted import path to any callable accepting a `CallRecord`.
 
+### Testing Utilities
+
+The `agents7.testing` module provides helpers for unit-testing agents without LLM calls:
+
+```python
+from agents7.testing import create_mock_engine, assert_accuracy_above
+
+# Mock engine with predefined responses
+engine = create_mock_engine({
+    "good": '{"category": "POSITIVE", "reason": "IS_POSITIVE"}',
+    "bad": '{"category": "NEGATIVE", "reason": "IS_NEGATIVE"}',
+})
+agent = Classifier(..., engine=engine)
+
+# Single string response for all inputs
+engine = create_mock_engine('{"value": "ok"}')
+
+# Assert evaluation accuracy
+eval_data = [
+    {"input": {"text": "good"}, "category": "POSITIVE"},
+    {"input": {"text": "bad"}, "category": "NEGATIVE"},
+]
+metrics = assert_accuracy_above(agent, eval_data, ["category"], 0.9)
+```
+
+`create_mock_engine` supports dict (input→response mapping), single string, or default fallback. Works with sync and async methods.
+
+### Simple Classifier
+
+The `agents7.simple` module lets you create a `Classifier` from a list of category strings without defining Pydantic models manually:
+
+```python
+from agents7.simple import simple_classifier
+
+agent = simple_classifier(
+    categories=["SPAM", "HAM"],
+    system_prompt="Is this email spam or not?",
+    engine=engine,
+)
+result = agent.act({"text": "Buy now!!!"})
+print(result.model.category)  # SPAM
+```
+
+Auto-generates `StrEnum` and `ClassificationProperty` subclasses. Supports custom reasons, `not_applicable` toggle, `think` mode, and extra kwargs (`examples`, `prompt_params`).
+
 ### Agent Builder UI
 
 > Full workflow documentation: [docs/agent_builder.md](docs/agent_builder.md)

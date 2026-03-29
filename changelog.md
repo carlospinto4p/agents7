@@ -1,6 +1,34 @@
 
 ## Changelog - Agents7
 
+### v3.9.0 - 29th March 2026
+
+- New module `agents7.testing`:
+  - `create_mock_engine(responses)` — creates an
+    ``LLMEngine`` with a mocked provider that returns
+    predefined responses. Supports dict (input→response
+    mapping), single string, or default fallback. Works
+    with both sync and async agent methods.
+  - `assert_accuracy_above(agent, eval_data, fields,
+    min_accuracy)` — runs ``run_evaluation()`` and
+    asserts accuracy meets the threshold. Returns the
+    metrics dict on success.
+- New module `agents7.simple`:
+  - `simple_classifier(categories, system_prompt,
+    engine)` — creates a ``Classifier`` from a list of
+    category strings. Auto-generates ``StrEnum`` and
+    ``ClassificationProperty`` subclasses. Supports
+    custom reasons, NOT_APPLICABLE toggle, think mode,
+    and extra kwargs (examples, prompt_params).
+- Tests:
+  - 8 tests for `agents7.testing` (mock engine default,
+    single, dict, fallback, custom name, async; accuracy
+    pass/fail).
+  - 11 tests for `agents7.simple` (creation, custom
+    params, output model, categories, NOT_APPLICABLE
+    on/off, reasons, classify with mock, think, kwargs).
+
+
 ### v3.8.4 - 29th March 2026
 
 - Module `agents7.agents.parsing`:
