@@ -11,7 +11,7 @@ from agents7.agents.labeler import Labeler
 
 if __name__ == "__main__":
     # Load the person extractor labeler from config
-    extractor = Labeler.from_yaml("configs/demo_labeler.yml")
+    extractor = Labeler.from_yaml("../configs/demo_labeler.yml")
 
     # Test cases demonstrating different extraction scenarios
     test_texts = [

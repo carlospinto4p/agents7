@@ -12,7 +12,7 @@ from agents7.agents.labeler import Labeler
 
 
 if __name__ == "__main__":
-    extractor = Labeler.from_yaml("configs/demo_labeler.yml")
+    extractor = Labeler.from_yaml("../configs/demo_labeler.yml")
 
     print(f"Agent: {extractor.name} (v{extractor.version})")
     print("=" * 60)

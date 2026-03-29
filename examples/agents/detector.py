@@ -11,7 +11,7 @@ from agents7.agents.detector import Detector
 
 if __name__ == "__main__":
     # Load the temperature detector from config
-    detector = Detector.from_yaml("configs/demo_temperature_detector.yml")
+    detector = Detector.from_yaml("../configs/demo_temperature_detector.yml")
 
     # Test cases demonstrating different temperature scenarios
     test_texts = [

@@ -10,7 +10,7 @@ from agents7.export import export_csv, export_jsonl
 
 
 if __name__ == "__main__":
-    extractor = Labeler.from_yaml("configs/demo_labeler.yml")
+    extractor = Labeler.from_yaml("../configs/demo_labeler.yml")
 
     test_texts = [
         "Sarah, a 28-year-old data scientist from London.",

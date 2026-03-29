@@ -11,7 +11,9 @@ from agents7.agents.classifier import Classifier
 
 if __name__ == "__main__":
     # Load the sentiment classifier from config
-    classifier = Classifier.from_yaml("configs/demo_sentiment_classifier.yml")
+    classifier = Classifier.from_yaml(
+        "../configs/demo_sentiment_classifier.yml"
+    )
 
     # Test cases demonstrating different sentiment scenarios
     test_texts = [

@@ -14,7 +14,7 @@ from agents7.agents.labeler import Labeler
 
 def example_from_yaml():
     """Load agent from YAML with static prompt_params."""
-    extractor = Labeler.from_yaml("configs/demo_labeler_params.yml")
+    extractor = Labeler.from_yaml("../configs/demo_labeler_params.yml")
 
     print(f"Agent: {extractor.name} (v{extractor.version})")
     print(f"Params: {extractor.prompt_params}")
@@ -47,7 +47,7 @@ def example_with_callable():
     The current_date param is evaluated fresh each time
     the prompt is accessed.
     """
-    extractor = Labeler.from_yaml("configs/demo_labeler_params.yml")
+    extractor = Labeler.from_yaml("../configs/demo_labeler_params.yml")
 
     # Override with callable params via Python instantiation
     extractor = Labeler(

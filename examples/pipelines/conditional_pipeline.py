@@ -32,8 +32,8 @@ def has_name(input_data: dict) -> bool:
 
 
 if __name__ == "__main__":
-    extractor = Labeler.from_yaml("configs/demo_labeler.yml")
-    bio_gen = Labeler.from_yaml("configs/demo_bio_generator.yml")
+    extractor = Labeler.from_yaml("../configs/demo_labeler.yml")
+    bio_gen = Labeler.from_yaml("../configs/demo_bio_generator.yml")
 
     pipeline = Pipeline(
         steps=[

@@ -26,8 +26,8 @@ def person_to_bio_input(response: AgentResponse) -> dict:
 
 if __name__ == "__main__":
     # Load agents from YAML configs
-    extractor = Labeler.from_yaml("configs/demo_labeler.yml")
-    bio_gen = Labeler.from_yaml("configs/demo_bio_generator.yml")
+    extractor = Labeler.from_yaml("../configs/demo_labeler.yml")
+    bio_gen = Labeler.from_yaml("../configs/demo_bio_generator.yml")
 
     # Build the pipeline
     pipeline = Pipeline(

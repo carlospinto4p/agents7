@@ -11,7 +11,7 @@ from agents7.agents.personality import PersonalityChatter
 
 if __name__ == "__main__":
     david = PersonalityChatter.from_yaml(
-        "configs/demo_personality_chatter.yml"
+        "../configs/demo_personality_chatter.yml"
     )
 
     print(f"Agent: {david.name} (v{david.version})")

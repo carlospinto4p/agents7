@@ -14,7 +14,7 @@ from agents7.agents.labeler import Labeler
 
 if __name__ == "__main__":
     # Load agent that inherits engine config from a base file
-    extractor = Labeler.from_yaml("configs/demo_labeler_inherited.yml")
+    extractor = Labeler.from_yaml("../configs/demo_labeler_inherited.yml")
 
     print(f"Agent: {extractor.name} (v{extractor.version})")
     print(f"Model: {extractor.engine.model_id}")

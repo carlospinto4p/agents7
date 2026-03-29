@@ -10,7 +10,7 @@ from agents7.agents.chatter import Chatter
 
 
 if __name__ == "__main__":
-    chatter = Chatter.from_yaml("configs/demo_chatter.yml")
+    chatter = Chatter.from_yaml("../configs/demo_chatter.yml")
 
     print(f"Agent: {chatter.name} (v{chatter.version})")
     print("=" * 60)

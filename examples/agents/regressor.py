@@ -12,7 +12,9 @@ from agents7.agents.regressor import Regressor
 if __name__ == "__main__":
     # Load the temperature regressor from config
     # (Regressor extends Detector, so it reuses the same YAML)
-    regressor = Regressor.from_yaml("configs/demo_temperature_detector.yml")
+    regressor = Regressor.from_yaml(
+        "../configs/demo_temperature_detector.yml"
+    )
 
     # Test cases demonstrating different temperature scenarios
     test_texts = [
