@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.10.2 - 29th March 2026
+
+- Module `agents7`:
+  - Exported `RetryConfig`, `CacheConfig`, `MemoryConfig`
+    from the top-level package for easier imports.
+
+
 ### v3.10.1 - 29th March 2026
 
 - Module `agents7.llm.base`:

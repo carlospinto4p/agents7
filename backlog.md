@@ -244,7 +244,7 @@
 
 #### LOW impact
 
-- [ ] Export `RetryConfig`, `CacheConfig`, `MemoryConfig` from top-level `agents7` package for easier imports.
+- [x] Export `RetryConfig`, `CacheConfig`, `MemoryConfig` from top-level `agents7` package — done in v3.10.2.
 
 ### Infrastructure
 
