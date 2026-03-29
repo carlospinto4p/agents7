@@ -238,8 +238,8 @@
 
 #### MEDIUM impact
 
-- [ ] Request timeout support — add `timeout_seconds` parameter to `LLMEngine` chat/generate methods. Prevents hanging on stuck connections.
-- [ ] Cost tracking in `LLMMetrics` — add `cost_cents: float` field, configurable `cost_per_1m_tokens` on `LLMEngine`. Enables budget tracking.
+- [x] Request timeout support — done in v3.10.1 (`timeout` param on all `LLMEngine` chat/generate methods, async enforced via `asyncio.wait_for`).
+- [x] Cost tracking in `LLMMetrics` — done in v3.10.1 (`cost_cents` field, `cost_per_1m_tokens` on `LLMEngine`, auto-injected in `_execute`/`_execute_async`).
 - [ ] A/B testing harness — `run_ab_test(agent_a, agent_b, test_cases)` that runs both agents on same inputs and returns comparative metrics.
 
 #### LOW impact

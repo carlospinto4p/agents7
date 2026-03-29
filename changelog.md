@@ -1,6 +1,26 @@
 
 ## Changelog - Agents7
 
+### v3.10.1 - 29th March 2026
+
+- Module `agents7.llm.base`:
+  - Added `timeout` parameter to all `LLMEngine`
+    chat/generate methods (`chat`, `chat_async`,
+    `generate`, `generate_async`). For async methods,
+    enforced via `asyncio.wait_for` — raises
+    `LLMException` on expiry. Timeout is excluded from
+    cache keys and stripped before forwarding to
+    providers.
+  - Added `cost_per_1m_tokens` constructor parameter
+    to `LLMEngine`. When set, `_inject_cost()` computes
+    `cost_cents` from total tokens and injects it into
+    the response metrics dict.
+- Module `agents7.models.base`:
+  - Added `cost_cents: float | None` field to
+    `LLMMetrics`. Defaults to `None` when cost tracking
+    is not configured.
+
+
 ### v3.10.0 - 29th March 2026
 
 - New module `agents7.llm.anthropic`:
