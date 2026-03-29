@@ -1,6 +1,33 @@
 
 ## Changelog - Agents7
 
+### v3.8.1 - 29th March 2026
+
+- Module `agents7.agents.streaming`:
+  - Extracted `_AgentStreamBase` base class shared by
+    `AgentStreamResult` and `AgentAsyncStreamResult`,
+    consolidating duplicated `_finalize()`, `from_failed()`,
+    `agent_response` property, and `__init__`.
+- Module `agents7.agents.chatter`:
+  - Extracted `_ChatterStreamBase` base class shared by
+    `ChatterStreamResult` and `ChatterAsyncStreamResult`,
+    consolidating duplicated `_finalize()`, `chat_response`
+    property, and `__init__`.
+  - Added return type hints to `__iter__`, `__aiter__`,
+    and `_iterate`.
+  - Removed `warm_up` / `warm_up_async` (now inherited
+    from `BaseAgent`).
+- Module `agents7.agents.base`:
+  - Added `warm_up()`, `warm_up_async()`,
+    `_log_warm_up_start()`, `_log_warm_up_done()` — shared
+    by all agents (previously duplicated in `Labeler` and
+    `Chatter`).
+- Module `agents7.agents.labeler`:
+  - Removed `warm_up`, `warm_up_async`,
+    `_log_warm_up_start`, `_log_warm_up_done` (now inherited
+    from `BaseAgent`).
+
+
 ### v3.8.0 - 28th March 2026
 
 - Module `agents7.agents.chatter`:

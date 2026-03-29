@@ -196,9 +196,9 @@
 
 #### Duplication — Source (high impact)
 
-- [ ] Extract shared base for `AgentStreamResult` / `AgentAsyncStreamResult` in `streaming.py` — both have identical `_finalize()`, `__slots__`, and `from_failed()` logic.
-- [ ] Extract shared base for `ChatterStreamResult` / `ChatterAsyncStreamResult` in `chatter.py` — both have identical `_finalize()` and init patterns.
-- [ ] Extract common `warm_up` / `warm_up_async` logic shared between `Labeler` and `Chatter` into a mixin or utility — identical implementations in both classes.
+- [x] Extract shared base for `AgentStreamResult` / `AgentAsyncStreamResult` in `streaming.py` — done in v3.8.1 (`_AgentStreamBase` with shared `_finalize()`, `from_failed()`, `agent_response` property).
+- [x] Extract shared base for `ChatterStreamResult` / `ChatterAsyncStreamResult` in `chatter.py` — done in v3.8.1 (`_ChatterStreamBase` with shared `_finalize()`, `chat_response` property).
+- [x] Extract common `warm_up` / `warm_up_async` logic shared between `Labeler` and `Chatter` into `BaseAgent` — done in v3.8.1.
 
 #### Complexity — Source (medium impact)
 
