@@ -26,8 +26,10 @@ class LLMEngine:
 
     Attributes:
         provider (str): The LLM provider. Supported values:
-            ``"ollama"`` (local Ollama server) and
-            ``"openai_compat"`` (any OpenAI-compatible API).
+            ``"ollama"`` (local Ollama server),
+            ``"anthropic"`` (Claude via Anthropic API),
+            and ``"openai_compat"`` (any OpenAI-compatible
+            API).
         model_name (str): The name of the model being used.
         retry_config (RetryConfig | None): Optional retry
             configuration.
@@ -68,6 +70,22 @@ class LLMEngine:
             self.llm_provider = OllamaProvider(model_name)
             if fallback_model:
                 self._fallback_provider = OllamaProvider(fallback_model)
+        elif provider == "anthropic":
+            from agents7.llm.anthropic import AnthropicProvider
+
+            self.llm_provider = AnthropicProvider(
+                model_name,
+                api_key=kwargs.get("api_key"),
+                base_url=kwargs.get("base_url"),
+                default_max_tokens=kwargs.get("default_max_tokens", 4096),
+            )
+            if fallback_model:
+                self._fallback_provider = AnthropicProvider(
+                    fallback_model,
+                    api_key=kwargs.get("api_key"),
+                    base_url=kwargs.get("base_url"),
+                    default_max_tokens=kwargs.get("default_max_tokens", 4096),
+                )
         elif provider == "openai_compat":
             from agents7.llm.openai_compat import OpenAICompatProvider
 
