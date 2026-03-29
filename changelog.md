@@ -1,6 +1,30 @@
 
 ## Changelog - Agents7
 
+### v3.12.0 - 29th March 2026
+
+- New module `agents7.agents.jitter`:
+  - `apply_typos(text, rate, rng)` — introduces random
+    human-like typos into text. Typo types: swap adjacent
+    chars, double a char, drop a char. Preserves trailing
+    punctuation. Only affects words >= 4 chars. Accepts
+    optional `Random` instance for reproducibility.
+- Module `agents7.agents.chatter`:
+  - Added `typo_rate` field (0.0–1.0). When > 0, applies
+    random typos to LLM responses in `chat()` and
+    `chat_async()` before storing in history. 0.03 means
+    ~3% of words get typos. Defaults to 0.0 (off).
+- Module `agents7.agents.config_loader`:
+  - Added `typo_rate` YAML config option for Chatter.
+- Module `agents7.agents.personality`:
+  - `typo_rate` also supported in PersonalityChatter
+    YAML config.
+- Tests:
+  - 10 tests for jitter (zero/negative rate, high rate,
+    short words, determinism, punctuation, word count,
+    Chatter integration).
+
+
 ### v3.11.1 - 29th March 2026
 
 - Module `agents7.agents.personality`:
