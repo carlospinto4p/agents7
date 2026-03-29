@@ -1,6 +1,33 @@
 
 ## Changelog - Agents7
 
+### v3.11.0 - 29th March 2026
+
+- New module `agents7.agents.personality`:
+  - `PhysicalTraits` — frozen dataclass for physical
+    appearance (height, build, hair, eyes, skin,
+    distinguishing features). Renders via `to_text()`.
+  - `Persona` — frozen dataclass for structured character
+    definition: full_name, birthdate, nationality,
+    occupation, physical traits, personality adjectives,
+    backstory, interests, speaking style, and freeform
+    `extra` dict. Renders via `to_prompt()`. Supports
+    `from_dict()` for YAML loading.
+  - `PersonalityChatter` — extends `Chatter` with a
+    `Persona`. Auto-generates the system prompt from
+    the persona data with instructions to stay in
+    character. Supports `extra_instructions` for
+    additional guidance. YAML loading via `from_yaml()`
+    with a `persona:` section.
+- Exported `Persona`, `PersonalityChatter`,
+  `PhysicalTraits` from `agents7.agents`.
+- Tests:
+  - 16 tests covering PhysicalTraits, Persona (prompt
+    generation, from_dict), PersonalityChatter (creation,
+    auto-prompt, extra instructions, chat integration,
+    YAML loading).
+
+
 ### v3.10.2 - 29th March 2026
 
 - Module `agents7`:

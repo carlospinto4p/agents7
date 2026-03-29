@@ -42,10 +42,12 @@ Features: temperature control, structured output via JSON schema, "thinking" mod
 
 ```
 BaseAgent
-  └── Labeler (any Pydantic model)
-        └── Detector (Property outputs)
-              ├── Classifier (ClassificationProperty)
-              └── Regressor (Property[T])
+  ├── Labeler (any Pydantic model)
+  │     └── Detector (Property outputs)
+  │           ├── Classifier (ClassificationProperty)
+  │           └── Regressor (Property[T])
+  └── Chatter (multi-turn conversation)
+        └── PersonalityChatter (roleplay with Persona)
 
 Pipeline (chains multiple agents sequentially)
 ```
@@ -1090,6 +1092,77 @@ call_logger: mymodule.my_logger
 ```
 
 The `call_logger` value is a dotted import path to any callable accepting a `CallRecord`.
+
+### Personality Chatter (Roleplay Agent)
+
+`PersonalityChatter` extends `Chatter` with a structured `Persona` for consistent character roleplay. The system prompt is auto-generated from biographical data:
+
+```python
+from agents7.agents import PersonalityChatter, Persona, PhysicalTraits
+
+persona = Persona(
+    full_name="David García",
+    birthdate="1990-12-04",
+    nationality="Spanish",
+    occupation="journalist",
+    physical=PhysicalTraits(
+        height="178 cm",
+        build="medium",
+        hair="dark brown, short",
+        eyes="brown",
+    ),
+    personality=["curious", "empathetic", "direct"],
+    backstory="Grew up in Madrid, studied journalism at UCM.",
+    interests=["politics", "football", "cooking"],
+    speaking_style="casual and direct",
+)
+
+agent = PersonalityChatter(
+    name="david",
+    version=1,
+    engine=engine,
+    system_prompt="",
+    persona=persona,
+    extra_instructions="Always respond in Spanish.",
+)
+
+response = agent.chat("¿Cómo te llamas?")
+```
+
+YAML configuration:
+
+```yaml
+name: david
+version: 1
+engine:
+    provider: anthropic
+    model: claude-sonnet-4-20250514
+persona:
+    full_name: David García
+    birthdate: "1990-12-04"
+    nationality: Spanish
+    occupation: journalist
+    physical:
+        height: 178 cm
+        build: medium
+        hair: dark brown, short
+        eyes: brown
+    personality:
+        - curious
+        - empathetic
+        - direct
+    backstory: |
+        Grew up in Madrid, studied journalism at UCM.
+    interests:
+        - politics
+        - football
+        - cooking
+    speaking_style: casual and direct
+extra_instructions: |
+    Always respond in Spanish.
+```
+
+The persona includes: name, birthdate, nationality, occupation, physical traits, personality adjectives, backstory, interests, speaking style, and a freeform `extra` dict for any additional details.
 
 ### Testing Utilities
 
