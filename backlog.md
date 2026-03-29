@@ -217,6 +217,17 @@
 - [x] Parametrize type validation tests in `test_labeler.py` — done in v3.8.3 (YAML validation and fix-malformed-json tests).
 - [x] Add `# --- Section ---` headers to `test_chatter.py` and `test_cache.py` — already present, no change needed.
 
+### Optimization — 29th March 2026
+
+#### Library — HIGH impact
+
+- [ ] Cache enum mappings in `ResponseParser.__init__` instead of recomputing in `_get_enum_mappings()` on every parse call (`parsing.py:128`).
+- [ ] `JsonFileMemory.save()` reads and rewrites the entire JSON file on every turn — switch to append-only JSONL format or write only the changed conversation (`memory.py:157-168`).
+
+#### Library — MEDIUM impact
+
+- [ ] Use list-append + `"".join()` instead of `+=` string concatenation in `get_examples_str()` (`utils.py:103-105`).
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.
