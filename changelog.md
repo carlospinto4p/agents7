@@ -1,6 +1,32 @@
 
 ## Changelog - Agents7
 
+### v3.10.0 - 29th March 2026
+
+- New module `agents7.llm.anthropic`:
+  - `AnthropicProvider` — native Claude provider using the
+    official `anthropic` SDK. Supports all Claude models
+    (Haiku, Sonnet, Opus).
+  - Handles system messages correctly (extracted as
+    separate `system` parameter per Anthropic API).
+  - Extended thinking support via `think=True` (maps to
+    Anthropic's `thinking` parameter with `budget_tokens`).
+  - Configurable `default_max_tokens` (defaults to 4096).
+  - Full streaming support with adapted chunks matching
+    the Ollama interface (`_adapt_stream_sync`,
+    `_adapt_stream_async`).
+  - Fallback model support wired through `LLMEngine`.
+  - Optional dependency: `uv pip install anthropic`.
+- Module `agents7.llm.base`:
+  - `LLMEngine` now accepts `provider="anthropic"` with
+    kwargs `api_key`, `base_url`, `default_max_tokens`.
+- Tests:
+  - 11 tests for AnthropicProvider (param building,
+    response parsing, thinking, engine integration,
+    stream adapter). Auto-skipped when `anthropic`
+    package not installed.
+
+
 ### v3.9.0 - 29th March 2026
 
 - New module `agents7.testing`:

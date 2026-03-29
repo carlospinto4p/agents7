@@ -31,6 +31,7 @@ on choosing the right LLM for structured extraction tasks.
 - `LLMEngine`: Facade class that routes to specific providers (supports optional `fallback_model`)
 - `LLMProvider`: Abstract base class defining the interface
 - `OllamaProvider`: Concrete implementation using Ollama (local LLM server)
+- `AnthropicProvider`: Native Claude provider using the official `anthropic` SDK
 - `OpenAICompatProvider`: Provider for any OpenAI-compatible API (OpenAI, Azure, vLLM, LM Studio, etc.)
 
 Supports both sync and async methods: `chat`, `chat_async`, `generate`, `generate_async`, plus streaming variants: `chat_stream`, `chat_stream_async`, `generate_stream`, `generate_stream_async`.
@@ -449,6 +450,42 @@ engine:
 ```
 
 The `api_key` falls back to the `OPENAI_API_KEY` environment variable when omitted. All agent features (streaming, caching, retry, fallback, batch) work identically with the OpenAI-compatible provider.
+
+### Anthropic/Claude Provider
+
+Native support for Claude models using the official `anthropic` SDK:
+
+```bash
+uv pip install anthropic
+```
+
+```python
+from agents7.llm import LLMEngine
+
+engine = LLMEngine(
+    provider="anthropic",
+    model_name="claude-sonnet-4-20250514",
+    # api_key falls back to ANTHROPIC_API_KEY env var
+)
+
+# With thinking mode and fallback
+engine = LLMEngine(
+    provider="anthropic",
+    model_name="claude-sonnet-4-20250514",
+    fallback_model="claude-haiku-4-5-20251001",
+    default_max_tokens=8192,
+)
+```
+
+YAML configuration:
+
+```yaml
+engine:
+    provider: anthropic
+    model: claude-sonnet-4-20250514
+```
+
+Handles system messages correctly (extracted as a separate `system` parameter per the Anthropic API). Extended thinking maps to Anthropic's native `thinking` parameter with `budget_tokens`.
 
 ### Model Selection
 

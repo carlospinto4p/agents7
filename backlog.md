@@ -233,7 +233,7 @@
 #### HIGH impact
 
 - [x] Add `agents7.testing` module — done in v3.9.0 (`create_mock_engine`, `assert_accuracy_above`, 8 tests).
-- [ ] Native Anthropic/Claude provider (`agents7.llm.anthropic`) — use the official `anthropic` SDK instead of routing through `openai_compat`. Cleaner API for Claude models.
+- [x] Native Anthropic/Claude provider — done in v3.10.0 (`agents7.llm.anthropic`, `AnthropicProvider`, 11 tests).
 - [x] `simple_classifier()` convenience function — done in v3.9.0 (`agents7.simple`, auto-generates enums + ClassificationProperty, 11 tests).
 
 #### MEDIUM impact
