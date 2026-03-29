@@ -16,6 +16,7 @@ from agents7.agents.base import BaseAgent
 from agents7.agents.config_loader import (
     load_chatter_yaml_settings,
 )
+from agents7.agents.jitter import apply_typos
 from agents7.agents.memory import MemoryBackend
 from agents7.exceptions import ChatEndedError
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
@@ -169,6 +170,12 @@ class Chatter(BaseAgent):
             (list of message dicts) and returns True to
             end the conversation. Checked before each
             turn. Defaults to None.
+        typo_rate (float): Probability (0.0–1.0) that
+            each word in the response gets a random typo.
+            0.0 means perfect text, 0.03 means ~3% of
+            words get typos. Applies to ``chat()`` and
+            ``chat_async()`` only (not streaming).
+            Defaults to 0.0.
     """
 
     temperature: float = field(default=0.7, kw_only=True)
@@ -180,6 +187,7 @@ class Chatter(BaseAgent):
     end_condition: Callable[[list[dict[str, str]]], bool] | None = field(
         default=None, kw_only=True
     )
+    typo_rate: float = field(default=0.0, kw_only=True)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -266,10 +274,11 @@ class Chatter(BaseAgent):
             think=self.think,
         )
         response.pop("role", None)
-        self._append_assistant(response["response"])
+        text = self._maybe_typo(response["response"])
+        self._append_assistant(text)
 
         return ChatResponse(
-            response=response["response"],
+            response=text,
             thinking=response.get("thinking"),
             metrics=LLMMetrics(**response["metrics"]),
         )
@@ -295,10 +304,11 @@ class Chatter(BaseAgent):
             think=self.think,
         )
         response.pop("role", None)
-        self._append_assistant(response["response"])
+        text = self._maybe_typo(response["response"])
+        self._append_assistant(text)
 
         return ChatResponse(
-            response=response["response"],
+            response=text,
             thinking=response.get("thinking"),
             metrics=LLMMetrics(**response["metrics"]),
         )
@@ -447,6 +457,12 @@ class Chatter(BaseAgent):
             },
             *self._history,
         ]
+
+    def _maybe_typo(self, text: str) -> str:
+        """Apply typos if typo_rate > 0."""
+        if self.typo_rate <= 0:
+            return text
+        return apply_typos(text, self.typo_rate)
 
     def _append_user(self, message: str) -> None:
         """Append a user message to history."""

@@ -353,6 +353,8 @@ def _load_personality_yaml(
         config["max_history"] = int(raw["max_history"])
     if "max_turns" in raw:
         config["max_turns"] = int(raw["max_turns"])
+    if "typo_rate" in raw:
+        config["typo_rate"] = float(raw["typo_rate"])
     if "conversation_id" in raw:
         config["conversation_id"] = str(raw["conversation_id"])
     if memory_settings := raw.get("memory"):

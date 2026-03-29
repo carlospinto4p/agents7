@@ -267,6 +267,8 @@ def load_chatter_yaml_settings(file_path: str) -> dict:
         result["max_history"] = int(config["max_history"])
     if "max_turns" in config:
         result["max_turns"] = int(config["max_turns"])
+    if "typo_rate" in config:
+        result["typo_rate"] = float(config["typo_rate"])
     if "conversation_id" in config:
         result["conversation_id"] = str(config["conversation_id"])
     if end_condition_path := config.get("end_condition"):
