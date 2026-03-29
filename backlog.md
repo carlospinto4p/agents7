@@ -228,6 +228,24 @@
 
 - [x] Use list-append + `"".join()` in `get_examples_str()` — done in v3.8.4 (replaced `+=` with `parts` list).
 
+### Improvements — 29th March 2026
+
+#### HIGH impact
+
+- [ ] Add `agents7.testing` module with evaluation helpers — `assert_accuracy_above(agent, cases, min_accuracy)`, `create_mock_engine(responses)` for unit testing without LLM calls.
+- [ ] Native Anthropic/Claude provider (`agents7.llm.anthropic`) — use the official `anthropic` SDK instead of routing through `openai_compat`. Cleaner API for Claude models.
+- [ ] `simple_classifier()` convenience function — auto-generate output model from a list of category strings + system prompt + engine. Reduces boilerplate for the most common use case.
+
+#### MEDIUM impact
+
+- [ ] Request timeout support — add `timeout_seconds` parameter to `LLMEngine` chat/generate methods. Prevents hanging on stuck connections.
+- [ ] Cost tracking in `LLMMetrics` — add `cost_cents: float` field, configurable `cost_per_1m_tokens` on `LLMEngine`. Enables budget tracking.
+- [ ] A/B testing harness — `run_ab_test(agent_a, agent_b, test_cases)` that runs both agents on same inputs and returns comparative metrics.
+
+#### LOW impact
+
+- [ ] Export `RetryConfig`, `CacheConfig`, `MemoryConfig` from top-level `agents7` package for easier imports.
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.
