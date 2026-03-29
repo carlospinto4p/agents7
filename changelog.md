@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v3.8.2 - 29th March 2026
+
+- Module `agents7.agents.labeler`:
+  - Extracted `_build_act_messages()` — shared message
+    construction for `act`, `act_async`, `act_stream`,
+    `act_stream_async`.
+  - Extracted `_finalize_response()` — shared validate,
+    wrap, and log logic for `act` and `act_async`.
+  - Extracted `_log_retry()`, `_retry_chat_kwargs()`, and
+    `_try_parse()` from retry parse loops — reduces
+    sync/async duplication in `_retry_parse_loop` and
+    `_retry_parse_loop_async`.
+  - Added `-> None` return type to `__post_init__`.
+- Added `-> None` return type to `__post_init__` in:
+  `detector.py`, `classifier.py`, `pipeline.py` (both
+  `PipelineStep` and `Pipeline`), `cache.py`, `retry.py`.
+
+
 ### v3.8.1 - 29th March 2026
 
 - Module `agents7.agents.streaming`:

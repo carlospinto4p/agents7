@@ -202,13 +202,13 @@
 
 #### Complexity — Source (medium impact)
 
-- [ ] Break down `Labeler.act()` (59 lines) into smaller helpers — extract message building, response parsing, validator execution.
-- [ ] Reduce sync/async duplication in `_retry_parse_loop` / `_retry_parse_loop_async` in `labeler.py` — nearly identical logic.
+- [x] Break down `Labeler.act()` into smaller helpers — done in v3.8.2 (`_build_act_messages`, `_finalize_response`).
+- [x] Reduce sync/async duplication in `_retry_parse_loop` / `_retry_parse_loop_async` — done in v3.8.2 (`_log_retry`, `_retry_chat_kwargs`, `_try_parse` shared helpers).
 
 #### Type hints (medium impact)
 
-- [ ] Add return type hints to `ChatterStreamResult.__iter__`, `ChatterAsyncStreamResult.__aiter__` / `_iterate` in `chatter.py`.
-- [ ] Add `-> None` return type to all `__post_init__` methods across `detector.py`, `classifier.py`, `pipeline.py`, `cache.py`, `retry.py`.
+- [x] Add return type hints to `ChatterStreamResult.__iter__`, `ChatterAsyncStreamResult.__aiter__` / `_iterate` — done in v3.8.1.
+- [x] Add `-> None` return type to all `__post_init__` methods across `detector.py`, `classifier.py`, `pipeline.py`, `cache.py`, `retry.py` — done in v3.8.2 (also `labeler.py`).
 - [ ] Add type hints to `OpenAICompatChunk.__init__` and `OpenAICompatMessage.__init__` in `openai_compat.py`.
 - [ ] Add return type hints to UI functions in `app.py`, `1_Define.py`, `2_Configure.py`.
 
