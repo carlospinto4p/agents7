@@ -28,6 +28,7 @@ class ResponseParser:
         "output_model_list",
         "name",
         "validators",
+        "_enum_mappings",
     )
 
     def __init__(
@@ -41,6 +42,7 @@ class ResponseParser:
         self.output_model_list = output_model_list
         self.name = name
         self.validators = validators
+        self._enum_mappings = self._get_enum_mappings()
 
     def parse(
         self, response: str, for_batch: bool = False
@@ -154,8 +156,10 @@ class ResponseParser:
         except json.JSONDecodeError:
             return response
 
-        enum_mappings = self._get_enum_mappings()
-        data = self._apply_enum_mappings(data, enum_mappings)
+        data = self._apply_enum_mappings(
+            data,
+            self._enum_mappings,
+        )
         return json.dumps(data)
 
     @staticmethod

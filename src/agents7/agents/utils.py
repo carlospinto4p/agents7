@@ -85,11 +85,11 @@ def get_examples_str(examples: list[dict]) -> str:
         'output' keys.
     :return: Formatted string of examples.
     """
-    examples_str = "## Examples:"
     if not isinstance(examples, list):
         raise AgentConfigurationError(
             "Field `system_examples` must be a list"
         )
+    parts = ["## Examples:"]
     for example in examples:
         if not isinstance(example, dict):
             raise AgentConfigurationError(
@@ -100,10 +100,10 @@ def get_examples_str(examples: list[dict]) -> str:
                 "Each example in `system_examples` must "
                 "contain `input` and `output` keys"
             )
-        examples_str += (
-            f"\n\n- Input: {example['input']}\n- Output: {example['output']}"
+        parts.append(
+            f"- Input: {example['input']}\n- Output: {example['output']}"
         )
-    return examples_str
+    return "\n\n".join(parts)
 
 
 def import_from_path(path: str) -> type:

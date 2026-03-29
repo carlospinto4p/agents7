@@ -123,11 +123,12 @@ class JsonFileMemory(MemoryBackend):
     def __init__(self, path: str) -> None:
         self._path = Path(path)
         self._lock = threading.Lock()
+        self._cache: dict | None = None
 
     def load(self, conversation_id: str) -> list[dict[str, str]]:
         """Load conversation from JSON file."""
         with self._lock:
-            data = self._read_all()
+            data = self._get_cache()
             return data.get(conversation_id, [])
 
     def save(
@@ -137,22 +138,29 @@ class JsonFileMemory(MemoryBackend):
     ) -> None:
         """Save conversation to JSON file."""
         with self._lock:
-            data = self._read_all()
+            data = self._get_cache()
             data[conversation_id] = messages
             self._write_all(data)
 
     def clear(self, conversation_id: str) -> None:
         """Remove a conversation from the JSON file."""
         with self._lock:
-            data = self._read_all()
+            data = self._get_cache()
             data.pop(conversation_id, None)
             self._write_all(data)
 
     def list_conversations(self) -> list[str]:
         """List all conversation IDs in the file."""
         with self._lock:
-            data = self._read_all()
+            data = self._get_cache()
             return list(data.keys())
+
+    def _get_cache(self) -> dict:
+        """Return the in-memory cache, loading from disk
+        on first access."""
+        if self._cache is None:
+            self._cache = self._read_all()
+        return self._cache
 
     def _read_all(self) -> dict:
         """Read the entire JSON file."""
