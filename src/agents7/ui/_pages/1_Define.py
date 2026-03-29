@@ -83,7 +83,7 @@ def render() -> None:
 
 
 @st.cache_data
-def _cached_model_code(state):
+def _cached_model_code(state: dict) -> str:
     """Memoised wrapper around `generate_model_code`."""
     return generate_model_code(state)
 

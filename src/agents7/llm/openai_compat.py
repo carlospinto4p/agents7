@@ -12,6 +12,7 @@ Requires the optional ``openai`` package::
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
+from typing import Any
 
 from agents7.llm.base import LLMProvider
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
@@ -323,7 +324,7 @@ class _OAIChunk:
         "total_duration",
     )
 
-    def __init__(self, chunk):
+    def __init__(self, chunk: Any) -> None:
         delta = chunk.choices[0].delta if chunk.choices else None
         content = ""
         role = None
@@ -352,7 +353,12 @@ class _OAIChunk:
 class _OAIMessage:
     __slots__ = ("content", "role", "thinking")
 
-    def __init__(self, content, role, thinking):
+    def __init__(
+        self,
+        content: str,
+        role: str | None,
+        thinking: str | None,
+    ) -> None:
         self.content = content
         self.role = role
         self.thinking = thinking

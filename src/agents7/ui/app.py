@@ -7,7 +7,7 @@ import importlib
 from collections import deque
 
 
-def main():
+def main() -> None:
     """Launch the multi-page Streamlit app.
 
     When invoked from the console entry point, parses `--host`
@@ -50,7 +50,7 @@ def main():
     )
 
 
-def _render_app():
+def _render_app() -> None:
     """Render the multi-page Streamlit application."""
     import streamlit as st
 
@@ -100,7 +100,7 @@ def _render_app():
         mod.render()
 
 
-def _home_page():
+def _home_page() -> None:
     import streamlit as st
 
     st.title("Agent Builder")

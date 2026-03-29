@@ -3,7 +3,7 @@
 import sys
 
 
-def launch(host: str = "localhost", port: int = 8501):
+def launch(host: str = "localhost", port: int = 8501) -> None:
     """Launch the Agent Builder Streamlit app.
 
     Args:

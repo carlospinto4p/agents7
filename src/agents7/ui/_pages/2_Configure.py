@@ -78,7 +78,7 @@ def render() -> None:
 
 
 @st.cache_data
-def _cached_yaml(state):
+def _cached_yaml(state: dict) -> str:
     """Memoised wrapper around `generate_yaml`."""
     return generate_yaml(state)
 

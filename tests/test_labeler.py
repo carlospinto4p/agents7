@@ -87,56 +87,49 @@ def test_config_with_examples(tmp_path):
     assert agent.examples[0]["input"] == "Hello"
 
 
-def test_missing_name_raises_value_error(tmp_path):
-    """Missing mandatory key 'name' raises AgentConfigurationError."""
-    yaml_content = (
-        "version: 1\n"
-        "engine:\n"
-        "    provider: ollama\n"
-        "    model: qwen3\n"
-        "system_prompt: Test.\n"
-        "output_model: agents7.models.demo.PersonInfo\n"
-    )
+@pytest.mark.parametrize(
+    "yaml_content,match",
+    [
+        pytest.param(
+            "version: 1\n"
+            "engine:\n"
+            "    provider: ollama\n"
+            "    model: qwen3\n"
+            "system_prompt: Test.\n"
+            "output_model: agents7.models.demo.PersonInfo\n",
+            "name",
+            id="missing_name",
+        ),
+        pytest.param(
+            "name: Test\n"
+            "version: 1\n"
+            "engine:\n"
+            "    provider: ollama\n"
+            "system_prompt: Test.\n"
+            "output_model: agents7.models.demo.PersonInfo\n",
+            "model",
+            id="missing_engine_model",
+        ),
+        pytest.param(
+            "name: Test\n"
+            "version: 1\n"
+            "engine:\n"
+            "    provider: ollama\n"
+            "    model: qwen3\n"
+            "system_prompt: Test.\n"
+            "output_model: agents7.models.demo.PersonInfo\n"
+            "system_examples: not a list\n",
+            "system_examples",
+            id="invalid_examples_format",
+        ),
+    ],
+)
+def test_yaml_validation_errors(tmp_path, yaml_content, match):
+    """Invalid YAML config raises AgentConfigurationError."""
     yaml_file = tmp_path / "config.yml"
     yaml_file.write_text(yaml_content)
 
-    with pytest.raises(AgentConfigurationError, match="name"):
-        Labeler.from_yaml(str(yaml_file))
-
-
-def test_missing_engine_model_raises_value_error(tmp_path):
-    """Missing engine key 'model' raises AgentConfigurationError."""
-    yaml_content = (
-        "name: Test\n"
-        "version: 1\n"
-        "engine:\n"
-        "    provider: ollama\n"
-        "system_prompt: Test.\n"
-        "output_model: agents7.models.demo.PersonInfo\n"
-    )
-    yaml_file = tmp_path / "config.yml"
-    yaml_file.write_text(yaml_content)
-
-    with pytest.raises(AgentConfigurationError, match="model"):
-        Labeler.from_yaml(str(yaml_file))
-
-
-def test_invalid_examples_format_raises_value_error(tmp_path):
-    """Non-list system_examples raises AgentConfigurationError."""
-    yaml_content = (
-        "name: Test\n"
-        "version: 1\n"
-        "engine:\n"
-        "    provider: ollama\n"
-        "    model: qwen3\n"
-        "system_prompt: Test.\n"
-        "output_model: agents7.models.demo.PersonInfo\n"
-        "system_examples: not a list\n"
-    )
-    yaml_file = tmp_path / "config.yml"
-    yaml_file.write_text(yaml_content)
-
-    with pytest.raises(AgentConfigurationError, match="system_examples"):
+    with pytest.raises(AgentConfigurationError, match=match):
         Labeler.from_yaml(str(yaml_file))
 
 
@@ -212,30 +205,34 @@ def test_output_model_list_validates():
 # --- TestFixMalformedJson ---
 
 
-def test_strips_markdown_code_block():
-    """Strips ```json ... ``` markdown blocks."""
-    raw = '```json\n{"value": "ok"}\n```'
-    assert ResponseParser._fix_malformed_json(raw) == '{"value": "ok"}'
-
-
-def test_fixes_double_brace():
-    """Fixes {\"{ double-brace malformation."""
-    raw = '{"{"value": "ok"}'
-    result = ResponseParser._fix_malformed_json(raw)
-    assert result == '{"value": "ok"}'
-
-
-def test_fixes_double_bracket():
-    """Fixes [\"[ double-bracket malformation."""
-    raw = '["[{"value": "ok"}]'
-    result = ResponseParser._fix_malformed_json(raw)
-    assert result == '[{"value": "ok"}]'
-
-
-def test_clean_input_unchanged():
-    """Clean JSON input is returned unchanged."""
-    clean = '{"value": "ok"}'
-    assert ResponseParser._fix_malformed_json(clean) == clean
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        pytest.param(
+            '```json\n{"value": "ok"}\n```',
+            '{"value": "ok"}',
+            id="strips_markdown_code_block",
+        ),
+        pytest.param(
+            '{"{"value": "ok"}',
+            '{"value": "ok"}',
+            id="fixes_double_brace",
+        ),
+        pytest.param(
+            '["[{"value": "ok"}]',
+            '[{"value": "ok"}]',
+            id="fixes_double_bracket",
+        ),
+        pytest.param(
+            '{"value": "ok"}',
+            '{"value": "ok"}',
+            id="clean_input_unchanged",
+        ),
+    ],
+)
+def test_fix_malformed_json(raw, expected):
+    """_fix_malformed_json handles various malformations."""
+    assert ResponseParser._fix_malformed_json(raw) == expected
 
 
 # --- TestParseModelResponse ---
