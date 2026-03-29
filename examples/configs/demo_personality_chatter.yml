@@ -2,7 +2,7 @@ name: david
 version: 1
 engine:
     provider: ollama
-    model: qwen3:4b
+    model: qwen2.5:3b
 temperature: 0.7
 persona:
     full_name: David García López
