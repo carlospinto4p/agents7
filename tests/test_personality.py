@@ -70,6 +70,24 @@ def test_persona_to_prompt_contains_fields():
     assert "Stay in character" in prompt
 
 
+def test_persona_to_prompt_language():
+    """Language appears in profile and instructions."""
+    persona = Persona(
+        full_name="David",
+        language="Spanish",
+    )
+    prompt = persona.to_prompt()
+    assert "Language: Spanish" in prompt
+    assert "ALWAYS respond in Spanish" in prompt
+
+
+def test_persona_to_prompt_no_language():
+    """No language instruction when not set."""
+    persona = Persona(full_name="Test")
+    prompt = persona.to_prompt()
+    assert "ALWAYS respond in" not in prompt
+
+
 def test_persona_to_prompt_extra_fields():
     """Extra dict fields appear in prompt."""
     persona = Persona(

@@ -99,6 +99,10 @@ class Persona:
         interests: List of hobbies or interests.
         speaking_style: How the character speaks
             (e.g. ``"casual and direct"``).
+        language: Language the character speaks in
+            (e.g. ``"Spanish"``). When set, the agent
+            is instructed to ALWAYS respond in this
+            language regardless of the user's language.
         extra: Additional key-value pairs for any
             other character details.
     """
@@ -114,6 +118,7 @@ class Persona:
     backstory: str = ""
     interests: list[str] = field(default_factory=list)
     speaking_style: str = ""
+    language: str = ""
     extra: dict[str, str] = field(default_factory=dict)
 
     def to_prompt(self) -> str:
@@ -132,6 +137,8 @@ class Persona:
             lines.append(f"- Nationality: {self.nationality}")
         if self.occupation:
             lines.append(f"- Occupation: {self.occupation}")
+        if self.language:
+            lines.append(f"- Language: {self.language}")
 
         physical_text = self.physical.to_text()
         if physical_text:
@@ -167,7 +174,7 @@ class Persona:
 
         lines.append("")
         lines.append("## Instructions")
-        lines.append(
+        instruction = (
             "Stay in character at all times. Answer "
             "questions about yourself using ONLY the "
             "information in your character profile. "
@@ -177,6 +184,13 @@ class Persona:
             "Never break character or reveal that you "
             "are an AI."
         )
+        if self.language:
+            instruction += (
+                f" ALWAYS respond in {self.language}, "
+                f"regardless of the language the user "
+                f"writes in."
+            )
+        lines.append(instruction)
 
         return "\n".join(lines)
 
