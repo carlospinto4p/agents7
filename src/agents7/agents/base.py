@@ -6,6 +6,7 @@ from typing import Any, TypeVar
 
 from agents7.exceptions import PromptParameterError
 from agents7.llm import LLMEngine
+from agents7.logs import logger
 from agents7.models import AgentResponse
 
 Agent = TypeVar("Agent", bound="BaseAgent")
@@ -94,3 +95,43 @@ class BaseAgent(ABC):
             - idx: Optional index for tracking purposes.
         """
         raise NotImplementedError("Subclasses must implement this method.")
+
+    def warm_up(self) -> None:
+        """Pre-load the LLM model by sending a trivial prompt.
+
+        Ollama loads models lazily on first call, which can
+        cause a multi-second cold-start delay. Call this
+        method at application startup to pay that cost
+        upfront.
+
+        For non-Ollama providers this is a no-op.
+        """
+        if self.engine.provider != "ollama":
+            return
+        self._log_warm_up_start()
+        self.engine.generate(prompt="ping", max_tokens=1)
+        self._log_warm_up_done()
+
+    async def warm_up_async(self) -> None:
+        """Async version of `warm_up`."""
+        if self.engine.provider != "ollama":
+            return
+        self._log_warm_up_start()
+        await self.engine.generate_async(
+            prompt="ping",
+            max_tokens=1,
+        )
+        self._log_warm_up_done()
+
+    def _log_warm_up_start(self) -> None:
+        """Log warm-up start."""
+        logger.info(
+            f"Agent `{self.name}`: warming up model "
+            f"`{self.engine.model_name}`..."
+        )
+
+    def _log_warm_up_done(self) -> None:
+        """Log warm-up completion."""
+        logger.info(
+            f"Agent `{self.name}`: model `{self.engine.model_name}` ready."
+        )

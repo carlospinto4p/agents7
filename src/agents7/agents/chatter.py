@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, AsyncIterator, Iterator
 
 from agents7.agents.base import BaseAgent
 from agents7.agents.config_loader import (
@@ -23,7 +23,45 @@ from agents7.logs import logger
 from agents7.models import AgentResponse, ChatResponse, LLMMetrics
 
 
-class ChatterStreamResult:
+class _ChatterStreamBase:
+    """Shared state and logic for chatter stream wrappers."""
+
+    __slots__ = (
+        "_stream",
+        "_chatter",
+        "_user_message",
+        "_chat_response",
+    )
+
+    def __init__(
+        self,
+        stream: StreamResult | AsyncStreamResult,
+        chatter: "Chatter",
+        user_message: str,
+    ) -> None:
+        self._stream = stream
+        self._chatter = chatter
+        self._user_message = user_message
+        self._chat_response: ChatResponse | None = None
+
+    @property
+    def chat_response(self) -> ChatResponse | None:
+        """Full `ChatResponse`, available after iteration."""
+        return self._chat_response
+
+    def _finalize(self) -> None:
+        """Build ChatResponse and update history."""
+        self._chat_response = ChatResponse(
+            response=self._stream.response,
+            thinking=self._stream.thinking,
+            metrics=LLMMetrics(**self._stream.metrics),
+        )
+        self._chatter._append_assistant(
+            self._stream.response,
+        )
+
+
+class ChatterStreamResult(_ChatterStreamBase):
     """Sync streaming wrapper for Chatter responses.
 
     Yields text chunks during iteration. After iteration
@@ -39,12 +77,7 @@ class ChatterStreamResult:
         print(stream.chat_response)
     """
 
-    __slots__ = (
-        "_stream",
-        "_chatter",
-        "_user_message",
-        "_chat_response",
-    )
+    __slots__ = ()
 
     def __init__(
         self,
@@ -52,34 +85,15 @@ class ChatterStreamResult:
         chatter: "Chatter",
         user_message: str,
     ) -> None:
-        self._stream = stream
-        self._chatter = chatter
-        self._user_message = user_message
-        self._chat_response: ChatResponse | None = None
+        super().__init__(stream, chatter, user_message)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         for chunk in self._stream:
             yield chunk
         self._finalize()
 
-    @property
-    def chat_response(self) -> ChatResponse | None:
-        """Full `ChatResponse`, available after iteration."""
-        return self._chat_response
 
-    def _finalize(self) -> None:
-        """Build ChatResponse and update history."""
-        self._chat_response = ChatResponse(
-            response=self._stream.response,
-            thinking=self._stream.thinking,
-            metrics=LLMMetrics(**self._stream.metrics),
-        )
-        self._chatter._append_assistant(
-            self._stream.response,
-        )
-
-
-class ChatterAsyncStreamResult:
+class ChatterAsyncStreamResult(_ChatterStreamBase):
     """Async streaming wrapper for Chatter responses.
 
     Yields text chunks during async iteration. After
@@ -94,12 +108,7 @@ class ChatterAsyncStreamResult:
         print(stream.chat_response)
     """
 
-    __slots__ = (
-        "_stream",
-        "_chatter",
-        "_user_message",
-        "_chat_response",
-    )
+    __slots__ = ()
 
     def __init__(
         self,
@@ -107,34 +116,15 @@ class ChatterAsyncStreamResult:
         chatter: "Chatter",
         user_message: str,
     ) -> None:
-        self._stream = stream
-        self._chatter = chatter
-        self._user_message = user_message
-        self._chat_response: ChatResponse | None = None
+        super().__init__(stream, chatter, user_message)
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator[str]:
         return self._iterate()
 
-    async def _iterate(self):
+    async def _iterate(self) -> AsyncIterator[str]:
         async for chunk in self._stream:
             yield chunk
         self._finalize()
-
-    @property
-    def chat_response(self) -> ChatResponse | None:
-        """Full `ChatResponse`, available after iteration."""
-        return self._chat_response
-
-    def _finalize(self) -> None:
-        """Build ChatResponse and update history."""
-        self._chat_response = ChatResponse(
-            response=self._stream.response,
-            thinking=self._stream.thinking,
-            metrics=LLMMetrics(**self._stream.metrics),
-        )
-        self._chatter._append_assistant(
-            self._stream.response,
-        )
 
 
 @dataclass(frozen=True)
@@ -391,36 +381,6 @@ class Chatter(BaseAgent):
             'content' keys.
         """
         return list(self._history)
-
-    def warm_up(self) -> None:
-        """Pre-load the LLM model by sending a trivial
-        prompt.
-
-        For non-Ollama providers this is a no-op.
-        """
-        if self.engine.provider != "ollama":
-            return
-        logger.info(
-            f"Chatter `{self.name}`: warming up model "
-            f"`{self.engine.model_name}`..."
-        )
-        self.engine.generate(prompt="ping", max_tokens=1)
-        logger.info(
-            f"Chatter `{self.name}`: model `{self.engine.model_name}` ready."
-        )
-
-    async def warm_up_async(self) -> None:
-        """Async version of `warm_up`."""
-        if self.engine.provider != "ollama":
-            return
-        logger.info(
-            f"Chatter `{self.name}`: warming up model "
-            f"`{self.engine.model_name}`..."
-        )
-        await self.engine.generate_async(prompt="ping", max_tokens=1)
-        logger.info(
-            f"Chatter `{self.name}`: model `{self.engine.model_name}` ready."
-        )
 
     @property
     def turns(self) -> int:

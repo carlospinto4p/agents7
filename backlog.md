@@ -192,6 +192,31 @@
 - [x] Template method for Detector/Classifier prompt building — done in v3.4.3 (`_agent_instruction`, `_batch_instruction`, `_extra_prompt_sections`).
 - [x] Consolidate `warm_up` / `warm_up_async` in `labeler.py` — done in v3.4.3 (`_log_warm_up_start`, `_log_warm_up_done` shared helpers).
 
+### Refactoring — 29th March 2026
+
+#### Duplication — Source (high impact)
+
+- [ ] Extract shared base for `AgentStreamResult` / `AgentAsyncStreamResult` in `streaming.py` — both have identical `_finalize()`, `__slots__`, and `from_failed()` logic.
+- [ ] Extract shared base for `ChatterStreamResult` / `ChatterAsyncStreamResult` in `chatter.py` — both have identical `_finalize()` and init patterns.
+- [ ] Extract common `warm_up` / `warm_up_async` logic shared between `Labeler` and `Chatter` into a mixin or utility — identical implementations in both classes.
+
+#### Complexity — Source (medium impact)
+
+- [ ] Break down `Labeler.act()` (59 lines) into smaller helpers — extract message building, response parsing, validator execution.
+- [ ] Reduce sync/async duplication in `_retry_parse_loop` / `_retry_parse_loop_async` in `labeler.py` — nearly identical logic.
+
+#### Type hints (medium impact)
+
+- [ ] Add return type hints to `ChatterStreamResult.__iter__`, `ChatterAsyncStreamResult.__aiter__` / `_iterate` in `chatter.py`.
+- [ ] Add `-> None` return type to all `__post_init__` methods across `detector.py`, `classifier.py`, `pipeline.py`, `cache.py`, `retry.py`.
+- [ ] Add type hints to `OpenAICompatChunk.__init__` and `OpenAICompatMessage.__init__` in `openai_compat.py`.
+- [ ] Add return type hints to UI functions in `app.py`, `1_Define.py`, `2_Configure.py`.
+
+#### Tests (low impact)
+
+- [ ] Parametrize type validation tests in `test_labeler.py` — multiple similar test functions.
+- [ ] Add `# --- Section ---` headers to `test_chatter.py` and `test_cache.py` for consistency.
+
 ### Infrastructure
 
 - [x] Consider Docker BuildKit secrets for `GITLAB_TOKEN` in `Dockerfile` — currently passed as build ARG, which may persist in layer history.
