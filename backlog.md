@@ -221,12 +221,12 @@
 
 #### Library — HIGH impact
 
-- [ ] Cache enum mappings in `ResponseParser.__init__` instead of recomputing in `_get_enum_mappings()` on every parse call (`parsing.py:128`).
-- [ ] `JsonFileMemory.save()` reads and rewrites the entire JSON file on every turn — switch to append-only JSONL format or write only the changed conversation (`memory.py:157-168`).
+- [x] Cache enum mappings in `ResponseParser.__init__` — done in v3.8.4 (`_enum_mappings` slot, computed once at init).
+- [x] `JsonFileMemory.save()` now uses an in-memory cache — done in v3.8.4 (`_get_cache()` loads from disk on first access, subsequent saves only write).
 
 #### Library — MEDIUM impact
 
-- [ ] Use list-append + `"".join()` instead of `+=` string concatenation in `get_examples_str()` (`utils.py:103-105`).
+- [x] Use list-append + `"".join()` in `get_examples_str()` — done in v3.8.4 (replaced `+=` with `parts` list).
 
 ### Infrastructure
 

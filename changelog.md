@@ -1,6 +1,23 @@
 
 ## Changelog - Agents7
 
+### v3.8.4 - 29th March 2026
+
+- Module `agents7.agents.parsing`:
+  - Cached `_enum_mappings` at `ResponseParser.__init__`
+    time — avoids recomputing enum field metadata on every
+    `parse()` call. Especially impactful in batch
+    operations.
+- Module `agents7.agents.memory`:
+  - Added in-memory cache to `JsonFileMemory` — `save()`
+    no longer re-reads the entire file on every call.
+    Disk read happens once on first access via
+    `_get_cache()`.
+- Module `agents7.agents.utils`:
+  - Replaced `+=` string concatenation with list-append +
+    `"\n\n".join()` in `get_examples_str()`.
+
+
 ### v3.8.3 - 29th March 2026
 
 - Module `agents7.llm.openai_compat`:
