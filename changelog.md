@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.12.2 - 2nd April 2026
+
+- `CLAUDE.md`:
+  - Added Shell Commands, Project Configuration, Versioning / Release,
+    and Testing sections.
+
+
 ### v3.12.0 - 29th March 2026
 
 - New module `agents7.agents.jitter`:
