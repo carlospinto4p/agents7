@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.12.3 - 2nd April 2026
+
+- `.claude/settings.json`:
+  - Added PreToolUse hook to block compound git commands.
+
+
 ### v3.12.2 - 2nd April 2026
 
 - `CLAUDE.md`:
