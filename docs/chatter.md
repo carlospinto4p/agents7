@@ -483,6 +483,14 @@ agent = GuardedChatter(
 | `fix` | `str \| None` | Guard's suggested rewrite |
 | `used_fix` | `bool` | `True` if fix was used as final |
 
+### Model selection
+
+The guard model should be **at least as capable** as the
+chatter model. Small models (< 3B params) often miss
+character breaks — they accept responses like "I am not
+an AI" without noticing the character break. Use a 4B+
+model for reliable detection.
+
 ### Cost
 
 Each guarded turn costs at least 2 LLM calls (chatter +

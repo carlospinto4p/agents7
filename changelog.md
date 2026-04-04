@@ -1,6 +1,21 @@
 
 ## Changelog - Agents7
 
+### v3.13.4 - 4th April 2026
+
+- Module `agents7.agents.context_guard`:
+  - Rewrote default guard prompt with stricter rejection
+    criteria, explicit character-break signals (e.g.
+    "I am not an AI" is still a break), few-shot examples,
+    and a "when in doubt, REJECT" policy.
+- `examples/configs/demo_guarded_chatter.yml`:
+  - Changed guard model from `qwen2.5:3b` to `qwen3:4b`
+    with comment explaining small models miss breaks.
+- `docs/chatter.md`:
+  - Added "Model selection" section recommending 4B+
+    models for the guard.
+
+
 ### v3.13.3 - 4th April 2026
 
 - Module `agents7.agents.guarded`:

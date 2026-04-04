@@ -42,13 +42,13 @@ persona:
         Favorite movie: El secreto de sus ojos
         Favorite book: Cien años de soledad
 
-# Guard configuration — uses a separate (or same) model
-# to validate responses for prompt injection, character
-# breaks, and off-topic replies.
+# Guard configuration — use a model at least as capable as
+# the chatter (ideally stronger) for reliable detection.
+# Small models (< 3B) often miss character breaks.
 guard:
     engine:
         provider: ollama
-        model: qwen2.5:3b
+        model: qwen3:4b
 
 # Retry up to 2 times if the guard rejects a response,
 # then fall back to the guard's suggested fix.
