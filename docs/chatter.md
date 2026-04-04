@@ -473,10 +473,10 @@ calls per turn.
 
 Working examples are in `examples/chatter/`:
 
-- `chatter.py` — basic multi-turn chat, streaming, reset
-- `personality_chatter.py` — roleplay with a Spanish
-  journalist persona
-- `chatter_memory.py` — persistent memory with multiple
+- `01_chatter.py` — basic multi-turn chat, streaming, reset
+- `02_chatter_memory.py` — persistent memory with multiple
   isolated conversations
-- `guarded_chatter.py` — GuardedChatter with ContextGuard
+- `03_personality_chatter.py` — roleplay with a Spanish
+  journalist persona
+- `04_guarded_chatter.py` — GuardedChatter with ContextGuard
   defending against prompt injection and character breaks

@@ -1,6 +1,27 @@
 
 ## Changelog - Agents7
 
+### v3.13.2 - 4th April 2026
+
+- `examples/`:
+  - Renamed all example scripts with numbered prefixes
+    sorted by hierarchy (base classes first, then
+    subclasses and complex workflows):
+    - `agents/`: `01_labeler`, `02_detector`,
+      `03_classifier`, `04_regressor`.
+    - `chatter/`: `01_chatter`, `02_chatter_memory`,
+      `03_personality_chatter`, `04_guarded_chatter`.
+    - `features/`: `01_streaming`, `02_export`,
+      `03_labeler_params`, `04_sqlite_cache`,
+      `05_config_inheritance`.
+    - `pipelines/`: `01_pipeline`,
+      `02_conditional_pipeline`.
+- Documentation updates:
+  - `README.md`: updated examples section with numbered
+    names and grouped by directory.
+  - `docs/chatter.md`: updated example references.
+
+
 ### v3.13.1 - 4th April 2026
 
 - `examples/`:

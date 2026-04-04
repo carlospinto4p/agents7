@@ -1257,25 +1257,46 @@ The UI constructs agents in-memory during Test/Evaluate (no files written until 
 
 The `examples/` directory contains runnable scripts demonstrating each feature:
 
+**Agents** (`examples/agents/`):
+
 | Script | Feature |
 |--------|---------|
-| `labeler.py` | Entity extraction with batch processing |
-| `classifier.py` | Sentiment classification |
-| `detector.py` | Temperature detection |
-| `regressor.py` | Numeric value extraction |
-| `labeler_params.py` | Prompt parameter substitution |
-| `pipeline.py` | Multi-step pipeline with custom mapper |
-| `config_inheritance.py` | YAML `base_config` inheritance |
-| `conditional_pipeline.py` | Conditional step execution |
-| `streaming.py` | Token-by-token streaming (sync + async) |
-| `sqlite_cache.py` | Persistent SQLite cache |
-| `export.py` | JSONL and CSV export |
+| `01_labeler.py` | Entity extraction with batch processing |
+| `02_detector.py` | Temperature detection |
+| `03_classifier.py` | Sentiment classification |
+| `04_regressor.py` | Numeric value extraction |
 
-Run from the `examples/` directory:
+**Chatter** (`examples/chatter/`):
+
+| Script | Feature |
+|--------|---------|
+| `01_chatter.py` | Multi-turn chat, streaming, reset |
+| `02_chatter_memory.py` | Persistent memory with multiple conversations |
+| `03_personality_chatter.py` | Roleplay with structured persona |
+| `04_guarded_chatter.py` | Context guard against prompt injection |
+
+**Features** (`examples/features/`):
+
+| Script | Feature |
+|--------|---------|
+| `01_streaming.py` | Token-by-token streaming (sync + async) |
+| `02_export.py` | JSONL and CSV export |
+| `03_labeler_params.py` | Prompt parameter substitution |
+| `04_sqlite_cache.py` | Persistent SQLite cache |
+| `05_config_inheritance.py` | YAML `base_config` inheritance |
+
+**Pipelines** (`examples/pipelines/`):
+
+| Script | Feature |
+|--------|---------|
+| `01_pipeline.py` | Multi-step pipeline with custom mapper |
+| `02_conditional_pipeline.py` | Conditional step execution |
+
+Run from the relevant subdirectory:
 
 ```bash
-cd examples
-python labeler.py
+cd examples/agents
+python 01_labeler.py
 ```
 
 ## Docker
