@@ -11,6 +11,7 @@ from agents7.agents.context_guard import (
     GuardVerdict,
 )
 from agents7.agents.guarded import (
+    GuardEvent,
     GuardedChatter,
     _derive_persona_summary,
 )
@@ -405,3 +406,78 @@ def test_derive_persona_summary_minimal():
     persona = Persona(full_name="Alice")
     summary = _derive_persona_summary(persona)
     assert summary == "Alice"
+
+
+# --- guard_callback ---
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_callback_on_accept(mock_chat, mock_guard):
+    """Callback fires with accepted=True on first try."""
+    mock_chat.return_value = chat_response_dict("Hola.")
+    mock_guard.return_value = ACCEPT
+
+    events: list[GuardEvent] = []
+    agent = make_guarded_chatter(
+        guard_callback=events.append,
+    )
+    agent.chat("Hi")
+
+    assert len(events) == 1
+    assert events[0].accepted is True
+    assert events[0].attempt == 0
+    assert events[0].reason == GuardReason.IN_CHARACTER
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_callback_on_reject_then_accept(
+    mock_chat,
+    mock_guard,
+):
+    """Callback fires twice: reject then accept."""
+    mock_chat.side_effect = [
+        chat_response_dict("I'm an AI."),
+        chat_response_dict("Soy David."),
+    ]
+    mock_guard.side_effect = [
+        REJECT_INJECTION,
+        ACCEPT,
+    ]
+
+    events: list[GuardEvent] = []
+    agent = make_guarded_chatter(
+        guard_callback=events.append,
+    )
+    agent.chat("Hello")
+
+    assert len(events) == 2
+    assert events[0].accepted is False
+    assert events[0].attempt == 0
+    assert events[1].accepted is True
+    assert events[1].attempt == 1
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_callback_on_fix(mock_chat, mock_guard):
+    """Callback fires with used_fix=True when fix used."""
+    mock_chat.side_effect = [
+        chat_response_dict("Bad 1"),
+        chat_response_dict("Bad 2"),
+        chat_response_dict("Bad 3"),
+    ]
+    mock_guard.return_value = REJECT_INJECTION
+
+    events: list[GuardEvent] = []
+    agent = make_guarded_chatter(
+        max_guard_retries=2,
+        guard_callback=events.append,
+    )
+    agent.chat("Test")
+
+    # initial + 2 retries + 1 fix event = 4
+    assert len(events) == 4
+    assert events[-1].used_fix is True
+    assert events[-1].response_text == "No puedo hacer eso."

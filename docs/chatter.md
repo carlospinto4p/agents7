@@ -450,6 +450,39 @@ runs **after** the stream completes. If rejected,
 may differ from what was streamed). History always stores
 the authoritative version.
 
+### Debugging with `guard_callback`
+
+Pass a `guard_callback` to observe every guard verdict in
+real time. The callback receives a `GuardEvent` with the
+attempt number, verdict, response text, and whether the
+fix was used:
+
+```python
+from agents7.agents import GuardedChatter, GuardEvent
+
+def on_guard(event: GuardEvent) -> None:
+    status = "OK" if event.accepted else "REJECTED"
+    print(f"  [{status}] {event.reason.name}")
+    if event.used_fix:
+        print(f"  Using fix: {event.fix}")
+
+agent = GuardedChatter(
+    ...,
+    guard_callback=on_guard,
+)
+```
+
+`GuardEvent` fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `attempt` | `int` | `0` = initial, `1+` = retry |
+| `accepted` | `bool` | Whether the guard accepted |
+| `reason` | `GuardReason` | The verdict reason |
+| `response_text` | `str` | The evaluated response |
+| `fix` | `str \| None` | Guard's suggested rewrite |
+| `used_fix` | `bool` | `True` if fix was used as final |
+
 ### Cost
 
 Each guarded turn costs at least 2 LLM calls (chatter +

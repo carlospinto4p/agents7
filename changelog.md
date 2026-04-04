@@ -1,6 +1,28 @@
 
 ## Changelog - Agents7
 
+### v3.13.3 - 4th April 2026
+
+- Module `agents7.agents.guarded`:
+  - Added `GuardEvent` dataclass: emitted on each guard
+    check with attempt, accepted, reason, response_text,
+    fix, and used_fix fields.
+  - Added `guard_callback` field to `GuardedChatter`:
+    optional callable invoked with a `GuardEvent` on every
+    guard check for debugging and observability.
+  - Added `_emit()` helper wired into `_guard_and_fix()`
+    and `_guard_and_fix_async()`.
+- Exported `GuardEvent` from `agents7.agents`.
+- `examples/chatter/04_guarded_chatter.py`:
+  - Rewrote to use `guard_callback` for verbose output
+    showing each verdict, retry, and fix in real time.
+- `docs/chatter.md`:
+  - Added "Debugging with `guard_callback`" section with
+    `GuardEvent` field reference.
+- Tests:
+  - Added 3 callback tests in `test_guarded_chatter.py`.
+
+
 ### v3.13.2 - 4th April 2026
 
 - `examples/`:

@@ -12,6 +12,7 @@ from agents7.agents.context_guard import (
 )
 from agents7.agents.detector import Detector
 from agents7.agents.guarded import (
+    GuardEvent,
     GuardedChatter,
     GuardedChatterAsyncStreamResult,
     GuardedChatterStreamResult,
@@ -48,6 +49,7 @@ __all__ = [
     "Classifier",
     "ContextGuard",
     "Detector",
+    "GuardEvent",
     "GuardReason",
     "GuardVerdict",
     "GuardedChatter",

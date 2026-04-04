@@ -9,6 +9,7 @@ used instead.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Iterator
 
@@ -17,6 +18,7 @@ from agents7.agents.chatter import (
 )
 from agents7.agents.context_guard import (
     ContextGuard,
+    GuardReason,
     GuardVerdict,
     _PLACEHOLDER,
 )
@@ -30,6 +32,29 @@ from agents7.llm.streaming import (
 )
 from agents7.logs import logger
 from agents7.models import ChatResponse, LLMMetrics
+
+
+@dataclass(frozen=True)
+class GuardEvent:
+    """Event emitted by `GuardedChatter` on each guard check.
+
+    :param attempt: Attempt number (``0`` = initial check,
+        ``1+`` = retry).
+    :param accepted: Whether the guard accepted the response.
+    :param reason: The guard's reason enum value.
+    :param response_text: The response that was evaluated.
+    :param fix: The guard's suggested rewrite (if rejected).
+    :param used_fix: ``True`` when the final response came
+        from the guard's ``fix`` field rather than the
+        chatter.
+    """
+
+    attempt: int
+    accepted: bool
+    reason: GuardReason
+    response_text: str
+    fix: str | None = None
+    used_fix: bool = False
 
 
 # --- Guarded stream wrappers ---
@@ -149,6 +174,9 @@ class GuardedChatter(PersonalityChatter):
     :param guard_context_turns: Number of recent history
         turns sent to the guard for context.
         Defaults to ``3``.
+    :param guard_callback: Optional callable invoked on
+        every guard check with a `GuardEvent`.  Useful for
+        logging or debugging the guard flow.
     """
 
     guard: ContextGuard = field(kw_only=True)
@@ -159,6 +187,9 @@ class GuardedChatter(PersonalityChatter):
     guard_context_turns: int = field(
         default=3,
         kw_only=True,
+    )
+    guard_callback: Callable[[GuardEvent], None] | None = field(
+        default=None, kw_only=True
     )
 
     # --- Public API overrides ---
@@ -384,6 +415,27 @@ class GuardedChatter(PersonalityChatter):
         result = await self.guard.act_async(guard_input)
         return result.model
 
+    def _emit(
+        self,
+        attempt: int,
+        verdict: GuardVerdict,
+        text: str,
+        used_fix: bool = False,
+    ) -> None:
+        """Emit a `GuardEvent` via the callback."""
+        if self.guard_callback is None:
+            return
+        self.guard_callback(
+            GuardEvent(
+                attempt=attempt,
+                accepted=bool(verdict.value),
+                reason=verdict.reason,
+                response_text=text,
+                fix=verdict.fix,
+                used_fix=used_fix,
+            )
+        )
+
     def _guard_and_fix(
         self,
         user_message: str,
@@ -394,6 +446,7 @@ class GuardedChatter(PersonalityChatter):
         :return: The accepted (or fixed) response text.
         """
         verdict = self._guard_check(user_message, text)
+        self._emit(0, verdict, text)
         if verdict.value:
             return text
 
@@ -415,12 +468,19 @@ class GuardedChatter(PersonalityChatter):
                 user_message,
                 text,
             )
+            self._emit(i + 1, verdict, text)
             if verdict.value:
                 return text
 
         # All retries exhausted — use fix if available.
         if verdict.fix:
             logger.debug(f"GuardedChatter `{self.name}`: using guard fix")
+            self._emit(
+                self.max_guard_retries + 1,
+                verdict,
+                verdict.fix,
+                used_fix=True,
+            )
             return verdict.fix
         return text
 
@@ -434,6 +494,7 @@ class GuardedChatter(PersonalityChatter):
             user_message,
             text,
         )
+        self._emit(0, verdict, text)
         if verdict.value:
             return text
 
@@ -457,12 +518,19 @@ class GuardedChatter(PersonalityChatter):
                 user_message,
                 text,
             )
+            self._emit(i + 1, verdict, text)
             if verdict.value:
                 return text
 
         if verdict.fix:
             logger.debug(
                 f"GuardedChatter `{self.name}`: using guard fix (async)"
+            )
+            self._emit(
+                self.max_guard_retries + 1,
+                verdict,
+                verdict.fix,
+                used_fix=True,
             )
             return verdict.fix
         return text
@@ -504,7 +572,10 @@ class GuardedChatter(PersonalityChatter):
         )
         return [
             *messages,
-            {"role": "assistant", "content": rejected_text},
+            {
+                "role": "assistant",
+                "content": rejected_text,
+            },
             {"role": "user", "content": feedback},
         ]
 
