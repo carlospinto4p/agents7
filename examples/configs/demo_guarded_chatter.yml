@@ -45,7 +45,7 @@ persona:
 # Guard configuration — gemma4:e4b scored 6/6 in benchmarks
 # with 2.2s avg guard time. Using the same model for both
 # chatter and guard avoids model-swap overhead in Ollama.
-# See docs/benchmark_guarded_chatter.md for full results.
+# See docs/benchmarks/ for full results.
 guard:
     engine:
         provider: ollama

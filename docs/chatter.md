@@ -489,7 +489,7 @@ Use the **same model** for both chatter and guard to avoid
 Ollama model-swap overhead (10-30s per swap). Benchmarks
 show `gemma4:e4b` is the best choice: 6/6 quality with
 2.2s average guard time. See
-[`docs/benchmark_guarded_chatter.md`](benchmark_guarded_chatter.md)
+[`docs/benchmarks/`](benchmarks/)
 for full results.
 
 Small models (< 3B) miss character breaks. `qwen3:4b`

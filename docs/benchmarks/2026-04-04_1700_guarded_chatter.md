@@ -1,7 +1,7 @@
-# GuardedChatter Model Benchmark
+# GuardedChatter Model Benchmark — 2026-04-04 17:00
 
 Benchmark of different model combinations for `GuardedChatter`
-(chatter + `ContextGuard`). Tested on 4th April 2026.
+(chatter + `ContextGuard`).
 
 **Hardware**: RTX 5070 (12 GB VRAM), Ryzen 7 3700X, 64 GB RAM
 **Ollama**: v0.20.2
