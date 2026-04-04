@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.13.5 - 4th April 2026
+
+- `.claude/`:
+  - Added `hooks/block-raw-python.sh`: enforces `uv run python` over bare `python`.
+
+
 ### v3.13.4 - 4th April 2026
 
 - Module `agents7.agents.context_guard`:
