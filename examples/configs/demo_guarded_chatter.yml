@@ -2,7 +2,7 @@ name: guarded-david
 version: 1
 engine:
     provider: ollama
-    model: qwen2.5:3b
+    model: gemma4:e4b
 temperature: 0.7
 persona:
     full_name: David García López
@@ -42,13 +42,14 @@ persona:
         Favorite movie: El secreto de sus ojos
         Favorite book: Cien años de soledad
 
-# Guard configuration — use a model at least as capable as
-# the chatter (ideally stronger) for reliable detection.
-# Small models (< 3B) often miss character breaks.
+# Guard configuration — gemma4:e4b scored 6/6 in benchmarks
+# with 2.2s avg guard time. Using the same model for both
+# chatter and guard avoids model-swap overhead in Ollama.
+# See docs/benchmark_guarded_chatter.md for full results.
 guard:
     engine:
         provider: ollama
-        model: qwen3:4b
+        model: gemma4:e4b
     think: true
 
 # Retry up to 2 times if the guard rejects a response,

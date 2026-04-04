@@ -485,11 +485,17 @@ agent = GuardedChatter(
 
 ### Model selection
 
-The guard model should be **at least as capable** as the
-chatter model. Small models (< 3B params) often miss
-character breaks — they accept responses like "I am not
-an AI" without noticing the character break. Use a 4B+
-model for reliable detection.
+Use the **same model** for both chatter and guard to avoid
+Ollama model-swap overhead (10-30s per swap). Benchmarks
+show `gemma4:e4b` is the best choice: 6/6 quality with
+2.2s average guard time. See
+[`docs/benchmark_guarded_chatter.md`](benchmark_guarded_chatter.md)
+for full results.
+
+Small models (< 3B) miss character breaks. `qwen3:4b`
+with `think: true` is slow (30s avg) and still misses
+injection attacks. `qwen3.5` models hang on Ollama's
+structured output mode (as of v0.20.2).
 
 ### Cost
 

@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.13.7 - 4th April 2026
+
+- `docs/`:
+  - Added `benchmark_guarded_chatter.md`: full benchmark
+    of 6 model combos for `GuardedChatter`. `gemma4:e4b`
+    scored 6/6 with 2.2s avg guard time.
+  - Updated `chatter.md` model selection section with
+    benchmark findings and link.
+- `examples/configs/demo_guarded_chatter.yml`:
+  - Changed both chatter and guard to `gemma4:e4b`
+    (benchmark winner, avoids model-swap overhead).
+
+
 ### v3.13.6 - 4th April 2026
 
 - Module `agents7.agents.guarded`:
