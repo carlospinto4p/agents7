@@ -5,7 +5,17 @@ from agents7.agents.chatter import (
     ChatterStreamResult,
 )
 from agents7.agents.classifier import Classifier
+from agents7.agents.context_guard import (
+    ContextGuard,
+    GuardReason,
+    GuardVerdict,
+)
 from agents7.agents.detector import Detector
+from agents7.agents.guarded import (
+    GuardedChatter,
+    GuardedChatterAsyncStreamResult,
+    GuardedChatterStreamResult,
+)
 from agents7.agents.labeler import Labeler
 from agents7.agents.memory import (
     JsonFileMemory,
@@ -36,7 +46,13 @@ __all__ = [
     "ChatterAsyncStreamResult",
     "ChatterStreamResult",
     "Classifier",
+    "ContextGuard",
     "Detector",
+    "GuardReason",
+    "GuardVerdict",
+    "GuardedChatter",
+    "GuardedChatterAsyncStreamResult",
+    "GuardedChatterStreamResult",
     "JsonFileMemory",
     "Labeler",
     "Persona",

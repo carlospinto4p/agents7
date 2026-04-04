@@ -1,6 +1,42 @@
 
 ## Changelog - Agents7
 
+### v3.13.0 - 4th April 2026
+
+- New module `agents7.agents.context_guard`:
+  - `GuardReason` — enum: `IN_CHARACTER`, `PROMPT_INJECTION`,
+    `OFF_TOPIC`, `BROKE_CHARACTER`.
+  - `GuardVerdict(Property[bool])` — output model with `value`,
+    `reason`, and optional `fix` field for suggested rewrites.
+  - `ContextGuard(Detector)` — post-processing guard that
+    evaluates conversational responses against a persona.
+    Auto-generates system prompt from `persona_summary`.
+- New module `agents7.agents.guarded`:
+  - `GuardedChatter(PersonalityChatter)` — wraps every response
+    in a `ContextGuard` check. Rejected responses are retried
+    with feedback (up to `max_guard_retries`); if all retries
+    fail, the guard's suggested `fix` is used. Rejected
+    responses never enter conversation history.
+  - `GuardedChatterStreamResult` / `GuardedChatterAsyncStreamResult`
+    — streaming wrappers that run the guard after stream
+    completion. `chat_response.response` is the authoritative
+    (possibly corrected) text.
+  - YAML loading with nested `guard:` section;
+    `persona_summary` auto-derived from persona.
+- `exceptions.py`:
+  - Added `GuardRejectionError`, `GuardConfigurationError`.
+- Exported from `agents7.agents`:
+  - `ContextGuard`, `GuardReason`, `GuardVerdict`,
+    `GuardedChatter`, `GuardedChatterStreamResult`,
+    `GuardedChatterAsyncStreamResult`.
+- `docs/chatter.md`:
+  - Added `GuardedChatter` section with guard pipeline,
+    retry flow, streaming, YAML config, and cost notes.
+- Tests:
+  - `tests/test_context_guard.py`: 13 tests.
+  - `tests/test_guarded_chatter.py`: 15 tests.
+
+
 ### v3.12.16 - 4th April 2026
 
 - Module `agents7.agents.personality`:

@@ -44,3 +44,11 @@ class SuggestionError(Agents7Exception):
 
 class ChatEndedError(Agents7Exception):
     """Raised when a Chatter conversation has ended."""
+
+
+class GuardRejectionError(Agents7Exception):
+    """Raised when a ContextGuard rejects after all retries."""
+
+
+class GuardConfigurationError(AgentConfigurationError):
+    """Raised when a ContextGuard is misconfigured."""
