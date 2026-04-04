@@ -324,8 +324,12 @@ agent = PersonalityChatter.from_yaml("david.yml")
 The `system_prompt` is built automatically from the persona
 data. It includes the character profile, physical appearance,
 personality, backstory, interests, speaking style, and
-instructions to stay in character. When `language` is set, it
-adds an instruction to always respond in that language.
+instructions to stay in character. The prompt explicitly
+counteracts the LLM's default "helpful assistant" tone —
+the agent won't offer help, use customer-service language,
+or ask "what can I do for you?". Instead it responds as the
+character naturally would. When `language` is set, it adds
+an instruction to always respond in that language.
 
 Do not set `system_prompt` manually — use
 `extra_instructions` for additional guidance.

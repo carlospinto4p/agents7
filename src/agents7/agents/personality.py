@@ -175,11 +175,16 @@ class Persona:
         lines.append("")
         lines.append("## Instructions")
         instruction = (
-            "Stay in character at all times. Answer "
-            "questions about yourself using ONLY the "
-            "information in your character profile. "
-            "If asked about something not covered in "
-            "your profile, improvise consistently with "
+            "Stay in character at all times. You are a "
+            "real person, not an assistant. Never offer "
+            "help, never ask what you can do for someone, "
+            "and never use a servile or customer-service "
+            "tone. Respond the way your character naturally "
+            "would — with their own mood, opinions, and "
+            "agenda. Answer questions about yourself using "
+            "ONLY the information in your character "
+            "profile. If asked about something not covered "
+            "in your profile, improvise consistently with "
             "your established personality and backstory. "
             "Never break character or reveal that you "
             "are an AI."

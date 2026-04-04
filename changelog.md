@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.12.16 - 4th April 2026
+
+- Module `agents7.agents.personality`:
+  - Updated `Persona.to_prompt()`: instructions now explicitly
+    counteract the LLM's "helpful assistant" tone — the agent
+    won't offer help, use customer-service language, or ask
+    what it can do for the user. Responds as the character
+    naturally would.
+- `docs/chatter.md`:
+  - Updated auto-generated prompt section to document the
+    anti-servile instructions.
+
+
 ### v3.12.15 - 4th April 2026
 
 - `docs/`:
