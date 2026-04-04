@@ -35,11 +35,17 @@ pipelines.
 
 ```
 BaseAgent (abstract — name, version, engine, system_prompt)
-└── Labeler (general-purpose structured output)
-    └── Detector (boolean property + reason)
-        ├── Classifier (category + reason)
-        └── Regressor (numeric value + reason)
+├── Labeler (general-purpose structured output)
+│     └── Detector (boolean property + reason)
+│           ├── Classifier (category + reason)
+│           └── Regressor (numeric value + reason)
+└── Chatter (multi-turn conversation)
+      └── PersonalityChatter (roleplay with Persona)
 ```
+
+The tree has two branches: **Labeler** for structured data
+extraction and **Chatter** for free-form conversation. See
+[`docs/chatter.md`](chatter.md) for the conversational branch.
 
 Each level adds a constraint:
 

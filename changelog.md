@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.12.15 - 4th April 2026
+
+- `docs/`:
+  - Added `chatter.md`: dedicated documentation for `Chatter`
+    and `PersonalityChatter` — fields, methods, streaming,
+    memory backends, persona configuration, YAML examples.
+  - Updated `design.md`: expanded agent hierarchy to include
+    `Chatter` and `PersonalityChatter` branches.
+
+
 ### v3.12.3 - 2nd April 2026
 
 - `.claude/settings.json`:
