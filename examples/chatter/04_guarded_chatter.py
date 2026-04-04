@@ -25,13 +25,21 @@ from agents7.agents.guarded import GuardedChatter, GuardEvent
 
 def on_guard_event(event: GuardEvent) -> None:
     """Print each guard verdict as it happens."""
-    status = "ACCEPTED" if event.accepted else "REJECTED"
     prefix = (
         "  [guard]"
         if event.attempt == 0
         else f"  [guard retry {event.attempt}]"
     )
-    print(f"{prefix} {status} — {event.reason.name}")
+
+    if event.parse_failed:
+        print(
+            f"{prefix} PARSE FAILED ({event.duration:.1f}s) — passing through"
+        )
+        return
+
+    status = "ACCEPTED" if event.accepted else "REJECTED"
+    reason = event.reason.name if event.reason else "?"
+    print(f"{prefix} {status} — {reason} ({event.duration:.1f}s)")
 
     if not event.accepted:
         snippet = event.response_text[:80]

@@ -1,6 +1,29 @@
 
 ## Changelog - Agents7
 
+### v3.13.6 - 4th April 2026
+
+- Module `agents7.agents.guarded`:
+  - Fixed `AttributeError` crash when guard LLM returns
+    unparseable output — `_guard_check` now returns
+    `(verdict | None, duration)` tuple; `None` verdict
+    triggers fail-open (response passes through).
+  - Added `_is_accepted()` helper for None-safe checks.
+  - Added `duration` and `parse_failed` fields to
+    `GuardEvent` for observability.
+  - YAML loader now passes `think` from the `guard:`
+    section to `ContextGuard`.
+- `examples/`:
+  - `configs/demo_guarded_chatter.yml`: added
+    `think: true` to guard config for better reasoning.
+  - `chatter/04_guarded_chatter.py`: callback now shows
+    guard timing and parse-failure events.
+- `docs/chatter.md`:
+  - Added model selection guidance (4B+ recommended).
+- Tests:
+  - Added `test_callback_on_parse_failure` test.
+
+
 ### v3.13.5 - 4th April 2026
 
 - `.claude/`:

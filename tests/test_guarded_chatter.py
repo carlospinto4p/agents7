@@ -481,3 +481,33 @@ def test_callback_on_fix(mock_chat, mock_guard):
     assert len(events) == 4
     assert events[-1].used_fix is True
     assert events[-1].response_text == "No puedo hacer eso."
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_callback_on_parse_failure(
+    mock_chat,
+    mock_guard,
+):
+    """Parse failure emits event with parse_failed=True."""
+    mock_chat.return_value = chat_response_dict("Hola.")
+    # Guard returns None model (parse failure)
+    mock_guard.return_value = AgentResponse(
+        response="unparseable",
+        model=None,
+        thinking=None,
+        metrics=DUMMY_METRICS,
+    )
+
+    events: list[GuardEvent] = []
+    agent = make_guarded_chatter(
+        guard_callback=events.append,
+    )
+    resp = agent.chat("Hi")
+
+    # Parse failure = fail-open, response passes through
+    assert resp.response == "Hola."
+    assert len(events) == 1
+    assert events[0].parse_failed is True
+    assert events[0].accepted is True
+    assert events[0].reason is None

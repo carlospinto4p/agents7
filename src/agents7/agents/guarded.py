@@ -41,20 +41,26 @@ class GuardEvent:
     :param attempt: Attempt number (``0`` = initial check,
         ``1+`` = retry).
     :param accepted: Whether the guard accepted the response.
-    :param reason: The guard's reason enum value.
+    :param reason: The guard's reason enum value, or
+        ``None`` when the guard failed to parse.
     :param response_text: The response that was evaluated.
     :param fix: The guard's suggested rewrite (if rejected).
     :param used_fix: ``True`` when the final response came
         from the guard's ``fix`` field rather than the
         chatter.
+    :param duration: Guard LLM call duration in seconds.
+    :param parse_failed: ``True`` when the guard LLM
+        returned unparseable output.
     """
 
     attempt: int
     accepted: bool
-    reason: GuardReason
+    reason: GuardReason | None
     response_text: str
     fix: str | None = None
     used_fix: bool = False
+    duration: float = 0.0
+    parse_failed: bool = False
 
 
 # --- Guarded stream wrappers ---
@@ -390,40 +396,66 @@ class GuardedChatter(PersonalityChatter):
         self,
         user_message: str,
         assistant_response: str,
-    ) -> GuardVerdict:
+    ) -> tuple[GuardVerdict | None, float]:
         """Run the guard on a response.
 
-        :return: The parsed `GuardVerdict`.
+        :return: ``(verdict, duration)`` where verdict is
+            ``None`` when the guard failed to parse.
         """
         guard_input = self._build_guard_input(
             user_message,
             assistant_response,
         )
         result = self.guard.act(guard_input)
-        return result.model
+        dur = result.metrics.total_duration
+        if result.model is None:
+            logger.warning(
+                f"GuardedChatter `{self.name}`: "
+                f"guard parse failed, passing through"
+            )
+        return result.model, dur
 
     async def _guard_check_async(
         self,
         user_message: str,
         assistant_response: str,
-    ) -> GuardVerdict:
+    ) -> tuple[GuardVerdict | None, float]:
         """Async version of `_guard_check`."""
         guard_input = self._build_guard_input(
             user_message,
             assistant_response,
         )
         result = await self.guard.act_async(guard_input)
-        return result.model
+        dur = result.metrics.total_duration
+        if result.model is None:
+            logger.warning(
+                f"GuardedChatter `{self.name}`: "
+                f"guard parse failed, passing through"
+            )
+        return result.model, dur
 
     def _emit(
         self,
         attempt: int,
-        verdict: GuardVerdict,
+        verdict: GuardVerdict | None,
         text: str,
+        duration: float = 0.0,
         used_fix: bool = False,
     ) -> None:
         """Emit a `GuardEvent` via the callback."""
         if self.guard_callback is None:
+            return
+        if verdict is None:
+            self.guard_callback(
+                GuardEvent(
+                    attempt=attempt,
+                    accepted=True,
+                    reason=None,
+                    response_text=text,
+                    duration=duration,
+                    parse_failed=True,
+                )
+            )
             return
         self.guard_callback(
             GuardEvent(
@@ -433,8 +465,16 @@ class GuardedChatter(PersonalityChatter):
                 response_text=text,
                 fix=verdict.fix,
                 used_fix=used_fix,
+                duration=duration,
             )
         )
+
+    @staticmethod
+    def _is_accepted(
+        verdict: GuardVerdict | None,
+    ) -> bool:
+        """Check if a verdict passed (or parse failed)."""
+        return verdict is None or bool(verdict.value)
 
     def _guard_and_fix(
         self,
@@ -443,11 +483,17 @@ class GuardedChatter(PersonalityChatter):
     ) -> str:
         """Guard a response; retry or fix if rejected.
 
+        When the guard fails to parse (verdict is ``None``),
+        the response passes through (fail-open).
+
         :return: The accepted (or fixed) response text.
         """
-        verdict = self._guard_check(user_message, text)
-        self._emit(0, verdict, text)
-        if verdict.value:
+        verdict, dur = self._guard_check(
+            user_message,
+            text,
+        )
+        self._emit(0, verdict, text, duration=dur)
+        if self._is_accepted(verdict):
             return text
 
         messages = self._build_messages()
@@ -464,21 +510,27 @@ class GuardedChatter(PersonalityChatter):
                 verdict,
             )
             text, _ = self._generate(messages)
-            verdict = self._guard_check(
+            verdict, dur = self._guard_check(
                 user_message,
                 text,
             )
-            self._emit(i + 1, verdict, text)
-            if verdict.value:
+            self._emit(
+                i + 1,
+                verdict,
+                text,
+                duration=dur,
+            )
+            if self._is_accepted(verdict):
                 return text
 
         # All retries exhausted — use fix if available.
-        if verdict.fix:
+        if verdict is not None and verdict.fix:
             logger.debug(f"GuardedChatter `{self.name}`: using guard fix")
             self._emit(
                 self.max_guard_retries + 1,
                 verdict,
                 verdict.fix,
+                duration=0.0,
                 used_fix=True,
             )
             return verdict.fix
@@ -490,12 +542,12 @@ class GuardedChatter(PersonalityChatter):
         text: str,
     ) -> str:
         """Async version of `_guard_and_fix`."""
-        verdict = await self._guard_check_async(
+        verdict, dur = await self._guard_check_async(
             user_message,
             text,
         )
-        self._emit(0, verdict, text)
-        if verdict.value:
+        self._emit(0, verdict, text, duration=dur)
+        if self._is_accepted(verdict):
             return text
 
         messages = self._build_messages()
@@ -514,15 +566,20 @@ class GuardedChatter(PersonalityChatter):
             text, _ = await self._generate_async(
                 messages,
             )
-            verdict = await self._guard_check_async(
+            verdict, dur = await self._guard_check_async(
                 user_message,
                 text,
             )
-            self._emit(i + 1, verdict, text)
-            if verdict.value:
+            self._emit(
+                i + 1,
+                verdict,
+                text,
+                duration=dur,
+            )
+            if self._is_accepted(verdict):
                 return text
 
-        if verdict.fix:
+        if verdict is not None and verdict.fix:
             logger.debug(
                 f"GuardedChatter `{self.name}`: using guard fix (async)"
             )
@@ -530,6 +587,7 @@ class GuardedChatter(PersonalityChatter):
                 self.max_guard_retries + 1,
                 verdict,
                 verdict.fix,
+                duration=0.0,
                 used_fix=True,
             )
             return verdict.fix
@@ -621,13 +679,16 @@ def _load_guarded_yaml(
         "persona_summary",
         _derive_persona_summary(persona),
     )
-    guard = ContextGuard(
-        name=f"{raw['name']}-guard",
-        version=raw["version"],
-        engine=guard_engine,
-        system_prompt=_PLACEHOLDER,
-        persona_summary=persona_summary,
-    )
+    guard_kwargs: dict[str, Any] = {
+        "name": f"{raw['name']}-guard",
+        "version": raw["version"],
+        "engine": guard_engine,
+        "system_prompt": _PLACEHOLDER,
+        "persona_summary": persona_summary,
+    }
+    if "think" in guard_raw:
+        guard_kwargs["think"] = bool(guard_raw["think"])
+    guard = ContextGuard(**guard_kwargs)
 
     # --- Main config ---
     config: dict[str, Any] = {
