@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.14.0 - 4th April 2026
+
+- `agents7.models.base`:
+  - Added optional `confidence` field to
+    `ClassificationProperty` (0.0–1.0 float, defaults to
+    `None`). All classifier agents can now carry a
+    confidence score without breaking existing code.
+- `tests/test_classifier.py`:
+  - Added tests for confidence default, assignment, and
+    out-of-range validation.
+
+
 ### v3.13.7 - 4th April 2026
 
 - `docs/`:

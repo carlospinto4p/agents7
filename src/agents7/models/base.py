@@ -180,6 +180,12 @@ class ClassificationProperty(BaseModel):
     reason: StrEnum = Field(
         description="The justification for the classification."
     )
+    confidence: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Classification confidence (0.0–1.0).",
+    )
 
     # Subclasses define mapping of valid reasons per category
     CATEGORY_REASONS: ClassVar[dict[StrEnum, list[StrEnum]]] = {}

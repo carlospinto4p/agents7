@@ -131,3 +131,53 @@ def test_classifier_requires_classification_property() -> None:
             system_prompt="Test prompt.",
             output_model=NotAClassificationProperty,
         )
+
+
+# --- Confidence ---
+
+
+def test_confidence_defaults_to_none() -> None:
+    """Confidence is None when not provided."""
+    category_enum = Sentiment.__annotations__["category"]
+    reason_enum = Sentiment.__annotations__["reason"]
+
+    s = Sentiment(
+        category=category_enum.POSITIVE,
+        reason=reason_enum.ENTHUSIASTIC,
+    )
+    assert s.confidence is None
+
+
+def test_confidence_accepted_when_provided() -> None:
+    """Confidence is stored when explicitly set."""
+    category_enum = Sentiment.__annotations__["category"]
+    reason_enum = Sentiment.__annotations__["reason"]
+
+    s = Sentiment(
+        category=category_enum.POSITIVE,
+        reason=reason_enum.ENTHUSIASTIC,
+        confidence=0.85,
+    )
+    assert s.confidence == 0.85
+
+
+def test_confidence_rejects_out_of_range() -> None:
+    """Confidence outside 0.0–1.0 raises ValidationError."""
+    from pydantic import ValidationError
+
+    category_enum = Sentiment.__annotations__["category"]
+    reason_enum = Sentiment.__annotations__["reason"]
+
+    with pytest.raises(ValidationError):
+        Sentiment(
+            category=category_enum.POSITIVE,
+            reason=reason_enum.ENTHUSIASTIC,
+            confidence=1.5,
+        )
+
+    with pytest.raises(ValidationError):
+        Sentiment(
+            category=category_enum.POSITIVE,
+            reason=reason_enum.ENTHUSIASTIC,
+            confidence=-0.1,
+        )
