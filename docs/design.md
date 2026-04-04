@@ -38,14 +38,17 @@ BaseAgent (abstract — name, version, engine, system_prompt)
 ├── Labeler (general-purpose structured output)
 │     └── Detector (boolean property + reason)
 │           ├── Classifier (category + reason)
-│           └── Regressor (numeric value + reason)
+│           ├── Regressor (numeric value + reason)
+│           └── ContextGuard (response validation)
 └── Chatter (multi-turn conversation)
       └── PersonalityChatter (roleplay with Persona)
+            └── GuardedChatter (+ ContextGuard pipeline)
 ```
 
 The tree has two branches: **Labeler** for structured data
 extraction and **Chatter** for free-form conversation. See
-[`docs/chatter.md`](chatter.md) for the conversational branch.
+[`docs/chatter.md`](chatter.md) for the conversational branch
+(including `GuardedChatter` and `ContextGuard`).
 
 Each level adds a constraint:
 

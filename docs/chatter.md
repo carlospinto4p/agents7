@@ -478,3 +478,5 @@ Working examples are in `examples/chatter/`:
   journalist persona
 - `chatter_memory.py` — persistent memory with multiple
   isolated conversations
+- `guarded_chatter.py` — GuardedChatter with ContextGuard
+  defending against prompt injection and character breaks

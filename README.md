@@ -45,9 +45,11 @@ BaseAgent
   ├── Labeler (any Pydantic model)
   │     └── Detector (Property outputs)
   │           ├── Classifier (ClassificationProperty)
-  │           └── Regressor (Property[T])
+  │           ├── Regressor (Property[T])
+  │           └── ContextGuard (response validation)
   └── Chatter (multi-turn conversation)
         └── PersonalityChatter (roleplay with Persona)
+              └── GuardedChatter (+ ContextGuard pipeline)
 
 Pipeline (chains multiple agents sequentially)
 ```

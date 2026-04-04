@@ -1,6 +1,22 @@
 
 ## Changelog - Agents7
 
+### v3.13.1 - 4th April 2026
+
+- `examples/`:
+  - Added `configs/demo_guarded_chatter.yml`: YAML config
+    for a guarded David persona with ContextGuard.
+  - Added `chatter/guarded_chatter.py`: example showing
+    normal conversation, prompt injection attempts, and
+    character break attempts with GuardedChatter.
+- Documentation updates:
+  - `docs/chatter.md`: added example reference, updated
+    hierarchy diagram.
+  - `docs/design.md`: updated hierarchy to include
+    `ContextGuard` and `GuardedChatter`.
+  - `README.md`: updated agents layer hierarchy diagram.
+
+
 ### v3.13.0 - 4th April 2026
 
 - New module `agents7.agents.context_guard`:
