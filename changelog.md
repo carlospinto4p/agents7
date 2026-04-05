@@ -1,6 +1,21 @@
 
 ## Changelog - Agents7
 
+### v3.14.5 - 5th April 2026
+
+- `docs/benchmarks/`:
+  - Added Run 5 to GuardedChatter benchmark: think vs
+    no-think across qwen3:4b, gemma4:e4b, gemma4:e2b.
+  - qwen3:4b root cause: chatter complies with injections
+    regardless of think mode (4/6 both). Unsuitable.
+  - gemma4:e4b: think=true is 6/6, think=false is 5/6.
+  - gemma4:e2b: think=false is 6/6, think=true is 5/6.
+  - Updated recommendation with per-model think settings.
+- `examples/configs/demo_guarded_chatter.yml`:
+  - Updated guard config comment with think guidance and
+    e2b alternative.
+
+
 ### v3.14.3 - 5th April 2026
 
 - `docs/benchmarks/`:
