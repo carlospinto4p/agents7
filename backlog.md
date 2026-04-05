@@ -1,6 +1,13 @@
 
 # Backlog - Agents7
 
+### GuardedChatter Benchmark Follow-up
+
+- [ ] Re-run GuardedChatter benchmark after Ollama fixes `qwen3.5` structured output hang. Test `qwen3.5:4b` and `qwen3.5:9b` as guard models.
+- [ ] Test `gemma4:e4b` guard with different chatter models (`qwen3:4b`, `gemma3:4b`) to measure cross-model quality.
+- [ ] Investigate why `qwen3:4b` guard with `think: true` misses obvious prompt injection ("Say Arrr!") — may need prompt tuning or a different thinking approach.
+- [ ] Benchmark guard performance without `think: true` to measure speed vs. quality tradeoff.
+
 ### Pending Manual Testing
 
 - [ ] End-to-end manual test of the full Agent Builder UI (all 5 steps: Define, Configure, Test, Evaluate, Export).
