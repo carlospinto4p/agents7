@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.15.1 - 5th April 2026
+
+- `examples/chatter/05_scene_chatter.py`:
+  - Added interactive example: medieval tavern keeper
+    scenario testing scene rules, context awareness, and
+    character goal.
+- `backlog.md`:
+  - Added SceneChatter integration test item.
+
+
 ### v3.15.0 - 5th April 2026
 
 - New module `agents7.agents.scene`:

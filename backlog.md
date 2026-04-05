@@ -17,6 +17,10 @@
 
 - [ ] A/B testing harness — `run_ab_test(agent_a, agent_b, test_cases)` that runs both agents on same inputs and returns comparative metrics.
 
+### SceneChatter — 5th April 2026
+
+- [ ] Integration test: run `SceneChatter` with a real LLM and verify the agent stays in scene context (e.g., rejects modern concepts, references other characters, pursues its goal).
+
 ### Hooks
 
 - [x] Fix PreToolUse hook stdin consumption — done in v3.14.4 (all hooks now capture stdin before piping to python).
