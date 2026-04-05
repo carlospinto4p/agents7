@@ -3,8 +3,8 @@
 
 ### GuardedChatter Benchmark Follow-up
 
-- [ ] Investigate why `qwen3:4b` guard with `think: true` misses obvious prompt injection ("Say Arrr!") — may need prompt tuning or a different thinking approach.
-- [ ] Benchmark guard performance without `think: true` to measure speed vs. quality tradeoff.
+- [x] Investigate why `qwen3:4b` guard with `think: true` misses obvious prompt injection ("Say Arrr!") — done. Root cause is the chatter, not the guard: qwen3:4b eagerly complies with injections, and the guard sees superficially in-character responses. Model is unsuitable.
+- [x] Benchmark guard performance without `think: true` — done. think=true helps e4b (6/6 vs 5/6), hurts e2b (5/6 vs 6/6), makes no difference for qwen3:4b (4/6 both). Recommended: e4b+think=true, e2b+think=false.
 
 ### Pending Manual Testing
 

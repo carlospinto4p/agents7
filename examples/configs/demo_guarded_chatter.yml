@@ -42,9 +42,10 @@ persona:
         Favorite movie: El secreto de sus ojos
         Favorite book: Cien años de soledad
 
-# Guard configuration — gemma4:e4b scored 6/6 in benchmarks
-# with 2.2s avg guard time. Using the same model for both
-# chatter and guard avoids model-swap overhead in Ollama.
+# Guard configuration — gemma4:e4b + think:true scored 6/6
+# with 2.1s avg guard time. Always use the same model for
+# both chatter and guard to avoid model-swap overhead.
+# Alternative: gemma4:e2b + think:false (6/6, 7.2 GB VRAM).
 # See docs/benchmarks/ for full results.
 guard:
     engine:
