@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.14.7 - 5th April 2026
+
+- `.claude/rules/versioning.md`:
+  - Added "Reading changelogs" rule: never read the full
+    file, use `limit: 5` or `Grep` to minimize token cost.
+
+
 ### v3.14.6 - 5th April 2026
 
 - `integration_tests/test_guarded_chatter.py`:
