@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.14.3 - 5th April 2026
+
+- `docs/benchmarks/`:
+  - Added Run 4 to GuardedChatter benchmark: `gemma4:e2b`
+    variants. `e2b (same)` scores 6/6 (15.7s avg) — ties
+    with `e4b` quality at half the VRAM. Cross-model e2b/e4b
+    combos are slow (52–157s) due to model swap overhead.
+  - Updated recommendation: use same model for both roles,
+    `e4b` for best precision, `e2b` for VRAM-constrained
+    setups.
+
+
 ### v3.14.1 - 5th April 2026
 
 - `docs/benchmarks/`:
