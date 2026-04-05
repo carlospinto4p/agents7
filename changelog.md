@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.14.6 - 5th April 2026
+
+- `integration_tests/test_guarded_chatter.py`:
+  - Added 7 integration tests for `GuardedChatter` with
+    `gemma4:e4b`: 2 normal, 2 injection, 2 break, and
+    1 guard callback test.
+  - Tests retry once on failure to handle LLM
+    non-determinism. 120s per-test timeout.
+
+
 ### v3.14.5 - 5th April 2026
 
 - `docs/benchmarks/`:
