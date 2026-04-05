@@ -29,7 +29,9 @@ from agents7.agents.personality import (
     Persona,
     PersonalityChatter,
     PhysicalTraits,
+    Scene,
 )
+from agents7.agents.scene import SceneChatter
 from agents7.agents.pipeline import Pipeline, PipelineResponse, PipelineStep
 from agents7.agents.regressor import Regressor
 from agents7.agents.streaming import (
@@ -66,6 +68,8 @@ __all__ = [
     "PipelineResponse",
     "PipelineStep",
     "Regressor",
+    "Scene",
+    "SceneChatter",
     "SqliteMemory",
     "create_memory",
 ]

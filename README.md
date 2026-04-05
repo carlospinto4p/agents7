@@ -49,6 +49,7 @@ BaseAgent
   │           └── ContextGuard (response validation)
   └── Chatter (multi-turn conversation)
         └── PersonalityChatter (roleplay with Persona)
+              ├── SceneChatter (+ Scene context/scenario)
               └── GuardedChatter (+ ContextGuard pipeline)
 
 Pipeline (chains multiple agents sequentially)
@@ -1165,6 +1166,42 @@ extra_instructions: |
 ```
 
 The persona includes: name, birthdate, nationality, occupation, physical traits, personality adjectives, backstory, interests, speaking style, and a freeform `extra` dict for any additional details.
+
+### Scene Chatter (Contextual Roleplay Agent)
+
+`SceneChatter` extends `PersonalityChatter` by placing the character in a specific **scene** — a location, situation, time period, and set of behavioral rules. The system prompt frames everything as a role-play scenario:
+
+```python
+from agents7.agents import SceneChatter, Persona, Scene
+
+persona = Persona(
+    full_name="Old Thomas",
+    occupation="tavern keeper",
+    personality=["gruff", "practical", "shrewd"],
+)
+scene = Scene(
+    setting="A medieval tavern at night",
+    situation="The tavern is about to close.",
+    time_period="Medieval England, 14th century",
+    rules=[
+        "No knowledge of anything after the 14th century.",
+        "Suspicious of strangers.",
+    ],
+    goal="Close the tavern and get everyone out.",
+)
+agent = SceneChatter(
+    name="thomas",
+    version=1,
+    engine=engine,
+    system_prompt="",
+    persona=persona,
+    scene=scene,
+)
+
+response = agent.chat("Good evening!")
+```
+
+The scene includes: setting, situation, time period, rules, other characters present, goal, and a freeform `extra` dict. See `docs/chatter.md` for the full YAML schema.
 
 ### Testing Utilities
 

@@ -9,7 +9,8 @@ text and maintains message history across turns.
 BaseAgent
   ├── Labeler → Detector → Classifier / Regressor
   │                └── ContextGuard
-  └── Chatter → PersonalityChatter → GuardedChatter
+  └── Chatter → PersonalityChatter → SceneChatter
+                                    → GuardedChatter
 ```
 
 
@@ -334,6 +335,90 @@ an instruction to always respond in that language.
 
 Do not set `system_prompt` manually — use
 `extra_instructions` for additional guidance.
+
+
+## SceneChatter
+
+Extends `PersonalityChatter` by placing the character in a
+specific **scene** — a location, situation, time period, and
+set of behavioral rules. The system prompt wraps everything
+in a role-play frame so the agent stays both in character and
+in context.
+
+### Scene fields
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `setting` | `str` | Physical location and environment |
+| `situation` | `str` | What is currently happening |
+| `time_period` | `str` | Historical or fictional era |
+| `rules` | `list[str]` | Behavioral constraints |
+| `other_characters` | `list[str]` | Other characters present |
+| `goal` | `str` | The character's current objective |
+| `extra` | `dict[str, str]` | Additional scene details |
+
+### Prompt structure
+
+The auto-generated prompt is structured as:
+
+1. **Role-play framing** — establishes this is a scenario
+2. **Scene** — setting, situation, time period, rules, etc.
+3. **Character profile** — full persona (from `PersonalityChatter`)
+4. **Extra instructions** — optional additional guidance
+
+### Usage
+
+```python
+from agents7.agents.personality import Persona, Scene
+from agents7.agents.scene import SceneChatter
+
+persona = Persona(
+    full_name="Old Thomas",
+    occupation="tavern keeper",
+    personality=["gruff", "practical", "shrewd"],
+)
+scene = Scene(
+    setting="A medieval tavern at night",
+    situation="The tavern is about to close.",
+    time_period="Medieval England, 14th century",
+    rules=[
+        "No knowledge of anything after the 14th century.",
+        "Suspicious of strangers.",
+    ],
+    goal="Close the tavern and get everyone out.",
+)
+agent = SceneChatter(
+    name="thomas",
+    version=1,
+    engine=engine,
+    persona=persona,
+    scene=scene,
+)
+response = agent.chat("Good evening!")
+```
+
+### YAML configuration
+
+```yaml
+name: thomas
+version: 1
+engine:
+    provider: ollama
+    model: qwen2.5:3b
+persona:
+    full_name: Old Thomas
+    occupation: tavern keeper
+scene:
+    setting: A medieval tavern at night
+    situation: The tavern is about to close.
+    time_period: Medieval England, 14th century
+    rules:
+        - No knowledge of anything after the 14th century.
+        - Suspicious of strangers.
+    goal: Close the tavern and get everyone out.
+```
+
+Load with `SceneChatter.from_yaml("thomas.yml")`.
 
 
 ## GuardedChatter

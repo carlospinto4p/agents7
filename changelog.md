@@ -1,6 +1,30 @@
 
 ## Changelog - Agents7
 
+### v3.15.0 - 5th April 2026
+
+- New module `agents7.agents.scene`:
+  - `SceneChatter`: extends `PersonalityChatter` with a
+    structured `Scene` that frames the conversation as a
+    role-play in a specific context (setting, situation,
+    time period, rules, goal, other characters).
+- New model `Scene` in `agents7.agents.personality`:
+  - `Scene`: frozen dataclass with `to_prompt()` and
+    `from_dict()` for YAML loading.
+- `agents7.agents.__init__`:
+  - Exported `Scene` and `SceneChatter`.
+- `tests/test_scene.py`:
+  - 17 unit tests covering `Scene`, `SceneChatter`, and
+    YAML loading.
+- `examples/configs/demo_scene_chatter.yml`:
+  - YAML example: medieval tavern keeper scenario.
+- `docs/`:
+  - Updated `chatter.md`: added SceneChatter section.
+  - Updated `design.md`: added SceneChatter to hierarchy.
+- `README.md`:
+  - Added SceneChatter section with usage example.
+
+
 ### v3.14.10 - 5th April 2026
 
 - `changelog.md`:

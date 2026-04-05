@@ -219,6 +219,88 @@ class Persona:
 
 
 @dataclass(frozen=True)
+class Scene:
+    """Structured scenario definition for role-play.
+
+    Describes the context in which a character operates:
+    where they are, what is happening, and what rules
+    govern the interaction.
+
+    :param setting: Physical location and environment
+        (e.g. ``"A medieval tavern at night"``).
+    :param situation: What is currently happening
+        (e.g. ``"The tavern is about to close"``).
+    :param time_period: Historical or fictional era
+        (e.g. ``"Medieval Europe, 14th century"``).
+    :param rules: Behavioral constraints that override
+        normal responses (e.g. ``["You don't know about
+        modern technology"]``).
+    :param other_characters: Other characters present in
+        the scene (e.g. ``["A drunk sailor at the bar",
+        "A hooded stranger in the corner"]``).
+    :param goal: The character's current objective
+        (e.g. ``"Close the tavern and get everyone out"``).
+    :param extra: Additional key-value pairs for any
+        other scene details.
+    """
+
+    setting: str = ""
+    situation: str = ""
+    time_period: str = ""
+    rules: list[str] = field(default_factory=list)
+    other_characters: list[str] = field(
+        default_factory=list,
+    )
+    goal: str = ""
+    extra: dict[str, str] = field(default_factory=dict)
+
+    def to_prompt(self) -> str:
+        """Render the scene as a system prompt section.
+
+        :return: Multi-line string describing the scenario.
+        """
+        lines = ["## Scene"]
+        if self.setting:
+            lines.append(f"- Setting: {self.setting}")
+        if self.situation:
+            lines.append(f"- Situation: {self.situation}")
+        if self.time_period:
+            lines.append(f"- Time period: {self.time_period}")
+        if self.goal:
+            lines.append(f"- Your goal: {self.goal}")
+
+        if self.other_characters:
+            lines.append("")
+            lines.append("## Other Characters Present")
+            for char in self.other_characters:
+                lines.append(f"- {char}")
+
+        if self.rules:
+            lines.append("")
+            lines.append("## Scene Rules")
+            lines.append("You MUST follow these rules at all times:")
+            for rule in self.rules:
+                lines.append(f"- {rule}")
+
+        if self.extra:
+            lines.append("")
+            lines.append("## Scene Details")
+            for key, value in self.extra.items():
+                lines.append(f"- {key}: {value}")
+
+        return "\n".join(lines)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Scene:
+        """Create a Scene from a dictionary.
+
+        :param data: Dictionary with scene fields.
+        :return: A Scene instance.
+        """
+        return cls(**data)
+
+
+@dataclass(frozen=True)
 class PersonalityChatter(Chatter):
     """Chatter with a predefined character persona.
 

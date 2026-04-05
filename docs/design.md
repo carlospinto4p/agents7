@@ -42,6 +42,7 @@ BaseAgent (abstract — name, version, engine, system_prompt)
 │           └── ContextGuard (response validation)
 └── Chatter (multi-turn conversation)
       └── PersonalityChatter (roleplay with Persona)
+            ├── SceneChatter (+ Scene context/scenario)
             └── GuardedChatter (+ ContextGuard pipeline)
 ```
 
