@@ -19,4 +19,4 @@
 
 ### Hooks
 
-- [ ] Fix PreToolUse hook stdin consumption: all three hooks read stdin but only the first gets the JSON. Each hook should save stdin to a variable or use a shared mechanism.
+- [x] Fix PreToolUse hook stdin consumption — done in v3.14.4 (all hooks now capture stdin before piping to python).
