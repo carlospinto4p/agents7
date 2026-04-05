@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.14.1 - 5th April 2026
+
+- `docs/benchmarks/`:
+  - Added Run 3 to GuardedChatter benchmark: `gemma4:e4b`
+    guard with `qwen3:4b` (5/6, slow) and `gemma3:4b`
+    (4/6, fast but too compliant) as chatters. Confirms
+    `gemma4:e4b` for both roles remains the best combo.
+- `backlog.md`:
+  - Discarded qwen3.5 re-benchmark item.
+  - Marked cross-model guard benchmark as done.
+
+
 ### v3.14.0 - 4th April 2026
 
 - `agents7.models.base`:
