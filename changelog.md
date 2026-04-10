@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.15.2 - 10th April 2026
+
+- `.claude/rules/`:
+  - Decoupled `/improvements` rule: canonical
+    `improvements.md` is now procedural only.
+  - Added `improvement-areas.md` with
+    project-specific areas to watch.
+- `.claude/skills/improvements/`:
+  - Updated `SKILL.md` to read both canonical
+    procedure and per-project areas.
+
+
 ### v3.15.1 - 5th April 2026
 
 - `examples/chatter/05_scene_chatter.py`:
