@@ -21,6 +21,10 @@
 
 - [ ] Integration test: run `SceneChatter` with a real LLM and verify the agent stays in scene context (e.g., rejects modern concepts, references other characters, pursues its goal).
 
+### Benchmarks — 6th April 2026
+
+- [ ] Save benchmark reports automatically after each benchmark run (last run's reports were not persisted).
+
 ### Hooks
 
 - [x] Fix PreToolUse hook stdin consumption — done in v3.14.4 (all hooks now capture stdin before piping to python).
