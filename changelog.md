@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.15.16 - 12th April 2026
+
+- `integration_tests/`:
+  - Removed `test_guarded_chatter.py` — tested feature
+    behavior (injection resistance, character breaks) not
+    LLM integration. Same `engine.chat()` path as Chatter.
+    Reclaims ~180s of the 5-minute test budget.
+
+
 ### v3.15.15 - 12th April 2026
 
 - `integration_tests/`:
