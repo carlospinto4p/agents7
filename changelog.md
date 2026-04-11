@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v3.15.12 - 11th April 2026
+
+- `tests/conftest.py`:
+  - Removed plain helper functions (`mock_metrics`,
+    `make_agent_mock`, `MockModel`, `make_response`).
+    Now contains only pytest fixtures.
+- `tests/helpers.py`:
+  - Moved UI test helpers from `conftest.py`. Now the
+    single location for all non-fixture test utilities.
+- `tests/`:
+  - Updated `test_ui_comparison.py` and
+    `test_ui_evaluation.py` to import from `helpers`.
+
+
 ### v3.15.11 - 11th April 2026
 
 - `tests/helpers.py`:

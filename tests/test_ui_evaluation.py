@@ -13,7 +13,7 @@ from agents7.ui.evaluation.metrics import (
     compute_metrics,
 )
 
-from conftest import make_agent_mock, make_response, mock_metrics
+from helpers import make_agent_mock, make_response, mock_metrics
 
 
 # --- _compare_field ---

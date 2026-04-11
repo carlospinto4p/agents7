@@ -11,7 +11,7 @@ from agents7.ui.comparison.runner import (
 )
 from agents7.ui.state import AgentBuilderState
 
-from conftest import make_agent_mock, make_response, mock_metrics
+from helpers import make_agent_mock, make_response, mock_metrics
 
 
 # --- PromptVersion ---

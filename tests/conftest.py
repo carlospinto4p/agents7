@@ -1,16 +1,18 @@
-"""Shared pytest fixtures and helpers for unit tests."""
+"""Shared pytest fixtures for unit tests.
+
+Only pytest fixtures belong here. Plain helper functions,
+factory functions, constants, and mock models live in
+``helpers.py``.
+"""
 
 import os
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
-from pydantic import BaseModel
 
 from agents7.agents.classifier import Classifier
 from agents7.agents.detector import Detector
 from agents7.agents.regressor import Regressor
-from agents7.models.base import AgentResponse, LLMMetrics
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -52,46 +54,4 @@ def temperature_regressor():
     """Create a temperature regressor from YAML config."""
     return Regressor.from_yaml(
         "examples/configs/demo_temperature_detector.yml"
-    )
-
-
-# --- Shared UI test helpers ---
-
-
-def mock_metrics() -> LLMMetrics:
-    """Create standard LLMMetrics for UI tests."""
-    return LLMMetrics(tokens=10, prompt_tokens=5, total_duration=0.1)
-
-
-def make_agent_mock(
-    responses: list[AgentResponse],
-) -> MagicMock:
-    """Return a mock agent that returns responses in order.
-
-    Mocks both ``act`` (sequential fallback) and
-    ``act_in_batch`` (used by ``run_evaluation``).
-    """
-    agent = MagicMock()
-    agent.act = MagicMock(side_effect=responses)
-    agent.act_in_batch = MagicMock(return_value=list(responses))
-    return agent
-
-
-class MockModel(BaseModel):
-    """Shared mock model for UI evaluation/comparison tests."""
-
-    category: str = "POSITIVE"
-    reason: str = "HAPPY"
-
-
-def make_response(
-    category: str = "POSITIVE",
-    reason: str = "HAPPY",
-) -> AgentResponse:
-    """Build a mock AgentResponse for UI tests."""
-    model = MockModel(category=category, reason=reason)
-    return AgentResponse(
-        response="{}",
-        model=model,
-        metrics=mock_metrics(),
     )
