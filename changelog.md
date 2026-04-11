@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.15.15 - 12th April 2026
+
+- `integration_tests/`:
+  - Removed `test_scene_chatter.py` — SceneChatter uses
+    the same `engine.chat()` path as Chatter; no new
+    integration to verify. Feature-level behavior tests
+    don't belong in integration tests.
+
+
 ### v3.15.14 - 12th April 2026
 
 - `integration_tests/test_scene_chatter.py`:

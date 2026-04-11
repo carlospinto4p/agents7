@@ -14,7 +14,7 @@
 
 ### SceneChatter — 5th April 2026
 
-- [x] Integration test: run `SceneChatter` with a real LLM and verify the agent stays in scene context (e.g., rejects modern concepts, references other characters, pursues its goal).
+- [x] ~~Integration test for SceneChatter~~ — removed: SceneChatter uses the same `engine.chat()` path as Chatter, no new integration to test. Feature-level behavior tests don't belong in integration tests.
 
 ### Benchmarks — 6th April 2026
 
