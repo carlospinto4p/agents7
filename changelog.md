@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.15.14 - 12th April 2026
+
+- `integration_tests/test_scene_chatter.py`:
+  - Added 6 integration tests for `SceneChatter` using
+    `demo_scene_chatter.yml` (qwen2.5:3b). Tests cover:
+    in-character responses, modern concept rejection,
+    other character awareness, and goal pursuit.
+
+
 ### v3.15.13 - 12th April 2026
 
 - `integration_tests/integration_helpers.py`:

@@ -14,7 +14,7 @@
 
 ### SceneChatter — 5th April 2026
 
-- [ ] Integration test: run `SceneChatter` with a real LLM and verify the agent stays in scene context (e.g., rejects modern concepts, references other characters, pursues its goal).
+- [x] Integration test: run `SceneChatter` with a real LLM and verify the agent stays in scene context (e.g., rejects modern concepts, references other characters, pursues its goal).
 
 ### Benchmarks — 6th April 2026
 
