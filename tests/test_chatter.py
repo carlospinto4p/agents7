@@ -11,35 +11,13 @@ from agents7.exceptions import AgentConfigurationError
 from agents7.llm import LLMEngine
 from agents7.models import ChatResponse
 
-from helpers import DUMMY_METRICS, ENGINE, async_iter, chat_chunk
-
-
-# --- Factory helpers ---
-
-
-def make_chatter(**kwargs) -> Chatter:
-    """Create a Chatter with sensible test defaults."""
-    defaults = {
-        "name": "test-chatter",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "You are a helpful assistant.",
-    }
-    defaults.update(kwargs)
-    return Chatter(**defaults)
-
-
-def chat_response_dict(
-    text: str = "Hello!",
-    thinking: str | None = None,
-) -> dict:
-    """Build a mock engine.chat() return value."""
-    return {
-        "role": "assistant",
-        "response": text,
-        "thinking": thinking,
-        "metrics": DUMMY_METRICS,
-    }
+from helpers import (
+    DUMMY_METRICS,
+    async_iter,
+    chat_chunk,
+    chat_response_dict,
+    make_chatter,
+)
 
 
 # --- Initialization ---

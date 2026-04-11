@@ -6,7 +6,6 @@ from unittest.mock import patch
 import pytest
 
 from agents7.agents.context_guard import (
-    ContextGuard,
     GuardReason,
     GuardVerdict,
 )
@@ -14,26 +13,11 @@ from agents7.exceptions import GuardConfigurationError
 from agents7.llm import LLMEngine
 from agents7.models.base import Property
 
-from helpers import DUMMY_METRICS, ENGINE
-
-
-# --- Factory helpers ---
-
-
-PERSONA_SUMMARY = "David Garcia, Spanish journalist, curious"
-
-
-def make_guard(**kwargs) -> ContextGuard:
-    """Create a ContextGuard with sensible test defaults."""
-    defaults = {
-        "name": "test-guard",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "(auto-generated)",
-        "persona_summary": PERSONA_SUMMARY,
-    }
-    defaults.update(kwargs)
-    return ContextGuard(**defaults)
+from helpers import (
+    DUMMY_METRICS,
+    PERSONA_SUMMARY,
+    make_guard,
+)
 
 
 def guard_response_dict(

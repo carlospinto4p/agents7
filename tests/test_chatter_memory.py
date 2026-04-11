@@ -8,30 +8,7 @@ from agents7.agents.chatter import Chatter
 from agents7.agents.memory import JsonFileMemory, SqliteMemory
 from agents7.llm import LLMEngine
 
-from helpers import DUMMY_METRICS, ENGINE
-
-
-def chat_response_dict(text: str = "Reply") -> dict:
-    """Build a mock engine.chat() return value."""
-    return {
-        "role": "assistant",
-        "response": text,
-        "thinking": None,
-        "metrics": DUMMY_METRICS,
-    }
-
-
-def make_chatter(memory, **kwargs) -> Chatter:
-    """Create a Chatter with memory backend."""
-    defaults = {
-        "name": "test-chatter",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "You are helpful.",
-        "memory": memory,
-    }
-    defaults.update(kwargs)
-    return Chatter(**defaults)
+from helpers import ENGINE, chat_response_dict, make_chatter
 
 
 # --- JSON memory integration ---
@@ -44,12 +21,12 @@ def test_json_persists_across_instances(mock_chat, tmp_path):
     path = str(tmp_path / "history.json")
     mem = JsonFileMemory(path)
 
-    agent1 = make_chatter(mem, conversation_id="s1")
+    agent1 = make_chatter(memory=mem, conversation_id="s1")
     agent1.chat("Hi")
     assert len(agent1.history) == 2
 
     # New instance with same memory and conversation_id
-    agent2 = make_chatter(JsonFileMemory(path), conversation_id="s1")
+    agent2 = make_chatter(memory=JsonFileMemory(path), conversation_id="s1")
     assert len(agent2.history) == 2
     assert agent2.history[0]["content"] == "Hi"
     assert agent2.history[1]["content"] == "Hello!"
@@ -62,10 +39,10 @@ def test_json_separate_conversations(mock_chat, tmp_path):
     path = str(tmp_path / "history.json")
     mem = JsonFileMemory(path)
 
-    a1 = make_chatter(mem, conversation_id="conv-a")
+    a1 = make_chatter(memory=mem, conversation_id="conv-a")
     a1.chat("Message A")
 
-    a2 = make_chatter(mem, conversation_id="conv-b")
+    a2 = make_chatter(memory=mem, conversation_id="conv-b")
     a2.chat("Message B")
 
     assert len(JsonFileMemory(path).load("conv-a")) == 2
@@ -79,7 +56,7 @@ def test_json_reset_clears_backend(mock_chat, tmp_path):
     path = str(tmp_path / "history.json")
     mem = JsonFileMemory(path)
 
-    agent = make_chatter(mem, conversation_id="s1")
+    agent = make_chatter(memory=mem, conversation_id="s1")
     agent.chat("Hi")
     assert len(agent.history) == 2
 
@@ -98,10 +75,10 @@ def test_sqlite_persists_across_instances(mock_chat, tmp_path):
     path = str(tmp_path / "history.db")
     mem = SqliteMemory(path)
 
-    agent1 = make_chatter(mem, conversation_id="s1")
+    agent1 = make_chatter(memory=mem, conversation_id="s1")
     agent1.chat("Hi")
 
-    agent2 = make_chatter(SqliteMemory(path), conversation_id="s1")
+    agent2 = make_chatter(memory=SqliteMemory(path), conversation_id="s1")
     assert len(agent2.history) == 2
     assert agent2.history[0]["content"] == "Hi"
 
@@ -113,7 +90,7 @@ def test_sqlite_reset_clears_backend(mock_chat, tmp_path):
     path = str(tmp_path / "history.db")
     mem = SqliteMemory(path)
 
-    agent = make_chatter(mem, conversation_id="s1")
+    agent = make_chatter(memory=mem, conversation_id="s1")
     agent.chat("Hi")
     agent.reset()
 
@@ -162,7 +139,7 @@ def test_stream_persists_to_memory(mock_stream, tmp_path):
 
     path = str(tmp_path / "history.json")
     mem = JsonFileMemory(path)
-    agent = make_chatter(mem, conversation_id="s1")
+    agent = make_chatter(memory=mem, conversation_id="s1")
     result = agent.chat_stream("Hi")
     list(result)  # Consume the stream
 
@@ -183,7 +160,7 @@ async def test_async_persists_to_memory(mock_chat, tmp_path):
     path = str(tmp_path / "history.json")
     mem = JsonFileMemory(path)
 
-    agent = make_chatter(mem, conversation_id="s1")
+    agent = make_chatter(memory=mem, conversation_id="s1")
     await agent.chat_async("Hello")
 
     loaded = JsonFileMemory(path).load("s1")

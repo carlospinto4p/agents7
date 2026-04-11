@@ -18,6 +18,8 @@ from agents7.models import AgentResponse
 
 ENGINE = LLMEngine(provider="ollama", model_name="qwen3")
 
+PERSONA_SUMMARY = "David Garcia, Spanish journalist, curious"
+
 DUMMY_METRICS = {
     "tokens": 10,
     "prompt_tokens": 5,
@@ -204,3 +206,51 @@ class ConcurrencyTracker:
         async with self._lock:
             self._current -= 1
         return dict(self._return_value)
+
+
+# --- Chat response factory ---
+
+
+def chat_response_dict(
+    text: str = "Hello!",
+    thinking: str | None = None,
+) -> dict:
+    """Build a mock ``engine.chat()`` return value."""
+    return {
+        "role": "assistant",
+        "response": text,
+        "thinking": thinking,
+        "metrics": DUMMY_METRICS,
+    }
+
+
+# --- Chatter / Guard factory helpers ---
+
+
+def make_chatter(**kwargs):
+    """Create a `Chatter` with sensible test defaults."""
+    from agents7.agents.chatter import Chatter
+
+    defaults = {
+        "name": "test-chatter",
+        "version": 1,
+        "engine": ENGINE,
+        "system_prompt": "You are a helpful assistant.",
+    }
+    defaults.update(kwargs)
+    return Chatter(**defaults)
+
+
+def make_guard(**kwargs):
+    """Create a `ContextGuard` with test defaults."""
+    from agents7.agents.context_guard import ContextGuard
+
+    defaults = {
+        "name": "test-guard",
+        "version": 1,
+        "engine": ENGINE,
+        "system_prompt": "(auto-generated)",
+        "persona_summary": PERSONA_SUMMARY,
+    }
+    defaults.update(kwargs)
+    return ContextGuard(**defaults)

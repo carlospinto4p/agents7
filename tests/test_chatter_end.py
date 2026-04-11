@@ -8,27 +8,7 @@ from agents7.agents.chatter import Chatter
 from agents7.exceptions import ChatEndedError
 from agents7.llm import LLMEngine
 
-from helpers import DUMMY_METRICS, ENGINE
-
-
-def chat_response_dict(text: str = "Reply") -> dict:
-    return {
-        "role": "assistant",
-        "response": text,
-        "thinking": None,
-        "metrics": DUMMY_METRICS,
-    }
-
-
-def make_chatter(**kwargs) -> Chatter:
-    defaults = {
-        "name": "test",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "Hi.",
-    }
-    defaults.update(kwargs)
-    return Chatter(**defaults)
+from helpers import chat_response_dict, make_chatter
 
 
 # --- max_turns ---

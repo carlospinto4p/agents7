@@ -21,7 +21,12 @@ from agents7.agents.personality import Persona
 from agents7.llm import LLMEngine
 from agents7.models import AgentResponse
 
-from helpers import DUMMY_METRICS, ENGINE
+from helpers import (
+    DUMMY_METRICS,
+    ENGINE,
+    chat_response_dict,
+    make_guard,
+)
 
 
 # --- Factory helpers ---
@@ -39,19 +44,6 @@ PERSONA_SUMMARY = (
 )
 
 
-def make_guard(**kwargs) -> ContextGuard:
-    """Create a ContextGuard with test defaults."""
-    defaults = {
-        "name": "test-guard",
-        "version": 1,
-        "engine": ENGINE,
-        "system_prompt": "(auto-generated)",
-        "persona_summary": PERSONA_SUMMARY,
-    }
-    defaults.update(kwargs)
-    return ContextGuard(**defaults)
-
-
 def make_guarded_chatter(**kwargs) -> GuardedChatter:
     """Create a GuardedChatter with test defaults."""
     defaults = {
@@ -60,23 +52,12 @@ def make_guarded_chatter(**kwargs) -> GuardedChatter:
         "engine": ENGINE,
         "system_prompt": "",
         "persona": PERSONA,
-        "guard": make_guard(),
+        "guard": make_guard(
+            persona_summary=PERSONA_SUMMARY,
+        ),
     }
     defaults.update(kwargs)
     return GuardedChatter(**defaults)
-
-
-def chat_response_dict(
-    text: str = "Hola, soy David.",
-    thinking: str | None = None,
-) -> dict:
-    """Build a mock engine.chat() return value."""
-    return {
-        "role": "assistant",
-        "response": text,
-        "thinking": thinking,
-        "metrics": DUMMY_METRICS,
-    }
 
 
 def guard_verdict_response(

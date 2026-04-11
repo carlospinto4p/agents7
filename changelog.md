@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.15.11 - 11th April 2026
+
+- `tests/helpers.py`:
+  - Added `chat_response_dict()`, `make_chatter()`,
+    `make_guard()`, and `PERSONA_SUMMARY` constant.
+- `tests/`:
+  - Removed duplicated `chat_response_dict` from 4 files,
+    `make_chatter` from 3 files, and `make_guard` from
+    2 files. All now import from `helpers.py`.
+
+
 ### v3.15.10 - 11th April 2026
 
 - `agents/config_loader.py`:

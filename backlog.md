@@ -25,6 +25,6 @@
 - [x] Deduplicate stream wrapper classes — `ChatterStreamResult` and `GuardedChatterStreamResult` (sync + async) repeat identical iteration/finalization logic. MEDIUM impact, small effort.
 - [x] Extract `_guard_and_fix` retry logic — method is 58 lines in `guarded.py` with sync/async duplication. Extract verdict-decision logic. MEDIUM impact, small effort.
 - [x] Move `_load_guarded_yaml` (83 lines) into `config_loader.py` — consolidate all YAML loading in one module. MEDIUM impact, small effort.
-- [ ] Consolidate test response builders — `chat_response_dict()` duplicated in 4 test files, `make_chatter()` in 4 files, `make_guard()` in 2 files. Move to `conftest.py`. MEDIUM impact, small effort.
+- [x] Consolidate test response builders — `chat_response_dict()` duplicated in 4 test files, `make_chatter()` in 3 files, `make_guard()` in 2 files. Moved to `helpers.py`. MEDIUM impact, small effort.
 - [ ] Clarify `conftest.py` vs `helpers.py` responsibilities — both contain fixtures and factories with overlapping scope. LOW impact, small effort.
 - [ ] Extract integration test boilerplate — `test_classifier.py`, `test_detector.py`, `test_regressor.py` share ~140 lines of identical parametrize/assert/batch patterns. LOW impact, medium effort.
