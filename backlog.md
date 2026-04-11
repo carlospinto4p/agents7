@@ -31,7 +31,7 @@
 
 ### Refactor review — 11th April 2026
 
-- [ ] Extract YAML config field-casting into a shared helper — `config_loader.py`, `personality.py`, and `guarded.py` each repeat 10+ identical `if "field" in config` blocks. HIGH impact, small effort.
+- [x] Extract YAML config field-casting into a shared helper — `config_loader.py`, `personality.py`, and `guarded.py` each repeat 10+ identical `if "field" in config` blocks. HIGH impact, small effort.
 - [ ] Consolidate LLM provider shared logic — `anthropic.py`, `ollama.py`, `openai_compat.py` duplicate ~80% of `_build_params()`, `_parse_response()`, `chat()`, `generate()`. Extract shared base helpers. HIGH impact, medium effort.
 - [ ] Split `LLMEngine.__init__` provider dispatch (57 lines, 3 nested branches) — extract to a factory method or registry. MEDIUM impact, small effort.
 - [ ] Deduplicate stream wrapper classes — `ChatterStreamResult` and `GuardedChatterStreamResult` (sync + async) repeat identical iteration/finalization logic. MEDIUM impact, small effort.

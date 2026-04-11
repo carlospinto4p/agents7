@@ -14,6 +14,26 @@ from agents7.llm.cache import CacheConfig
 from agents7.llm.retry import RetryConfig
 
 
+def cast_optional_fields(
+    source: dict,
+    target: dict,
+    fields: dict[str, type],
+) -> None:
+    """Copy fields from *source* to *target*, casting each value.
+
+    Only fields present in *source* are copied. This replaces
+    repetitive ``if "field" in config`` blocks in YAML loaders.
+
+    :param source: Raw config dictionary (e.g. parsed YAML).
+    :param target: Target dictionary to populate.
+    :param fields: Mapping of field name → type callable
+        (e.g. ``{"temperature": float, "think": bool}``).
+    """
+    for name, caster in fields.items():
+        if name in source:
+            target[name] = caster(source[name])
+
+
 def _deep_merge(base: dict, override: dict) -> dict:
     """Recursively merge *override* into *base*.
 
@@ -142,11 +162,14 @@ def load_yaml_settings(file_path: str) -> dict:
         "validators": validators,
     }
 
-    if "think" in config:
-        result["think"] = bool(config["think"])
-
-    if "max_parse_retries" in config:
-        result["max_parse_retries"] = int(config["max_parse_retries"])
+    cast_optional_fields(
+        config,
+        result,
+        {
+            "think": bool,
+            "max_parse_retries": int,
+        },
+    )
 
     if call_logger_path := config.get("call_logger"):
         result["call_logger"] = import_from_path(call_logger_path)
@@ -259,18 +282,18 @@ def load_chatter_yaml_settings(file_path: str) -> dict:
         "prompt_params": prompt_params,
     }
 
-    if "temperature" in config:
-        result["temperature"] = float(config["temperature"])
-    if "think" in config:
-        result["think"] = bool(config["think"])
-    if "max_history" in config:
-        result["max_history"] = int(config["max_history"])
-    if "max_turns" in config:
-        result["max_turns"] = int(config["max_turns"])
-    if "typo_rate" in config:
-        result["typo_rate"] = float(config["typo_rate"])
-    if "conversation_id" in config:
-        result["conversation_id"] = str(config["conversation_id"])
+    cast_optional_fields(
+        config,
+        result,
+        {
+            "temperature": float,
+            "think": bool,
+            "max_history": int,
+            "max_turns": int,
+            "typo_rate": float,
+            "conversation_id": str,
+        },
+    )
     if end_condition_path := config.get("end_condition"):
         result["end_condition"] = import_from_path(end_condition_path)
     if memory_settings := config.get("memory"):

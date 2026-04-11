@@ -648,6 +648,7 @@ def _load_guarded_yaml(
     from agents7.agents.config_loader import (
         _resolve_inheritance,
         build_engine,
+        cast_optional_fields,
         validate_chatter_yaml_config,
     )
     from agents7.agents.memory import (
@@ -701,22 +702,20 @@ def _load_guarded_yaml(
         "guard": guard,
     }
 
-    if "temperature" in raw:
-        config["temperature"] = float(raw["temperature"])
-    if "think" in raw:
-        config["think"] = bool(raw["think"])
-    if "max_history" in raw:
-        config["max_history"] = int(raw["max_history"])
-    if "max_turns" in raw:
-        config["max_turns"] = int(raw["max_turns"])
-    if "typo_rate" in raw:
-        config["typo_rate"] = float(raw["typo_rate"])
-    if "conversation_id" in raw:
-        config["conversation_id"] = str(raw["conversation_id"])
-    if "max_guard_retries" in raw:
-        config["max_guard_retries"] = int(raw["max_guard_retries"])
-    if "guard_context_turns" in raw:
-        config["guard_context_turns"] = int(raw["guard_context_turns"])
+    cast_optional_fields(
+        raw,
+        config,
+        {
+            "temperature": float,
+            "think": bool,
+            "max_history": int,
+            "max_turns": int,
+            "typo_rate": float,
+            "conversation_id": str,
+            "max_guard_retries": int,
+            "guard_context_turns": int,
+        },
+    )
     if memory_settings := raw.get("memory"):
         memory_config = MemoryConfig(
             backend=memory_settings.get("backend", "json"),

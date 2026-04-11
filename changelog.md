@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v3.15.5 - 11th April 2026
+
+- `agents/config_loader.py`:
+  - Added `cast_optional_fields()`: shared helper that
+    replaces repetitive `if "field" in config` blocks
+    across YAML loaders.
+- `agents/personality.py`:
+  - Replaced 6 field-casting blocks with
+    `cast_optional_fields()` call.
+- `agents/guarded.py`:
+  - Replaced 8 field-casting blocks with
+    `cast_optional_fields()` call.
+
+
 ### v3.15.4 - 11th April 2026
 
 - `.claude/rules/`:
