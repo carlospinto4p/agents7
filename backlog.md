@@ -27,4 +27,4 @@
 - [x] Move `_load_guarded_yaml` (83 lines) into `config_loader.py` — consolidate all YAML loading in one module. MEDIUM impact, small effort.
 - [x] Consolidate test response builders — `chat_response_dict()` duplicated in 4 test files, `make_chatter()` in 3 files, `make_guard()` in 2 files. Moved to `helpers.py`. MEDIUM impact, small effort.
 - [x] Clarify `conftest.py` vs `helpers.py` responsibilities — both contain fixtures and factories with overlapping scope. LOW impact, small effort.
-- [ ] Extract integration test boilerplate — `test_classifier.py`, `test_detector.py`, `test_regressor.py` share ~140 lines of identical parametrize/assert/batch patterns. LOW impact, medium effort.
+- [x] Extract integration test boilerplate — `test_classifier.py`, `test_detector.py`, `test_regressor.py` share ~140 lines of identical parametrize/assert/batch patterns. LOW impact, medium effort.

@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.15.13 - 12th April 2026
+
+- `integration_tests/integration_helpers.py`:
+  - Added `run_single_case()` and `run_batch_and_report()`
+    to eliminate duplicated test boilerplate.
+  - Renamed from `helpers.py` to avoid shadowing the
+    unit-test `helpers.py` on the pytest path.
+- `integration_tests/`:
+  - Simplified `test_detector.py`, `test_classifier.py`,
+    and `test_regressor.py` to use shared helpers.
+
+
 ### v3.15.12 - 11th April 2026
 
 - `tests/conftest.py`:
