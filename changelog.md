@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.15.17 - 12th April 2026
+
+- `integration_tests/test_multi_model.py`:
+  - Rewritten to single-call connectivity test per model.
+    Now covers all 5 models used in configs: `qwen2.5:3b`,
+    `qwen3:1.7b`, `qwen3:4b`, `gemma3:12b`, `gemma4:e4b`.
+  - Asserts structure (model parsed, metrics present) not
+    classification correctness.
+- `.claude/rules/testing.md`:
+  - Updated integration test scope: every model in
+    `examples/configs/*.yml` must have a connectivity test.
+
+
 ### v3.15.16 - 12th April 2026
 
 - `integration_tests/`:

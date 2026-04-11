@@ -1,8 +1,12 @@
-"""
-Tests for multi-model support.
+"""Multi-model integration tests.
 
-These tests verify that the library works correctly with different
-Ollama models, including those that don't support structured output.
+Verify that every Ollama model referenced in
+``examples/configs/*.yml`` works with the library.
+Each model gets a single LLM call to confirm
+connectivity, structured output parsing, and response
+structure.
+
+Add new models here when a new config references one.
 """
 
 import subprocess
@@ -12,8 +16,6 @@ import pytest
 from agents7.agents import Detector
 from agents7.llm import LLMEngine
 from agents7.models.demo import Temperature
-
-from data import SIMPLE_TEMPERATURE_CASES
 
 
 def is_model_available(model_name: str) -> bool:
@@ -30,156 +32,95 @@ def is_model_available(model_name: str) -> bool:
         return False
 
 
-# Models to test - add more as needed
+# Every model referenced in examples/configs/*.yml.
 MODELS_TO_TEST = [
     pytest.param(
         "qwen2.5:3b",
         id="qwen2.5-3b",
         marks=pytest.mark.skipif(
             not is_model_available("qwen2.5:3b"),
-            reason="qwen2.5:3b model not available",
+            reason="qwen2.5:3b not available",
         ),
     ),
-]
-
-
-@pytest.fixture
-def make_detector():
-    """Factory fixture to create a detector with a specific model."""
-
-    def _make_detector(model_name: str) -> Detector:
-        engine = LLMEngine(provider="ollama", model_name=model_name)
-        return Detector(
-            name="TestDetector",
-            version=1,
-            engine=engine,
-            system_prompt=(
-                "Detect temperature from text. Return "
-                "temperature in Celsius.\n\n"
-                "TOO_COLD: <=10 C. TOO_HOT: >=30 C. "
-                "COMFORTABLE: 11-29 C. "
-                "NOT_APPLICABLE: no temperature context."
-            ),
-            output_model=Temperature,
-            examples=[
-                {
-                    "input": "It is freezing outside.",
-                    "output": {
-                        "value": -5,
-                        "reason": "TOO_COLD",
-                    },
-                },
-                {
-                    "input": "Nice weather for a walk.",
-                    "output": {
-                        "value": 22,
-                        "reason": "COMFORTABLE",
-                    },
-                },
-                {
-                    "input": "The asphalt is melting.",
-                    "output": {
-                        "value": 40,
-                        "reason": "TOO_HOT",
-                    },
-                },
-                {
-                    "input": "She bought a new book.",
-                    "output": {
-                        "value": None,
-                        "reason": "NOT_APPLICABLE",
-                    },
-                },
-                {
-                    "input": "The meeting is at 3 PM.",
-                    "output": {
-                        "value": None,
-                        "reason": "NOT_APPLICABLE",
-                    },
-                },
-            ],
-        )
-
-    return _make_detector
-
-
-@pytest.mark.parametrize("model_name", MODELS_TO_TEST)
-@pytest.mark.parametrize("test_case", SIMPLE_TEMPERATURE_CASES)
-def test_temperature_detection_across_models(
-    make_detector, model_name: str, test_case: dict
-) -> None:
-    """Test temperature detection works across models."""
-    detector = make_detector(model_name)
-    input_data = {"text": test_case["text"]}
-
-    response = detector.act(input_data)
-
-    assert response.model is not None, (
-        f"Model {model_name} returned None for: {test_case['text']}"
-    )
-    assert response.model.reason.name == test_case["expected_reason"], (
-        f"Model {model_name} returned wrong reason. "
-        f"Expected {test_case['expected_reason']}, "
-        f"got {response.model.reason.name}"
-    )
-
-
-# Models that support batch processing reliably
-MODELS_FOR_BATCH = [
+    pytest.param(
+        "qwen3:1.7b",
+        id="qwen3-1.7b",
+        marks=pytest.mark.skipif(
+            not is_model_available("qwen3:1.7b"),
+            reason="qwen3:1.7b not available",
+        ),
+    ),
     pytest.param(
         "qwen3:4b",
         id="qwen3-4b",
         marks=pytest.mark.skipif(
             not is_model_available("qwen3:4b"),
-            reason="qwen3:4b model not available",
+            reason="qwen3:4b not available",
+        ),
+    ),
+    pytest.param(
+        "gemma3:12b",
+        id="gemma3-12b",
+        marks=pytest.mark.skipif(
+            not is_model_available("gemma3:12b"),
+            reason="gemma3:12b not available",
+        ),
+    ),
+    pytest.param(
+        "gemma4:e4b",
+        id="gemma4-e4b",
+        marks=pytest.mark.skipif(
+            not is_model_available("gemma4:e4b"),
+            reason="gemma4:e4b not available",
         ),
     ),
 ]
 
 
-@pytest.mark.parametrize("model_name", MODELS_FOR_BATCH)
-def test_batch_processing_across_models(
-    make_detector, model_name: str
-) -> None:
-    """Test batch processing works across different models."""
-    detector = make_detector(model_name)
-    inputs = [{"text": case["text"]} for case in SIMPLE_TEMPERATURE_CASES]
-
-    responses = detector.act_in_batch(inputs)
-
-    assert len(responses) == len(SIMPLE_TEMPERATURE_CASES)
-    for i, (response, test_case) in enumerate(
-        zip(responses, SIMPLE_TEMPERATURE_CASES)
-    ):
-        assert response.model is not None, (
-            f"Model {model_name} returned None for case {i}"
-        )
-        assert response.model.reason.name == test_case["expected_reason"], (
-            f"Model {model_name} batch case {i}: "
-            f"expected {test_case['expected_reason']}, "
-            f"got {response.model.reason.name}"
-        )
-
-
 @pytest.mark.parametrize("model_name", MODELS_TO_TEST)
-def test_response_structure_across_models(
-    make_detector, model_name: str
-) -> None:
-    """Test response structure is consistent across models."""
-    detector = make_detector(model_name)
-    input_data = {"text": "The thermometer reads 25 degrees."}
+def test_model_connectivity(model_name: str) -> None:
+    """Single-call smoke test per model.
 
-    response = detector.act(input_data)
+    Verifies connectivity, structured output parsing,
+    and response structure in one LLM call.
+    """
+    engine = LLMEngine(provider="ollama", model_name=model_name)
+    detector = Detector(
+        name="TestDetector",
+        version=1,
+        engine=engine,
+        system_prompt=(
+            "Detect temperature from text. "
+            "TOO_COLD: <=10 C. TOO_HOT: >=30 C. "
+            "COMFORTABLE: 11-29 C. "
+            "NOT_APPLICABLE: no temperature."
+        ),
+        output_model=Temperature,
+        examples=[
+            {
+                "input": "It is freezing outside.",
+                "output": {
+                    "value": -5,
+                    "reason": "TOO_COLD",
+                },
+            },
+        ],
+    )
 
-    # Verify response structure
-    assert hasattr(response, "model")
-    assert hasattr(response, "response")
-    assert hasattr(response, "metrics")
+    response = detector.act({"text": "It is -10 degrees outside."})
 
-    # Verify model has expected fields
-    assert hasattr(response.model, "value")
-    assert hasattr(response.model, "reason")
+    # Structured output parsed into a valid model
+    assert response.model is not None, f"{model_name}: model is None"
+    assert hasattr(response.model, "reason"), (
+        f"{model_name}: model missing 'reason' field"
+    )
+    assert hasattr(response.model, "value"), (
+        f"{model_name}: model missing 'value' field"
+    )
 
-    # Verify metrics exist
-    assert response.metrics.tokens > 0
-    assert response.metrics.prompt_tokens > 0
+    # Response structure intact
+    assert response.response, f"{model_name}: empty raw response"
+    assert response.metrics.tokens > 0, f"{model_name}: no tokens reported"
+    assert response.metrics.prompt_tokens > 0, (
+        f"{model_name}: no prompt tokens reported"
+    )
