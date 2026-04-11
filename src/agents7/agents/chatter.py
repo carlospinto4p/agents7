@@ -25,7 +25,14 @@ from agents7.models import AgentResponse, ChatResponse, LLMMetrics
 
 
 class _ChatterStreamBase:
-    """Shared state and logic for chatter stream wrappers."""
+    """Shared state and logic for chatter stream wrappers.
+
+    Provides ``__iter__`` (sync) and ``__aiter__`` (async)
+    iteration that yields text chunks and calls the
+    appropriate finalize hook when done.  Subclasses
+    override ``_finalize`` or ``_finalize_async`` to add
+    post-stream logic (e.g. guard validation).
+    """
 
     __slots__ = (
         "_stream",
@@ -61,6 +68,23 @@ class _ChatterStreamBase:
             self._stream.response,
         )
 
+    async def _finalize_async(self) -> None:
+        """Async finalize hook. Defaults to sync."""
+        self._finalize()
+
+    def __iter__(self) -> Iterator[str]:
+        for chunk in self._stream:
+            yield chunk
+        self._finalize()
+
+    def __aiter__(self) -> AsyncIterator[str]:
+        return self._async_iterate()
+
+    async def _async_iterate(self) -> AsyncIterator[str]:
+        async for chunk in self._stream:
+            yield chunk
+        await self._finalize_async()
+
 
 class ChatterStreamResult(_ChatterStreamBase):
     """Sync streaming wrapper for Chatter responses.
@@ -80,19 +104,6 @@ class ChatterStreamResult(_ChatterStreamBase):
 
     __slots__ = ()
 
-    def __init__(
-        self,
-        stream: StreamResult,
-        chatter: "Chatter",
-        user_message: str,
-    ) -> None:
-        super().__init__(stream, chatter, user_message)
-
-    def __iter__(self) -> Iterator[str]:
-        for chunk in self._stream:
-            yield chunk
-        self._finalize()
-
 
 class ChatterAsyncStreamResult(_ChatterStreamBase):
     """Async streaming wrapper for Chatter responses.
@@ -110,22 +121,6 @@ class ChatterAsyncStreamResult(_ChatterStreamBase):
     """
 
     __slots__ = ()
-
-    def __init__(
-        self,
-        stream: AsyncStreamResult,
-        chatter: "Chatter",
-        user_message: str,
-    ) -> None:
-        super().__init__(stream, chatter, user_message)
-
-    def __aiter__(self) -> AsyncIterator[str]:
-        return self._iterate()
-
-    async def _iterate(self) -> AsyncIterator[str]:
-        async for chunk in self._stream:
-            yield chunk
-        self._finalize()
 
 
 @dataclass(frozen=True)

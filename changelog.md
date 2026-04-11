@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.15.8 - 11th April 2026
+
+- `agents/chatter.py`:
+  - Moved `__iter__`, `__aiter__`, and `_finalize_async`
+    into `_ChatterStreamBase`, eliminating duplication
+    from all four stream wrapper subclasses.
+- `agents/guarded.py`:
+  - Simplified `GuardedChatterStreamResult` and
+    `GuardedChatterAsyncStreamResult` to only override
+    finalize hooks. Removed redundant `_guard`/`_user_msg`
+    slots and constructor parameters.
+
+
 ### v3.15.7 - 11th April 2026
 
 - `llm/base.py`:

@@ -22,7 +22,7 @@
 
 ### Refactor review — 11th April 2026
 
-- [ ] Deduplicate stream wrapper classes — `ChatterStreamResult` and `GuardedChatterStreamResult` (sync + async) repeat identical iteration/finalization logic. MEDIUM impact, small effort.
+- [x] Deduplicate stream wrapper classes — `ChatterStreamResult` and `GuardedChatterStreamResult` (sync + async) repeat identical iteration/finalization logic. MEDIUM impact, small effort.
 - [ ] Extract `_guard_and_fix` retry logic — method is 58 lines in `guarded.py` with sync/async duplication. Extract verdict-decision logic. MEDIUM impact, small effort.
 - [ ] Move `_load_guarded_yaml` (83 lines) into `config_loader.py` — consolidate all YAML loading in one module. MEDIUM impact, small effort.
 - [ ] Consolidate test response builders — `chat_response_dict()` duplicated in 4 test files, `make_chatter()` in 4 files, `make_guard()` in 2 files. Move to `conftest.py`. MEDIUM impact, small effort.

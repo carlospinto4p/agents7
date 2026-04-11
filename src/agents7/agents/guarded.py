@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Iterator
+from typing import Any
 
 from agents7.agents.chatter import (
     _ChatterStreamBase,
@@ -25,10 +25,6 @@ from agents7.agents.context_guard import (
 from agents7.agents.personality import (
     Persona,
     PersonalityChatter,
-)
-from agents7.llm.streaming import (
-    AsyncStreamResult,
-    StreamResult,
 )
 from agents7.logs import logger
 from agents7.models import ChatResponse, LLMMetrics
@@ -84,28 +80,12 @@ class GuardedChatterStreamResult(_ChatterStreamBase):
         print(stream.chat_response)
     """
 
-    __slots__ = ("_guard", "_user_msg")
-
-    def __init__(
-        self,
-        stream: StreamResult,
-        chatter: "GuardedChatter",
-        user_message: str,
-        guard: ContextGuard,
-    ) -> None:
-        super().__init__(stream, chatter, user_message)
-        self._guard = guard
-        self._user_msg = user_message
-
-    def __iter__(self) -> Iterator[str]:
-        for chunk in self._stream:
-            yield chunk
-        self._finalize()
+    __slots__ = ()
 
     def _finalize(self) -> None:
         text = self._stream.response
         text = self._chatter._guard_and_fix(
-            self._user_msg,
+            self._user_message,
             text,
         )
         self._chat_response = ChatResponse(
@@ -125,31 +105,12 @@ class GuardedChatterAsyncStreamResult(
     async iteration.
     """
 
-    __slots__ = ("_guard", "_user_msg")
-
-    def __init__(
-        self,
-        stream: AsyncStreamResult,
-        chatter: "GuardedChatter",
-        user_message: str,
-        guard: ContextGuard,
-    ) -> None:
-        super().__init__(stream, chatter, user_message)
-        self._guard = guard
-        self._user_msg = user_message
-
-    def __aiter__(self) -> AsyncIterator[str]:
-        return self._iterate()
-
-    async def _iterate(self) -> AsyncIterator[str]:
-        async for chunk in self._stream:
-            yield chunk
-        await self._finalize_async()
+    __slots__ = ()
 
     async def _finalize_async(self) -> None:
         text = self._stream.response
         text = await self._chatter._guard_and_fix_async(
-            self._user_msg,
+            self._user_message,
             text,
         )
         self._chat_response = ChatResponse(
@@ -278,12 +239,7 @@ class GuardedChatter(PersonalityChatter):
             temperature=self.temperature,
             think=self.think,
         )
-        return GuardedChatterStreamResult(
-            stream,
-            self,
-            message,
-            self.guard,
-        )
+        return GuardedChatterStreamResult(stream, self, message)
 
     async def chat_stream_async(
         self,
@@ -307,12 +263,7 @@ class GuardedChatter(PersonalityChatter):
             temperature=self.temperature,
             think=self.think,
         )
-        return GuardedChatterAsyncStreamResult(
-            stream,
-            self,
-            message,
-            self.guard,
-        )
+        return GuardedChatterAsyncStreamResult(stream, self, message)
 
     @classmethod
     def from_yaml(
