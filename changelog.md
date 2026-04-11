@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.15.10 - 11th April 2026
+
+- `agents/config_loader.py`:
+  - Moved `load_guarded_yaml_settings()` and
+    `_derive_persona_summary()` from `guarded.py`,
+    consolidating all YAML loading in one module.
+- `agents/guarded.py`:
+  - Removed `_load_guarded_yaml` and
+    `_derive_persona_summary` (now in `config_loader`).
+
+
 ### v3.15.9 - 11th April 2026
 
 - `agents/guarded.py`:

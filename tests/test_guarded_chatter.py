@@ -10,10 +10,12 @@ from agents7.agents.context_guard import (
     GuardReason,
     GuardVerdict,
 )
+from agents7.agents.config_loader import (
+    _derive_persona_summary,
+)
 from agents7.agents.guarded import (
     GuardEvent,
     GuardedChatter,
-    _derive_persona_summary,
 )
 from agents7.agents.personality import Persona
 from agents7.llm import LLMEngine
