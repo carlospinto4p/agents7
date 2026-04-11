@@ -140,13 +140,6 @@ class AnthropicProvider(LLMProvider):
             },
         }
 
-    @staticmethod
-    def _prompt_to_messages(
-        prompt: str,
-    ) -> list[dict[str, str]]:
-        """Wrap a plain prompt into a messages list."""
-        return [{"role": "user", "content": prompt}]
-
     # --- Chat (sync / async) ---
 
     def chat(
@@ -188,50 +181,6 @@ class AnthropicProvider(LLMProvider):
         start = time.monotonic()
         response = await self._async_client.messages.create(**params)
         return self._parse_response(response, start)
-
-    # --- Generate (sync / async) ---
-
-    def generate(
-        self,
-        prompt: str,
-        temperature: float = 0.7,
-        max_tokens: int = -1,
-        output_format: str | dict = None,
-        think: bool = False,
-        seed: int | None = None,
-    ) -> dict:
-        """See `LLMProvider.generate` for documentation."""
-        result = self.chat(
-            self._prompt_to_messages(prompt),
-            temperature=temperature,
-            max_tokens=max_tokens,
-            output_format=output_format,
-            think=think,
-            seed=seed,
-        )
-        result.pop("role", None)
-        return result
-
-    async def generate_async(
-        self,
-        prompt: str,
-        temperature: float = 0.7,
-        max_tokens: int = -1,
-        output_format: str | dict = None,
-        think: bool = False,
-        seed: int | None = None,
-    ) -> dict:
-        """See `LLMProvider.generate` for documentation."""
-        result = await self.chat_async(
-            self._prompt_to_messages(prompt),
-            temperature=temperature,
-            max_tokens=max_tokens,
-            output_format=output_format,
-            think=think,
-            seed=seed,
-        )
-        result.pop("role", None)
-        return result
 
     # --- Chat streaming (sync / async) ---
 
@@ -276,46 +225,6 @@ class AnthropicProvider(LLMProvider):
         raw_stream = await self._async_client.messages.create(**params)
         adapted = _adapt_stream_async(raw_stream)
         return AsyncStreamResult(adapted, "chat")
-
-    # --- Generate streaming (sync / async) ---
-
-    def generate_stream(
-        self,
-        prompt: str,
-        temperature: float = 0.7,
-        max_tokens: int = -1,
-        output_format: str | dict = None,
-        think: bool = False,
-        seed: int | None = None,
-    ) -> StreamResult:
-        """Stream a generate response."""
-        return self.chat_stream(
-            self._prompt_to_messages(prompt),
-            temperature=temperature,
-            max_tokens=max_tokens,
-            output_format=output_format,
-            think=think,
-            seed=seed,
-        )
-
-    async def generate_stream_async(
-        self,
-        prompt: str,
-        temperature: float = 0.7,
-        max_tokens: int = -1,
-        output_format: str | dict = None,
-        think: bool = False,
-        seed: int | None = None,
-    ) -> AsyncStreamResult:
-        """Stream a generate response asynchronously."""
-        return await self.chat_stream_async(
-            self._prompt_to_messages(prompt),
-            temperature=temperature,
-            max_tokens=max_tokens,
-            output_format=output_format,
-            think=think,
-            seed=seed,
-        )
 
     def get_model_info(self) -> dict:
         """Return provider and model metadata."""

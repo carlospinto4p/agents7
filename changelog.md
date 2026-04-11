@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.15.6 - 11th April 2026
+
+- `llm/base.py`:
+  - Moved `_prompt_to_messages()`, `generate()`,
+    `generate_async()`, `generate_stream()`, and
+    `generate_stream_async()` from abstract to default
+    implementations in `LLMProvider`.
+- `llm/anthropic.py`:
+  - Removed 6 methods now inherited from `LLMProvider`.
+- `llm/openai_compat.py`:
+  - Removed 6 methods now inherited from `LLMProvider`.
+
+
 ### v3.15.5 - 11th April 2026
 
 - `agents/config_loader.py`:
