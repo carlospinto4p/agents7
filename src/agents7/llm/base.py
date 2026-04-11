@@ -66,44 +66,61 @@ class LLMEngine:
         self._cache: ResponseCache | None = (
             create_cache(cache) if cache is not None else None
         )
-        self._fallback_provider = None
+        self.llm_provider = self._create_provider(
+            provider, model_name, **kwargs
+        )
+        self._fallback_provider = (
+            self._create_provider(provider, fallback_model, **kwargs)
+            if fallback_model
+            else None
+        )
 
+    @staticmethod
+    def _create_provider(
+        provider: str,
+        model_name: str,
+        **kwargs,
+    ) -> LLMProvider:
+        """Instantiate an `LLMProvider` for the given
+        provider name.
+
+        :param provider: Provider identifier (``"ollama"``,
+            ``"anthropic"``, or ``"openai_compat"``).
+        :param model_name: Model name to pass to the
+            provider.
+        :param kwargs: Extra keyword arguments forwarded to
+            the provider constructor (e.g. ``api_key``,
+            ``base_url``).
+        :return: An `LLMProvider` instance.
+        :raises ValueError: If *provider* is not recognised.
+        """
         if provider == "ollama":
             from agents7.llm.ollama import OllamaProvider
 
-            self.llm_provider = OllamaProvider(model_name)
-            if fallback_model:
-                self._fallback_provider = OllamaProvider(fallback_model)
-        elif provider == "anthropic":
+            return OllamaProvider(model_name)
+
+        if provider == "anthropic":
             from agents7.llm.anthropic import AnthropicProvider
 
-            self.llm_provider = AnthropicProvider(
+            return AnthropicProvider(
                 model_name,
                 api_key=kwargs.get("api_key"),
                 base_url=kwargs.get("base_url"),
                 default_max_tokens=kwargs.get("default_max_tokens", 4096),
             )
-            if fallback_model:
-                self._fallback_provider = AnthropicProvider(
-                    fallback_model,
-                    api_key=kwargs.get("api_key"),
-                    base_url=kwargs.get("base_url"),
-                    default_max_tokens=kwargs.get("default_max_tokens", 4096),
-                )
-        elif provider == "openai_compat":
-            from agents7.llm.openai_compat import OpenAICompatProvider
 
-            self.llm_provider = OpenAICompatProvider(
+        if provider == "openai_compat":
+            from agents7.llm.openai_compat import (
+                OpenAICompatProvider,
+            )
+
+            return OpenAICompatProvider(
                 model_name,
                 base_url=kwargs.get("base_url"),
                 api_key=kwargs.get("api_key"),
             )
-            if fallback_model:
-                self._fallback_provider = OpenAICompatProvider(
-                    fallback_model,
-                    base_url=kwargs.get("base_url"),
-                    api_key=kwargs.get("api_key"),
-                )
+
+        raise ValueError(f"Unknown provider: `{provider}`")
 
     def _cache_lookup(
         self,

@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.15.7 - 11th April 2026
+
+- `llm/base.py`:
+  - Extracted `_create_provider()` factory method from
+    `LLMEngine.__init__`, replacing nested if/elif
+    dispatch with a clean factory that also handles
+    fallback provider creation.
+  - Added `ValueError` for unknown provider names.
+
+
 ### v3.15.6 - 11th April 2026
 
 - `llm/base.py`:
