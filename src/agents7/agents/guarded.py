@@ -427,6 +427,43 @@ class GuardedChatter(PersonalityChatter):
         """Check if a verdict passed (or parse failed)."""
         return verdict is None or bool(verdict.value)
 
+    def _try_accept(
+        self,
+        attempt: int,
+        verdict: GuardVerdict | None,
+        text: str,
+        duration: float,
+    ) -> str | None:
+        """Emit a guard event and return *text* if accepted.
+
+        :return: The accepted text, or ``None`` if rejected.
+        """
+        self._emit(attempt, verdict, text, duration=duration)
+        if self._is_accepted(verdict):
+            return text
+        return None
+
+    def _use_fix_or_text(
+        self,
+        verdict: GuardVerdict | None,
+        text: str,
+    ) -> str:
+        """Return the guard's fix if available, else *text*.
+
+        Called after all retries are exhausted.
+        """
+        if verdict is not None and verdict.fix:
+            logger.debug(f"GuardedChatter `{self.name}`: using guard fix")
+            self._emit(
+                self.max_guard_retries + 1,
+                verdict,
+                verdict.fix,
+                duration=0.0,
+                used_fix=True,
+            )
+            return verdict.fix
+        return text
+
     def _guard_and_fix(
         self,
         user_message: str,
@@ -443,9 +480,9 @@ class GuardedChatter(PersonalityChatter):
             user_message,
             text,
         )
-        self._emit(0, verdict, text, duration=dur)
-        if self._is_accepted(verdict):
-            return text
+        result = self._try_accept(0, verdict, text, dur)
+        if result is not None:
+            return result
 
         messages = self._build_messages()
         for i in range(self.max_guard_retries):
@@ -465,27 +502,16 @@ class GuardedChatter(PersonalityChatter):
                 user_message,
                 text,
             )
-            self._emit(
+            result = self._try_accept(
                 i + 1,
                 verdict,
                 text,
-                duration=dur,
+                dur,
             )
-            if self._is_accepted(verdict):
-                return text
+            if result is not None:
+                return result
 
-        # All retries exhausted — use fix if available.
-        if verdict is not None and verdict.fix:
-            logger.debug(f"GuardedChatter `{self.name}`: using guard fix")
-            self._emit(
-                self.max_guard_retries + 1,
-                verdict,
-                verdict.fix,
-                duration=0.0,
-                used_fix=True,
-            )
-            return verdict.fix
-        return text
+        return self._use_fix_or_text(verdict, text)
 
     async def _guard_and_fix_async(
         self,
@@ -497,9 +523,9 @@ class GuardedChatter(PersonalityChatter):
             user_message,
             text,
         )
-        self._emit(0, verdict, text, duration=dur)
-        if self._is_accepted(verdict):
-            return text
+        result = self._try_accept(0, verdict, text, dur)
+        if result is not None:
+            return result
 
         messages = self._build_messages()
         for i in range(self.max_guard_retries):
@@ -521,28 +547,16 @@ class GuardedChatter(PersonalityChatter):
                 user_message,
                 text,
             )
-            self._emit(
+            result = self._try_accept(
                 i + 1,
                 verdict,
                 text,
-                duration=dur,
+                dur,
             )
-            if self._is_accepted(verdict):
-                return text
+            if result is not None:
+                return result
 
-        if verdict is not None and verdict.fix:
-            logger.debug(
-                f"GuardedChatter `{self.name}`: using guard fix (async)"
-            )
-            self._emit(
-                self.max_guard_retries + 1,
-                verdict,
-                verdict.fix,
-                duration=0.0,
-                used_fix=True,
-            )
-            return verdict.fix
-        return text
+        return self._use_fix_or_text(verdict, text)
 
     def _build_guard_input(
         self,

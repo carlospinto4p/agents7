@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.15.9 - 11th April 2026
+
+- `agents/guarded.py`:
+  - Extracted `_try_accept()` and `_use_fix_or_text()`
+    from `_guard_and_fix` / `_guard_and_fix_async`,
+    eliminating duplicated verdict-decision and fallback
+    logic between the sync and async variants.
+
+
 ### v3.15.8 - 11th April 2026
 
 - `agents/chatter.py`:
