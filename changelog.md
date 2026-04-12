@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.17.1 - 12th April 2026
+
+- `examples/`:
+  - Added `chatter/06_guarded_scene_chatter.py`: demo
+    combining David García (Spanish journalist) with a
+    Madrid café interview scene and the context guard.
+  - Added `configs/demo_guarded_scene_chatter.yml`:
+    matching YAML config.
+
+
 ### v3.17.0 - 12th April 2026
 
 - `src/agents7/agents/`:
