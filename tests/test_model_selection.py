@@ -374,6 +374,30 @@ def test_find_best_model_stop_on_first_false(
     assert len(result.scores) == 2  # tested all
 
 
+@patch("agents7.model_selection._benchmark_model")
+@patch("agents7.model_selection._resolve_candidates")
+@patch("agents7.model_selection.load_yaml_settings")
+def test_find_best_model_writes_report(
+    mock_config, mock_resolve, mock_benchmark, tmp_path
+):
+    mock_config.return_value = {"engine": MagicMock()}
+    mock_resolve.return_value = [{"name": "small:1b", "size": 1000}]
+    mock_benchmark.return_value = ModelScore(
+        model_name="small:1b",
+        model_size=1000,
+        passed=True,
+        pass_rate=1.0,
+    )
+    report = tmp_path / "bench.md"
+    find_best_model(
+        "some.yml",
+        test_cases=[TestCase(input={}, expected={})],
+        report_path=str(report),
+    )
+    assert report.exists()
+    assert "Benchmark Report" in report.read_text(encoding="utf-8")
+
+
 # --- _create_agent ---
 
 

@@ -4,7 +4,10 @@ import json
 
 from pydantic import BaseModel
 
-from agents7.export import export_csv, export_jsonl
+from agents7.export import (
+    export_csv,
+    export_jsonl,
+)
 from agents7.models.base import AgentResponse, LLMMetrics
 
 
@@ -120,3 +123,78 @@ def test_export_csv_empty_responses(tmp_path):
     lines = path.read_text().strip().split("\n")
     assert len(lines) == 1
     assert "response" in lines[0]
+
+
+# --- Benchmark report export ---
+
+
+def _make_benchmark_result():
+    from agents7.model_selection import (
+        BenchmarkResult,
+        CaseResult,
+        ModelScore,
+        TestCase,
+    )
+
+    tc = TestCase(input={"text": "hi"}, expected={"label": "A"})
+    cr_pass = CaseResult(
+        test_case=tc, passed=True, actual={"label": "A"}, run=1
+    )
+    cr_fail = CaseResult(
+        test_case=tc, passed=False, actual={"label": "B"}, run=1
+    )
+    scores = [
+        ModelScore(
+            model_name="small:1b",
+            model_size=1_000_000_000,
+            passed=False,
+            pass_rate=0.5,
+            case_results=[cr_pass, cr_fail],
+            avg_duration=0.5,
+        ),
+        ModelScore(
+            model_name="big:4b",
+            model_size=4_000_000_000,
+            passed=True,
+            pass_rate=1.0,
+            case_results=[cr_pass, cr_pass],
+            avg_duration=1.2,
+        ),
+    ]
+    return BenchmarkResult(
+        best_model="big:4b",
+        best_model_size=4_000_000_000,
+        scores=scores,
+    )
+
+
+def test_export_benchmark_report_basic(tmp_path):
+    """Writes a markdown report with scores and per-case tables."""
+    from agents7.export import export_benchmark_report
+
+    path = tmp_path / "bench.md"
+    export_benchmark_report(
+        _make_benchmark_result(), path, yaml_path="cfg.yml"
+    )
+
+    text = path.read_text(encoding="utf-8")
+    assert "# Benchmark Report" in text
+    assert "cfg.yml" in text
+    assert "big:4b" in text
+    assert "small:1b" in text
+    assert "Per-case Results" in text
+
+
+def test_export_benchmark_report_no_best(tmp_path):
+    """Handles the case where no model passed."""
+    from agents7.export import export_benchmark_report
+    from agents7.model_selection import BenchmarkResult
+
+    path = tmp_path / "bench.md"
+    export_benchmark_report(
+        BenchmarkResult(best_model=None, best_model_size=None, scores=[]),
+        path,
+    )
+
+    text = path.read_text(encoding="utf-8")
+    assert "none passed" in text

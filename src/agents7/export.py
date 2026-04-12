@@ -251,6 +251,68 @@ def export_eval_report(
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def export_benchmark_report(
+    result,
+    path: str | Path,
+    yaml_path: str | None = None,
+) -> None:
+    """Write a benchmark report as a Markdown file.
+
+    :param result: `BenchmarkResult` from ``find_best_model()``.
+    :param path: Output file path.
+    :param yaml_path: Optional agent config path for the header.
+    """
+    path = Path(path)
+    lines: list[str] = []
+
+    lines.append("# Benchmark Report")
+    lines.append("")
+    if yaml_path:
+        lines.append(f"- **Config**: {yaml_path}")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    lines.append(f"- **Date**: {now}")
+    if result.best_model:
+        size_gb = (result.best_model_size or 0) / 1_000_000_000
+        lines.append(
+            f"- **Best model**: {result.best_model} ({size_gb:.1f} GB)"
+        )
+    else:
+        lines.append("- **Best model**: none passed")
+    lines.append("")
+
+    lines.append("## Model Scores")
+    lines.append("")
+    lines.append("| Model | Size | Passed | Pass rate | Avg time | Error |")
+    lines.append("|---|---|---|---|---|---|")
+    for s in result.scores:
+        size_gb = s.model_size / 1_000_000_000
+        status = "yes" if s.passed else "no"
+        err = s.error or ""
+        lines.append(
+            f"| {s.model_name} | {size_gb:.1f} GB | {status} | "
+            f"{s.pass_rate:.0%} | {s.avg_duration:.2f}s | {err} |"
+        )
+    lines.append("")
+
+    for s in result.scores:
+        if not s.case_results:
+            continue
+        lines.append(f"## {s.model_name} — Per-case Results")
+        lines.append("")
+        lines.append("| # | Run | Passed | Expected | Actual |")
+        lines.append("|---|---|---|---|---|")
+        for i, cr in enumerate(s.case_results, 1):
+            status = "PASS" if cr.passed else "FAIL"
+            expected = cr.test_case.expected
+            actual = cr.actual if cr.actual is not None else "<none>"
+            lines.append(
+                f"| {i} | {cr.run} | {status} | {expected} | {actual} |"
+            )
+        lines.append("")
+
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def _append_confusion_matrix(
     lines: list[str],
     results: list,

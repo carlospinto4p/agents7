@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.16.0 - 12th April 2026
+
+- `src/agents7/export.py`:
+  - Added `export_benchmark_report()`: writes a Markdown
+    report from a `BenchmarkResult` with model scores and
+    per-case tables.
+- `src/agents7/model_selection.py`:
+  - Added `report_path` parameter to `find_best_model()`:
+    when set, auto-writes a Markdown benchmark report after
+    benchmarking completes.
+
+
 ### v3.15.17 - 12th April 2026
 
 - `integration_tests/test_multi_model.py`:

@@ -211,6 +211,7 @@ def find_best_model(
     runs: int = 1,
     include_batch: bool = False,
     stop_on_first: bool = True,
+    report_path: str | None = None,
 ) -> BenchmarkResult:
     """Find the smallest model that passes all test cases.
 
@@ -232,6 +233,8 @@ def find_best_model(
         both single and batch modes. Defaults to False.
     :param stop_on_first: If True, stop after the first
         model that passes all cases. Defaults to True.
+    :param report_path: If set, write a Markdown benchmark
+        report to this path once benchmarking completes.
     :return: A ``BenchmarkResult`` with the best model and
         scores for all tested models.
     :raises ModelSelectionError: If no test cases are
@@ -291,11 +294,19 @@ def find_best_model(
                 f"{', ' + score.error if score.error else ''})"
             )
 
-    return BenchmarkResult(
+    result = BenchmarkResult(
         best_model=best_model,
         best_model_size=best_model_size,
         scores=scores,
     )
+
+    if report_path is not None:
+        from agents7.export import export_benchmark_report
+
+        export_benchmark_report(result, report_path, yaml_path=yaml_path)
+        logger.info(f"Benchmark report written to {report_path}")
+
+    return result
 
 
 def _resolve_candidates(

@@ -18,4 +18,4 @@
 
 ### Benchmarks — 6th April 2026
 
-- [ ] Save benchmark reports automatically after each benchmark run (last run's reports were not persisted).
+- [x] Save benchmark reports automatically after each benchmark run (last run's reports were not persisted).
