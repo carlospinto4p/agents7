@@ -469,3 +469,87 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
     from agents7.agents.guarded import GuardedChatter
 
     return GuardedChatter(**config)
+
+
+def load_guarded_scene_yaml_settings(file_path: str) -> Any:
+    """Load a `GuardedSceneChatter` from a YAML file.
+
+    Mirrors `load_guarded_yaml_settings` but also reads the
+    ``scene`` section and returns a `GuardedSceneChatter`.
+
+    :param file_path: Path to the YAML configuration file.
+    :return: A `GuardedSceneChatter` instance.
+    """
+    from agents7.agents.context_guard import (
+        ContextGuard,
+        _PLACEHOLDER,
+    )
+    from agents7.agents.guarded_scene import GuardedSceneChatter
+    from agents7.agents.memory import (
+        MemoryConfig,
+        create_memory,
+    )
+    from agents7.agents.personality import Persona, Scene
+
+    raw = _resolve_inheritance(file_path)
+    raw.setdefault("system_prompt", "(auto-generated)")
+    validate_chatter_yaml_config(raw, file_path)
+
+    persona = Persona.from_dict(dict(raw.get("persona", {})))
+    scene = Scene.from_dict(dict(raw.get("scene", {})))
+
+    extra_instructions = raw.get("extra_instructions", "")
+    if extra_instructions:
+        extra_instructions = str(extra_instructions).strip()
+
+    guard_raw = raw.get("guard", {})
+    guard_engine = build_engine(
+        guard_raw.get("engine", raw["engine"]),
+    )
+    persona_summary = guard_raw.get(
+        "persona_summary",
+        _derive_persona_summary(persona),
+    )
+    guard_kwargs: dict[str, Any] = {
+        "name": f"{raw['name']}-guard",
+        "version": raw["version"],
+        "engine": guard_engine,
+        "system_prompt": _PLACEHOLDER,
+        "persona_summary": persona_summary,
+    }
+    if "think" in guard_raw:
+        guard_kwargs["think"] = bool(guard_raw["think"])
+    guard = ContextGuard(**guard_kwargs)
+
+    config: dict[str, Any] = {
+        "name": raw["name"],
+        "version": raw["version"],
+        "engine": build_engine(raw["engine"]),
+        "system_prompt": "",
+        "persona": persona,
+        "scene": scene,
+        "extra_instructions": extra_instructions,
+        "guard": guard,
+    }
+    cast_optional_fields(
+        raw,
+        config,
+        {
+            "temperature": float,
+            "think": bool,
+            "max_history": int,
+            "max_turns": int,
+            "typo_rate": float,
+            "conversation_id": str,
+            "max_guard_retries": int,
+            "guard_context_turns": int,
+        },
+    )
+    if memory_settings := raw.get("memory"):
+        memory_config = MemoryConfig(
+            backend=memory_settings.get("backend", "json"),
+            path=memory_settings.get("path", ""),
+        )
+        config["memory"] = create_memory(memory_config)
+
+    return GuardedSceneChatter(**config)

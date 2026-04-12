@@ -17,6 +17,7 @@ from agents7.agents.guarded import (
     GuardedChatterAsyncStreamResult,
     GuardedChatterStreamResult,
 )
+from agents7.agents.guarded_scene import GuardedSceneChatter
 from agents7.agents.labeler import Labeler
 from agents7.agents.memory import (
     JsonFileMemory,
@@ -57,6 +58,7 @@ __all__ = [
     "GuardedChatter",
     "GuardedChatterAsyncStreamResult",
     "GuardedChatterStreamResult",
+    "GuardedSceneChatter",
     "JsonFileMemory",
     "Labeler",
     "Persona",

@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.17.0 - 12th April 2026
+
+- `src/agents7/agents/`:
+  - Added `guarded_scene.py` with `GuardedSceneChatter`:
+    combines `SceneChatter`'s scene-based role-play framing
+    with `GuardedChatter`'s context guard and retry/fix
+    pipeline.
+  - Updated `__init__.py` to export `GuardedSceneChatter`.
+  - Updated `config_loader.py`: added
+    `load_guarded_scene_yaml_settings()` for loading
+    `GuardedSceneChatter` from YAML.
+
+
 ### v3.16.0 - 12th April 2026
 
 - `src/agents7/export.py`:

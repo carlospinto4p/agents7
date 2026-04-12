@@ -50,7 +50,8 @@ BaseAgent
   └── Chatter (multi-turn conversation)
         └── PersonalityChatter (roleplay with Persona)
               ├── SceneChatter (+ Scene context/scenario)
-              └── GuardedChatter (+ ContextGuard pipeline)
+              ├── GuardedChatter (+ ContextGuard pipeline)
+              └── GuardedSceneChatter (Scene + ContextGuard)
 
 Pipeline (chains multiple agents sequentially)
 ```
