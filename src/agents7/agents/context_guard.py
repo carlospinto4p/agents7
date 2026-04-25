@@ -7,8 +7,6 @@ a `GuardVerdict` with a pass/fail boolean, a reason, and an
 optional corrected response.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -172,7 +170,7 @@ class ContextGuard(Detector):
     def from_yaml(
         cls,
         file_path: str,
-    ) -> ContextGuard:
+    ) -> "ContextGuard":
         """Create a ContextGuard from a YAML config file.
 
         Extends the standard Detector YAML schema with

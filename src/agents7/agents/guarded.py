@@ -7,8 +7,6 @@ feedback; if all retries fail the guard's suggested fix is
 used instead.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -267,7 +265,7 @@ class GuardedChatter(PersonalityChatter):
     def from_yaml(
         cls,
         file_path: str,
-    ) -> GuardedChatter:
+    ) -> "GuardedChatter":
         """Create from a YAML configuration file.
 
         Extends the PersonalityChatter YAML schema with a

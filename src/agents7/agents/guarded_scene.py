@@ -7,8 +7,6 @@ and optionally replaced by the guard's suggested fix — all
 while staying in character within the scene.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 from agents7.agents.guarded import GuardedChatter
@@ -61,7 +59,7 @@ class GuardedSceneChatter(GuardedChatter):
         Chatter.__post_init__(self)
 
     @classmethod
-    def from_yaml(cls, file_path: str) -> GuardedSceneChatter:
+    def from_yaml(cls, file_path: str) -> "GuardedSceneChatter":
         """Create from a YAML configuration file.
 
         Extends the `GuardedChatter` YAML schema with a

@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.17.3 - 25th April 2026
+
+- Removed `from __future__ import annotations` from:
+  - `agents/chatter.py`
+  - `agents/context_guard.py`
+  - `agents/guarded.py`
+  - `agents/guarded_scene.py`
+- Quoted self-referential return types in `from_yaml` classmethods in `context_guard.py`, `guarded.py`, and `guarded_scene.py`.
+
+
 ### v3.17.1 - 12th April 2026
 
 - `examples/`:
