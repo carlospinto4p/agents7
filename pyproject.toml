@@ -1,6 +1,6 @@
 [project]
 name = "agents7"
-version = "3.17.6"
+version = "3.17.7"
 description = "LLM Agents Management."
 authors = [{ name = "Carlos Pinto", email = "carlospinto4p@gmail.com" }]
 readme = "README.md"

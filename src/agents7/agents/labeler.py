@@ -655,48 +655,12 @@ class Labeler(BaseAgent):
         messages: list[dict[str, str]],
         chat_kwargs: dict,
     ) -> "BaseModel | None":
-        """Retry LLM call when parsing fails (sync).
-
-        :param error: The parse error from the first attempt.
-        :param messages: Original messages list.
-        :param chat_kwargs: Sanitized chat kwargs.
-        :return: Parsed model or None if all retries fail.
-        """
-        return self._retry_parse_loop(
-            error, messages, chat_kwargs, self.engine.chat
-        )
-
-    async def _retry_parse_async(
-        self,
-        error: ParseError,
-        messages: list[dict[str, str]],
-        chat_kwargs: dict,
-    ) -> "BaseModel | None":
-        """Retry LLM call when parsing fails (async).
-
-        :param error: The parse error from the first attempt.
-        :param messages: Original messages list.
-        :param chat_kwargs: Sanitized chat kwargs.
-        :return: Parsed model or None if all retries fail.
-        """
-        return await self._retry_parse_loop_async(
-            error, messages, chat_kwargs, self.engine.chat_async
-        )
-
-    def _retry_parse_loop(
-        self,
-        error: ParseError,
-        messages: list[dict[str, str]],
-        chat_kwargs: dict,
-        chat_fn,
-    ) -> "BaseModel | None":
         """Retry loop for parse failures (sync).
 
-        :param error: Initial parse error.
+        :param error: The parse error from the first attempt.
         :param messages: Original messages list.
         :param chat_kwargs: Sanitized chat kwargs.
-        :param chat_fn: Sync chat callable.
-        :return: Parsed model or None.
+        :return: Parsed model or None if all retries fail.
         """
         if self.max_parse_retries <= 0:
             return None
@@ -707,7 +671,7 @@ class Labeler(BaseAgent):
             retry_messages.append(
                 self._parse_retry_message(last_error),
             )
-            raw = chat_fn(
+            raw = self.engine.chat(
                 **self._retry_chat_kwargs(
                     retry_messages,
                     chat_kwargs,
@@ -718,20 +682,18 @@ class Labeler(BaseAgent):
                 return parsed
         return None
 
-    async def _retry_parse_loop_async(
+    async def _retry_parse_async(
         self,
         error: ParseError,
         messages: list[dict[str, str]],
         chat_kwargs: dict,
-        chat_fn,
     ) -> "BaseModel | None":
         """Retry loop for parse failures (async).
 
-        :param error: Initial parse error.
+        :param error: The parse error from the first attempt.
         :param messages: Original messages list.
         :param chat_kwargs: Sanitized chat kwargs.
-        :param chat_fn: Async chat callable.
-        :return: Parsed model or None.
+        :return: Parsed model or None if all retries fail.
         """
         if self.max_parse_retries <= 0:
             return None
@@ -742,7 +704,7 @@ class Labeler(BaseAgent):
             retry_messages.append(
                 self._parse_retry_message(last_error),
             )
-            raw = await chat_fn(
+            raw = await self.engine.chat_async(
                 **self._retry_chat_kwargs(
                     retry_messages,
                     chat_kwargs,

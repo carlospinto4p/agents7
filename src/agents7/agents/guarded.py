@@ -476,14 +476,43 @@ class GuardedChatter(PersonalityChatter):
 
         :return: The accepted (or fixed) response text.
         """
-        verdict, dur = self._guard_check(
+        return self._run_guard_retry(
             user_message,
             text,
+            self._guard_check,
+            self._generate,
         )
+
+    async def _guard_and_fix_async(
+        self,
+        user_message: str,
+        text: str,
+    ) -> str:
+        """Async version of `_guard_and_fix`."""
+        return await self._run_guard_retry_async(
+            user_message,
+            text,
+            self._guard_check_async,
+            self._generate_async,
+        )
+
+    def _run_guard_retry(
+        self,
+        user_message: str,
+        text: str,
+        check_fn: Callable,
+        generate_fn: Callable,
+    ) -> str:
+        """Sync guard-and-retry loop.
+
+        :param check_fn: Sync guard check callable.
+        :param generate_fn: Sync generate callable.
+        :return: The accepted (or fixed) response text.
+        """
+        verdict, dur = check_fn(user_message, text)
         result = self._try_accept(0, verdict, text, dur)
         if result is not None:
             return result
-
         messages = self._build_messages()
         for i in range(self.max_guard_retries):
             logger.debug(
@@ -492,70 +521,45 @@ class GuardedChatter(PersonalityChatter):
                 f"{self.max_guard_retries} "
                 f"(reason: {verdict.reason.name})"
             )
-            messages = self._add_feedback(
-                messages,
-                text,
-                verdict,
-            )
-            text, _ = self._generate(messages)
-            verdict, dur = self._guard_check(
-                user_message,
-                text,
-            )
-            result = self._try_accept(
-                i + 1,
-                verdict,
-                text,
-                dur,
-            )
+            messages = self._add_feedback(messages, text, verdict)
+            text, _ = generate_fn(messages)
+            verdict, dur = check_fn(user_message, text)
+            result = self._try_accept(i + 1, verdict, text, dur)
             if result is not None:
                 return result
-
         return self._use_fix_or_text(verdict, text)
 
-    async def _guard_and_fix_async(
+    async def _run_guard_retry_async(
         self,
         user_message: str,
         text: str,
+        check_fn: Callable,
+        generate_fn: Callable,
     ) -> str:
-        """Async version of `_guard_and_fix`."""
-        verdict, dur = await self._guard_check_async(
-            user_message,
-            text,
-        )
+        """Async guard-and-retry loop.
+
+        :param check_fn: Async guard check callable.
+        :param generate_fn: Async generate callable.
+        :return: The accepted (or fixed) response text.
+        """
+        verdict, dur = await check_fn(user_message, text)
         result = self._try_accept(0, verdict, text, dur)
         if result is not None:
             return result
-
         messages = self._build_messages()
         for i in range(self.max_guard_retries):
             logger.debug(
                 f"GuardedChatter `{self.name}`: "
-                f"async guard retry {i + 1}/"
+                f"guard retry {i + 1}/"
                 f"{self.max_guard_retries} "
                 f"(reason: {verdict.reason.name})"
             )
-            messages = self._add_feedback(
-                messages,
-                text,
-                verdict,
-            )
-            text, _ = await self._generate_async(
-                messages,
-            )
-            verdict, dur = await self._guard_check_async(
-                user_message,
-                text,
-            )
-            result = self._try_accept(
-                i + 1,
-                verdict,
-                text,
-                dur,
-            )
+            messages = self._add_feedback(messages, text, verdict)
+            text, _ = await generate_fn(messages)
+            verdict, dur = await check_fn(user_message, text)
+            result = self._try_accept(i + 1, verdict, text, dur)
             if result is not None:
                 return result
-
         return self._use_fix_or_text(verdict, text)
 
     def _build_guard_input(

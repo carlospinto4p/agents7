@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.17.7 - 25th April 2026
+
+- Refactored `agents/guarded.py`:
+  - Extracted `_run_guard_retry()` and `_run_guard_retry_async()` as parametric loop helpers taking `check_fn` / `generate_fn` callables.
+  - Reduced `_guard_and_fix()` and `_guard_and_fix_async()` to thin delegates that wire the correct sync/async callables.
+- Refactored `agents/labeler.py`:
+  - Inlined `_retry_parse_loop()` and `_retry_parse_loop_async()` into `_retry_parse_sync()` / `_retry_parse_async()`, removing the delegation layer and the `chat_fn` parameter abstraction.
+- Fixed `agents/detector.py`, `agents/classifier.py`, `agents/regressor.py`:
+  - Converted `from_yaml()` docstrings from NumPy style (`Args:` / `Returns:`) to project-standard Sphinx/reST (`:param:` / `:return:`).
+
+
 ### v3.17.6 - 25th April 2026
 
 - Refactored `agents/scene.py` — `_load_scene_yaml()`:

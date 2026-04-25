@@ -33,14 +33,10 @@ class Regressor(Detector):
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Regressor":
-        """
-        Create a Regressor agent from a YAML configuration file.
+        """Create a Regressor agent from a YAML configuration file.
 
-        Args:
-            file_path (str): The path to the YAML configuration file.
-
-        Returns:
-            Regressor: An instance of the Regressor agent.
+        :param file_path: Path to the YAML configuration file.
+        :return: A Regressor instance.
         """
         config = load_yaml_settings(file_path)
         return Regressor(**config)

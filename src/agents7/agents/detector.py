@@ -58,16 +58,10 @@ class Detector(Labeler):
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Detector":
-        """
-        Create a Detector agent from a YAML configuration file.
-        This method reads the configuration from the specified YAML file
-        and initializes a Detector agent with the provided settings.
+        """Create a Detector agent from a YAML configuration file.
 
-        Args:
-            file_path (str): The path to the YAML configuration file.
-
-        Returns:
-            Detector: An instance of the Detector agent.
+        :param file_path: Path to the YAML configuration file.
+        :return: A Detector instance.
         """
         config = load_yaml_settings(file_path)
         return Detector(**config)

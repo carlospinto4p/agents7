@@ -62,14 +62,10 @@ class Classifier(Detector):
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Classifier":
-        """
-        Create a Classifier agent from a YAML configuration file.
+        """Create a Classifier agent from a YAML configuration file.
 
-        Args:
-            file_path (str): The path to the YAML configuration file.
-
-        Returns:
-            Classifier: An instance of the Classifier agent.
+        :param file_path: Path to the YAML configuration file.
+        :return: A Classifier instance.
         """
         config = load_yaml_settings(file_path)
         return Classifier(**config)
