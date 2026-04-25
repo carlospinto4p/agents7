@@ -378,41 +378,48 @@ def _derive_persona_summary(persona: Any) -> str:
     return ", ".join(parts)
 
 
-def load_guarded_yaml_settings(file_path: str) -> Any:
-    """Load a `GuardedChatter` from a YAML file.
+def _load_base_chatter_config(
+    file_path: str,
+) -> tuple[dict, Any, str]:
+    """Parse, validate, and extract base chatter fields.
 
-    Consolidates all YAML parsing, validation, guard
-    construction, and optional-field casting in one place.
+    Common setup for Chatter-family YAML loaders: resolves
+    inheritance, validates mandatory keys, builds the Persona,
+    and extracts extra_instructions.
 
-    :param file_path: Path to the YAML configuration file.
-    :return: A `GuardedChatter` instance.
+    :param file_path: Path to the YAML config file.
+    :return: Tuple of (raw config dict, Persona instance,
+        extra_instructions string).
     """
-    from agents7.agents.context_guard import (
-        ContextGuard,
-        _PLACEHOLDER,
-    )
-    from agents7.agents.memory import (
-        MemoryConfig,
-        create_memory,
-    )
     from agents7.agents.personality import Persona
 
     raw = _resolve_inheritance(file_path)
     raw.setdefault("system_prompt", "(auto-generated)")
     validate_chatter_yaml_config(raw, file_path)
-
-    # --- Persona ---
-    persona_data = raw.get("persona", {})
-    persona = Persona.from_dict(dict(persona_data))
-
-    extra_instructions = raw.get(
-        "extra_instructions",
-        "",
+    persona = Persona.from_dict(
+        dict(raw.get("persona", {})),
     )
+    extra_instructions = raw.get("extra_instructions", "")
     if extra_instructions:
         extra_instructions = str(extra_instructions).strip()
+    return raw, persona, extra_instructions
 
-    # --- Guard ---
+
+def _build_guard(raw: dict, persona: Any) -> Any:
+    """Build a ContextGuard from the raw YAML config.
+
+    Shared between GuardedChatter and GuardedSceneChatter
+    loaders.
+
+    :param raw: Fully resolved YAML config dict.
+    :param persona: The agent's Persona instance.
+    :return: A configured ContextGuard instance.
+    """
+    from agents7.agents.context_guard import (
+        ContextGuard,
+        _PLACEHOLDER,
+    )
+
     guard_raw = raw.get("guard", {})
     guard_engine = build_engine(
         guard_raw.get("engine", raw["engine"]),
@@ -430,9 +437,29 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
     }
     if "think" in guard_raw:
         guard_kwargs["think"] = bool(guard_raw["think"])
-    guard = ContextGuard(**guard_kwargs)
+    return ContextGuard(**guard_kwargs)
 
-    # --- Main config ---
+
+def load_guarded_yaml_settings(file_path: str) -> Any:
+    """Load a `GuardedChatter` from a YAML file.
+
+    Consolidates all YAML parsing, validation, guard
+    construction, and optional-field casting in one place.
+
+    :param file_path: Path to the YAML configuration file.
+    :return: A `GuardedChatter` instance.
+    """
+    from agents7.agents.guarded import GuardedChatter
+    from agents7.agents.memory import (
+        MemoryConfig,
+        create_memory,
+    )
+
+    raw, persona, extra_instructions = _load_base_chatter_config(
+        file_path,
+    )
+    guard = _build_guard(raw, persona)
+
     config: dict[str, Any] = {
         "name": raw["name"],
         "version": raw["version"],
@@ -442,7 +469,6 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
         "extra_instructions": extra_instructions,
         "guard": guard,
     }
-
     cast_optional_fields(
         raw,
         config,
@@ -464,8 +490,6 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
         )
         config["memory"] = create_memory(memory_config)
 
-    from agents7.agents.guarded import GuardedChatter
-
     return GuardedChatter(**config)
 
 
@@ -478,46 +502,18 @@ def load_guarded_scene_yaml_settings(file_path: str) -> Any:
     :param file_path: Path to the YAML configuration file.
     :return: A `GuardedSceneChatter` instance.
     """
-    from agents7.agents.context_guard import (
-        ContextGuard,
-        _PLACEHOLDER,
-    )
     from agents7.agents.guarded_scene import GuardedSceneChatter
     from agents7.agents.memory import (
         MemoryConfig,
         create_memory,
     )
-    from agents7.agents.personality import Persona, Scene
+    from agents7.agents.personality import Scene
 
-    raw = _resolve_inheritance(file_path)
-    raw.setdefault("system_prompt", "(auto-generated)")
-    validate_chatter_yaml_config(raw, file_path)
-
-    persona = Persona.from_dict(dict(raw.get("persona", {})))
+    raw, persona, extra_instructions = _load_base_chatter_config(
+        file_path,
+    )
     scene = Scene.from_dict(dict(raw.get("scene", {})))
-
-    extra_instructions = raw.get("extra_instructions", "")
-    if extra_instructions:
-        extra_instructions = str(extra_instructions).strip()
-
-    guard_raw = raw.get("guard", {})
-    guard_engine = build_engine(
-        guard_raw.get("engine", raw["engine"]),
-    )
-    persona_summary = guard_raw.get(
-        "persona_summary",
-        _derive_persona_summary(persona),
-    )
-    guard_kwargs: dict[str, Any] = {
-        "name": f"{raw['name']}-guard",
-        "version": raw["version"],
-        "engine": guard_engine,
-        "system_prompt": _PLACEHOLDER,
-        "persona_summary": persona_summary,
-    }
-    if "think" in guard_raw:
-        guard_kwargs["think"] = bool(guard_raw["think"])
-    guard = ContextGuard(**guard_kwargs)
+    guard = _build_guard(raw, persona)
 
     config: dict[str, Any] = {
         "name": raw["name"],

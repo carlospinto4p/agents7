@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.17.5 - 25th April 2026
+
+- Refactored `agents/config_loader.py`:
+  - Added `_load_base_chatter_config()`: shared setup for Chatter-family YAML loaders (resolve, validate, persona, extra_instructions).
+  - Added `_build_guard()`: shared ContextGuard construction for guarded loaders.
+  - Simplified `load_guarded_yaml_settings()` and `load_guarded_scene_yaml_settings()` to use the new helpers, removing ~35 lines of duplicated code.
+
+
 ### v3.17.4 - 25th April 2026
 
 - Removed `from __future__ import annotations` from all remaining 35 source files:
