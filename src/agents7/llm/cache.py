@@ -5,8 +5,6 @@ Provides two backends:
 - `SqliteCache`: SQLite-backed persistent cache
 """
 
-from __future__ import annotations
-
 import hashlib
 import json
 import sqlite3
@@ -45,7 +43,7 @@ class CacheConfig:
             )
 
 
-def create_cache(config: CacheConfig) -> ResponseCache | SqliteCache:
+def create_cache(config: CacheConfig) -> "ResponseCache | SqliteCache":
     """Create a cache instance from configuration.
 
     :param config: Cache configuration.

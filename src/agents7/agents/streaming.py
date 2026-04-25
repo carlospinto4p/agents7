@@ -7,8 +7,6 @@ iteration. After iteration completes, the full
 property.
 """
 
-from __future__ import annotations
-
 from typing import AsyncIterator, Iterator
 
 from agents7.agents.parsing import ResponseParser
@@ -51,7 +49,9 @@ class _AgentStreamBase:
         )
 
     @classmethod
-    def from_failed(cls, response: AgentResponse | None) -> _AgentStreamBase:
+    def from_failed(
+        cls, response: AgentResponse | None
+    ) -> "_AgentStreamBase":
         """Create a pre-filled failed result.
 
         Used by `Pipeline.act_stream` / `act_stream_async`

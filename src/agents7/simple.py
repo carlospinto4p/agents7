@@ -17,8 +17,6 @@ Usage::
     print(result.model.category)  # POSITIVE
 """
 
-from __future__ import annotations
-
 from enum import StrEnum
 
 from pydantic import Field

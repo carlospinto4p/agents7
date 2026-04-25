@@ -19,8 +19,6 @@ Usage::
     assert_accuracy_above(agent, eval_data, ["category"], 0.9)
 """
 
-from __future__ import annotations
-
 from typing import Any
 from unittest.mock import Mock
 

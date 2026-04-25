@@ -1,7 +1,5 @@
 """Discovery logic: schema analysis and prompt generation."""
 
-from __future__ import annotations
-
 from agents7.llm import LLMEngine
 from agents7.ui.discovery.models import (
     ClassifierSuggestion,

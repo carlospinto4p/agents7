@@ -1,7 +1,5 @@
 """Comparison runner — run two prompt versions side-by-side."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field, replace
 from typing import Callable
 

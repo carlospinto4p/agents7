@@ -1,8 +1,6 @@
 """Export agent responses to JSONL, CSV, DataFrame, and
 evaluation reports."""
 
-from __future__ import annotations
-
 import csv
 import json
 from datetime import datetime, timezone

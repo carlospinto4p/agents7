@@ -1,7 +1,5 @@
 """Step 3 — Quick Test (single, batch, and A/B comparison)."""
 
-from __future__ import annotations
-
 import json
 
 import streamlit as st

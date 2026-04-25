@@ -1,7 +1,5 @@
 """Pydantic output schemas for structured LLM discovery responses."""
 
-from __future__ import annotations
-
 from pydantic import BaseModel
 
 

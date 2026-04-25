@@ -1,7 +1,5 @@
 """Step 5 — Export agent code, config, and eval data."""
 
-from __future__ import annotations
-
 import csv
 import os
 

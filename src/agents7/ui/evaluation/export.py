@@ -1,7 +1,5 @@
 """Export evaluation results to CSV and JSONL formats."""
 
-from __future__ import annotations
-
 import csv
 import io
 import json

@@ -1,7 +1,5 @@
 """Agent Builder UI — Streamlit entry point."""
 
-from __future__ import annotations
-
 import argparse
 import importlib
 from collections import deque

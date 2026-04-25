@@ -1,7 +1,5 @@
 """Generate YAML configuration from AgentBuilderState."""
 
-from __future__ import annotations
-
 import yaml
 
 from agents7.ui.state import AgentBuilderState

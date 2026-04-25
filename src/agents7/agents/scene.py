@@ -39,8 +39,6 @@ Usage::
     response = agent.chat("Good evening!")
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -115,7 +113,7 @@ class SceneChatter(PersonalityChatter):
     def from_yaml(
         cls,
         file_path: str,
-    ) -> SceneChatter:
+    ) -> "SceneChatter":
         """Create from a YAML configuration file.
 
         Extends the PersonalityChatter YAML schema with a

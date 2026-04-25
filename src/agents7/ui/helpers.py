@@ -1,7 +1,5 @@
 """Shared helpers for building agents from UI state."""
 
-from __future__ import annotations
-
 from agents7.agents.classifier import Classifier
 from agents7.agents.detector import Detector
 from agents7.agents.labeler import Labeler

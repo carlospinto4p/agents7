@@ -8,8 +8,6 @@ Requires the optional ``anthropic`` package::
     uv pip install anthropic
 """
 
-from __future__ import annotations
-
 import time
 from collections.abc import AsyncIterator, Iterator
 from types import SimpleNamespace

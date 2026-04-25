@@ -16,8 +16,6 @@ Each ``act()`` / ``act_async()`` call emits one
 ``CallRecord`` to the logger.
 """
 
-from __future__ import annotations
-
 import json
 import sys
 import uuid

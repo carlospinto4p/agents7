@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import functools
 from abc import ABC, abstractmethod
@@ -80,7 +78,7 @@ class LLMEngine:
         provider: str,
         model_name: str,
         **kwargs,
-    ) -> LLMProvider:
+    ) -> "LLMProvider":
         """Instantiate an `LLMProvider` for the given
         provider name.
 

@@ -9,8 +9,6 @@ Requires the optional ``openai`` package::
     uv pip install openai
 """
 
-from __future__ import annotations
-
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
 

@@ -10,8 +10,6 @@ Typo types:
 - Miss a space between words (e.g., "is a" → "isa")
 """
 
-from __future__ import annotations
-
 import random
 
 # Minimum word length to apply a typo (short words

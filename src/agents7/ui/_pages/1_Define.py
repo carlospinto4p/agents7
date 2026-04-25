@@ -1,7 +1,5 @@
 """Step 1 — Define the output model."""
 
-from __future__ import annotations
-
 import json
 
 import streamlit as st

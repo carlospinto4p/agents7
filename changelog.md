@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.17.4 - 25th April 2026
+
+- Removed `from __future__ import annotations` from all remaining 35 source files:
+  - Fixed forward-reference return annotations in `agents/`, `llm/`, and `ui/` modules by quoting class names where the class is not yet in scope at definition time.
+
+
 ### v3.17.3 - 25th April 2026
 
 - Removed `from __future__ import annotations` from:

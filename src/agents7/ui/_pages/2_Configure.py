@@ -1,7 +1,5 @@
 """Step 2 — Configure the agent (model, prompt, examples)."""
 
-from __future__ import annotations
-
 import streamlit as st
 
 from agents7.ui._pages import _state_from_dict, resize_list

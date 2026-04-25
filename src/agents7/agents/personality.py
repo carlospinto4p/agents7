@@ -36,8 +36,6 @@ Usage::
     response = agent.chat("What's your name?")
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 from agents7.agents.chatter import Chatter
@@ -200,7 +198,7 @@ class Persona:
         return "\n".join(lines)
 
     @classmethod
-    def from_dict(cls, data: dict) -> Persona:
+    def from_dict(cls, data: dict) -> "Persona":
         """Create a Persona from a dictionary.
 
         Accepts nested ``physical`` dict that maps to
@@ -291,7 +289,7 @@ class Scene:
         return "\n".join(lines)
 
     @classmethod
-    def from_dict(cls, data: dict) -> Scene:
+    def from_dict(cls, data: dict) -> "Scene":
         """Create a Scene from a dictionary.
 
         :param data: Dictionary with scene fields.
@@ -344,7 +342,7 @@ class PersonalityChatter(Chatter):
     def from_yaml(
         cls,
         file_path: str,
-    ) -> PersonalityChatter:
+    ) -> "PersonalityChatter":
         """Create from a YAML configuration file.
 
         The YAML file extends the Chatter schema with a

@@ -5,8 +5,6 @@ when iterated. After iteration completes, the full response, thinking,
 role, and metrics are available as attributes.
 """
 
-from __future__ import annotations
-
 from typing import Any, AsyncIterator, Callable, Iterator
 
 
@@ -162,7 +160,7 @@ class StreamResult(_StreamBase):
         self._finish()
 
     @classmethod
-    def from_cached(cls, cached: dict) -> StreamResult:
+    def from_cached(cls, cached: dict) -> "StreamResult":
         """Create a pre-filled instance from cached data."""
         obj = cls._restore_from_cached(cached)
         obj._iterator = iter(())
@@ -207,6 +205,6 @@ class AsyncStreamResult(_StreamBase):
         self._finish()
 
     @classmethod
-    def from_cached(cls, cached: dict) -> AsyncStreamResult:
+    def from_cached(cls, cached: dict) -> "AsyncStreamResult":
         """Create a pre-filled instance from cached data."""
         return cls._restore_from_cached(cached)

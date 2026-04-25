@@ -1,7 +1,5 @@
 """Ollama connectivity helpers for the Agent Builder UI."""
 
-from __future__ import annotations
-
 from datetime import timedelta
 
 import streamlit as st

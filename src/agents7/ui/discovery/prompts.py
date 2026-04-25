@@ -1,7 +1,5 @@
 """System prompts for the discovery LLM calls."""
 
-from __future__ import annotations
-
 _AGENT_TYPE_DESCRIPTIONS: dict[str, str] = {
     "classifier": (
         "A classifier agent assigns each input a CATEGORY "

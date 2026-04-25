@@ -26,8 +26,6 @@ Usage::
     print(result.best_model_size)   # e.g. 1910000000
 """
 
-from __future__ import annotations
-
 import types
 from dataclasses import dataclass, field
 from enum import StrEnum

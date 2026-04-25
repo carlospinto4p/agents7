@@ -1,7 +1,5 @@
 """Data models for prompt version comparison."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 

@@ -5,8 +5,6 @@ Provides evaluation primitives usable without Streamlit:
 `compute_metrics`, and `build_confusion_matrix`.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Callable
 

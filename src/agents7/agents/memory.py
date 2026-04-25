@@ -14,8 +14,6 @@ Usage::
     chatter = Chatter(..., memory=memory, conversation_id="session-1")
 """
 
-from __future__ import annotations
-
 import json
 import sqlite3
 import threading
