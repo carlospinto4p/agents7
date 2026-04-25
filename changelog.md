@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.1 - 26th April 2026
+
+- Added `examples/README.md`: documents all 17 examples across
+  `agents/`, `chatter/`, `features/`, and `pipelines/` — expected
+  result and model-choice analysis for each.
+
+
 ### v3.18.0 - 26th April 2026
 
 - Optimised `llm/streaming.py`:
