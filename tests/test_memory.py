@@ -23,7 +23,7 @@ MESSAGES = [
 def test_config_defaults_json():
     """JSON backend gets default path."""
     config = MemoryConfig(backend="json")
-    assert config.path == "memory.json"
+    assert config.path == "memory/"
 
 
 def test_config_defaults_sqlite():
@@ -49,7 +49,7 @@ def test_config_invalid_backend():
 
 def test_create_memory_json(tmp_path):
     """create_memory returns JsonFileMemory for json."""
-    config = MemoryConfig(backend="json", path=str(tmp_path / "test.json"))
+    config = MemoryConfig(backend="json", path=str(tmp_path / "test"))
     memory = create_memory(config)
     assert isinstance(memory, JsonFileMemory)
 
@@ -66,7 +66,7 @@ def test_create_memory_sqlite(tmp_path):
 
 def test_json_save_and_load(tmp_path):
     """Save and load round-trips correctly."""
-    mem = JsonFileMemory(str(tmp_path / "history.json"))
+    mem = JsonFileMemory(str(tmp_path / "history"))
     mem.save("conv1", MESSAGES)
     loaded = mem.load("conv1")
     assert loaded == MESSAGES
@@ -74,19 +74,19 @@ def test_json_save_and_load(tmp_path):
 
 def test_json_load_empty(tmp_path):
     """Loading non-existent conversation returns empty list."""
-    mem = JsonFileMemory(str(tmp_path / "history.json"))
+    mem = JsonFileMemory(str(tmp_path / "history"))
     assert mem.load("nonexistent") == []
 
 
 def test_json_load_no_file(tmp_path):
-    """Loading when file doesn't exist returns empty list."""
-    mem = JsonFileMemory(str(tmp_path / "missing.json"))
+    """Loading when directory doesn't exist returns empty list."""
+    mem = JsonFileMemory(str(tmp_path / "missing"))
     assert mem.load("any") == []
 
 
 def test_json_multiple_conversations(tmp_path):
     """Multiple conversations are stored independently."""
-    mem = JsonFileMemory(str(tmp_path / "history.json"))
+    mem = JsonFileMemory(str(tmp_path / "history"))
     mem.save("conv1", MESSAGES)
     mem.save("conv2", [{"role": "user", "content": "Bye"}])
 
@@ -96,7 +96,7 @@ def test_json_multiple_conversations(tmp_path):
 
 def test_json_clear(tmp_path):
     """Clear removes a specific conversation."""
-    mem = JsonFileMemory(str(tmp_path / "history.json"))
+    mem = JsonFileMemory(str(tmp_path / "history"))
     mem.save("conv1", MESSAGES)
     mem.save("conv2", MESSAGES)
     mem.clear("conv1")
@@ -107,7 +107,7 @@ def test_json_clear(tmp_path):
 
 def test_json_list_conversations(tmp_path):
     """list_conversations returns all stored IDs."""
-    mem = JsonFileMemory(str(tmp_path / "history.json"))
+    mem = JsonFileMemory(str(tmp_path / "history"))
     mem.save("alpha", MESSAGES)
     mem.save("beta", MESSAGES)
 
@@ -116,14 +116,14 @@ def test_json_list_conversations(tmp_path):
 
 
 def test_json_list_conversations_empty(tmp_path):
-    """list_conversations returns empty list when no file."""
-    mem = JsonFileMemory(str(tmp_path / "missing.json"))
+    """list_conversations returns empty list when directory missing."""
+    mem = JsonFileMemory(str(tmp_path / "missing"))
     assert mem.list_conversations() == []
 
 
 def test_json_overwrite(tmp_path):
     """Saving to same ID replaces previous history."""
-    mem = JsonFileMemory(str(tmp_path / "history.json"))
+    mem = JsonFileMemory(str(tmp_path / "history"))
     mem.save("conv1", MESSAGES)
     new_msgs = [{"role": "user", "content": "New"}]
     mem.save("conv1", new_msgs)
@@ -132,7 +132,7 @@ def test_json_overwrite(tmp_path):
 
 def test_json_creates_parent_dirs(tmp_path):
     """Save creates parent directories if needed."""
-    path = tmp_path / "sub" / "dir" / "history.json"
+    path = tmp_path / "sub" / "dir" / "history"
     mem = JsonFileMemory(str(path))
     mem.save("conv1", MESSAGES)
     assert mem.load("conv1") == MESSAGES

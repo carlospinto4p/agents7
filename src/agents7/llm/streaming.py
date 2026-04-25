@@ -25,15 +25,21 @@ class _StreamBase:
         self._metrics: dict = {}
         self._done = False
         self._on_complete = _on_complete
+        self._response_cache: str = ""
+        self._thinking_cache: str | None = None
 
     @property
     def response(self) -> str:
         """Full accumulated response text."""
+        if self._done:
+            return self._response_cache
         return "".join(self._response_parts)
 
     @property
     def thinking(self) -> str | None:
         """Accumulated thinking text, or `None` if empty."""
+        if self._done:
+            return self._thinking_cache
         text = "".join(self._thinking_parts)
         return text if text else None
 
@@ -107,6 +113,9 @@ class _StreamBase:
     def _finish(self) -> None:
         """Mark stream as done and fire completion
         callback."""
+        self._response_cache = "".join(self._response_parts)
+        thinking = "".join(self._thinking_parts)
+        self._thinking_cache = thinking if thinking else None
         self._done = True
         if self._on_complete is not None:
             self._on_complete(self._as_dict())
@@ -124,6 +133,8 @@ class _StreamBase:
         obj._metrics = cached.get("metrics", {})
         obj._done = True
         obj._on_complete = None
+        obj._response_cache = cached["response"]
+        obj._thinking_cache = thinking
         return obj
 
 

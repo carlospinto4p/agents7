@@ -158,6 +158,9 @@ class SqliteCache(_CacheKeyBuilder):
             ")"
         )
         self._conn.commit()
+        self._approx_size: int = self._conn.execute(
+            "SELECT COUNT(*) FROM cache"
+        ).fetchone()[0]
 
     def get(self, key: str) -> Any | None:
         """Return cached value or ``None`` on miss."""
@@ -180,24 +183,29 @@ class SqliteCache(_CacheKeyBuilder):
         needed."""
         serialized = json.dumps(value, ensure_ascii=False)
         with self._lock:
+            exists = (
+                self._conn.execute(
+                    "SELECT 1 FROM cache WHERE key = ?", (key,)
+                ).fetchone()
+                is not None
+            )
             self._conn.execute(
                 "INSERT OR REPLACE INTO cache "
                 "(key, value, accessed) VALUES (?, ?, 0)",
                 (key, serialized),
             )
-            if self._max_size > 0:
-                count = self._conn.execute(
-                    "SELECT COUNT(*) FROM cache"
-                ).fetchone()[0]
-                if count > self._max_size:
-                    excess = count - self._max_size
-                    self._conn.execute(
-                        "DELETE FROM cache WHERE key IN ("
-                        "  SELECT key FROM cache "
-                        "  ORDER BY accessed ASC LIMIT ?"
-                        ")",
-                        (excess,),
-                    )
+            if not exists:
+                self._approx_size += 1
+            if self._max_size > 0 and self._approx_size > self._max_size:
+                excess = self._approx_size - self._max_size
+                self._conn.execute(
+                    "DELETE FROM cache WHERE key IN ("
+                    "  SELECT key FROM cache "
+                    "  ORDER BY accessed ASC LIMIT ?"
+                    ")",
+                    (excess,),
+                )
+                self._approx_size = self._max_size
             self._conn.commit()
 
     @property
@@ -212,3 +220,4 @@ class SqliteCache(_CacheKeyBuilder):
         with self._lock:
             self._conn.execute("DELETE FROM cache")
             self._conn.commit()
+            self._approx_size = 0

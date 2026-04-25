@@ -4,7 +4,7 @@ import streamlit as st
 
 from agents7.ui._pages import _state_from_dict, resize_list
 from agents7.ui.codegen.yaml_generator import generate_yaml
-from agents7.ui.helpers import build_agent_from_state
+from agents7.ui.helpers import get_cached_agent
 from agents7.ui.ollama_utils import render_model_selector
 
 
@@ -69,7 +69,7 @@ def render() -> None:
     # --- Resolved prompt preview ---
     st.subheader("Resolved Prompt Preview")
     try:
-        agent = build_agent_from_state(state)
+        agent = get_cached_agent(state)
         st.code(agent.prompt, language="text")
     except Exception as e:
         st.warning(f"Cannot preview prompt: {e}")

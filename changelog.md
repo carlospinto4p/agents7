@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v3.18.0 - 26th April 2026
+
+- Optimised `llm/streaming.py`:
+  - `_StreamBase._finish()`: pre-computes `_response_cache` and `_thinking_cache` once on stream completion.
+  - `response` and `thinking` properties: return cached strings on repeated access after stream is done.
+  - `_restore_from_cached()`: populates both caches for pre-filled instances.
+- Optimised `llm/cache.py` (`SqliteCache`):
+  - Replaced per-call `SELECT COUNT(*)` with an in-memory `_approx_size` counter, incremented only for new keys.
+  - Eviction query runs only when the counter exceeds `max_size`; `clear()` resets the counter.
+- Optimised `agents/memory.py`:
+  - `SqliteMemory.save()`: appends only new messages when the conversation has grown; falls back to full replace only when messages are removed or on first save.
+  - `SqliteMemory.clear()`: removes the conversation from the in-memory length tracker.
+  - `JsonFileMemory`: switched from a single flat JSON file to per-conversation files in a directory. Each conversation is stored as `{dir}/{id}.json`. Default path changed from `"memory.json"` to `"memory/"`.
+- Optimised `agents7.ui` — `ui/helpers.py`:
+  - Added `get_cached_agent()`: wraps `build_agent_from_state()` with `@st.cache_resource`, keyed on an MD5 hash of the agent-construction fields.
+  - Updated `_pages/2_Configure.py`, `3_Test.py`, and `4_Evaluate.py` to call `get_cached_agent()` instead of rebuilding the agent on every Streamlit interaction.
+
+
 ### v3.17.7 - 25th April 2026
 
 - Refactored `agents/guarded.py`:

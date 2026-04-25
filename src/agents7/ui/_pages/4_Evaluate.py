@@ -19,7 +19,7 @@ from agents7.ui.evaluation.metrics import (
     compute_metrics,
 )
 from agents7.ui.evaluation.runner import EvalResult, run_evaluation
-from agents7.ui.helpers import build_agent_from_state
+from agents7.ui.helpers import get_cached_agent
 
 
 def render() -> None:
@@ -90,7 +90,7 @@ def render() -> None:
 
     if st.button("Run Evaluation") and eval_data:
         try:
-            agent = build_agent_from_state(state)
+            agent = get_cached_agent(state)
             progress = st.progress(0.0)
             results = run_evaluation(
                 agent,

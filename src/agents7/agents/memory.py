@@ -9,7 +9,7 @@ Usage::
     from agents7.agents.memory import MemoryConfig, create_memory
 
     memory = create_memory(MemoryConfig(
-        backend="json", path="history.json"
+        backend="json", path="memory/"
     ))
     chatter = Chatter(..., memory=memory, conversation_id="session-1")
 """
@@ -31,9 +31,9 @@ class MemoryConfig:
     Attributes:
         backend: Memory backend. ``"json"`` for JSON file
             storage, ``"sqlite"`` for SQLite database.
-        path: File path for storage. Defaults to
-            ``"memory.json"`` for JSON, ``"memory.db"``
-            for SQLite.
+        path: Path for storage. Defaults to ``"memory/"``
+            (directory) for JSON, ``"memory.db"`` for
+            SQLite.
     """
 
     backend: str = "json"
@@ -46,7 +46,7 @@ class MemoryConfig:
                 f"'sqlite', got '{self.backend}'"
             )
         if not self.path:
-            default = "memory.json" if self.backend == "json" else "memory.db"
+            default = "memory/" if self.backend == "json" else "memory.db"
             object.__setattr__(self, "path", default)
 
 
@@ -105,73 +105,68 @@ class MemoryBackend(ABC):
 class JsonFileMemory(MemoryBackend):
     """JSON file-backed conversation memory.
 
-    Stores all conversations in a single JSON file as::
+    Stores each conversation as a separate JSON file in a
+    directory::
 
-        {
-            "conversation_id": [
-                {"role": "user", "content": "Hello"},
-                {"role": "assistant", "content": "Hi!"}
-            ]
-        }
+        memory/
+            session-1.json   # [{"role": "user", ...}, ...]
+            session-2.json
 
-    Thread-safe via a lock. Creates the file on first
+    Thread-safe via a lock. Creates the directory on first
     write.
     """
 
     def __init__(self, path: str) -> None:
-        self._path = Path(path)
+        self._dir = Path(path)
         self._lock = threading.Lock()
-        self._cache: dict | None = None
+        self._cache: dict[str, list[dict[str, str]]] = {}
 
     def load(self, conversation_id: str) -> list[dict[str, str]]:
-        """Load conversation from JSON file."""
+        """Load conversation from its JSON file."""
         with self._lock:
-            data = self._get_cache()
-            return data.get(conversation_id, [])
+            if conversation_id in self._cache:
+                return self._cache[conversation_id]
+            conv_path = self._conv_path(conversation_id)
+            if not conv_path.exists():
+                return []
+            with conv_path.open(encoding="utf-8") as f:
+                messages: list[dict[str, str]] = json.load(f)
+            self._cache[conversation_id] = messages
+            return messages
 
     def save(
         self,
         conversation_id: str,
         messages: list[dict[str, str]],
     ) -> None:
-        """Save conversation to JSON file."""
+        """Save conversation to its JSON file."""
         with self._lock:
-            data = self._get_cache()
-            data[conversation_id] = messages
-            self._write_all(data)
+            self._dir.mkdir(parents=True, exist_ok=True)
+            with self._conv_path(conversation_id).open(
+                "w", encoding="utf-8"
+            ) as f:
+                json.dump(messages, f, ensure_ascii=False, indent=2)
+            self._cache[conversation_id] = messages
 
     def clear(self, conversation_id: str) -> None:
-        """Remove a conversation from the JSON file."""
+        """Remove a conversation's JSON file."""
         with self._lock:
-            data = self._get_cache()
-            data.pop(conversation_id, None)
-            self._write_all(data)
+            self._cache.pop(conversation_id, None)
+            self._conv_path(conversation_id).unlink(missing_ok=True)
 
     def list_conversations(self) -> list[str]:
-        """List all conversation IDs in the file."""
+        """List all conversation IDs."""
         with self._lock:
-            data = self._get_cache()
-            return list(data.keys())
+            if not self._dir.exists():
+                return []
+            return sorted(p.stem for p in self._dir.glob("*.json"))
 
-    def _get_cache(self) -> dict:
-        """Return the in-memory cache, loading from disk
-        on first access."""
-        if self._cache is None:
-            self._cache = self._read_all()
-        return self._cache
-
-    def _read_all(self) -> dict:
-        """Read the entire JSON file."""
-        if not self._path.exists():
-            return {}
-        with self._path.open(encoding="utf-8") as f:
-            return json.load(f)
-
-    def _write_all(self, data: dict) -> None:
-        """Write the entire JSON file."""
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        with self._path.open("w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+    def _conv_path(self, conversation_id: str) -> Path:
+        """Return the file path for a conversation."""
+        safe = "".join(
+            c if c.isalnum() or c in "-_." else "_" for c in conversation_id
+        )
+        return self._dir / f"{safe}.json"
 
 
 class SqliteMemory(MemoryBackend):
@@ -198,6 +193,7 @@ class SqliteMemory(MemoryBackend):
             ")"
         )
         self._conn.commit()
+        self._saved_lengths: dict[str, int] = {}
 
     def load(self, conversation_id: str) -> list[dict[str, str]]:
         """Load conversation from SQLite."""
@@ -217,27 +213,43 @@ class SqliteMemory(MemoryBackend):
         conversation_id: str,
         messages: list[dict[str, str]],
     ) -> None:
-        """Save conversation to SQLite (full replace)."""
+        """Save conversation to SQLite.
+
+        Appends only new messages when the list has grown.
+        Falls back to full replace when messages are removed
+        or on first save for this conversation.
+        """
+        new_len = len(messages)
+        saved_len = self._saved_lengths.get(conversation_id, -1)
         with self._lock:
-            self._conn.execute(
-                "DELETE FROM messages WHERE conversation_id = ?",
-                (conversation_id,),
-            )
-            self._conn.executemany(
-                "INSERT INTO messages "
-                "(conversation_id, position, role, content) "
-                "VALUES (?, ?, ?, ?)",
-                [
-                    (
-                        conversation_id,
-                        i,
-                        msg["role"],
-                        msg["content"],
-                    )
-                    for i, msg in enumerate(messages)
-                ],
-            )
+            if saved_len >= 0 and new_len > saved_len:
+                self._conn.executemany(
+                    "INSERT INTO messages "
+                    "(conversation_id, position, role, content) "
+                    "VALUES (?, ?, ?, ?)",
+                    [
+                        (conversation_id, i, msg["role"], msg["content"])
+                        for i, msg in enumerate(
+                            messages[saved_len:], saved_len
+                        )
+                    ],
+                )
+            else:
+                self._conn.execute(
+                    "DELETE FROM messages WHERE conversation_id = ?",
+                    (conversation_id,),
+                )
+                self._conn.executemany(
+                    "INSERT INTO messages "
+                    "(conversation_id, position, role, content) "
+                    "VALUES (?, ?, ?, ?)",
+                    [
+                        (conversation_id, i, msg["role"], msg["content"])
+                        for i, msg in enumerate(messages)
+                    ],
+                )
             self._conn.commit()
+        self._saved_lengths[conversation_id] = new_len
 
     def clear(self, conversation_id: str) -> None:
         """Remove a conversation from SQLite."""
@@ -247,6 +259,7 @@ class SqliteMemory(MemoryBackend):
                 (conversation_id,),
             )
             self._conn.commit()
+        self._saved_lengths.pop(conversation_id, None)
 
     def list_conversations(self) -> list[str]:
         """List all conversation IDs in the database."""

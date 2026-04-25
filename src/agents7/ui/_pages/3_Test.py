@@ -12,7 +12,7 @@ from agents7.ui._pages import (
 from agents7.ui.comparison.models import PromptVersion
 from agents7.ui.comparison.runner import ComparisonResult, run_comparison
 from agents7.models import AgentResponse
-from agents7.ui.helpers import build_agent_from_state
+from agents7.ui.helpers import get_cached_agent
 from agents7.ui.state import AgentBuilderState
 
 
@@ -125,7 +125,7 @@ def _render_single_test(state: AgentBuilderState) -> None:
         else:
             input_data = _parse_input(test_input)
             try:
-                agent = build_agent_from_state(state)
+                agent = get_cached_agent(state)
                 with st.spinner("Running agent..."):
                     response = agent.act(input_data)
                 _show_response(response)
@@ -182,7 +182,7 @@ def _render_batch_test(state: AgentBuilderState) -> None:
             st.warning("No valid inputs found.")
         else:
             try:
-                agent = build_agent_from_state(state)
+                agent = get_cached_agent(state)
                 with st.spinner("Running batch..."):
                     results = agent.act_in_batch(inputs, iter_func=None)
                 for resp in results:
