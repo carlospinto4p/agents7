@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.17.6 - 25th April 2026
+
+- Refactored `agents/scene.py` — `_load_scene_yaml()`:
+  - Replaced manual `_resolve_inheritance` / `validate_chatter_yaml_config` / persona / extra_instructions setup with a call to `_load_base_chatter_config()`.
+  - Replaced 6 inline `if "field" in raw:` blocks with a single `cast_optional_fields()` call.
+
+
 ### v3.17.5 - 25th April 2026
 
 - Refactored `agents/config_loader.py`:

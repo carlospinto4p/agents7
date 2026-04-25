@@ -43,7 +43,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agents7.agents.personality import (
-    Persona,
     PersonalityChatter,
     Scene,
 )
@@ -152,33 +151,19 @@ def _load_scene_yaml(
     :return: A SceneChatter instance.
     """
     from agents7.agents.config_loader import (
-        _resolve_inheritance,
+        _load_base_chatter_config,
         build_engine,
-        validate_chatter_yaml_config,
+        cast_optional_fields,
     )
     from agents7.agents.memory import (
         MemoryConfig,
         create_memory,
     )
 
-    raw = _resolve_inheritance(file_path)
-    raw.setdefault("system_prompt", "(auto-generated)")
-    validate_chatter_yaml_config(raw, file_path)
-
-    persona_data = raw.get("persona", {})
-    persona = Persona.from_dict(dict(persona_data))
-
-    scene_data = raw.get("scene", {})
-    scene = Scene.from_dict(dict(scene_data))
-
-    extra_instructions = raw.get(
-        "extra_instructions",
-        "",
+    raw, persona, extra_instructions = _load_base_chatter_config(
+        file_path,
     )
-    if extra_instructions:
-        extra_instructions = str(
-            extra_instructions,
-        ).strip()
+    scene = Scene.from_dict(dict(raw.get("scene", {})))
 
     config: dict[str, Any] = {
         "name": raw["name"],
@@ -189,27 +174,21 @@ def _load_scene_yaml(
         "scene": scene,
         "extra_instructions": extra_instructions,
     }
-
-    if "temperature" in raw:
-        config["temperature"] = float(raw["temperature"])
-    if "think" in raw:
-        config["think"] = bool(raw["think"])
-    if "max_history" in raw:
-        config["max_history"] = int(raw["max_history"])
-    if "max_turns" in raw:
-        config["max_turns"] = int(raw["max_turns"])
-    if "typo_rate" in raw:
-        config["typo_rate"] = float(raw["typo_rate"])
-    if "conversation_id" in raw:
-        config["conversation_id"] = str(
-            raw["conversation_id"],
-        )
+    cast_optional_fields(
+        raw,
+        config,
+        {
+            "temperature": float,
+            "think": bool,
+            "max_history": int,
+            "max_turns": int,
+            "typo_rate": float,
+            "conversation_id": str,
+        },
+    )
     if memory_settings := raw.get("memory"):
         memory_config = MemoryConfig(
-            backend=memory_settings.get(
-                "backend",
-                "json",
-            ),
+            backend=memory_settings.get("backend", "json"),
             path=memory_settings.get("path", ""),
         )
         config["memory"] = create_memory(memory_config)
