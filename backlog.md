@@ -14,7 +14,7 @@
 
 ### Refactor Pass — 25th April 2026
 
-- [ ] Reduce sync/async duplication in `agents/guarded.py`: `_guard_and_fix()` and `_guard_and_fix_async()` are 90% identical — extract the shared retry loop into a helper or consolidate via a protocol/callback approach.
-- [ ] Reduce sync/async duplication in `agents/labeler.py`: `_retry_parse_loop()` (line ~686) and `_retry_parse_loop_async()` (~721) are 34-line near-copies — extract shared logic.
-- [ ] Fix NumPy-style docstrings (`Args:` / `Returns:`) in `agents/detector.py`, `agents/classifier.py`, and `agents/regressor.py` — convert to project-standard Sphinx/reST (`:param:`, `:return:`).
-- [ ] Verify `model_selection.py` is dead code (no import found outside its own docstring) and remove if so.
+- [x] Reduce sync/async duplication in `agents/guarded.py`: `_guard_and_fix()` and `_guard_and_fix_async()` are 90% identical — extract the shared retry loop into a helper or consolidate via a protocol/callback approach.
+- [x] Reduce sync/async duplication in `agents/labeler.py`: `_retry_parse_loop()` (line ~686) and `_retry_parse_loop_async()` (~721) are 34-line near-copies — extract shared logic.
+- [x] Fix NumPy-style docstrings (`Args:` / `Returns:`) in `agents/detector.py`, `agents/classifier.py`, and `agents/regressor.py` — convert to project-standard Sphinx/reST (`:param:`, `:return:`).
+- [x] Verify `model_selection.py` is dead code — confirmed NOT dead: has tests in `tests/test_model_selection.py` and is documented in `README.md`. No action needed.
