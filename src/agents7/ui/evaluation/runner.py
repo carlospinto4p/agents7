@@ -1,6 +1,6 @@
-"""Evaluation runner — re-exports from `agents7.metrics`."""
+"""Evaluation runner — re-exports from `agents7.eval.metrics`."""
 
-from agents7.metrics import (
+from agents7.eval.metrics import (
     EvalResult,
     _compare_field,
     _extract_fields,

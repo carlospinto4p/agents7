@@ -1,6 +1,25 @@
 
 ## Changelog - Agents7
 
+### v3.18.29 - 2nd May 2026
+
+- Refactored `src/agents7/`:
+  - Added `eval/` subpackage grouping evaluation concerns:
+    - `eval/metrics.py`: canonical home for `EvalResult`,
+      `run_evaluation`, `run_evaluation_async`,
+      `compute_metrics`, `build_confusion_matrix`,
+      `_resolve_enum`, `_extract_fields`, `_compare_field`.
+    - `eval/export.py`: canonical home for `export_jsonl`,
+      `export_csv`, `export_dataframe`, `export_eval_report`,
+      `export_benchmark_report`.
+    - `eval/__init__.py`: re-exports all public symbols.
+  - `metrics.py` and `export.py` are now backward-compat
+    shims that re-export from `agents7.eval.*`.
+  - Updated internal imports in `testing.py`,
+    `ui/evaluation/metrics.py`, `ui/evaluation/runner.py`,
+    and `model_selection.py` to use canonical paths.
+
+
 ### v3.18.28 - 2nd May 2026
 
 - Refactored `metrics.py` and `export.py`:

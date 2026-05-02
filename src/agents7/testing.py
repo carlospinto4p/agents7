@@ -24,7 +24,7 @@ from unittest.mock import Mock
 
 from agents7.llm.base import LLMEngine
 from agents7.llm.dispatcher import EngineDispatcher
-from agents7.metrics import compute_metrics, run_evaluation
+from agents7.eval.metrics import compute_metrics, run_evaluation
 
 
 _DEFAULT_METRICS = {

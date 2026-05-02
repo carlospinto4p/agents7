@@ -299,7 +299,7 @@ def find_best_model(
     )
 
     if report_path is not None:
-        from agents7.export import export_benchmark_report
+        from agents7.eval.export import export_benchmark_report
 
         export_benchmark_report(result, report_path, yaml_path=yaml_path)
         logger.info(f"Benchmark report written to {report_path}")
