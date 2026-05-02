@@ -8,6 +8,58 @@
 - [ ] Test JSONL file upload in Step 3 (Batch Test) and Step 4 (Evaluate).
 - [ ] Test auto-discovery flow: upload JSONL, write intent, click Discover Schema, verify form fills, then Generate Prompt & Examples in Step 2.
 
+### Scan — 2nd May 2026
+
+#### Security
+
+- [ ] `llm/cache.py:152` — `check_same_thread=False` on SQLite without documenting the manual lock that compensates; add inline comment.
+- [ ] `agents/memory.py:185` — Same `check_same_thread=False` pattern in `SqliteMemory`; add inline comment.
+- [ ] `agents/memory.py:164` — Conversation path sanitisation replaces non-alphanumeric chars but an explicit allowlist or `urllib.parse.quote()` would be more robust.
+
+#### Performance
+
+- [ ] `llm/cache.py:88` — `json.dumps(sort_keys=True)` on every cache key lookup; sort is O(n log n) and runs on every LLM call. Sort once at insert or hash without sort. **HIGH/S**
+- [ ] `ui/comparison/runner.py:111` — Sequential `_run_single()` calls in comparison loop; convert to `asyncio.gather()`. **HIGH/M**
+- [ ] `agents/chatter.py:394` — `sum(1 for m in self._history …)` is O(n) and called on every `.turns` access; cache the count. **MED/S**
+- [ ] `ui/_pages/1_Define.py:120` — `safe_index()` uses `list.index()` (O(n)) on every Streamlit re-render; replace with dict lookup. **MED/S**
+- [ ] `ui/helpers.py:74` — `json.dumps(sort_keys=True)` on every agent rebuild from UI state; cache per state hash. **MED/S**
+- [ ] `export.py:335` — Multiple `" | ".join()` calls rebuilding table rows inside a loop; pre-format rows into a list and join once. **MED/S**
+- [ ] `ui/app.py:71` — `prompt_versions` list grows unbounded across a UI session; cap with `maxlen` or periodic cleanup. **MED/M**
+- [ ] `agents/memory.py:122` — `JsonFileMemory._cache` dict has no eviction policy; can grow unbounded in long UI sessions. **MED/M**
+- [ ] `ui/discovery/analyzer.py:64` — `engine.chat()` is a blocking synchronous call inside the Streamlit UI; convert to async or run in background thread. **MED/M**
+
+#### Refactoring
+
+- [ ] `agents/pipeline.py:148,195,317,364` — Four bare `except Exception:` blocks in batch/stream processing hide which step failed; narrow scope and log error context. **HIGH/S**
+- [ ] `metrics.py:113,150` / `llm/base.py:360,384` / `agents/parsing.py:65` — Bare `except Exception:` blocks silently swallow errors without logging; add at minimum a `logger.warning`. **MED/S**
+- [ ] `agents/labeler.py` — Single class handles prompt building, batching, streaming, parsing, retries, preprocessing, logging, and validators (5+ responsibilities); split into focused collaborators. **HIGH/L**
+- [ ] `llm/base.py` — `LLMEngine` mixes caching, retry, fallback, cost injection, and sync/async/stream dispatch; extract into separate concerns. **HIGH/L**
+- [ ] `agents/` — 5-level inheritance chain (`Chatter → PersonalityChatter → SceneChatter → GuardedChatter → GuardedSceneChatter`) plus `Labeler → Detector → Classifier/Regressor`; flatten with composition. **HIGH/M**
+- [ ] `agents/guarded.py` + `agents/guarded_scene.py` — Two separate guarded agents duplicate guard mechanics; unify via a parameterised mixin or base. **MED/M**
+- [ ] `agents/config_loader.py` — Monolithic loader handles all nine agent types in one file; split per agent type or use a factory registry. **MED/M**
+- [ ] `agents/classifier.py:45` — Uses `super(Detector, self).__post_init__()` to skip Detector validation; fragile MRO workaround; redesign with composition. **MED/M**
+- [ ] `agents/scene.py:72` — `SceneChatter.__post_init__` calls `Chatter.__post_init__` directly to skip `PersonalityChatter`; fragile super-chain, same root cause as above. **MED/M**
+- [ ] `export.py:77` / `metrics.py:300` — `_extract_fields` + `_format_value` logic duplicated across both modules; extract to shared helper. **LOW/S**
+- [ ] Root `src/agents7/` — 11 top-level modules mixing unrelated concerns (testing utils, benchmarking, suggestions, export, metrics); group into subpackages. **MED/M**
+
+#### Test coverage
+
+- [ ] `agents/config_loader.py:61` — `_resolve_inheritance()` circular-reference detection is untested. **HIGH/S**
+- [ ] `agents/context_guard.py:211` — `ContextGuard.__post_init__` with empty `persona_summary` is untested. **HIGH/S**
+- [ ] `agents/parsing.py:47` — `ResponseParser.parse()` enum-name-to-value fallback path untested. **HIGH/M**
+- [ ] `export.py:145,252` — `export_eval_report()` and `export_benchmark_report()` missing tests for timing sections, missing fields, and `None` best model. **HIGH/M**
+- [ ] `model_selection.py:338` — `_benchmark_model()` engine-init failure recovery untested. **HIGH/M**
+- [ ] `agents/memory.py:198` — `SqliteMemory` concurrent read/write races untested; `_lock` contention behaviour unverified. **HIGH/M**
+- [ ] `ui/ollama_utils.py:56,80` — `check_connection()` timeout and `list_available_models()` error handling both untested. **HIGH/M**
+- [ ] `agents/config_loader.py` — No test file at all; `_deep_merge()`, `load_yaml_settings()`, `build_engine()` kwargs all uncovered. **MED/M**
+- [ ] `agents/utils.py` — `run_with_semaphore()`, `resolve_strenum()`, `model_class_to_string()` have no tests. **MED/S**
+- [ ] `agents/parsing.py:81` — `ResponseParser.run_validators()` path where a validator raises an exception is untested. **MED/M**
+- [ ] `agents/memory.py:124` — `JsonFileMemory.load()` with corrupted JSON untested. **MED/M**
+- [ ] `model_selection.py:204` — `find_best_model()` with `runs=0` or empty model list untested. **MED/M**
+- [ ] `llm/streaming.py:56` — `_extract()` with missing chunk attributes untested. **MED/M**
+- [ ] `agents/jitter.py:49` — `_inject_typo()` word-length boundary (exactly 4 chars) untested. **MED/S**
+- [ ] `tests/test_labeler.py:261` — `assert result is not None` is a weak assertion; verify actual output model contents. **MED/S**
+
 ### Bugs — 2nd May 2026
 
 - [ ] Benchmark bad_signal 'la capital' too broad — fires on in-character redirect phrases (e.g. "con la capital de Australia ya nos vamos a perder el hilo"). Narrow the signal or add an exclusion for redirect context.
