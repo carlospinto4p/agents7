@@ -169,7 +169,12 @@ dismisses off-topic and returns to scene)
 ``false``, pick the most specific ``reason``, and write \
 a corrected response in ``fix`` that stays fully in \
 character. The fix should respond as the character \
-naturally would — confused, dismissive, or redirecting.\
+naturally would — confused, dismissive, or redirecting.
+- **The ``fix`` must NOT use prohibited vocabulary** \
+(IA, AI, language model, modelo de lenguaje, chatbot, \
+programado, etc.) — not even to deny or dismiss it. \
+Express confusion or deflection without echoing the \
+forbidden terms.\
 """
 
 

@@ -141,6 +141,12 @@ def test_context_guard_prompt_has_off_topic_examples():
     assert "Canberra" in guard.system_prompt
 
 
+def test_context_guard_prompt_fix_vocabulary_constraint():
+    """Guard prompt instructs fix responses to avoid prohibited vocabulary."""
+    guard = make_guard()
+    assert "fix`` must NOT use prohibited vocabulary" in guard.system_prompt
+
+
 def test_context_guard_custom_prompt():
     """Custom system_prompt is preserved, not overwritten."""
     guard = make_guard(system_prompt="Custom guard prompt.")

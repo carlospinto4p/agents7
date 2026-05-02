@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.18.8 - 2nd May 2026
+
+- Fixed `agents/context_guard.py` (`_DEFAULT_GUARD_PROMPT`):
+  - Added constraint to Decision Rules: `fix` responses must not use prohibited AI/LLM vocabulary (IA, AI, language model, modelo de lenguaje, etc.) even when expressing confusion. Addresses benchmark v2 case 8 where the guard's own fix echoed "modelo de lenguaje".
+- Added `tests/test_context_guard.py`:
+  - `test_context_guard_prompt_fix_vocabulary_constraint`: verifies the fix-vocabulary constraint is present in the prompt.
+
+
 ### v3.18.7 - 2nd May 2026
 
 - Moved `benchmarks/benchmark_guarded_scene.py` (was `examples/chatter/`): benchmark scripts are developer validation tools, not usage examples — moved to a dedicated `benchmarks/` directory. Updated `_CONFIG` path and run-command in docstring. Updated `.claude/skills/validate-guarded-scene/SKILL.md` to reference the new location.
