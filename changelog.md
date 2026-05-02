@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.16 - 2nd May 2026
+
+- Optimised `ui/_pages/__init__.py` (`safe_index`): replaced `list.index()` O(n) lookup with a `{value: index}` dict comprehension — O(1) for large option lists on every Streamlit re-render.
+
+
 ### v3.18.15 - 2nd May 2026
 
 - Optimised `agents/chatter.py` (`Chatter`):

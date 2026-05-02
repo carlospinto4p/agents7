@@ -87,18 +87,15 @@ def resize_list(
 def safe_index(options: list, value: object, default: int = 0) -> int:
     """Return the index of *value* in *options*, or *default*.
 
-    Prevents ``ValueError`` when the value is not in the list
-    (e.g., stale session state).
+    Prevents ``KeyError``/``ValueError`` when the value is not in
+    the list (e.g., stale session state).
 
     :param options: The list to search.
     :param value: The value to find.
     :param default: Fallback index when *value* is missing.
     :return: Index of *value*, or *default*.
     """
-    try:
-        return options.index(value)
-    except ValueError:
-        return default
+    return {v: i for i, v in enumerate(options)}.get(value, default)
 
 
 def _state_from_dict(sd: dict) -> AgentBuilderState:
