@@ -1,6 +1,30 @@
 
 ## Changelog - Agents7
 
+### v3.18.27 - 2nd May 2026
+
+- Refactored `agents/config_loader.py`:
+  - Removed chatter-family loaders; now contains only shared
+    utilities and the labeler-family loader (`load_yaml_settings`).
+- Added `agents/chatter_config_loader.py`: chatter-family loaders
+  extracted from `config_loader.py`:
+  - `validate_chatter_yaml_config`
+  - `load_chatter_yaml_settings`
+  - `_derive_persona_summary`
+  - `_load_base_chatter_config`
+  - `_build_guard`
+  - `load_guarded_yaml_settings`
+  - `load_guarded_scene_yaml_settings`
+- Updated callers:
+  - `agents/chatter.py`
+  - `agents/personality.py`
+  - `agents/scene.py`
+  - `agents/guarded.py`
+  - `agents/guarded_scene.py`
+  - `tests/test_guarded_chatter.py`
+  - `tests/test_guarded_scene.py`
+
+
 ### v3.18.26 - 2nd May 2026
 
 - Refactored `agents/detector.py`:

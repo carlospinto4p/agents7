@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Iterator
 
 from agents7.agents.base import BaseAgent
-from agents7.agents.config_loader import (
+from agents7.agents.chatter_config_loader import (
     load_chatter_yaml_settings,
 )
 from agents7.agents.jitter import apply_typos

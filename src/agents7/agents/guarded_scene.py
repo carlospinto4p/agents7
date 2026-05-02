@@ -47,7 +47,7 @@ class GuardedSceneChatter(GuardedChatter):
         :param file_path: Path to the YAML file.
         :return: A `GuardedSceneChatter` instance.
         """
-        from agents7.agents.config_loader import (
+        from agents7.agents.chatter_config_loader import (
             load_guarded_scene_yaml_settings,
         )
 

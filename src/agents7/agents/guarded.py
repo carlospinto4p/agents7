@@ -291,7 +291,7 @@ class GuardedChatter(PersonalityChatter):
         :param file_path: Path to the YAML file.
         :return: A GuardedChatter instance.
         """
-        from agents7.agents.config_loader import (
+        from agents7.agents.chatter_config_loader import (
             load_guarded_yaml_settings,
         )
 

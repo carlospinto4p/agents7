@@ -126,7 +126,7 @@ def test_chat_uses_fix_when_retries_exhausted(mock_chat, mock_guard):
 
 def test_derive_persona_summary_includes_scene_context():
     """_derive_persona_summary includes scene setting and rules."""
-    from agents7.agents.config_loader import _derive_persona_summary
+    from agents7.agents.chatter_config_loader import _derive_persona_summary
 
     summary = _derive_persona_summary(PERSONA, SCENE)
     assert "medieval tavern" in summary.lower()
@@ -135,7 +135,7 @@ def test_derive_persona_summary_includes_scene_context():
 
 def test_derive_persona_summary_without_scene_has_no_scene_keys():
     """_derive_persona_summary without scene omits scene keys."""
-    from agents7.agents.config_loader import _derive_persona_summary
+    from agents7.agents.chatter_config_loader import _derive_persona_summary
 
     summary = _derive_persona_summary(PERSONA)
     assert "Setting:" not in summary
