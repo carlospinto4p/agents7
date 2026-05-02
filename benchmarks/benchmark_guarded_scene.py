@@ -24,6 +24,7 @@ human validation.
 """
 
 import argparse
+import sys
 import tempfile
 import time
 from dataclasses import dataclass, field, replace
@@ -384,6 +385,7 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    sys.stdout.reconfigure(encoding="utf-8")
     run_benchmark(model=args.model, guard_model=args.guard_model)
 
 

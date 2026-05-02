@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.11 - 2nd May 2026
+
+- Fixed `benchmarks/benchmark_guarded_scene.py`: set stdout to UTF-8 via
+  `sys.stdout.reconfigure(encoding="utf-8")` in `main()` — prevents
+  `UnicodeEncodeError` when a model response contains emoji on Windows.
+
+
 ### v3.18.10 - 2nd May 2026
 
 - Updated `benchmarks/benchmark_guarded_scene.py`:
