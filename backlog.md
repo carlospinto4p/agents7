@@ -18,11 +18,11 @@
 
 #### Performance
 
-- [ ] `llm/cache.py:88` — `json.dumps(sort_keys=True)` on every cache key lookup; sort is O(n log n) and runs on every LLM call. Sort once at insert or hash without sort. **HIGH/S**
-- [ ] `ui/comparison/runner.py:111` — Sequential `_run_single()` calls in comparison loop; convert to `asyncio.gather()`. **HIGH/M**
-- [ ] `agents/chatter.py:394` — `sum(1 for m in self._history …)` is O(n) and called on every `.turns` access; cache the count. **MED/S**
-- [ ] `ui/_pages/1_Define.py:120` — `safe_index()` uses `list.index()` (O(n)) on every Streamlit re-render; replace with dict lookup. **MED/S**
-- [ ] `ui/helpers.py:74` — `json.dumps(sort_keys=True)` on every agent rebuild from UI state; cache per state hash. **MED/S**
+- [x] `llm/cache.py:88` — `json.dumps(sort_keys=True)` on every cache key lookup; sort is O(n log n) and runs on every LLM call. Sort once at insert or hash without sort. **HIGH/S**
+- [x] `ui/comparison/runner.py:111` — Sequential `_run_single()` calls in comparison loop; convert to `asyncio.gather()`. **HIGH/M**
+- [x] `agents/chatter.py:394` — `sum(1 for m in self._history …)` is O(n) and called on every `.turns` access; cache the count. **MED/S**
+- [x] `ui/_pages/1_Define.py:120` — `safe_index()` uses `list.index()` (O(n)) on every Streamlit re-render; replace with dict lookup. **MED/S**
+- [x] `ui/helpers.py:74` — `json.dumps(sort_keys=True)` on every agent rebuild from UI state; cache per state hash. **MED/S**
 - [ ] `export.py:335` — Multiple `" | ".join()` calls rebuilding table rows inside a loop; pre-format rows into a list and join once. **MED/S**
 - [ ] `ui/app.py:71` — `prompt_versions` list grows unbounded across a UI session; cap with `maxlen` or periodic cleanup. **MED/M**
 - [ ] `agents/memory.py:122` — `JsonFileMemory._cache` dict has no eviction policy; can grow unbounded in long UI sessions. **MED/M**
