@@ -14,7 +14,7 @@
 
 - [x] `export.py:335` — Multiple `" | ".join()` calls rebuilding table rows inside a loop; pre-format rows into a list and join once. **MED/S**
 - [x] `ui/app.py:71` — `prompt_versions` list grows unbounded across a UI session; cap with `maxlen` or periodic cleanup. **MED/M**
-- [ ] `agents/memory.py:122` — `JsonFileMemory._cache` dict has no eviction policy; can grow unbounded in long UI sessions. **MED/M**
+- [x] `agents/memory.py:122` — `JsonFileMemory._cache` dict has no eviction policy; can grow unbounded in long UI sessions. **MED/M**
 - [ ] `ui/discovery/analyzer.py:64` — `engine.chat()` is a blocking synchronous call inside the Streamlit UI; convert to async or run in background thread. **MED/M**
 
 #### Refactoring

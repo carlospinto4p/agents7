@@ -116,6 +116,8 @@ class JsonFileMemory(MemoryBackend):
     write.
     """
 
+    _MAX_CACHE: int = 100
+
     def __init__(self, path: str) -> None:
         self._dir = Path(path)
         self._lock = threading.Lock()
@@ -132,6 +134,8 @@ class JsonFileMemory(MemoryBackend):
             with conv_path.open(encoding="utf-8") as f:
                 messages: list[dict[str, str]] = json.load(f)
             self._cache[conversation_id] = messages
+            if len(self._cache) > self._MAX_CACHE:
+                self._cache.pop(next(iter(self._cache)))
             return messages
 
     def save(
@@ -147,6 +151,8 @@ class JsonFileMemory(MemoryBackend):
             ) as f:
                 json.dump(messages, f, ensure_ascii=False, indent=2)
             self._cache[conversation_id] = messages
+            if len(self._cache) > self._MAX_CACHE:
+                self._cache.pop(next(iter(self._cache)))
 
     def clear(self, conversation_id: str) -> None:
         """Remove a conversation's JSON file."""

@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.20 - 2nd May 2026
+
+- Optimised `agents/memory.py` (`JsonFileMemory`): added `_MAX_CACHE = 100` cap with insertion-order eviction — prevents unbounded `_cache` dict growth in long UI sessions.
+
+
 ### v3.18.19 - 2nd May 2026
 
 - Optimised `ui/app.py` and `ui/_pages/3_Test.py`: replaced unbounded `prompt_versions` list with `deque(maxlen=50)` — caps memory at 50 saved versions and auto-evicts oldest when full. Updated indexed deletion to use `del d[i]`.
