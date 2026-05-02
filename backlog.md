@@ -8,6 +8,11 @@
 - [ ] Test JSONL file upload in Step 3 (Batch Test) and Step 4 (Evaluate).
 - [ ] Test auto-discovery flow: upload JSONL, write intent, click Discover Schema, verify form fills, then Generate Prompt & Examples in Step 2.
 
+### Bugs — 2nd May 2026 (benchmark findings)
+
+- [ ] Guard parse reliability: guard occasionally returns Python class source instead of JSON, triggering fail-open. Happened 3/10 times in benchmark. Investigate whether a stricter output format instruction or a retry on parse failure would help.
+- [ ] Scene-break enforcement: case 9 (Tokyo restaurants) failed — character engaged with off-topic content when guard parse failed. Strengthen scene rules in `demo_guarded_scene_chatter.yml` and/or add OFF_TOPIC examples to guard prompt that cover location/geography deflection.
+
 ### Improvements — 29th March 2026
 
 - [ ] A/B testing harness — `run_ab_test(agent_a, agent_b, test_cases)` that runs both agents on same inputs and returns comparative metrics.
