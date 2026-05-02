@@ -68,7 +68,7 @@ def _render_app() -> None:
     if "eval_results" not in st.session_state:
         st.session_state.eval_results = None
     if "prompt_versions" not in st.session_state:
-        st.session_state.prompt_versions = []
+        st.session_state.prompt_versions = deque(maxlen=50)
 
     _PAGES = [
         ("Home", _home_page),

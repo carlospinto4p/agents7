@@ -103,7 +103,7 @@ def _render_version_list(sd: dict) -> None:
                 st.rerun()
         with col_del:
             if st.button("Delete", key=f"del_version_{i}"):
-                st.session_state.prompt_versions.pop(i)
+                del st.session_state.prompt_versions[i]
                 st.rerun()
 
 

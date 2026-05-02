@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.19 - 2nd May 2026
+
+- Optimised `ui/app.py` and `ui/_pages/3_Test.py`: replaced unbounded `prompt_versions` list with `deque(maxlen=50)` — caps memory at 50 saved versions and auto-evicts oldest when full. Updated indexed deletion to use `del d[i]`.
+
+
 ### v3.18.18 - 2nd May 2026
 
 - Optimised `export.py` (`_append_confusion_matrix`): replaced per-row `lines.append()` loop with a single `lines.extend()` generator expression — avoids N individual list appends for confusion matrix rows.
