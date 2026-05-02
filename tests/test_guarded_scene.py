@@ -121,6 +121,81 @@ def test_chat_uses_fix_when_retries_exhausted(mock_chat, mock_guard):
     assert response.response == "We have no such thing here, stranger."
 
 
+# --- Guard context ---
+
+
+def test_derive_persona_summary_includes_scene_context():
+    """_derive_persona_summary includes scene setting and rules."""
+    from agents7.agents.config_loader import _derive_persona_summary
+
+    summary = _derive_persona_summary(PERSONA, SCENE)
+    assert "medieval tavern" in summary.lower()
+    assert "No knowledge of anything modern" in summary
+
+
+def test_derive_persona_summary_without_scene_has_no_scene_keys():
+    """_derive_persona_summary without scene omits scene keys."""
+    from agents7.agents.config_loader import _derive_persona_summary
+
+    summary = _derive_persona_summary(PERSONA)
+    assert "Setting:" not in summary
+    assert "Scene rules:" not in summary
+
+
+# --- Guard retry flow ---
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guard_retry_succeeds_early(mock_chat, mock_guard):
+    """Guard accepts on first retry — fix is never used."""
+    mock_chat.return_value = chat_response_dict("I'll get ye some mead.")
+    reject = _verdict_response(
+        False,
+        "BROKE_CHARACTER",
+        fix="We have no such device, stranger.",
+    )
+    accept = _verdict_response(True, "IN_CHARACTER")
+    mock_guard.side_effect = [reject, accept]
+
+    agent = make_guarded_scene(max_guard_retries=2)
+    response = agent.chat("Can I charge my phone?")
+
+    assert mock_guard.call_count == 2
+    assert response.response != "We have no such device, stranger."
+    assert agent.history[-1]["content"] == response.response
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guard_input_has_correct_structure(mock_chat, mock_guard):
+    """Guard act receives user_message, assistant_response, recent_history."""
+    mock_chat.return_value = chat_response_dict("Evenin', traveller.")
+    mock_guard.return_value = _verdict_response(True, "IN_CHARACTER")
+
+    agent = make_guarded_scene()
+    agent.chat("Good evening!")
+
+    call_input = mock_guard.call_args[0][0]
+    assert call_input["user_message"] == "Good evening!"
+    assert call_input["assistant_response"] == "Evenin', traveller."
+    assert "recent_history" in call_input
+    assert isinstance(call_input["recent_history"], list)
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guard_called_once_on_immediate_accept(mock_chat, mock_guard):
+    """Guard is called exactly once when first check passes."""
+    mock_chat.return_value = chat_response_dict("Aye, what can I do for ye?")
+    mock_guard.return_value = _verdict_response(True, "IN_CHARACTER")
+
+    agent = make_guarded_scene()
+    agent.chat("Hello!")
+
+    assert mock_guard.call_count == 1
+
+
 # --- YAML loading ---
 
 
@@ -152,4 +227,7 @@ max_guard_retries: 1
     assert agent.scene.setting == "A medieval tavern at night"
     assert agent.persona.full_name == "Old Thomas"
     assert agent.max_guard_retries == 1
+    # Guard gets scene context via YAML loader
+    assert "medieval tavern" in agent.guard.persona_summary.lower()
+    assert "No knowledge of modern things" in agent.guard.persona_summary
     assert "medieval tavern" in agent.system_prompt

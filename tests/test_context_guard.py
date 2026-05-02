@@ -105,6 +105,26 @@ def test_context_guard_auto_prompt():
     assert "response quality guard" in guard.system_prompt
 
 
+def test_context_guard_prompt_includes_scene_summary():
+    """Scene-aware persona_summary is rendered inside the prompt."""
+    scene_summary = (
+        "David Garcia, Spanish journalist.\n"
+        "Setting: Madrid café\n"
+        "Scene rules:\n"
+        "  - Protect the source"
+    )
+    guard = make_guard(persona_summary=scene_summary)
+    assert "Madrid café" in guard.system_prompt
+    assert "Protect the source" in guard.system_prompt
+    assert "Character and Scene Context" in guard.system_prompt
+
+
+def test_context_guard_prompt_uses_scene_context_header():
+    """Default prompt uses 'Character and Scene Context' header."""
+    guard = make_guard()
+    assert "Character and Scene Context" in guard.system_prompt
+
+
 def test_context_guard_custom_prompt():
     """Custom system_prompt is preserved, not overwritten."""
     guard = make_guard(system_prompt="Custom guard prompt.")

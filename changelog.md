@@ -1,6 +1,30 @@
 
 ## Changelog - Agents7
 
+### v3.18.2 - 2nd May 2026
+
+- Fixed `agents/config_loader.py`:
+  - `_derive_persona_summary()`: now accepts an optional `Scene`; when provided, includes setting, situation, and scene rules in the summary so the guard can evaluate scene-specific OFF_TOPIC and rule violations.
+  - `_build_guard()`: now accepts an optional `scene` parameter and passes it to `_derive_persona_summary`.
+  - `load_guarded_scene_yaml_settings()`: passes the loaded `Scene` to `_build_guard` — previously the guard had no scene context at all.
+- Updated `agents/context_guard.py` (`_DEFAULT_GUARD_PROMPT`):
+  - Renamed `## Character Summary` to `## Character and Scene Context`.
+  - Tightened BROKE_CHARACTER criterion: now specifies AI/LLM-specific vocabulary explicitly instead of the vague "acknowledges being artificial in ANY way."
+  - Fixed PROMPT_INJECTION false positives: criterion now requires the character **complied** with the injection; refusing/ignoring/being confused is explicitly IN_CHARACTER.
+  - Added clearer examples distinguishing compliance from confusion/refusal for both BROKE_CHARACTER and PROMPT_INJECTION.
+- Added `tests/test_guarded_scene.py`:
+  - `test_derive_persona_summary_includes_scene_context`: verifies scene setting and rules appear in the derived summary.
+  - `test_derive_persona_summary_without_scene_has_no_scene_keys`: verifies plain persona summary has no scene keys.
+  - `test_guard_retry_succeeds_early`: verifies the retry loop terminates as soon as the guard accepts.
+  - `test_guard_input_has_correct_structure`: verifies guard receives `user_message`, `assistant_response`, `recent_history`.
+  - `test_guard_called_once_on_immediate_accept`: verifies no extra guard calls when first check passes.
+  - `test_from_yaml_builds_guarded_scene`: extended with assertion that YAML-loaded guard includes scene context.
+- Added `tests/test_context_guard.py`:
+  - `test_context_guard_prompt_includes_scene_summary`: scene-aware persona_summary renders inside the prompt.
+  - `test_context_guard_prompt_uses_scene_context_header`: verifies new prompt header.
+- Added `examples/chatter/benchmark_guarded_scene.py`: benchmark script for `GuardedSceneChatter` covering 10 cases across five categories (normal, source, injection, char_break, scene_break).
+
+
 ### v3.18.1 - 26th April 2026
 
 - Added `examples/README.md`: documents all 17 examples across

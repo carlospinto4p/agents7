@@ -385,10 +385,10 @@ def test_derive_persona_summary():
 
 
 def test_derive_persona_summary_minimal():
-    """Minimal persona produces just the name."""
+    """Minimal persona produces just the name with trailing period."""
     persona = Persona(full_name="Alice")
     summary = _derive_persona_summary(persona)
-    assert summary == "Alice"
+    assert summary == "Alice."
 
 
 # --- guard_callback ---

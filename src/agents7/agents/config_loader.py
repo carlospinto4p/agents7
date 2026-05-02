@@ -362,11 +362,19 @@ def parse_yaml_examples(config: dict, file_path: str) -> list[dict] | None:
     return examples
 
 
-def _derive_persona_summary(persona: Any) -> str:
-    """Build a one-line persona summary for the guard.
+def _derive_persona_summary(
+    persona: Any,
+    scene: Any = None,
+) -> str:
+    """Build a persona (and optional scene) summary for the guard.
+
+    When a `Scene` is provided the summary includes setting,
+    situation, and rules so the guard can evaluate scene-specific
+    off-topic responses and rule violations.
 
     :param persona: A `Persona` instance.
-    :return: Comma-separated summary string.
+    :param scene: An optional `Scene` instance.
+    :return: Multi-line summary string.
     """
     parts = [persona.full_name]
     if persona.nationality:
@@ -375,7 +383,22 @@ def _derive_persona_summary(persona: Any) -> str:
         parts.append(persona.occupation)
     if persona.personality:
         parts.append(", ".join(persona.personality[:3]))
-    return ", ".join(parts)
+    summary = ", ".join(parts) + "."
+
+    if scene is not None:
+        scene_lines: list[str] = []
+        if scene.setting:
+            scene_lines.append(f"Setting: {scene.setting.strip()}")
+        if scene.situation:
+            scene_lines.append(f"Situation: {scene.situation.strip()}")
+        if scene.rules:
+            scene_lines.append("Scene rules:")
+            for rule in scene.rules:
+                scene_lines.append(f"  - {rule}")
+        if scene_lines:
+            summary += "\n" + "\n".join(scene_lines)
+
+    return summary
 
 
 def _load_base_chatter_config(
@@ -405,7 +428,11 @@ def _load_base_chatter_config(
     return raw, persona, extra_instructions
 
 
-def _build_guard(raw: dict, persona: Any) -> Any:
+def _build_guard(
+    raw: dict,
+    persona: Any,
+    scene: Any = None,
+) -> Any:
     """Build a ContextGuard from the raw YAML config.
 
     Shared between GuardedChatter and GuardedSceneChatter
@@ -413,6 +440,9 @@ def _build_guard(raw: dict, persona: Any) -> Any:
 
     :param raw: Fully resolved YAML config dict.
     :param persona: The agent's Persona instance.
+    :param scene: Optional Scene instance (GuardedSceneChatter
+        only). When provided, scene context is included in
+        the guard's persona summary.
     :return: A configured ContextGuard instance.
     """
     from agents7.agents.context_guard import (
@@ -426,7 +456,7 @@ def _build_guard(raw: dict, persona: Any) -> Any:
     )
     persona_summary = guard_raw.get(
         "persona_summary",
-        _derive_persona_summary(persona),
+        _derive_persona_summary(persona, scene),
     )
     guard_kwargs: dict[str, Any] = {
         "name": f"{raw['name']}-guard",
@@ -513,7 +543,7 @@ def load_guarded_scene_yaml_settings(file_path: str) -> Any:
         file_path,
     )
     scene = Scene.from_dict(dict(raw.get("scene", {})))
-    guard = _build_guard(raw, persona)
+    guard = _build_guard(raw, persona, scene=scene)
 
     config: dict[str, Any] = {
         "name": raw["name"],
