@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.18 - 2nd May 2026
+
+- Optimised `export.py` (`_append_confusion_matrix`): replaced per-row `lines.append()` loop with a single `lines.extend()` generator expression — avoids N individual list appends for confusion matrix rows.
+
+
 ### v3.18.17 - 2nd May 2026
 
 - Optimised `ui/helpers.py` (`_state_cache_key`): removed `sort_keys=True` from `json.dumps` — all fields in the state dict are constructed in stable insertion order, so recursive key sorting on every Streamlit interaction was unnecessary overhead.

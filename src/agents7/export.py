@@ -336,7 +336,8 @@ def _append_confusion_matrix(
     lines.append(header)
     sep = "|" + "|".join(["---"] * (len(labels) + 1)) + "|"
     lines.append(sep)
-    for label, row in zip(labels, matrix):
-        vals = " | ".join(str(v) for v in row)
-        lines.append(f"| {label} | {vals} |")
+    lines.extend(
+        f"| {label} | {' | '.join(str(v) for v in row)} |"
+        for label, row in zip(labels, matrix)
+    )
     lines.append("")
