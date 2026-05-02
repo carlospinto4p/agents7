@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.18.15 - 2nd May 2026
+
+- Optimised `agents/chatter.py` (`Chatter`):
+  - Added `_turns` counter initialised in `__post_init__` (counting assistant messages in loaded history).
+  - `_append_assistant` increments `_turns` in O(1) instead of scanning history.
+  - `_trim_history` decrements `_turns` by the number of assistant messages removed from the front.
+  - `reset()` zeroes `_turns`.
+  - `turns` property now returns `_turns` directly — O(1) instead of O(n).
+
+
 ### v3.18.14 - 2nd May 2026
 
 - Optimised `ui/comparison/runner.py` (`run_comparison`):

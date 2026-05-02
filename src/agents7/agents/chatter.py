@@ -189,6 +189,8 @@ class Chatter(BaseAgent):
             object.__setattr__(self, "_history", history)
         else:
             object.__setattr__(self, "_history", [])
+        turns = sum(1 for m in self._history if m["role"] == "assistant")
+        object.__setattr__(self, "_turns", turns)
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Chatter":
@@ -370,6 +372,7 @@ class Chatter(BaseAgent):
         persisted history for this conversation.
         """
         self._history.clear()
+        object.__setattr__(self, "_turns", 0)
         if self.memory is not None:
             self.memory.clear(self.conversation_id)
 
@@ -391,7 +394,7 @@ class Chatter(BaseAgent):
 
         :return: Number of completed turns.
         """
-        return sum(1 for m in self._history if m["role"] == "assistant")
+        return self._turns
 
     @property
     def ended(self) -> bool:
@@ -465,6 +468,7 @@ class Chatter(BaseAgent):
     def _append_assistant(self, message: str) -> None:
         """Append an assistant message to history."""
         self._history.append({"role": "assistant", "content": message})
+        object.__setattr__(self, "_turns", self._turns + 1)
         self._trim_history()
         self._persist()
 
@@ -481,7 +485,12 @@ class Chatter(BaseAgent):
         max_messages = self.max_history * 2
         if len(self._history) > max_messages:
             excess = len(self._history) - max_messages
+            removed = sum(
+                1 for m in self._history[:excess] if m["role"] == "assistant"
+            )
             del self._history[:excess]
+            if removed:
+                object.__setattr__(self, "_turns", self._turns - removed)
 
     def _persist(self) -> None:
         """Save history to the memory backend if set."""
