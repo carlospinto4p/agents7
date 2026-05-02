@@ -71,7 +71,7 @@ def _state_cache_key(state: AgentBuilderState) -> str:
             for f in state.fields
         ],
     }
-    raw = json.dumps(data, sort_keys=True, default=str)
+    raw = json.dumps(data, default=str)
     return hashlib.md5(raw.encode()).hexdigest()
 
 

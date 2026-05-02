@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.17 - 2nd May 2026
+
+- Optimised `ui/helpers.py` (`_state_cache_key`): removed `sort_keys=True` from `json.dumps` — all fields in the state dict are constructed in stable insertion order, so recursive key sorting on every Streamlit interaction was unnecessary overhead.
+
+
 ### v3.18.16 - 2nd May 2026
 
 - Optimised `ui/_pages/__init__.py` (`safe_index`): replaced `list.index()` O(n) lookup with a `{value: index}` dict comprehension — O(1) for large option lists on every Streamlit re-render.
