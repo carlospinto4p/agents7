@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.18.4 - 2nd May 2026
+
+- Fixed `agents/context_guard.py` (`ContextGuard`):
+  - Added `_agent_instruction()` override: tells the model to respond with a JSON object only and not to reproduce the schema definition. Addresses guard parse failures where the model echoed the textual schema back instead of producing JSON.
+- Added `tests/test_context_guard.py`:
+  - `test_context_guard_agent_instruction_requires_json`: verifies the instruction explicitly mentions JSON and prohibits schema reproduction.
+
+
 ### v3.18.3 - 2nd May 2026
 
 - Rotated changelog: archived 29 entries to `changelog/2026.md`, keeping 30.

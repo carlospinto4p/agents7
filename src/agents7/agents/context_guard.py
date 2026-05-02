@@ -199,6 +199,14 @@ class ContextGuard(Detector):
             )
         super().__post_init__()
 
+    def _agent_instruction(self) -> str:
+        return (
+            "Respond ONLY with a valid JSON object. "
+            "Do not reproduce or quote the schema definition. "
+            "Stick to the reasons defined in the output model "
+            "schema above."
+        )
+
     @classmethod
     def from_yaml(
         cls,

@@ -125,6 +125,14 @@ def test_context_guard_prompt_uses_scene_context_header():
     assert "Character and Scene Context" in guard.system_prompt
 
 
+def test_context_guard_agent_instruction_requires_json():
+    """Agent instruction tells the model to respond with JSON only."""
+    guard = make_guard()
+    instruction = guard._agent_instruction()
+    assert "JSON" in instruction
+    assert "schema definition" in instruction
+
+
 def test_context_guard_custom_prompt():
     """Custom system_prompt is preserved, not overwritten."""
     guard = make_guard(system_prompt="Custom guard prompt.")
