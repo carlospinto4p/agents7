@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.13 - 2nd May 2026
+
+- Optimised `llm/cache.py` (`_CacheKeyBuilder.make_key`):
+  - Pre-serialises `output_format` dict with `sort_keys=True` once instead of sorting the entire nested payload on every LLM call.
+  - Removes `sort_keys=True` from the outer `json.dumps`, relying on stable insertion order for all fixed-key fields.
+
+
 ### v3.18.12 - 2nd May 2026
 
 - Fixed `llm/cache.py` and `agents/memory.py`:

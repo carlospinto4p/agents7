@@ -74,6 +74,14 @@ class _CacheKeyBuilder:
 
         Returns a hex SHA-256 digest.
         """
+        # Canonicalize output_format separately: it is the only field
+        # whose keys can vary in order (Pydantic JSON schema dicts).
+        # All other fields are primitives or lists with stable order.
+        fmt: str | None
+        if isinstance(output_format, dict):
+            fmt = json.dumps(output_format, sort_keys=True)
+        else:
+            fmt = output_format  # str or None — already hashable as-is
         payload = {
             "model_id": model_id,
             "method": method,
@@ -82,10 +90,10 @@ class _CacheKeyBuilder:
             "temperature": temperature,
             "seed": seed,
             "max_tokens": max_tokens,
-            "output_format": output_format,
+            "output_format": fmt,
             "think": think,
         }
-        raw = json.dumps(payload, sort_keys=True)
+        raw = json.dumps(payload)
         return hashlib.sha256(raw.encode()).hexdigest()
 
 
