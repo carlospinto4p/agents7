@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.18.28 - 2nd May 2026
+
+- Refactored `metrics.py` and `export.py`:
+  - Added `_resolve_enum()` to `metrics.py`: shared helper
+    that returns `val.name` for enum members, otherwise `val`.
+  - Updated `_extract_fields()` in `metrics.py` to use
+    `_resolve_enum`; simplified to a dict comprehension.
+  - Updated `_format_value()` in `export.py` to import and
+    use `_resolve_enum`; eliminates the duplicated
+    `hasattr(val, "name")` pattern.
+
+
 ### v3.18.27 - 2nd May 2026
 
 - Refactored `agents/config_loader.py`:

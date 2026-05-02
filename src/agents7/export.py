@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from agents7.metrics import _resolve_enum
 from agents7.models.base import AgentResponse
 
 
@@ -87,9 +88,7 @@ def _format_value(val: object) -> str:
     """Format a model field value for CSV output."""
     if val is None:
         return ""
-    if hasattr(val, "name"):
-        return val.name
-    return str(val)
+    return str(_resolve_enum(val))
 
 
 def export_dataframe(

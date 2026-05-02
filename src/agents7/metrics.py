@@ -308,16 +308,14 @@ def build_confusion_matrix(
     return {"labels": labels, "matrix": matrix}
 
 
+def _resolve_enum(val: object) -> object:
+    """Return ``val.name`` for enum members, otherwise ``val``."""
+    return val.name if hasattr(val, "name") else val
+
+
 def _extract_fields(model: BaseModel, fields: list[str]) -> dict:
     """Pull field values from a model, using enum ``.name``."""
-    out: dict = {}
-    for f in fields:
-        val = getattr(model, f, None)
-        if hasattr(val, "name"):
-            out[f] = val.name
-        else:
-            out[f] = val
-    return out
+    return {f: _resolve_enum(getattr(model, f, None)) for f in fields}
 
 
 def _compare_field(actual: object, expected: object) -> bool:
