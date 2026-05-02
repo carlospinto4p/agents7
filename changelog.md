@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.18.23 - 2nd May 2026
+
+- Refactored `agents/labeler.py`: split into focused collaborators.
+  - Added `agents/retry.py` (`ParseRetryHandler`): encapsulates sync/async parse-retry logic with `retry_sync()` and `retry_async()`.
+  - Added `agents/batch.py` (`BatchProcessor`): encapsulates sync/async batch execution, chunking, prompting, parsing, and flattening.
+  - `Labeler.__post_init__` now creates `_retry_handler` and `_batch_processor` and delegates accordingly; all public methods unchanged.
+  - Updated `tests/test_parse_retry.py`: `test_parse_retry_message_content` now calls `ParseRetryHandler._retry_message` directly.
+
+
 ### v3.18.22 - 2nd May 2026
 
 - Fixed bare `except Exception:` blocks that swallowed errors silently:

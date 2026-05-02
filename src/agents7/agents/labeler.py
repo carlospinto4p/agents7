@@ -1,18 +1,14 @@
-import asyncio
-from asyncio import as_completed
 from dataclasses import dataclass, field, replace
-from math import ceil
 from typing import Callable
 
-from tqdm import tqdm
-from tqdm.asyncio import tqdm as async_tqdm
 from pydantic import BaseModel, create_model
-
-from cpinto.functions import identity_func
+from tqdm import tqdm
 
 from agents7.agents.base import BaseAgent
+from agents7.agents.batch import BatchProcessor
 from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.parsing import ResponseParser
+from agents7.agents.retry import ParseRetryHandler
 from agents7.agents.streaming import (
     AgentAsyncStreamResult,
     AgentStreamResult,
@@ -20,7 +16,6 @@ from agents7.agents.streaming import (
 from agents7.agents.utils import (
     get_examples_str,
     model_class_to_string,
-    run_with_semaphore,
 )
 from agents7.call_log import CallRecord, generate_trace_id
 from agents7.exceptions import AgentConfigurationError, ParseError
@@ -98,25 +93,38 @@ class Labeler(BaseAgent):
             items=(list[self.output_model], ...),
             __base__=BaseModel,
         )
+        output_schema = self.output_model.model_json_schema()
+        output_list_schema = output_model_list.model_json_schema()
+        parser = ResponseParser(
+            output_model=self.output_model,
+            output_model_list=output_model_list,
+            name=self.name,
+            validators=self.validators,
+        )
         object.__setattr__(self, "_output_model_list", output_model_list)
+        object.__setattr__(self, "_output_schema", output_schema)
+        object.__setattr__(self, "_output_list_schema", output_list_schema)
+        object.__setattr__(self, "_parser", parser)
         object.__setattr__(
             self,
-            "_output_schema",
-            self.output_model.model_json_schema(),
-        )
-        object.__setattr__(
-            self,
-            "_output_list_schema",
-            output_model_list.model_json_schema(),
-        )
-        object.__setattr__(
-            self,
-            "_parser",
-            ResponseParser(
-                output_model=self.output_model,
-                output_model_list=output_model_list,
+            "_retry_handler",
+            ParseRetryHandler(
+                engine=self.engine,
+                parser=parser,
                 name=self.name,
-                validators=self.validators,
+                max_retries=self.max_parse_retries,
+                output_schema=output_schema,
+            ),
+        )
+        object.__setattr__(
+            self,
+            "_batch_processor",
+            BatchProcessor(
+                engine=self.engine,
+                parser=parser,
+                name=self.name,
+                preprocessor=self.preprocessor,
+                output_list_schema=output_list_schema,
             ),
         )
 
@@ -313,10 +321,8 @@ class Labeler(BaseAgent):
         try:
             parsed = self._parser.parse(response["response"])
         except ParseError as err:
-            parsed = self._retry_parse_sync(
-                err,
-                messages,
-                chat_kwargs,
+            parsed = self._retry_handler.retry_sync(
+                err, messages, chat_kwargs
             )
         return self._finalize_response(response, parsed)
 
@@ -348,16 +354,10 @@ class Labeler(BaseAgent):
         try:
             parsed = self._parser.parse(response["response"])
         except ParseError as err:
-            parsed = await self._retry_parse_async(
-                err,
-                messages,
-                chat_kwargs,
+            parsed = await self._retry_handler.retry_async(
+                err, messages, chat_kwargs
             )
-        return self._finalize_response(
-            response,
-            parsed,
-            idx=_idx,
-        )
+        return self._finalize_response(response, parsed, idx=_idx)
 
     def act_stream(
         self,
@@ -431,14 +431,13 @@ class Labeler(BaseAgent):
         :return: List of `AgentResponse`, one per input.
             See `act()` for the response schema.
         """
-        if iter_func is None:
-            iter_func = identity_func
-        input_chunks = self._chunk_inputs(input_list, requests_per_prompt)
-        chunk_responses = [
-            self._act_in_batch_request(input_data, chat_kwargs=chat_kwargs)
-            for input_data in iter_func(input_chunks)
-        ]
-        return self._flatten_batch_responses(chunk_responses)
+        return self._batch_processor.act_in_batch(
+            input_list,
+            self.prompt_for_batch,
+            self._sanitize_chat_kwargs(chat_kwargs),
+            requests_per_prompt=requests_per_prompt,
+            iter_func=iter_func,
+        )
 
     async def act_in_batch_async(
         self,
@@ -461,151 +460,14 @@ class Labeler(BaseAgent):
         :return: List of `AgentResponse`, one per input.
             See `act()` for the response schema.
         """
-        settings = batch_settings or BatchSettings()
-        sem = (
-            asyncio.Semaphore(settings.max_concurrent)
-            if settings.max_concurrent
-            else None
+        return await self._batch_processor.act_in_batch_async(
+            input_list,
+            self.prompt_for_batch,
+            self._sanitize_chat_kwargs(chat_kwargs),
+            requests_per_prompt=requests_per_prompt,
+            with_tqdm=with_tqdm,
+            batch_settings=batch_settings,
         )
-
-        input_chunks = self._chunk_inputs(input_list, requests_per_prompt)
-        tasks = [
-            run_with_semaphore(
-                self._act_in_batch_async_request(
-                    input_data,
-                    chat_kwargs=chat_kwargs,
-                    _idx=idx,
-                ),
-                sem,
-            )
-            for idx, input_data in enumerate(input_chunks)
-        ]
-
-        # Collect chunk responses in order
-        chunk_responses: list[AgentResponse | None] = [None] * len(tasks)
-        if with_tqdm:
-            for coro in async_tqdm.as_completed(
-                tasks,
-                total=len(tasks),
-                desc=(f"Agent `{self.name}`: acting in batch"),
-            ):
-                response = await coro
-                chunk_responses[response.idx] = response
-        else:
-            for coro in as_completed(tasks):
-                response = await coro
-                chunk_responses[response.idx] = response
-
-        return self._flatten_batch_responses(chunk_responses)
-
-    async def _act_in_batch_async_request(
-        self,
-        input_list: list[dict | list[dict]],
-        chat_kwargs: dict | None = None,
-        _idx: int = 0,
-    ) -> AgentResponse:
-        """Send a single async batch request to the LLM.
-
-        :param input_list: List of input data to process.
-        :param chat_kwargs: See `act()` for details.
-        :param _idx: Internal index for batch tracking.
-        :return: An `AgentResponse` wrapping the batch
-            output model.
-        """
-        params = self._batch_chat_params(input_list, chat_kwargs)
-        response = self._parse_batch_response(
-            await self.engine.chat_async(**params)
-        )
-        response["idx"] = _idx
-        return AgentResponse(**response)
-
-    def _act_in_batch_request(
-        self,
-        input_list: list[dict | list[dict]],
-        chat_kwargs: dict | None = None,
-    ) -> AgentResponse:
-        """Send a single sync batch request to the LLM.
-
-        :param input_list: List of input data to process.
-        :param chat_kwargs: See `act()` for details.
-        :return: An `AgentResponse` wrapping the batch
-            output model.
-        """
-        params = self._batch_chat_params(input_list, chat_kwargs)
-        response = self._parse_batch_response(self.engine.chat(**params))
-        return AgentResponse(**response)
-
-    @staticmethod
-    def _chunk_inputs(
-        input_list: list[dict | list[dict]],
-        requests_per_prompt: int,
-    ) -> list[list[dict | list[dict]]]:
-        """Split an input list into chunks."""
-        return [
-            input_list[
-                i * requests_per_prompt : (i + 1) * requests_per_prompt
-            ]
-            for i in range(ceil(len(input_list) / requests_per_prompt))
-        ]
-
-    def _batch_chat_params(
-        self,
-        input_list: list[dict | list[dict]],
-        chat_kwargs: dict | None = None,
-    ) -> dict:
-        """Build kwargs for a batch LLM chat call."""
-        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
-        if self.preprocessor is not None:
-            input_list = [self._preprocess(item) for item in input_list]
-        logger.debug(
-            f"Agent `{self.name}`: processing batch input data:\n{input_list}"
-        )
-        return {
-            "messages": [
-                {
-                    "role": "system",
-                    "content": self.prompt_for_batch,
-                },
-                {
-                    "role": "user",
-                    "content": (f"Process the following:\n{input_list}"),
-                },
-            ],
-            "temperature": 0,
-            "output_format": self._output_list_schema,
-            **chat_kwargs,
-        }
-
-    def _parse_batch_response(self, response: dict) -> dict:
-        """Parse a raw batch LLM response dict."""
-        self._strip_role(response)
-        try:
-            response["model"] = self._parser.parse(
-                response["response"], for_batch=True
-            )
-        except ParseError:
-            response["model"] = None
-        return response
-
-    def _flatten_batch_responses(
-        self,
-        chunk_responses: list[AgentResponse],
-    ) -> list[AgentResponse]:
-        """Flatten batch chunk responses into individual
-        AgentResponses."""
-        agent_responses = []
-        for chunk in chunk_responses:
-            for item in chunk.model.items:
-                agent_responses.append(
-                    AgentResponse(
-                        response=chunk.response,
-                        model=self._parser.run_validators(item),
-                        thinking=chunk.thinking,
-                        metrics=chunk.metrics,
-                        idx=len(agent_responses),
-                    )
-                )
-        return agent_responses
 
     def _build_act_messages(
         self,
@@ -617,7 +479,9 @@ class Labeler(BaseAgent):
         :return: Messages list for engine.chat().
         """
         logger.debug(
-            f"Agent `{self.name}`: processing input data:\n{input_data}"
+            "Agent `%s`: processing input data:\n%s",
+            self.name,
+            input_data,
         )
         return [
             {"role": "system", "content": self.prompt},
@@ -641,137 +505,11 @@ class Labeler(BaseAgent):
         :param idx: Optional index for batch tracking.
         :return: Fully built AgentResponse.
         """
-        response["model"] = self._parser.run_validators(
-            parsed,
-        )
+        response["model"] = self._parser.run_validators(parsed)
         response["idx"] = idx
         agent_response = AgentResponse(**response)
         self._emit_call_log(agent_response)
         return agent_response
-
-    def _retry_parse_sync(
-        self,
-        error: ParseError,
-        messages: list[dict[str, str]],
-        chat_kwargs: dict,
-    ) -> "BaseModel | None":
-        """Retry loop for parse failures (sync).
-
-        :param error: The parse error from the first attempt.
-        :param messages: Original messages list.
-        :param chat_kwargs: Sanitized chat kwargs.
-        :return: Parsed model or None if all retries fail.
-        """
-        if self.max_parse_retries <= 0:
-            return None
-        retry_messages = list(messages)
-        last_error = error
-        for attempt in range(self.max_parse_retries):
-            self._log_retry(attempt, last_error)
-            retry_messages.append(
-                self._parse_retry_message(last_error),
-            )
-            raw = self.engine.chat(
-                **self._retry_chat_kwargs(
-                    retry_messages,
-                    chat_kwargs,
-                )
-            )
-            parsed, last_error = self._try_parse(raw)
-            if parsed is not None:
-                return parsed
-        return None
-
-    async def _retry_parse_async(
-        self,
-        error: ParseError,
-        messages: list[dict[str, str]],
-        chat_kwargs: dict,
-    ) -> "BaseModel | None":
-        """Retry loop for parse failures (async).
-
-        :param error: The parse error from the first attempt.
-        :param messages: Original messages list.
-        :param chat_kwargs: Sanitized chat kwargs.
-        :return: Parsed model or None if all retries fail.
-        """
-        if self.max_parse_retries <= 0:
-            return None
-        retry_messages = list(messages)
-        last_error = error
-        for attempt in range(self.max_parse_retries):
-            self._log_retry(attempt, last_error)
-            retry_messages.append(
-                self._parse_retry_message(last_error),
-            )
-            raw = await self.engine.chat_async(
-                **self._retry_chat_kwargs(
-                    retry_messages,
-                    chat_kwargs,
-                )
-            )
-            parsed, last_error = self._try_parse(raw)
-            if parsed is not None:
-                return parsed
-        return None
-
-    def _log_retry(
-        self,
-        attempt: int,
-        error: ParseError,
-    ) -> None:
-        """Log a parse retry attempt."""
-        logger.warning(
-            f"Agent `{self.name}`: parse retry "
-            f"{attempt + 1}/{self.max_parse_retries} "
-            f"after error: {error}"
-        )
-
-    def _retry_chat_kwargs(
-        self,
-        retry_messages: list[dict[str, str]],
-        chat_kwargs: dict,
-    ) -> dict:
-        """Build kwargs for a retry chat call."""
-        return {
-            "messages": retry_messages,
-            "temperature": 0,
-            "output_format": self._output_schema,
-            **chat_kwargs,
-        }
-
-    def _try_parse(
-        self,
-        raw_response: dict,
-    ) -> "tuple[BaseModel | None, ParseError | None]":
-        """Try parsing a retry response.
-
-        :param raw_response: Raw chat response from the
-            engine.
-        :return: (parsed_model, None) on success, or
-            (None, error) on failure.
-        """
-        self._strip_role(raw_response)
-        try:
-            parsed = self._parser.parse(
-                raw_response["response"],
-            )
-            return parsed, None
-        except ParseError as e:
-            return None, e
-
-    @staticmethod
-    def _parse_retry_message(error: ParseError) -> dict[str, str]:
-        """Build a user message for a parse retry attempt."""
-        return {
-            "role": "user",
-            "content": (
-                "Your previous response could not be parsed. "
-                f"Error: {error}\n"
-                "Please respond again with valid JSON matching "
-                "the schema exactly."
-            ),
-        }
 
     def _emit_call_log(
         self,

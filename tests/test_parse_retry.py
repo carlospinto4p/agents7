@@ -194,11 +194,12 @@ def test_yaml_no_max_parse_retries(tmp_path):
 
 
 def test_parse_retry_message_content():
-    """_parse_retry_message builds correct retry message."""
+    """ParseRetryHandler._retry_message builds correct retry message."""
+    from agents7.agents.retry import ParseRetryHandler
     from agents7.exceptions import ParseError
 
     error = ParseError("bad json")
-    msg = Labeler._parse_retry_message(error)
+    msg = ParseRetryHandler._retry_message(error)
     assert msg["role"] == "user"
     assert "bad json" in msg["content"]
     assert "valid JSON" in msg["content"]
