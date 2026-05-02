@@ -37,6 +37,18 @@ class Detector(Labeler):
 
     output_model: type[Property]
 
+    def _validate_output_model(self) -> None:
+        """Validate that output_model is a Property subclass.
+
+        Subclasses can override this to accept a different model
+        base class (e.g. Classifier accepts ClassificationProperty).
+        """
+        if not issubclass(self.output_model, Property):
+            raise PropertyConfigurationError(
+                "`output_model` must be a subclass of "
+                "`agents7.models.Property` for the `Detector` agents."
+            )
+
     def __post_init__(self) -> None:
         """
         Post-initialization method to validate the agent.
@@ -45,11 +57,7 @@ class Detector(Labeler):
         Validates that output_model is a subclass of Property.
         """
         super().__post_init__()
-        if not issubclass(self.output_model, Property):
-            raise PropertyConfigurationError(
-                "`output_model` must be a subclass of "
-                "`agents7.models.Property` for the `Detector` agents."
-            )
+        self._validate_output_model()
         object.__setattr__(
             self,
             "_possible_reasons",

@@ -35,30 +35,26 @@ class Classifier(Detector):
 
     output_model: type[ClassificationProperty]
 
-    def __post_init__(self) -> None:
-        """
-        Post-initialization method to validate the agent.
-
-        Validates that output_model is a subclass of ClassificationProperty.
-        """
-        # Skip Detector's validation: ClassificationProperty is not a
-        # Property subclass, so Detector.__post_init__ would reject it.
-        super(Detector, self).__post_init__()
+    def _validate_output_model(self) -> None:
+        """Validate that output_model is a ClassificationProperty subclass."""
         if not issubclass(self.output_model, ClassificationProperty):
             raise PropertyConfigurationError(
                 "`output_model` must be a subclass of "
                 "`agents7.models.ClassificationProperty`"
                 " for `Classifier` agents."
             )
+
+    def __post_init__(self) -> None:
+        """
+        Post-initialization method to validate the agent.
+
+        Validates that output_model is a subclass of ClassificationProperty.
+        """
+        super().__post_init__()
         object.__setattr__(
             self,
             "_possible_categories",
             extract_enum_members(self.output_model, "category"),
-        )
-        object.__setattr__(
-            self,
-            "_possible_reasons",
-            extract_enum_members(self.output_model, "reason"),
         )
 
     @classmethod

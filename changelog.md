@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.18.26 - 2nd May 2026
+
+- Refactored `agents/detector.py`:
+  - Extracted `_validate_output_model()` method so subclasses can
+    override it without hacking the MRO.
+- Refactored `agents/classifier.py`:
+  - Overrides `_validate_output_model()` instead of using
+    `super(Detector, self).__post_init__()` to skip Detector's check.
+  - `__post_init__` now calls `super().__post_init__()` normally;
+    `_possible_reasons` is inherited from `Detector.__post_init__`.
+
+
 ### v3.18.25 - 2nd May 2026
 
 - Refactored `agents/personality.py`:
