@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.6 - 2nd May 2026
+
+- Added `.claude/skills/validate-guarded-scene/SKILL.md`: new skill for full `GuardedSceneChatter` validation — pre-checks guard prompt and scene config, runs the benchmark as a background task, polls via `ScheduleWakeup`, writes a dated report to `docs/benchmarks/`, backlogs new findings, and commits the report.
+
+
 ### v3.18.5 - 2nd May 2026
 
 - Updated `agents/context_guard.py` (`_DEFAULT_GUARD_PROMPT`):
