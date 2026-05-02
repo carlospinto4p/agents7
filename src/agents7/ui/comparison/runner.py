@@ -1,5 +1,6 @@
 """Comparison runner — run two prompt versions side-by-side."""
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from typing import Callable
 
@@ -108,26 +109,29 @@ def run_comparison(
     results: list[ComparisonResult] = []
     total = len(inputs)
 
-    for idx, input_data in enumerate(inputs):
-        out_a, met_a, err_a = _run_single(agent_a, input_data)
-        out_b, met_b, err_b = _run_single(agent_b, input_data)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        for idx, input_data in enumerate(inputs):
+            fut_a = pool.submit(_run_single, agent_a, input_data)
+            fut_b = pool.submit(_run_single, agent_b, input_data)
+            out_a, met_a, err_a = fut_a.result()
+            out_b, met_b, err_b = fut_b.result()
 
-        match = out_a is not None and out_b is not None and out_a == out_b
+            match = out_a is not None and out_b is not None and out_a == out_b
 
-        results.append(
-            ComparisonResult(
-                input_data=input_data,
-                output_a=out_a,
-                output_b=out_b,
-                metrics_a=met_a,
-                metrics_b=met_b,
-                error_a=err_a,
-                error_b=err_b,
-                outputs_match=match,
+            results.append(
+                ComparisonResult(
+                    input_data=input_data,
+                    output_a=out_a,
+                    output_b=out_b,
+                    metrics_a=met_a,
+                    metrics_b=met_b,
+                    error_a=err_a,
+                    error_b=err_b,
+                    outputs_match=match,
+                )
             )
-        )
 
-        if progress_callback is not None:
-            progress_callback(idx + 1, total)
+            if progress_callback is not None:
+                progress_callback(idx + 1, total)
 
     return results

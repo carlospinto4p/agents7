@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.18.14 - 2nd May 2026
+
+- Optimised `ui/comparison/runner.py` (`run_comparison`):
+  - Runs version A and version B `_run_single()` calls concurrently via `ThreadPoolExecutor(max_workers=2)`, halving wall-clock time for each comparison input.
+
+
 ### v3.18.13 - 2nd May 2026
 
 - Optimised `llm/cache.py` (`_CacheKeyBuilder.make_key`):
