@@ -14,7 +14,7 @@
 
 - [x] `agents/pipeline.py:148,195,317,364` — Four bare `except Exception:` blocks in batch/stream processing hide which step failed; narrow scope and log error context. **HIGH/S**
 - [x] `metrics.py:113,150` / `llm/base.py:360,384` / `agents/parsing.py:65` — Bare `except Exception:` blocks silently swallow errors without logging; add at minimum a `logger.warning`. **MED/S**
-- [ ] `agents/labeler.py` — Single class handles prompt building, batching, streaming, parsing, retries, preprocessing, logging, and validators (5+ responsibilities); split into focused collaborators. **HIGH/L**
+- [x] `agents/labeler.py` — Single class handles prompt building, batching, streaming, parsing, retries, preprocessing, logging, and validators (5+ responsibilities); split into focused collaborators. **HIGH/L**
 - [ ] `llm/base.py` — `LLMEngine` mixes caching, retry, fallback, cost injection, and sync/async/stream dispatch; extract into separate concerns. **HIGH/L**
 - [ ] `agents/` — 5-level inheritance chain (`Chatter → PersonalityChatter → SceneChatter → GuardedChatter → GuardedSceneChatter`) plus `Labeler → Detector → Classifier/Regressor`; flatten with composition. **HIGH/M**
 - [ ] `agents/guarded.py` + `agents/guarded_scene.py` — Two separate guarded agents duplicate guard mechanics; unify via a parameterised mixin or base. **MED/M**
