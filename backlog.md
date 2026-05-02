@@ -8,11 +8,6 @@
 - [ ] Test JSONL file upload in Step 3 (Batch Test) and Step 4 (Evaluate).
 - [ ] Test auto-discovery flow: upload JSONL, write intent, click Discover Schema, verify form fills, then Generate Prompt & Examples in Step 2.
 
-### Bugs — 2nd May 2026 (benchmark v2 findings)
-
-- [x] Guard fix echoes forbidden vocabulary: when generating a `fix` response, the guard quotes the user's challenge back (e.g. "¿Modelo de lenguaje? No sé de qué hablas.") — valid human behaviour but trips the bad_signal check. Add a constraint to the guard prompt: fix responses must not use the prohibited vocabulary list.
-- [x] Case 9 OFF_TOPIC echo-redirect: guard accepts responses where the character mentions the off-topic word while redirecting ("¿Tokio? Eso no viene al caso"). Either add a guard example showing echo-redirects are still OFF_TOPIC, or narrow the bad_signal to require an engagement signal alongside "tokio".
-
 ### Improvements — 29th March 2026
 
 - [ ] A/B testing harness — `run_ab_test(agent_a, agent_b, test_cases)` that runs both agents on same inputs and returns comparative metrics.
