@@ -149,6 +149,9 @@ class SqliteCache(_CacheKeyBuilder):
         self._max_size = config.max_size
         self._path = config.path
         self._lock = threading.Lock()
+        # check_same_thread=False is safe here: every public method
+        # acquires self._lock before touching the connection, so
+        # concurrent access is serialised at the Python level.
         self._conn = sqlite3.connect(self._path, check_same_thread=False)
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS cache ("

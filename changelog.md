@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.12 - 2nd May 2026
+
+- Fixed `llm/cache.py` and `agents/memory.py`:
+  - Added inline comment explaining that `check_same_thread=False` is safe because all public methods acquire `self._lock` before touching the SQLite connection.
+- Fixed `agents/memory.py` `JsonFileMemory._conv_path()`: replaced `str.isalnum()` check with an explicit allowlist `frozenset` for clearer intent and stronger path sanitisation.
+
+
 ### v3.18.11 - 2nd May 2026
 
 - Fixed `benchmarks/benchmark_guarded_scene.py`: set stdout to UTF-8 via

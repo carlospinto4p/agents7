@@ -163,9 +163,12 @@ class JsonFileMemory(MemoryBackend):
 
     def _conv_path(self, conversation_id: str) -> Path:
         """Return the file path for a conversation."""
-        safe = "".join(
-            c if c.isalnum() or c in "-_." else "_" for c in conversation_id
+        allowed = frozenset(
+            "abcdefghijklmnopqrstuvwxyz"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "0123456789-_."
         )
+        safe = "".join(c if c in allowed else "_" for c in conversation_id)
         return self._dir / f"{safe}.json"
 
 
@@ -182,6 +185,9 @@ class SqliteMemory(MemoryBackend):
     def __init__(self, path: str) -> None:
         self._path = path
         self._lock = threading.Lock()
+        # check_same_thread=False is safe here: every public method
+        # acquires self._lock before touching the connection, so
+        # concurrent access is serialised at the Python level.
         self._conn = sqlite3.connect(path, check_same_thread=False)
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS messages ("

@@ -12,9 +12,9 @@
 
 #### Security
 
-- [ ] `llm/cache.py:152` — `check_same_thread=False` on SQLite without documenting the manual lock that compensates; add inline comment.
-- [ ] `agents/memory.py:185` — Same `check_same_thread=False` pattern in `SqliteMemory`; add inline comment.
-- [ ] `agents/memory.py:164` — Conversation path sanitisation replaces non-alphanumeric chars but an explicit allowlist or `urllib.parse.quote()` would be more robust.
+- [x] `llm/cache.py:152` — `check_same_thread=False` on SQLite without documenting the manual lock that compensates; add inline comment.
+- [x] `agents/memory.py:185` — Same `check_same_thread=False` pattern in `SqliteMemory`; add inline comment.
+- [x] `agents/memory.py:164` — Conversation path sanitisation replaces non-alphanumeric chars but an explicit allowlist or `urllib.parse.quote()` would be more robust.
 
 #### Performance
 
