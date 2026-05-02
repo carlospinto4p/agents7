@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.21 - 2nd May 2026
+
+- Optimised `ui/_pages/1_Define.py` and `ui/_pages/2_Configure.py`: wrapped `discover_schema()` and `generate_prompt()` calls with `ThreadPoolExecutor` — offloads blocking LLM I/O off the Streamlit worker thread.
+
+
 ### v3.18.20 - 2nd May 2026
 
 - Optimised `agents/memory.py` (`JsonFileMemory`): added `_MAX_CACHE = 100` cap with insertion-order eviction — prevents unbounded `_cache` dict growth in long UI sessions.

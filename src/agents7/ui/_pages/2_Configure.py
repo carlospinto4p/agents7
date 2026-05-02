@@ -111,6 +111,8 @@ def _prompt_generation_section(sd: dict) -> None:
 
 def _run_prompt_generation(sd: dict) -> None:
     """Execute prompt generation and merge results."""
+    from concurrent.futures import ThreadPoolExecutor
+
     from agents7.llm import LLMEngine
     from agents7.ui.discovery.analyzer import generate_prompt
 
@@ -123,9 +125,15 @@ def _run_prompt_generation(sd: dict) -> None:
 
     with st.spinner("Generating prompt and examples..."):
         try:
-            result = generate_prompt(
-                engine, agent_type, intent, sd, sample_data
-            )
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                result = pool.submit(
+                    generate_prompt,
+                    engine,
+                    agent_type,
+                    intent,
+                    sd,
+                    sample_data,
+                ).result()
             sd["last_generation_messages"] = result.pop("_messages", [])
             sd["system_prompt"] = result["system_prompt"]
             sd["examples"] = result["examples"]

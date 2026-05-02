@@ -237,6 +237,8 @@ def _discovery_section(sd: dict) -> None:
 
 def _run_discovery(sd: dict) -> None:
     """Execute schema discovery and merge results."""
+    from concurrent.futures import ThreadPoolExecutor
+
     from agents7.llm import LLMEngine
     from agents7.ui.discovery.analyzer import discover_schema
 
@@ -249,7 +251,14 @@ def _run_discovery(sd: dict) -> None:
 
     with st.spinner("Discovering schema..."):
         try:
-            result = discover_schema(engine, agent_type, intent, sample_data)
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                result = pool.submit(
+                    discover_schema,
+                    engine,
+                    agent_type,
+                    intent,
+                    sample_data,
+                ).result()
             sd["last_discovery_messages"] = result.pop("_messages", [])
             for key, value in result.items():
                 sd[key] = value
