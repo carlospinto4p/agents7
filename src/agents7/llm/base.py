@@ -357,7 +357,8 @@ class LLMEngine:
                 **{input_kwarg: input_val},
                 **common,
             )
-        except Exception:
+        except Exception as e:
+            logger.warning("Fallback model also failed: %s", e, exc_info=True)
             raise primary_error
 
     async def _fallback_async(
@@ -381,7 +382,8 @@ class LLMEngine:
                 **{input_kwarg: input_val},
                 **common,
             )
-        except Exception:
+        except Exception as e:
+            logger.warning("Fallback model also failed: %s", e, exc_info=True)
             raise primary_error
 
     # --- Public API ---

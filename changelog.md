@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.18.22 - 2nd May 2026
+
+- Fixed bare `except Exception:` blocks that swallowed errors silently:
+  - `agents/pipeline.py`: added `exc_info=True` to all four mapper-failure `logger.error` calls; converted f-string log messages to `%`-style.
+  - `metrics.py`: added `logger.warning` with `exc_info=True` before batch→sequential fallback in `run_evaluation` and `run_evaluation_async`; added missing `logger` import.
+  - `llm/base.py`: added `logger.warning` with `exc_info=True` in `_fallback_sync` and `_fallback_async` before re-raising the primary error.
+  - `agents/parsing.py`: added `logger.debug` for the direct-parse→enum-conversion fallback path; added `exc_info=True` to both `logger.error` calls.
+
+
 ### v3.18.21 - 2nd May 2026
 
 - Optimised `ui/_pages/1_Define.py` and `ui/_pages/2_Configure.py`: wrapped `discover_schema()` and `generate_prompt()` calls with `ThreadPoolExecutor` — offloads blocking LLM I/O off the Streamlit worker thread.

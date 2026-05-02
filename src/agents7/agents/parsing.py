@@ -62,14 +62,22 @@ class ResponseParser:
 
         try:
             model = model_cls.model_validate_json(response)
-        except Exception:
+        except Exception as e:
+            logger.debug(
+                "Agent `%s`: direct parse failed, trying"
+                " enum-name conversion: %s",
+                self.name,
+                e,
+            )
             try:
                 converted = self._convert_enum_names_to_values(response)
                 model = model_cls.model_validate_json(converted)
             except Exception as e:
                 logger.error(
-                    f"Agent `{self.name}`: error parsing "
-                    f"structured response:\n{e}"
+                    "Agent `%s`: error parsing structured response: %s",
+                    self.name,
+                    e,
+                    exc_info=True,
                 )
                 raise ParseError(
                     f"Agent `{self.name}`: failed to parse "
@@ -97,8 +105,11 @@ class ResponseParser:
                 model = validator(model)
             except Exception as e:
                 logger.error(
-                    f"Agent `{self.name}`: validator "
-                    f"`{validator.__name__}` failed: {e}"
+                    "Agent `%s`: validator `%s` failed: %s",
+                    self.name,
+                    validator.__name__,
+                    e,
+                    exc_info=True,
                 )
                 return None
         return model

@@ -147,7 +147,10 @@ class Pipeline:
                 return step.mapper(response)
             except Exception as e:
                 logger.error(
-                    f"Pipeline mapper failed at step {step_idx}: {e}"
+                    "Pipeline mapper failed at step %d: %s",
+                    step_idx,
+                    e,
+                    exc_info=True,
                 )
                 return self._pipeline_result(executed_steps, False)
         return None
@@ -194,9 +197,11 @@ class Pipeline:
                     next_active[orig_idx] = step.mapper(response)
                 except Exception as e:
                     logger.error(
-                        f"Pipeline mapper failed at step "
-                        f"{step_idx} for item "
-                        f"{orig_idx}: {e}"
+                        "Pipeline mapper failed at step %d for item %d: %s",
+                        step_idx,
+                        orig_idx,
+                        e,
+                        exc_info=True,
                     )
                     failed[orig_idx] = None
             else:
@@ -316,7 +321,10 @@ class Pipeline:
                 current_input = step.mapper(response)
             except Exception as e:
                 logger.error(
-                    f"Pipeline mapper failed at step {step_idx}: {e}"
+                    "Pipeline mapper failed at step %d: %s",
+                    step_idx,
+                    e,
+                    exc_info=True,
                 )
                 return AgentStreamResult.from_failed(response)
 
@@ -363,7 +371,10 @@ class Pipeline:
                 current_input = step.mapper(response)
             except Exception as e:
                 logger.error(
-                    f"Pipeline mapper failed at step {step_idx}: {e}"
+                    "Pipeline mapper failed at step %d: %s",
+                    step_idx,
+                    e,
+                    exc_info=True,
                 )
                 return AgentAsyncStreamResult.from_failed(response)
 

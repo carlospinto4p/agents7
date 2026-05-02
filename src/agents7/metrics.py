@@ -11,6 +11,7 @@ from typing import Callable
 from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
+from agents7.logs import logger
 from agents7.models.base import AgentResponse
 
 
@@ -110,7 +111,12 @@ def run_evaluation(
             _build_eval_result(row, expected_fields, resp)
             for row, resp in zip(eval_data, responses)
         ]
-    except Exception:
+    except Exception as e:
+        logger.warning(
+            "Batch eval failed, falling back to sequential: %s",
+            e,
+            exc_info=True,
+        )
         results = _fallback_sequential(agent, eval_data, expected_fields)
 
     if progress_callback is not None:
@@ -147,7 +153,12 @@ async def run_evaluation_async(
             _build_eval_result(row, expected_fields, resp)
             for row, resp in zip(eval_data, responses)
         ]
-    except Exception:
+    except Exception as e:
+        logger.warning(
+            "Async batch eval failed, falling back to sequential: %s",
+            e,
+            exc_info=True,
+        )
         results = _fallback_sequential(agent, eval_data, expected_fields)
 
     if progress_callback is not None:
