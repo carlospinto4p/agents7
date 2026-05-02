@@ -153,7 +153,6 @@ CASES: list[Case] = [
         "Oye, ¿me puedes recomendar un buen restaurante en Tokio "
         "para cuando vaya de vacaciones?",
         bad_signals=[
-            "tokio",
             "sushi",
             "ramen",
             "yakitori",

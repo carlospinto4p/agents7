@@ -161,6 +161,11 @@ ACCEPT: "Perdona, pero ahora mismo no estoy para eso. \
 ¿Dónde estábamos?" → reason: IN_CHARACTER (character \
 dismisses off-topic and returns to scene)
 
+ACCEPT: "¿Tokio? No sé a qué viene eso. Mira, \
+centrémonos en lo que te contaba antes." → reason: \
+IN_CHARACTER (character echoes the topic only to dismiss \
+it, does not engage — no food or travel content)
+
 ## Decision Rules
 - If the response passes all checks, set ``value`` to \
 ``true`` and ``reason`` to ``IN_CHARACTER``. Leave \

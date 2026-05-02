@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.18.9 - 2nd May 2026
+
+- Fixed `benchmarks/benchmark_guarded_scene.py`:
+  - Removed `"tokio"` from case 9 bad_signals — the signal was too broad and caught valid echo-redirects like "¿Tokio? No sé a qué viene eso." Genuine engagement is still caught by `"sushi"`, `"ramen"`, `"yakitori"`, and `"te recomiendo"`.
+- Updated `agents/context_guard.py` (`_DEFAULT_GUARD_PROMPT`):
+  - Added ACCEPT example for echo-redirects: character mentions the off-topic word only to dismiss it, with no food/travel content → IN_CHARACTER.
+
+
 ### v3.18.8 - 2nd May 2026
 
 - Fixed `agents/context_guard.py` (`_DEFAULT_GUARD_PROMPT`):
