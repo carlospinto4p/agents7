@@ -12,9 +12,6 @@
 
 #### Refactoring
 
-- [x] `llm/base.py` — `LLMEngine` mixes caching, retry, fallback, cost injection, and sync/async/stream dispatch; extract into separate concerns. **HIGH/L**
-- [x] `agents/` — 5-level inheritance chain (`Chatter → PersonalityChatter → SceneChatter → GuardedChatter → GuardedSceneChatter`) plus `Labeler → Detector → Classifier/Regressor`; flatten with composition. **HIGH/M**
-- [x] `agents/guarded.py` + `agents/guarded_scene.py` — Two separate guarded agents duplicate guard mechanics; unify via a parameterised mixin or base. **MED/M**
 - [ ] `agents/config_loader.py` — Monolithic loader handles all nine agent types in one file; split per agent type or use a factory registry. **MED/M**
 - [ ] `agents/classifier.py:45` — Uses `super(Detector, self).__post_init__()` to skip Detector validation; load-bearing skip because `ClassificationProperty` is not a `Property` subclass; fix requires either making `ClassificationProperty` extend `Property` or redesigning Classifier with composition. **MED/M**
 - [ ] `agents/scene.py:72` — `SceneChatter.__post_init__` calls `Chatter.__post_init__` directly to skip `PersonalityChatter`; fragile super-chain, same root cause as above. **MED/M**
