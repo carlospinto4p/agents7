@@ -8,11 +8,6 @@
 - [ ] Test JSONL file upload in Step 3 (Batch Test) and Step 4 (Evaluate).
 - [ ] Test auto-discovery flow: upload JSONL, write intent, click Discover Schema, verify form fills, then Generate Prompt & Examples in Step 2.
 
-### Bugs — 2nd May 2026 (benchmark findings)
-
-- [x] Guard parse reliability: guard occasionally returns Python class source instead of JSON, triggering fail-open. Happened 3/10 times in benchmark. Investigate whether a stricter output format instruction or a retry on parse failure would help.
-- [x] Scene-break enforcement: case 9 (Tokyo restaurants) failed — character engaged with off-topic content when guard parse failed. Strengthen scene rules in `demo_guarded_scene_chatter.yml` and/or add OFF_TOPIC examples to guard prompt that cover location/geography deflection.
-
 ### Bugs — 2nd May 2026 (benchmark v2 findings)
 
 - [ ] Guard fix echoes forbidden vocabulary: when generating a `fix` response, the guard quotes the user's challenge back (e.g. "¿Modelo de lenguaje? No sé de qué hablas.") — valid human behaviour but trips the bad_signal check. Add a constraint to the guard prompt: fix responses must not use the prohibited vocabulary list.
