@@ -327,7 +327,14 @@ class PersonalityChatter(Chatter):
         kw_only=True,
     )
 
-    def __post_init__(self) -> None:
+    def _build_system_prompt(self) -> str:
+        """Build the system prompt from the persona and extra instructions.
+
+        Subclasses override this to change how the prompt is constructed
+        without having to duplicate the ``__post_init__`` plumbing.
+
+        :return: The fully assembled system prompt string.
+        """
         prompt = self.persona.to_prompt()
         if self.extra_instructions:
             prompt = (
@@ -335,7 +342,10 @@ class PersonalityChatter(Chatter):
                 f"## Extra Instructions\n"
                 f"{self.extra_instructions}"
             )
-        object.__setattr__(self, "system_prompt", prompt)
+        return prompt
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "system_prompt", self._build_system_prompt())
         super().__post_init__()
 
     @classmethod

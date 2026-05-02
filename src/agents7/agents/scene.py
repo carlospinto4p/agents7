@@ -43,9 +43,40 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agents7.agents.personality import (
+    Persona,
     PersonalityChatter,
     Scene,
 )
+
+
+def _build_scene_system_prompt(
+    persona: Persona,
+    scene: Scene,
+    extra_instructions: str = "",
+) -> str:
+    """Build the full role-play system prompt for scene-aware agents.
+
+    Shared by `SceneChatter` and `GuardedSceneChatter` so the prompt
+    construction logic lives in exactly one place.
+
+    :param persona: The character definition.
+    :param scene: The scenario definition.
+    :param extra_instructions: Optional extra guidance appended at the end.
+    :return: The complete system prompt string.
+    """
+    lines = [
+        "This is a role-play scenario. You are playing "
+        "a character in a specific context. Stay in "
+        "character and in context at all times.",
+        "",
+        scene.to_prompt(),
+        "",
+        persona.to_prompt(),
+    ]
+    prompt = "\n".join(lines)
+    if extra_instructions:
+        prompt = f"{prompt}\n\n## Extra Instructions\n{extra_instructions}"
+    return prompt
 
 
 @dataclass(frozen=True)
@@ -69,44 +100,10 @@ class SceneChatter(PersonalityChatter):
         kw_only=True,
     )
 
-    def __post_init__(self) -> None:
-        prompt = self._build_scene_prompt()
-        if self.extra_instructions:
-            prompt = (
-                f"{prompt}\n\n"
-                f"## Extra Instructions\n"
-                f"{self.extra_instructions}"
-            )
-        object.__setattr__(self, "system_prompt", prompt)
-        # Skip PersonalityChatter.__post_init__ (which
-        # would overwrite system_prompt) and call
-        # Chatter.__post_init__ directly for memory loading.
-        from agents7.agents.chatter import Chatter
-
-        Chatter.__post_init__(self)
-
-    def _build_scene_prompt(self) -> str:
-        """Build the full role-play system prompt.
-
-        Combines a role-play framing preamble, the scene
-        description, and the character profile into a
-        single coherent prompt.
-
-        :return: The complete system prompt string.
-        """
-        persona_prompt = self.persona.to_prompt()
-        scene_prompt = self.scene.to_prompt()
-
-        lines = [
-            "This is a role-play scenario. You are playing "
-            "a character in a specific context. Stay in "
-            "character and in context at all times.",
-            "",
-            scene_prompt,
-            "",
-            persona_prompt,
-        ]
-        return "\n".join(lines)
+    def _build_system_prompt(self) -> str:
+        return _build_scene_system_prompt(
+            self.persona, self.scene, self.extra_instructions
+        )
 
     @classmethod
     def from_yaml(

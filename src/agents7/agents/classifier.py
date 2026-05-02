@@ -41,7 +41,8 @@ class Classifier(Detector):
 
         Validates that output_model is a subclass of ClassificationProperty.
         """
-        # Skip Detector's validation, call Labeler's directly
+        # Skip Detector's validation: ClassificationProperty is not a
+        # Property subclass, so Detector.__post_init__ would reject it.
         super(Detector, self).__post_init__()
         if not issubclass(self.output_model, ClassificationProperty):
             raise PropertyConfigurationError(

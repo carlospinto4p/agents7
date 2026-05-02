@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.18.25 - 2nd May 2026
+
+- Refactored `agents/personality.py`:
+  - Added `PersonalityChatter._build_system_prompt()` override point so subclasses can change prompt construction without duplicating `__post_init__` plumbing.
+- Refactored `agents/scene.py`:
+  - Extracted `_build_scene_system_prompt()` module-level helper (shared by `SceneChatter` and `GuardedSceneChatter`).
+  - `SceneChatter` now overrides `_build_system_prompt()` instead of calling `Chatter.__post_init__()` directly; fragile super-chain skip removed.
+- Refactored `agents/guarded_scene.py`:
+  - `GuardedSceneChatter` now overrides `_build_system_prompt()` using the shared helper instead of inlining duplicate scene-prompt logic; fragile direct `Chatter.__post_init__()` call removed.
+- Updated `agents/classifier.py`:
+  - Added a comment explaining why `super(Detector, self).__post_init__()` is necessary (`ClassificationProperty` is not a `Property` subclass).
+
+
 ### v3.18.24 - 2nd May 2026
 
 - Refactored `llm/base.py`: extracted dispatch pipeline into `llm/dispatcher.py`.
