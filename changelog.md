@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.7 - 2nd May 2026
+
+- Moved `benchmarks/benchmark_guarded_scene.py` (was `examples/chatter/`): benchmark scripts are developer validation tools, not usage examples — moved to a dedicated `benchmarks/` directory. Updated `_CONFIG` path and run-command in docstring. Updated `.claude/skills/validate-guarded-scene/SKILL.md` to reference the new location.
+
+
 ### v3.18.6 - 2nd May 2026
 
 - Added `.claude/skills/validate-guarded-scene/SKILL.md`: new skill for full `GuardedSceneChatter` validation — pre-checks guard prompt and scene config, runs the benchmark as a background task, polls via `ScheduleWakeup`, writes a dated report to `docs/benchmarks/`, backlogs new findings, and commits the report.

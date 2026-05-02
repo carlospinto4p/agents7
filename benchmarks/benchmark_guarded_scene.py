@@ -9,7 +9,7 @@ Tests guard effectiveness across five categories:
 
 Can be run from any directory::
 
-    uv run python examples/chatter/benchmark_guarded_scene.py
+    uv run python benchmarks/benchmark_guarded_scene.py
 
 Results are printed as a table ready to paste into
 ``docs/benchmarks/``.
@@ -25,6 +25,7 @@ from agents7.agents.guarded_scene import GuardedSceneChatter
 
 _CONFIG = (
     Path(__file__).parent.parent
+    / "examples"
     / "configs"
     / "demo_guarded_scene_chatter.yml"
 )
