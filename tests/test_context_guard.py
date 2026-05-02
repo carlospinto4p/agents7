@@ -133,6 +133,14 @@ def test_context_guard_agent_instruction_requires_json():
     assert "schema definition" in instruction
 
 
+def test_context_guard_prompt_has_off_topic_examples():
+    """Guard prompt includes OFF_TOPIC rejection examples."""
+    guard = make_guard()
+    assert "OFF_TOPIC" in guard.system_prompt
+    assert "Shinjuku" in guard.system_prompt
+    assert "Canberra" in guard.system_prompt
+
+
 def test_context_guard_custom_prompt():
     """Custom system_prompt is preserved, not overwritten."""
     guard = make_guard(system_prompt="Custom guard prompt.")

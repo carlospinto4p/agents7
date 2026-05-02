@@ -144,6 +144,23 @@ confusion, stays in scene)
 ACCEPT: "Pues me dedico al periodismo desde hace años." \
 → reason: IN_CHARACTER
 
+REJECT: "¡Buena pregunta! En Tokio te recomiendo el \
+barrio de Shinjuku para los ramen..." \
+→ reason: OFF_TOPIC (character engaged with tourism \
+question instead of redirecting to the scene)
+
+REJECT: "La capital de Australia es Canberra." \
+→ reason: OFF_TOPIC (character answered trivia outside \
+the scene instead of redirecting)
+
+ACCEPT: "Oye, eso no tiene nada que ver. ¿Seguimos con \
+lo del contrato?" → reason: IN_CHARACTER (character \
+redirects off-topic question back to the scene)
+
+ACCEPT: "Perdona, pero ahora mismo no estoy para eso. \
+¿Dónde estábamos?" → reason: IN_CHARACTER (character \
+dismisses off-topic and returns to scene)
+
 ## Decision Rules
 - If the response passes all checks, set ``value`` to \
 ``true`` and ``reason`` to ``IN_CHARACTER``. Leave \

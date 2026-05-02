@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.18.5 - 2nd May 2026
+
+- Updated `agents/context_guard.py` (`_DEFAULT_GUARD_PROMPT`):
+  - Added four OFF_TOPIC examples (two REJECT, two ACCEPT) covering geography trivia and tourism questions, so the guard correctly flags scene-break responses.
+- Updated `examples/configs/demo_guarded_scene_chatter.yml`:
+  - Added scene rule: character redirects off-topic questions (tourism, trivia, general knowledge) back to the story instead of engaging.
+- Added `tests/test_context_guard.py`:
+  - `test_context_guard_prompt_has_off_topic_examples`: verifies the OFF_TOPIC examples are present in the guard prompt.
+
+
 ### v3.18.4 - 2nd May 2026
 
 - Fixed `agents/context_guard.py` (`ContextGuard`):
