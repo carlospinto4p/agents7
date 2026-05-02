@@ -12,8 +12,8 @@
 
 #### Refactoring
 
-- [ ] `agents/config_loader.py` — Monolithic loader handles all nine agent types in one file; split per agent type or use a factory registry. **MED/M**
-- [ ] `agents/classifier.py:45` — Uses `super(Detector, self).__post_init__()` to skip Detector validation; load-bearing skip because `ClassificationProperty` is not a `Property` subclass; fix requires either making `ClassificationProperty` extend `Property` or redesigning Classifier with composition. **MED/M**
+- [x] `agents/config_loader.py` — Monolithic loader handles all nine agent types in one file; split per agent type or use a factory registry. **MED/M**
+- [x] `agents/classifier.py:45` — Uses `super(Detector, self).__post_init__()` to skip Detector validation; load-bearing skip because `ClassificationProperty` is not a `Property` subclass; fix requires either making `ClassificationProperty` extend `Property` or redesigning Classifier with composition. **MED/M**
 - [ ] `agents/scene.py:72` — `SceneChatter.__post_init__` calls `Chatter.__post_init__` directly to skip `PersonalityChatter`; fragile super-chain, same root cause as above. **MED/M**
 - [ ] `export.py:77` / `metrics.py:300` — `_extract_fields` + `_format_value` logic duplicated across both modules; extract to shared helper. **LOW/S**
 - [ ] Root `src/agents7/` — 11 top-level modules mixing unrelated concerns (testing utils, benchmarking, suggestions, export, metrics); group into subpackages. **MED/M**
