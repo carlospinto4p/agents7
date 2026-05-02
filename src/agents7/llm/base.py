@@ -1,21 +1,9 @@
-import asyncio
-import functools
 from abc import ABC, abstractmethod
 
-from agents7.exceptions import LLMException
 from agents7.llm.cache import CacheConfig, ResponseCache, create_cache
-from agents7.llm.retry import RetryConfig, retry_async, retry_sync
+from agents7.llm.dispatcher import EngineDispatcher
+from agents7.llm.retry import RetryConfig
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
-from agents7.logs import logger
-
-
-def _cache_store_callback(
-    cache: ResponseCache,
-    key: str,
-    data: dict,
-) -> None:
-    """Module-level callback to store streaming result in cache."""
-    cache.put(key, data)
 
 
 class LLMEngine:
@@ -61,17 +49,30 @@ class LLMEngine:
         self.model_id: str = f"{provider}::{model_name}"
         self.retry_config = retry
         self.cost_per_1m_tokens = cost_per_1m_tokens
-        self._cache: ResponseCache | None = (
-            create_cache(cache) if cache is not None else None
-        )
         self.llm_provider = self._create_provider(
             provider, model_name, **kwargs
         )
-        self._fallback_provider = (
+        fallback = (
             self._create_provider(provider, fallback_model, **kwargs)
             if fallback_model
             else None
         )
+        self._dispatcher = EngineDispatcher(
+            primary=self.llm_provider,
+            fallback=fallback,
+            retry_config=retry,
+            cache=create_cache(cache) if cache is not None else None,
+            cost_per_1m_tokens=cost_per_1m_tokens,
+            model_id=self.model_id,
+        )
+
+    @property
+    def _cache(self) -> ResponseCache | None:
+        return self._dispatcher._cache
+
+    @property
+    def _fallback_provider(self):
+        return self._dispatcher._fallback
 
     @staticmethod
     def _create_provider(
@@ -120,272 +121,6 @@ class LLMEngine:
 
         raise ValueError(f"Unknown provider: `{provider}`")
 
-    def _cache_lookup(
-        self,
-        method: str,
-        temperature: float,
-        **kwargs,
-    ) -> tuple[str | None, object | None]:
-        """Check cache for a previous result.
-
-        Returns:
-            Tuple of (cache_key, cached_value). Both are
-            `None` when caching is disabled or the temperature
-            is non-zero.
-        """
-        if self._cache is None or temperature != 0:
-            return None, None
-        key = ResponseCache.make_key(
-            model_id=self.model_id,
-            method=method,
-            temperature=temperature,
-            **kwargs,
-        )
-        return key, self._cache.get(key)
-
-    def _cache_store(
-        self,
-        key: str | None,
-        value: object,
-    ) -> None:
-        """Store a result in cache if caching is active."""
-        if key is not None and self._cache is not None:
-            self._cache.put(key, value)
-
-    def _set_stream_cache_callback(
-        self,
-        result: StreamResult | AsyncStreamResult,
-        key: str | None,
-    ) -> None:
-        """Attach a cache-store callback to a stream result.
-
-        When the stream completes, the callback stores the
-        final data in the cache.
-        """
-        if key is not None:
-            result._on_complete = functools.partial(
-                _cache_store_callback,
-                self._cache,
-                key,
-            )
-
-    def _inject_cost(self, result: dict) -> dict:
-        """Add cost_cents to the metrics dict if configured."""
-        if self.cost_per_1m_tokens is not None:
-            metrics = result.get("metrics", {})
-            total_tokens = metrics.get("tokens", 0) + metrics.get(
-                "prompt_tokens", 0
-            )
-            metrics["cost_cents"] = (
-                total_tokens * self.cost_per_1m_tokens / 1_000_000
-            )
-        return result
-
-    # --- Internal dispatch helpers ---
-
-    def _cache_check(
-        self,
-        method_name: str,
-        input_kwarg: str,
-        input_val,
-        **common,
-    ) -> tuple[str | None, object | None]:
-        """Shared cache-lookup for all dispatch methods."""
-        return self._cache_lookup(
-            method_name,
-            common["temperature"],
-            **{input_kwarg: input_val},
-            seed=common["seed"],
-            max_tokens=common["max_tokens"],
-            output_format=common["output_format"],
-            think=common["think"],
-        )
-
-    def _execute(
-        self,
-        method_name: str,
-        provider_fn,
-        input_kwarg: str,
-        input_val,
-        **common,
-    ) -> dict:
-        """Sync cache-lookup → retry → fallback → cache-store."""
-        common.pop("timeout", None)
-        key, cached = self._cache_check(
-            method_name, input_kwarg, input_val, **common
-        )
-        if cached is not None:
-            return cached
-        try:
-            result = retry_sync(
-                provider_fn,
-                self.retry_config,
-                **{input_kwarg: input_val},
-                **common,
-            )
-        except Exception as primary_error:
-            if self._fallback_provider is None:
-                raise
-            result = self._fallback_sync(
-                method_name,
-                primary_error,
-                input_kwarg,
-                input_val,
-                **common,
-            )
-        self._inject_cost(result)
-        self._cache_store(key, result)
-        return result
-
-    async def _execute_async(
-        self,
-        method_name: str,
-        provider_fn,
-        input_kwarg: str,
-        input_val,
-        **common,
-    ) -> dict:
-        """Async cache-lookup → retry → fallback →
-        cache-store. Applies timeout if set."""
-        timeout = common.pop("timeout", None)
-        key, cached = self._cache_check(
-            method_name, input_kwarg, input_val, **common
-        )
-        if cached is not None:
-            return cached
-
-        async def _inner() -> dict:
-            try:
-                return await retry_async(
-                    provider_fn,
-                    self.retry_config,
-                    **{input_kwarg: input_val},
-                    **common,
-                )
-            except Exception as primary_error:
-                if self._fallback_provider is None:
-                    raise
-                return await self._fallback_async(
-                    method_name,
-                    primary_error,
-                    input_kwarg,
-                    input_val,
-                    **common,
-                )
-
-        try:
-            if timeout is not None:
-                result = await asyncio.wait_for(
-                    _inner(),
-                    timeout=timeout,
-                )
-            else:
-                result = await _inner()
-        except asyncio.TimeoutError:
-            raise LLMException(
-                f"Request timed out after {timeout}s"
-            ) from None
-        self._inject_cost(result)
-        self._cache_store(key, result)
-        return result
-
-    def _stream(
-        self,
-        method_name: str,
-        provider_fn,
-        cached_cls,
-        input_kwarg: str,
-        input_val,
-        **common,
-    ):
-        """Sync stream: cache-lookup → call → callback."""
-        common.pop("timeout", None)
-        key, cached = self._cache_check(
-            method_name, input_kwarg, input_val, **common
-        )
-        if cached is not None:
-            return cached_cls.from_cached(cached)
-        result = provider_fn(
-            **{input_kwarg: input_val},
-            **common,
-        )
-        self._set_stream_cache_callback(result, key)
-        return result
-
-    async def _stream_async(
-        self,
-        method_name: str,
-        provider_fn,
-        cached_cls,
-        input_kwarg: str,
-        input_val,
-        **common,
-    ):
-        """Async stream: cache-lookup → await → callback."""
-        common.pop("timeout", None)
-        key, cached = self._cache_check(
-            method_name, input_kwarg, input_val, **common
-        )
-        if cached is not None:
-            return cached_cls.from_cached(cached)
-        result = await provider_fn(
-            **{input_kwarg: input_val},
-            **common,
-        )
-        self._set_stream_cache_callback(result, key)
-        return result
-
-    # --- Fallback helpers ---
-
-    def _fallback_sync(
-        self,
-        method_name: str,
-        primary_error: Exception,
-        input_kwarg: str,
-        input_val,
-        **common,
-    ) -> dict:
-        """Try the fallback provider after primary failure."""
-        logger.warning(
-            f"Primary model failed: {primary_error}. Trying fallback model..."
-        )
-        fallback_fn = getattr(self._fallback_provider, method_name)
-        try:
-            return retry_sync(
-                fallback_fn,
-                self.retry_config,
-                **{input_kwarg: input_val},
-                **common,
-            )
-        except Exception as e:
-            logger.warning("Fallback model also failed: %s", e, exc_info=True)
-            raise primary_error
-
-    async def _fallback_async(
-        self,
-        method_name: str,
-        primary_error: Exception,
-        input_kwarg: str,
-        input_val,
-        **common,
-    ) -> dict:
-        """Try the fallback provider after primary failure
-        (async)."""
-        logger.warning(
-            f"Primary model failed: {primary_error}. Trying fallback model..."
-        )
-        fallback_fn = getattr(self._fallback_provider, method_name)
-        try:
-            return await retry_async(
-                fallback_fn,
-                self.retry_config,
-                **{input_kwarg: input_val},
-                **common,
-            )
-        except Exception as e:
-            logger.warning("Fallback model also failed: %s", e, exc_info=True)
-            raise primary_error
-
     # --- Public API ---
 
     def chat(
@@ -407,7 +142,7 @@ class LLMEngine:
             enforced for async calls. ``None`` means no
             timeout.
         """
-        return self._execute(
+        return self._dispatcher.execute(
             "chat",
             self.llm_provider.chat,
             "messages",
@@ -438,7 +173,7 @@ class LLMEngine:
         :param timeout: Per-call timeout in seconds.
             Raises ``LLMException`` on expiry.
         """
-        return await self._execute_async(
+        return await self._dispatcher.execute_async(
             "chat",
             self.llm_provider.chat_async,
             "messages",
@@ -468,7 +203,7 @@ class LLMEngine:
 
         :param timeout: Per-call timeout in seconds.
         """
-        return self._execute(
+        return self._dispatcher.execute(
             "generate",
             self.llm_provider.generate,
             "prompt",
@@ -498,7 +233,7 @@ class LLMEngine:
 
         :param timeout: Per-call timeout in seconds.
         """
-        return await self._execute_async(
+        return await self._dispatcher.execute_async(
             "generate",
             self.llm_provider.generate_async,
             "prompt",
@@ -525,7 +260,7 @@ class LLMEngine:
         Bypasses retry logic — streaming calls cannot be
         retried mid-stream.
         """
-        return self._stream(
+        return self._dispatcher.stream(
             "chat_stream",
             self.llm_provider.chat_stream,
             StreamResult,
@@ -552,7 +287,7 @@ class LLMEngine:
         Bypasses retry logic — streaming calls cannot be
         retried mid-stream.
         """
-        return await self._stream_async(
+        return await self._dispatcher.stream_async(
             "chat_stream_async",
             self.llm_provider.chat_stream_async,
             AsyncStreamResult,
@@ -579,7 +314,7 @@ class LLMEngine:
         Bypasses retry logic — streaming calls cannot be
         retried mid-stream.
         """
-        return self._stream(
+        return self._dispatcher.stream(
             "generate_stream",
             self.llm_provider.generate_stream,
             StreamResult,
@@ -606,7 +341,7 @@ class LLMEngine:
         Bypasses retry logic — streaming calls cannot be
         retried mid-stream.
         """
-        return await self._stream_async(
+        return await self._dispatcher.stream_async(
             "generate_stream_async",
             self.llm_provider.generate_stream_async,
             AsyncStreamResult,

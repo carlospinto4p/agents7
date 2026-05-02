@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.18.24 - 2nd May 2026
+
+- Refactored `llm/base.py`: extracted dispatch pipeline into `llm/dispatcher.py`.
+  - Added `llm/dispatcher.py` (`EngineDispatcher`): owns cache helpers, cost injection, fallback handlers, and `execute`/`execute_async`/`stream`/`stream_async` dispatch methods.
+  - `LLMEngine` is now a thin orchestrator: creates providers and `EngineDispatcher`, exposes public API, and proxies `_cache`/`_fallback_provider` as read-only properties.
+  - Updated `src/agents7/testing.py` (`create_mock_engine`): constructs `EngineDispatcher` instead of directly setting `_cache`/`_fallback_provider`.
+  - Updated `tests/helpers.py` (`make_engine`): same fix.
+
+
 ### v3.18.23 - 2nd May 2026
 
 - Refactored `agents/labeler.py`: split into focused collaborators.

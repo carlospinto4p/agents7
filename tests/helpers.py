@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from agents7.agents.labeler import Labeler
 from agents7.llm import LLMEngine
 from agents7.llm.cache import CacheConfig, ResponseCache
+from agents7.llm.dispatcher import EngineDispatcher
 from agents7.models import AgentResponse
 
 
@@ -121,8 +122,16 @@ def make_engine(cache: CacheConfig | None = None):
     engine.model_id = "ollama::test-model"
     engine.retry_config = None
     engine.cost_per_1m_tokens = None
-    engine._cache = ResponseCache(cache) if cache is not None else None
-    engine.llm_provider = Mock()
+    provider = Mock()
+    engine.llm_provider = provider
+    engine._dispatcher = EngineDispatcher(
+        primary=provider,
+        fallback=None,
+        retry_config=None,
+        cache=ResponseCache(cache) if cache is not None else None,
+        cost_per_1m_tokens=None,
+        model_id="ollama::test-model",
+    )
     return engine
 
 

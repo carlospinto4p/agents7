@@ -23,6 +23,7 @@ from typing import Any
 from unittest.mock import Mock
 
 from agents7.llm.base import LLMEngine
+from agents7.llm.dispatcher import EngineDispatcher
 from agents7.metrics import compute_metrics, run_evaluation
 
 
@@ -97,19 +98,25 @@ def create_mock_engine(
     async def _chat_async_side_effect(**kwargs: Any) -> dict:
         return _chat_side_effect(**kwargs)
 
+    provider = Mock()
+    provider.chat.side_effect = _chat_side_effect
+    provider.chat_async = _chat_async_side_effect
+
     engine = object.__new__(LLMEngine)
     engine.provider = "mock"
     engine.model_name = model_name
     engine.model_id = f"mock::{model_name}"
     engine.retry_config = None
     engine.cost_per_1m_tokens = None
-    engine._cache = None
-    engine._fallback_provider = None
-
-    provider = Mock()
-    provider.chat.side_effect = _chat_side_effect
-    provider.chat_async = _chat_async_side_effect
     engine.llm_provider = provider
+    engine._dispatcher = EngineDispatcher(
+        primary=provider,
+        fallback=None,
+        retry_config=None,
+        cache=None,
+        cost_per_1m_tokens=None,
+        model_id=f"mock::{model_name}",
+    )
 
     return engine
 
