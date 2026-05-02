@@ -2,23 +2,35 @@
 
 Tests guard effectiveness across five categories:
   - normal      : in-scene questions that should pass
-  - source       : scene rule — must not reveal source details
-  - injection    : prompt-injection attempts (should be caught)
-  - char_break   : character-break attempts (should be caught)
-  - scene_break  : off-topic requests outside the scene context
+  - source      : scene rule — must not reveal source details
+  - injection   : prompt-injection attempts (should be caught)
+  - char_break  : character-break attempts (should be caught)
+  - scene_break : off-topic requests outside the scene context
 
 Can be run from any directory::
 
     uv run python benchmarks/benchmark_guarded_scene.py
+    uv run python benchmarks/benchmark_guarded_scene.py \\
+        --model qwen3:8b
 
-Results are printed as a table ready to paste into
-``docs/benchmarks/``.
+Capture output for report writing::
+
+    uv run python benchmarks/benchmark_guarded_scene.py \\
+        --model gemma4:e4b > benchmarks/output_gemma4_e4b.txt
+
+The output includes a ``## Full Responses`` section at the
+end with the complete text of every response, suitable for
+human validation.
 """
 
+import argparse
+import tempfile
 import time
 from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
+
+import yaml
 
 from agents7.agents.guarded import GuardEvent
 from agents7.agents.guarded_scene import GuardedSceneChatter
@@ -207,12 +219,44 @@ def quality(response: str, bad_signals: list[str]) -> str:
     return "PASS"
 
 
+# --- Config loading with optional model override ---
+
+
+def _load_chatter(
+    model: str | None,
+    guard_model: str | None,
+) -> GuardedSceneChatter:
+    if not model:
+        return GuardedSceneChatter.from_yaml(str(_CONFIG))
+
+    with open(_CONFIG, encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+    config["engine"]["model"] = model
+    config["guard"]["engine"]["model"] = guard_model or model
+
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        suffix=".yml",
+        delete=False,
+        encoding="utf-8",
+    ) as tmp:
+        yaml.dump(config, tmp, allow_unicode=True)
+        tmp_path = tmp.name
+
+    try:
+        return GuardedSceneChatter.from_yaml(tmp_path)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+
 # --- Main ---
 
 
-def run_benchmark() -> None:
-    print("Loading GuardedSceneChatter...")
-    david = GuardedSceneChatter.from_yaml(str(_CONFIG))
+def run_benchmark(
+    model: str | None = None,
+    guard_model: str | None = None,
+) -> None:
+    david = _load_chatter(model, guard_model)
     print(f"Model : {david.engine.model_id}")
     print(f"Guard : {david.guard.engine.model_id}")
     print(f"Think : {david.guard.think}")
@@ -237,13 +281,14 @@ def run_benchmark() -> None:
                 "num": i,
                 "cat": case.category,
                 "desc": case.description,
+                "prompt": case.prompt,
                 "quality": q,
                 "chat_s": chat_time,
                 "guard_s": stats.guard_time,
                 "total_s": total,
                 "rej": stats.rejections,
                 "fix": "Y" if stats.fix_used else "N",
-                "snippet": response.response[:60].replace("\n", " "),
+                "response": response.response,
             }
         )
 
@@ -254,7 +299,7 @@ def run_benchmark() -> None:
         )
 
         # Fresh agent for each case (no conversation context bleed)
-        david = GuardedSceneChatter.from_yaml(str(_CONFIG))
+        david = _load_chatter(model, guard_model)
 
     # --- Summary table ---
     passed = sum(1 for r in rows if r["quality"] == "PASS")
@@ -263,17 +308,19 @@ def run_benchmark() -> None:
     print()
     print(
         "| # | Category | Description | Quality | "
-        "Chat(s) | Guard(s) | Total(s) | Rej | Fix | Snippet |"
+        "Chat(s) | Guard(s) | Total(s) | Rej | Fix |"
     )
     print(
         "|---|----------|-------------|---------|"
-        "---------|----------|----------|-----|-----|---------|"
+        "---------|----------|----------|-----|-----|"
     )
     for r in rows:
         print(
-            f"| {r['num']} | {r['cat']} | {r['desc']} | {r['quality']} | "
-            f"{r['chat_s']:.1f} | {r['guard_s']:.1f} | {r['total_s']:.1f} | "
-            f"{r['rej']} | {r['fix']} | {r['snippet']}... |"
+            f"| {r['num']} | {r['cat']} | {r['desc']} | "
+            f"{r['quality']} | "
+            f"{r['chat_s']:.1f} | {r['guard_s']:.1f} | "
+            f"{r['total_s']:.1f} | "
+            f"{r['rej']} | {r['fix']} |"
         )
 
     print()
@@ -289,6 +336,56 @@ def run_benchmark() -> None:
         p = sum(results)
         print(f"| {cat} | {p}/{len(results)} |")
 
+    # --- Full responses for human validation ---
+    print()
+    print("## Full Responses")
+    print()
+    for r in rows:
+        print(f"### Case {r['num']} — {r['cat']}: {r['desc']}")
+        print()
+        print(f"**Prompt:** {r['prompt']}")
+        print()
+        print(
+            f"**Quality:** {r['quality']} | "
+            f"**Chat:** {r['chat_s']:.1f}s | "
+            f"**Guard:** {r['guard_s']:.1f}s | "
+            f"**Rej:** {r['rej']} | "
+            f"**Fix:** {r['fix']}"
+        )
+        print()
+        print(r["response"])
+        print()
+        print("---")
+        print()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Benchmark GuardedSceneChatter"
+    )
+    parser.add_argument(
+        "--model",
+        default=None,
+        help=(
+            "Override the chat model "
+            "(e.g. gemma3:12b, qwen3:8b). "
+            "Use the short name without provider prefix. "
+            "Defaults to the model in the YAML config."
+        ),
+    )
+    parser.add_argument(
+        "--guard-model",
+        default=None,
+        dest="guard_model",
+        help=(
+            "Override the guard model. "
+            "Defaults to --model if set, "
+            "otherwise uses the YAML config value."
+        ),
+    )
+    args = parser.parse_args()
+    run_benchmark(model=args.model, guard_model=args.guard_model)
+
 
 if __name__ == "__main__":
-    run_benchmark()
+    main()

@@ -1,6 +1,24 @@
 
 ## Changelog - Agents7
 
+### v3.18.10 - 2nd May 2026
+
+- Updated `benchmarks/benchmark_guarded_scene.py`:
+  - Added `--model` / `--guard-model` CLI args to override
+    models without editing the YAML config.
+  - Added `## Full Responses` section to output — prints the
+    complete response text for every case for human validation.
+  - Removed 60-char snippet column from the summary table.
+- Updated `.claude/skills/validate-guarded-scene/SKILL.md`:
+  - Multi-model support: runs benchmark sequentially across a
+    configurable list of models (default: `gemma4:e4b`,
+    `qwen3:8b`).
+  - Updated report template to include full response text per
+    case per model in `## Results — <model>` sections.
+  - Updated Phase 3 state-tracking to chain models via wakeup
+    prompts.
+
+
 ### v3.18.9 - 2nd May 2026
 
 - Fixed `benchmarks/benchmark_guarded_scene.py`:
