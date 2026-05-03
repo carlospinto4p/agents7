@@ -175,7 +175,18 @@ class JsonFileMemory(MemoryBackend):
             "0123456789-_."
         )
         safe = "".join(c if c in allowed else "_" for c in conversation_id)
-        return self._dir / f"{safe}.json"
+        # Guard against identifiers that are empty or consist solely of
+        # dots (e.g. "." or ".."), which are special directory entries.
+        if not safe.strip("."):
+            safe = "_"
+        path = self._dir / f"{safe}.json"
+        # Belt-and-suspenders: result must be a direct child of _dir.
+        if path.parent != self._dir:
+            raise ValueError(
+                f"Unsafe conversation_id produced an "
+                f"out-of-directory path: `{path}`"
+            )
+        return path
 
 
 class SqliteMemory(MemoryBackend):

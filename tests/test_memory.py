@@ -153,6 +153,30 @@ def test_json_load_corrupted_file(tmp_path):
         mem.load("conv1")
 
 
+def test_json_conv_path_dotdot_sanitized(tmp_path):
+    """conversation_id '.' and '..' map to '_' to avoid special names."""
+    mem = JsonFileMemory(str(tmp_path / "history"))
+    mem.save(".", MESSAGES)
+    mem.save("..", MESSAGES)
+    convs = mem.list_conversations()
+    assert "." not in convs
+    assert ".." not in convs
+    assert "_" in convs
+
+
+def test_json_conv_path_traversal_chars_replaced(tmp_path):
+    """Path-separator characters in conversation_id are replaced."""
+    mem = JsonFileMemory(str(tmp_path / "history"))
+    mem.save("../evil", MESSAGES)
+    loaded = mem.load("../evil")
+    assert loaded == MESSAGES
+    # Verify the file is a direct child of the history dir
+    history_dir = tmp_path / "history"
+    files = list(history_dir.iterdir())
+    assert len(files) == 1
+    assert files[0].parent == history_dir
+
+
 # --- SqliteMemory ---
 
 

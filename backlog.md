@@ -22,7 +22,7 @@
 - [x] `src/agents7/agents/utils.py:109` — `import_from_path()` dynamically imports arbitrary modules from YAML config strings (`output_model`, `validators`, `preprocessor`); if config is user-controlled, this allows arbitrary code execution — HIGH — M
 - [x] `docker-compose.yml:19` — `GITLAB_TOKEN` referenced as env var; ensure it is never logged or printed anywhere in the container — MED — S
 - [x] `src/agents7/agents/config_loader.py:95` — `_resolve_inheritance()` resolves relative `base_config` paths without preventing traversal (e.g. `../../../etc/passwd`); add path validation — LOW — S
-- [ ] `src/agents7/agents/memory.py:170` — Filename sanitization in `_conv_path()` is fragile; sequences like `../` become `__/` which may still resolve outside intended directory — LOW — S
+- [x] `src/agents7/agents/memory.py:170` — Filename sanitization in `_conv_path()` is fragile; sequences like `../` become `__/` which may still resolve outside intended directory — LOW — S
 
 #### Performance
 

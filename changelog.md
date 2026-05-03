@@ -1,6 +1,18 @@
 
 ## Changelog - Agents7
 
+### v3.18.45 - 3rd May 2026
+
+- Fixed `agents/memory.py` `JsonFileMemory._conv_path()`:
+  - Guards against all-dot identifiers (`"."`, `".."`): maps them
+    to `"_"` to avoid creating special directory-entry filenames.
+  - Added `path.parent == self._dir` assertion as belt-and-suspenders
+    against future sanitization regressions.
+- Added tests in `tests/test_memory.py`:
+  - `test_json_conv_path_dotdot_sanitized`
+  - `test_json_conv_path_traversal_chars_replaced`
+
+
 ### v3.18.44 - 3rd May 2026
 
 - Fixed `agents/config_loader.py` `_resolve_inheritance()`: rejects
