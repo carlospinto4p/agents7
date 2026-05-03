@@ -168,3 +168,74 @@ def test_report_includes_date(tmp_path):
     text = path.read_text()
     assert "Date" in text
     assert "UTC" in text
+
+
+# --- Timing section ---
+
+
+def _timing_metrics(**overrides):
+    timing = {
+        "total_s": 3.5,
+        "avg_s": 1.75,
+        "min_s": 1.2,
+        "max_s": 2.3,
+        "per_case": [],
+    }
+    timing.update(overrides)
+    return {**_make_metrics(), "timing": timing}
+
+
+def test_report_timing_section_rendered(tmp_path):
+    """Report includes Response Times section when timing data is present."""
+    path = tmp_path / "report.md"
+    export_eval_report(_make_results(), _timing_metrics(), path)
+
+    text = path.read_text()
+    assert "## Response Times" in text
+    assert "3.50s" in text
+    assert "1.75s" in text
+    assert "1.20s" in text
+    assert "2.30s" in text
+
+
+def test_report_per_case_timing(tmp_path):
+    """Per-case timing is appended to each case header."""
+    metrics = _timing_metrics(per_case=[1.0, 2.0])
+    path = tmp_path / "report.md"
+    export_eval_report(_make_results(), metrics, path)
+
+    text = path.read_text()
+    assert "PASS (1.00s)" in text
+    assert "FAIL (2.00s)" in text
+
+
+def test_report_timing_omitted_when_absent(tmp_path):
+    """Timing section omitted when timing key is absent from metrics."""
+    path = tmp_path / "report.md"
+    export_eval_report(_make_results(), _make_metrics(), path)
+
+    text = path.read_text()
+    assert "## Response Times" not in text
+
+
+def test_report_timing_omitted_when_zero(tmp_path):
+    """Timing section omitted when total_s is zero."""
+    metrics = _timing_metrics(total_s=0, avg_s=0, min_s=0, max_s=0)
+    path = tmp_path / "report.md"
+    export_eval_report(_make_results(), metrics, path)
+
+    text = path.read_text()
+    assert "## Response Times" not in text
+
+
+# --- Missing metric fields ---
+
+
+def test_report_missing_metric_fields(tmp_path):
+    """Report uses zero defaults when metrics keys are absent."""
+    path = tmp_path / "report.md"
+    export_eval_report([], {}, path)
+
+    text = path.read_text()
+    assert "| Total | 0 |" in text
+    assert "0.0%" in text

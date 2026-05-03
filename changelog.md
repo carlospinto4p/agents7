@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.18.31 - 3rd May 2026
+
+- Added `tests/test_eval_report.py`:
+  - `test_report_timing_section_rendered`: verifies `## Response Times` section renders correctly when timing data is present.
+  - `test_report_per_case_timing`: verifies per-case duration is appended to each case header.
+  - `test_report_timing_omitted_when_absent`: verifies timing section is absent when `timing` key is missing from metrics.
+  - `test_report_timing_omitted_when_zero`: verifies timing section is absent when `total_s` is zero.
+  - `test_report_missing_metric_fields`: verifies report uses zero defaults when metrics keys are absent.
+
+
 ### v3.18.30 - 3rd May 2026
 
 - Added `tests/test_enum_parsing.py`:
