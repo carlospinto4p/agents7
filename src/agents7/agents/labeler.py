@@ -79,15 +79,18 @@ class Labeler(BaseAgent):
     preprocessor: Callable | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
-        """
-        Post-initialization method to validate the agent.
-        This method is called after the agent is initialized.
-        """
         super().__post_init__()
+        self._validate_output_model()
+        self._initialize_parser()
+        self._initialize_handlers()
+
+    def _validate_output_model(self) -> None:
         if not issubclass(self.output_model, BaseModel):
             raise AgentConfigurationError(
                 "`output_model` must be a subclass of `pydantic.BaseModel`"
             )
+
+    def _initialize_parser(self) -> None:
         output_model_list = create_model(
             f"{self.output_model.__name__}List",
             items=(list[self.output_model], ...),
@@ -105,15 +108,17 @@ class Labeler(BaseAgent):
         object.__setattr__(self, "_output_schema", output_schema)
         object.__setattr__(self, "_output_list_schema", output_list_schema)
         object.__setattr__(self, "_parser", parser)
+
+    def _initialize_handlers(self) -> None:
         object.__setattr__(
             self,
             "_retry_handler",
             ParseRetryHandler(
                 engine=self.engine,
-                parser=parser,
+                parser=self._parser,
                 name=self.name,
                 max_retries=self.max_parse_retries,
-                output_schema=output_schema,
+                output_schema=self._output_schema,
             ),
         )
         object.__setattr__(
@@ -121,10 +126,10 @@ class Labeler(BaseAgent):
             "_batch_processor",
             BatchProcessor(
                 engine=self.engine,
-                parser=parser,
+                parser=self._parser,
                 name=self.name,
                 preprocessor=self.preprocessor,
-                output_list_schema=output_list_schema,
+                output_list_schema=self._output_list_schema,
             ),
         )
 

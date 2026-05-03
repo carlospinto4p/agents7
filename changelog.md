@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.20.1 - 4th May 2026
+
+- Refactored `src/agents7/agents/labeler.py` `__post_init__()`:
+  - Extracted `_validate_output_model()`: guards `output_model` is a `BaseModel` subclass.
+  - Extracted `_initialize_parser()`: builds `output_model_list`, schemas, and `ResponseParser`.
+  - Extracted `_initialize_handlers()`: builds `ParseRetryHandler` and `BatchProcessor`.
+
+
 ### v3.20.0 - 4th May 2026
 
 - Removed `cpinto` dependency from `agents7_framework`:
