@@ -12,11 +12,11 @@
 
 #### Test coverage
 
-- [ ] `agents/memory.py:124` — `JsonFileMemory.load()` with corrupted JSON untested. **MED/M**
-- [ ] `model_selection.py:204` — `find_best_model()` with `runs=0` or empty model list untested. **MED/M**
-- [ ] `llm/streaming.py:56` — `_extract()` with missing chunk attributes untested. **MED/M**
-- [ ] `agents/jitter.py:49` — `_inject_typo()` word-length boundary (exactly 4 chars) untested. **MED/S**
-- [ ] `tests/test_labeler.py:261` — `assert result is not None` is a weak assertion; verify actual output model contents. **MED/S**
+- [x] `agents/memory.py:124` — `JsonFileMemory.load()` with corrupted JSON untested. **MED/M**
+- [x] `model_selection.py:204` — `find_best_model()` with `runs=0` or empty model list untested. **MED/M**
+- [x] `llm/streaming.py:56` — `_extract()` with missing chunk attributes untested. **MED/M**
+- [x] `agents/jitter.py:49` — `_inject_typo()` word-length boundary (exactly 4 chars) untested. **MED/S**
+- [x] `tests/test_labeler.py:261` — `assert result is not None` is a weak assertion; verify actual output model contents. **MED/S**
 
 ### Bugs — 2nd May 2026
 
