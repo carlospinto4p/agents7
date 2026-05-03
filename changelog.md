@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.18.38 - 3rd May 2026
+
+- Updated `tests/test_labeler.py`:
+  - `test_batch_parse`: replaced weak `assert result is not None` with `assert result.items[1].value == "b"` to verify both parsed items.
+
+
 ### v3.18.37 - 3rd May 2026
 
 - Added unit tests in `tests/test_jitter.py`:

@@ -258,9 +258,9 @@ def test_batch_parse():
     agent = make_labeler()
     payload = json.dumps({"items": [{"value": "a"}, {"value": "b"}]})
     result = agent._parser.parse(payload, for_batch=True)
-    assert result is not None
     assert len(result.items) == 2
     assert result.items[0].value == "a"
+    assert result.items[1].value == "b"
 
 
 # --- TestEnumMapping ---
