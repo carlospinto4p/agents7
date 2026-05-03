@@ -18,7 +18,7 @@
 
 #### Performance
 
-- [ ] `tagger_agent/src/tagger_agent/rules.py:207` — Levenshtein computed via nested list loops on every fuzzy-match call; replace with Wagner-Fischer array or use `rapidfuzz` — HIGH — M
+- [x] `tagger_agent/src/tagger_agent/rules.py:207` — Levenshtein computed via nested list loops on every fuzzy-match call; replace with Wagner-Fischer array or use `rapidfuzz` — HIGH — M
 - [ ] `src/agents7/llm/cache.py:192` — `SqliteCache.put()` calls `json.dumps()` on every call even for updates; and runs LRU eviction query on every put when at capacity — HIGH — S
 - [ ] `src/agents7/llm/cache.py:82` — Cache key constructed with `json.dumps()` on every lookup with no caching of the formatted key — MED — S
 - [ ] `src/agents7/agents/chatter.py:475` — `_trim_history()` counts assistant turns by scanning entire history list on every message; track count directly — MED — S
