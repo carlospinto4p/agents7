@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.35 - 3rd May 2026
+
+- Added unit tests in `tests/test_model_selection.py`:
+  - `test_benchmark_model_runs_zero`: verifies `_benchmark_model` with `runs=0` returns a vacuous pass with no case results.
+  - `test_find_best_model_runs_zero_passed_through`: verifies `runs=0` is forwarded to `_benchmark_model`.
+
+
 ### v3.18.34 - 3rd May 2026
 
 - Added unit tests in `tests/test_memory.py`:

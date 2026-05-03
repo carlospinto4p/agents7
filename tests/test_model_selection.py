@@ -447,3 +447,50 @@ def test_benchmark_model_engine_init_failure(mock_engine_cls):
     assert score.model_name == "bad:1b"
     assert score.error is not None
     assert "Engine init failed" in score.error
+
+
+@patch("agents7.model_selection._create_agent")
+@patch("agents7.model_selection.LLMEngine")
+def test_benchmark_model_runs_zero(mock_engine_cls, mock_create_agent):
+    """runs=0 produces a vacuous pass with no case results."""
+    mock_engine_cls.return_value = MagicMock()
+    mock_create_agent.return_value = MagicMock()
+    score = _benchmark_model(
+        config={},
+        model_name="any:1b",
+        model_size=1_000_000,
+        test_cases=[TestCase(input={}, expected={})],
+        runs=0,
+        include_batch=False,
+    )
+    assert score.passed is True
+    assert score.pass_rate == 0.0
+    assert score.case_results == []
+
+
+@patch("agents7.model_selection._benchmark_model")
+@patch("agents7.model_selection._resolve_candidates")
+@patch("agents7.model_selection.load_yaml_settings")
+def test_find_best_model_runs_zero_passed_through(
+    mock_config, mock_resolve, mock_benchmark
+):
+    """runs=0 is forwarded to _benchmark_model."""
+    mock_config.return_value = {"engine": MagicMock()}
+    mock_resolve.return_value = [{"name": "small:1b", "size": 1000}]
+    mock_benchmark.return_value = ModelScore(
+        model_name="small:1b",
+        model_size=1000,
+        passed=True,
+        pass_rate=0.0,
+        case_results=[],
+    )
+    tc = TestCase(input={}, expected={})
+    find_best_model("some.yml", test_cases=[tc], runs=0)
+    mock_benchmark.assert_called_once_with(
+        mock_config.return_value,
+        "small:1b",
+        1000,
+        [tc],
+        runs=0,
+        include_batch=False,
+    )
