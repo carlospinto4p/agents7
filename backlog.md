@@ -3,7 +3,7 @@
 
 ### Improvements — 3rd May 2026
 
-- [ ] Remove GitLab token from Docker deployment — once `cpinto` is gone, strip the BuildKit secret mount from `agents7_ui/Dockerfile.backend` and the `secrets:` block from `docker-compose.yml` so `docker compose up --build` works with no credentials — MED — S
+- [x] Remove GitLab token from Docker deployment — once `cpinto` is gone, strip the BuildKit secret mount from `agents7_ui/Dockerfile.backend` and the `secrets:` block from `docker-compose.yml` so `docker compose up --build` works with no credentials — MED — S
 
 
 ### Improvements — 29th March 2026
@@ -15,7 +15,7 @@
 
 #### Refactoring
 
-- [ ] `src/agents7/agents/detector.py:52` — Subclass `__post_init__()` calls `_validate_output_model()` after `super().__post_init__()`; validation is too late if parent assumes validated model — HIGH — M
+- [x] `src/agents7/agents/detector.py:52` — Subclass `__post_init__()` calls `_validate_output_model()` after `super().__post_init__()`; validation is too late if parent assumes validated model — HIGH — M
 - [ ] `src/agents7/agents/chatter.py` — 4-level inheritance chain (Chatter → PersonalityChatter → SceneChatter → GuardedSceneChatter); consider composition (Persona, Scene, Guard as plugins) — HIGH — L
 - [ ] `src/agents7/eval/metrics.py:114` — `except Exception` blocks log but do not re-raise and do not return an error sentinel; evaluation failures are silently swallowed — HIGH — S
 - [ ] `src/agents7/llm/retry.py:120` — `retry_sync()` and `retry_async()` are near-identical; extract shared `_retry_impl()` accepting a sleep callback — MED — M
