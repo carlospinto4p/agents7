@@ -26,7 +26,7 @@
 
 #### Performance
 
-- [ ] `tagger_agent/scripts/benchmark_models.py:45` — Sequential `agent.act()` calls per test case; parallelise with `asyncio.gather()` for faster benchmarks — HIGH — M
+- [x] `tagger_agent/scripts/benchmark_models.py:45` — Sequential `agent.act()` calls per test case; parallelise with `asyncio.gather()` for faster benchmarks — HIGH — M
 - [ ] `tagger_agent/src/tagger_agent/rules.py:207` — Levenshtein computed via nested list loops on every fuzzy-match call; replace with Wagner-Fischer array or use `rapidfuzz` — HIGH — M
 - [ ] `src/agents7/llm/cache.py:192` — `SqliteCache.put()` calls `json.dumps()` on every call even for updates; and runs LRU eviction query on every put when at capacity — HIGH — S
 - [ ] `src/agents7/llm/cache.py:82` — Cache key constructed with `json.dumps()` on every lookup with no caching of the formatted key — MED — S
