@@ -18,7 +18,7 @@
 
 #### Security
 
-- [ ] `src/agents7/agents/config_loader.py:234` — API keys accepted in plaintext YAML `engine.api_key` field; document that this should use env var references, not literal keys — HIGH — S
+- [x] `src/agents7/agents/config_loader.py:234` — API keys accepted in plaintext YAML `engine.api_key` field; document that this should use env var references, not literal keys — HIGH — S
 - [ ] `src/agents7/agents/utils.py:109` — `import_from_path()` dynamically imports arbitrary modules from YAML config strings (`output_model`, `validators`, `preprocessor`); if config is user-controlled, this allows arbitrary code execution — HIGH — M
 - [ ] `docker-compose.yml:19` — `GITLAB_TOKEN` referenced as env var; ensure it is never logged or printed anywhere in the container — MED — S
 - [ ] `src/agents7/agents/config_loader.py:95` — `_resolve_inheritance()` resolves relative `base_config` paths without preventing traversal (e.g. `../../../etc/passwd`); add path validation — LOW — S

@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import re
 from enum import Enum, StrEnum
 
 from pydantic import BaseModel
@@ -8,6 +9,11 @@ from agents7.exceptions import (
     AgentConfigurationError,
     PropertyConfigurationError,
 )
+
+# Only allow standard Python identifier/dot paths (e.g. "pkg.sub.Class").
+# Rejects paths with spaces, slashes, or other shell-special chars that
+# could indicate injection if config is user-controlled.
+_SAFE_MODULE_PATH = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
 
 
 async def run_with_semaphore(coro, sem: asyncio.Semaphore | None):
@@ -112,7 +118,16 @@ def import_from_path(path: str) -> type:
     :param path: Path to the module and class, e.g.
         "module.submodule.ClassName".
     :return: The class object imported from the specified path.
+    :raises AgentConfigurationError: If *path* contains characters
+        outside the safe set (alphanumeric, underscores, dots).
+        This guards against arbitrary code execution when the path
+        originates from user-controlled config.
     """
+    if not _SAFE_MODULE_PATH.match(path):
+        raise AgentConfigurationError(
+            f"Unsafe module path `{path}`: only letters, digits, "
+            f"underscores, and dots are allowed."
+        )
     module_path, class_name = path.rsplit(".", 1)
     module = importlib.import_module(module_path)
     return getattr(module, class_name)

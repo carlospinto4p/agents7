@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.18.43 - 3rd May 2026
+
+- Added input validation in `agents/utils.py` `import_from_path()`:
+  rejects paths containing characters outside `[A-Za-z0-9_.]` with
+  `AgentConfigurationError`, blocking arbitrary module loading when
+  the path originates from user-controlled config.
+- Added tests in `tests/test_utils.py`:
+  - `test_import_from_path_valid`
+  - `test_import_from_path_unsafe_slash_raises`
+  - `test_import_from_path_unsafe_space_raises`
+  - `test_import_from_path_unsafe_leading_dot_raises`
+
+
 ### v3.18.42 - 3rd May 2026
 
 - Added `_resolve_env_var()` in `agents/config_loader.py`:

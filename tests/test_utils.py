@@ -10,11 +10,41 @@ from enum import StrEnum
 import pytest
 from pydantic import BaseModel, Field
 
+
 from agents7.agents.utils import (
+    import_from_path,
     model_class_to_string,
     resolve_strenum,
     run_with_semaphore,
 )
+from agents7.exceptions import AgentConfigurationError
+
+
+# ── import_from_path ──────────────────────────────────────────────
+
+
+def test_import_from_path_valid():
+    """Valid dotted path imports the named class."""
+    cls = import_from_path("agents7.exceptions.AgentConfigurationError")
+    assert cls is AgentConfigurationError
+
+
+def test_import_from_path_unsafe_slash_raises():
+    """Path with a slash raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError, match="Unsafe module path"):
+        import_from_path("os/path.join")
+
+
+def test_import_from_path_unsafe_space_raises():
+    """Path with a space raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError, match="Unsafe module path"):
+        import_from_path("os.path; import sys")
+
+
+def test_import_from_path_unsafe_leading_dot_raises():
+    """Path starting with a dot raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError, match="Unsafe module path"):
+        import_from_path(".hidden.Class")
 
 
 # ── run_with_semaphore ────────────────────────────────────────────
