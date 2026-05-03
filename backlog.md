@@ -1,6 +1,12 @@
 
 # Backlog - Agents7
 
+### Improvements — 3rd May 2026
+
+- [ ] Remove `cpinto` dependency — audit all usages across `agents7_framework` and `agents_catalog`, inline or reimplement each one directly so no private registry is needed at install time — HIGH — L
+- [ ] Remove GitLab token from Docker deployment — once `cpinto` is gone, strip the BuildKit secret mount from `agents7_ui/Dockerfile.backend` and the `secrets:` block from `docker-compose.yml` so `docker compose up --build` works with no credentials — MED — S
+
+
 ### Improvements — 29th March 2026
 
 - [ ] A/B testing harness — `run_ab_test(agent_a, agent_b, test_cases)` that runs both agents on same inputs and returns comparative metrics.
