@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.20.2 - 4th May 2026
+
+- Removed GitLab token from `agents7_ui/docker-compose.yml`:
+  - Removed `secrets:` block from `backend.build`.
+  - Removed top-level `secrets:` section.
+  - `docker compose up --build` now works with no credentials.
+
+
 ### v3.20.1 - 4th May 2026
 
 - Refactored `src/agents7/agents/labeler.py` `__post_init__()`:
