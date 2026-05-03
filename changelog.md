@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.18.33 - 3rd May 2026
+
+- Added unit tests:
+  - `tests/test_ollama_utils.py`: 6 tests covering `check_connection()` and
+    `list_available_models()` error paths (`httpx.HTTPError`,
+    `ollama.ResponseError`, success).
+  - `tests/test_config_loader.py`: 12 tests covering `validate_yaml_config()`,
+    `build_engine()` (minimal, retry, cache, fallback), and
+    `load_yaml_settings()` (keys, prompt strip, params, optional fields).
+  - `tests/test_utils.py`: 13 tests covering `run_with_semaphore()`,
+    `resolve_strenum()`, and `model_class_to_string()`.
+
+
 ### v3.18.32 - 3rd May 2026
 
 - Added unit tests:

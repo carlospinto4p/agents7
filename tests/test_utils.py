@@ -1,0 +1,146 @@
+"""Unit tests for agents7.agents.utils.
+
+Covers run_with_semaphore(), resolve_strenum(), and
+model_class_to_string().
+"""
+
+import asyncio
+from enum import StrEnum
+
+import pytest
+from pydantic import BaseModel, Field
+
+from agents7.agents.utils import (
+    model_class_to_string,
+    resolve_strenum,
+    run_with_semaphore,
+)
+
+
+# ── run_with_semaphore ────────────────────────────────────────────
+
+
+async def _coro(value: int) -> int:
+    return value
+
+
+@pytest.mark.asyncio
+async def test_run_with_semaphore_none_returns_result():
+    """Without a semaphore, coroutine result is returned directly."""
+    result = await run_with_semaphore(_coro(42), sem=None)
+    assert result == 42
+
+
+@pytest.mark.asyncio
+async def test_run_with_semaphore_limits_concurrency():
+    """Semaphore limits concurrent execution to its count."""
+    sem = asyncio.Semaphore(1)
+    results = await asyncio.gather(
+        run_with_semaphore(_coro(1), sem),
+        run_with_semaphore(_coro(2), sem),
+        run_with_semaphore(_coro(3), sem),
+    )
+    assert sorted(results) == [1, 2, 3]
+
+
+@pytest.mark.asyncio
+async def test_run_with_semaphore_propagates_exception():
+    """Exception from the coroutine propagates through."""
+
+    async def _fail():
+        raise ValueError("boom")
+
+    with pytest.raises(ValueError, match="boom"):
+        await run_with_semaphore(_fail(), sem=None)
+
+
+# ── resolve_strenum ───────────────────────────────────────────────
+
+
+class Color(StrEnum):
+    RED = "red"
+    BLUE = "blue"
+
+
+def test_resolve_strenum_plain():
+    """Plain StrEnum annotation returns the StrEnum class."""
+    assert resolve_strenum(Color) is Color
+
+
+def test_resolve_strenum_optional():
+    """Optional[StrEnum] (i.e. StrEnum | None) returns the StrEnum."""
+    annotation = Color | None
+    assert resolve_strenum(annotation) is Color
+
+
+def test_resolve_strenum_non_enum_returns_none():
+    """Non-StrEnum annotation returns None."""
+    assert resolve_strenum(str) is None
+
+
+def test_resolve_strenum_int_returns_none():
+    """int annotation returns None."""
+    assert resolve_strenum(int) is None
+
+
+def test_resolve_strenum_optional_str_returns_none():
+    """Optional[str] returns None — no StrEnum inside."""
+    assert resolve_strenum(str | None) is None
+
+
+# ── model_class_to_string ─────────────────────────────────────────
+
+
+class _Simple(BaseModel):
+    name: str
+    score: float
+
+
+class _WithDefault(BaseModel):
+    label: str = "unknown"
+
+
+class _WithDescription(BaseModel):
+    text: str = Field(description="Input text.")
+
+
+class _Category(StrEnum):
+    A = "Option A."
+    B = "Option B."
+
+
+class _WithEnum(BaseModel):
+    category: _Category
+
+
+def test_model_class_to_string_header():
+    """Output starts with 'class <Name>:'."""
+    result = model_class_to_string(_Simple)
+    assert result.startswith("class _Simple:")
+
+
+def test_model_class_to_string_plain_fields():
+    """Plain fields appear as '    <name>: <type>'."""
+    result = model_class_to_string(_Simple)
+    assert "    name: str" in result
+    assert "    score: float" in result
+
+
+def test_model_class_to_string_default_value():
+    """Fields with defaults include ' = <repr>'."""
+    result = model_class_to_string(_WithDefault)
+    assert "label: str = 'unknown'" in result
+
+
+def test_model_class_to_string_description():
+    """Fields with descriptions include 'Description:' line."""
+    result = model_class_to_string(_WithDescription)
+    assert "Description: Input text." in result
+
+
+def test_model_class_to_string_enum_possible_values():
+    """Enum fields list possible values."""
+    result = model_class_to_string(_WithEnum)
+    assert "Possible values:" in result
+    assert "A: Option A." in result
+    assert "B: Option B." in result

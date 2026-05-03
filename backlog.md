@@ -12,10 +12,10 @@
 
 #### Test coverage
 
-- [ ] `ui/ollama_utils.py:56,80` — `check_connection()` timeout and `list_available_models()` error handling both untested. **HIGH/M**
-- [ ] `agents/config_loader.py` — No test file at all; `_deep_merge()`, `load_yaml_settings()`, `build_engine()` kwargs all uncovered. **MED/M**
-- [ ] `agents/utils.py` — `run_with_semaphore()`, `resolve_strenum()`, `model_class_to_string()` have no tests. **MED/S**
-- [ ] `agents/parsing.py:81` — `ResponseParser.run_validators()` path where a validator raises an exception is untested. **MED/M**
+- [x] `ui/ollama_utils.py:56,80` — `check_connection()` timeout and `list_available_models()` error handling both untested. **HIGH/M**
+- [x] `agents/config_loader.py` — No test file at all; `_deep_merge()`, `load_yaml_settings()`, `build_engine()` kwargs all uncovered. **MED/M**
+- [x] `agents/utils.py` — `run_with_semaphore()`, `resolve_strenum()`, `model_class_to_string()` have no tests. **MED/S**
+- [x] `agents/parsing.py:81` — `ResponseParser.run_validators()` path where a validator raises an exception is untested. **MED/M** (premise no longer holds — already covered in `test_validators.py`)
 - [ ] `agents/memory.py:124` — `JsonFileMemory.load()` with corrupted JSON untested. **MED/M**
 - [ ] `model_selection.py:204` — `find_best_model()` with `runs=0` or empty model list untested. **MED/M**
 - [ ] `llm/streaming.py:56` — `_extract()` with missing chunk attributes untested. **MED/M**
