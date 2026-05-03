@@ -1,5 +1,6 @@
 """Unit tests for LLM streaming support (no LLM required)."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -7,6 +8,8 @@ import pytest
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 
 from helpers import async_iter, chat_chunk, gen_chunk, make_engine
+
+_BARE_CHUNK = SimpleNamespace()  # chunk with no attributes at all
 
 
 # --- StreamResult (sync) ---
@@ -287,3 +290,43 @@ def test_streaming_bypasses_retry(mock_retry):
     )
 
     mock_retry.assert_not_called()
+
+
+# --- _extract with missing chunk attributes ---
+
+
+def test_extract_chat_no_message_attr():
+    """Chat chunk with no message attribute yields empty strings."""
+    stream = StreamResult(iter([_BARE_CHUNK]), "chat")
+    collected = list(stream)
+    assert collected == []
+    assert stream.response == ""
+    assert stream.thinking is None
+
+
+def test_extract_chat_message_is_none():
+    """Chat chunk with message=None yields empty strings."""
+    chunk = SimpleNamespace(message=None, done=False)
+    stream = StreamResult(iter([chunk]), "chat")
+    collected = list(stream)
+    assert collected == []
+    assert stream.response == ""
+
+
+def test_extract_generate_no_response_attr():
+    """Generate chunk with no response attribute yields empty string."""
+    stream = StreamResult(iter([_BARE_CHUNK]), "generate")
+    collected = list(stream)
+    assert collected == []
+    assert stream.response == ""
+
+
+def test_extract_chat_message_missing_content():
+    """Chat chunk whose message has no content attribute yields empty."""
+    chunk = SimpleNamespace(
+        message=SimpleNamespace(role="assistant"), done=False
+    )
+    stream = StreamResult(iter([chunk]), "chat")
+    collected = list(stream)
+    assert collected == []
+    assert stream.response == ""

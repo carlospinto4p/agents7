@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.18.36 - 3rd May 2026
+
+- Added unit tests in `tests/test_streaming.py`:
+  - `test_extract_chat_no_message_attr`: chat chunk with no `message` attribute yields empty strings.
+  - `test_extract_chat_message_is_none`: chat chunk with `message=None` yields empty strings.
+  - `test_extract_generate_no_response_attr`: generate chunk with no `response` attribute yields empty string.
+  - `test_extract_chat_message_missing_content`: chat chunk whose message has no `content` attribute yields empty.
+
+
 ### v3.18.35 - 3rd May 2026
 
 - Added unit tests in `tests/test_model_selection.py`:
