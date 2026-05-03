@@ -1,5 +1,6 @@
 """Unit tests for the memory backends (no LLM required)."""
 
+import json
 import threading
 
 import pytest
@@ -138,6 +139,18 @@ def test_json_creates_parent_dirs(tmp_path):
     mem = JsonFileMemory(str(path))
     mem.save("conv1", MESSAGES)
     assert mem.load("conv1") == MESSAGES
+
+
+def test_json_load_corrupted_file(tmp_path):
+    """Loading a corrupted JSON file raises JSONDecodeError."""
+    history_dir = tmp_path / "history"
+    history_dir.mkdir()
+    (history_dir / "conv1.json").write_text(
+        "{not valid json", encoding="utf-8"
+    )
+    mem = JsonFileMemory(str(history_dir))
+    with pytest.raises(json.JSONDecodeError):
+        mem.load("conv1")
 
 
 # --- SqliteMemory ---

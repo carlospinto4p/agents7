@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.18.34 - 3rd May 2026
+
+- Added unit tests in `tests/test_memory.py`:
+  - `test_json_load_corrupted_file`: verifies `JsonFileMemory.load()` raises `json.JSONDecodeError` on a corrupted JSON file.
+
+
 ### v3.18.33 - 3rd May 2026
 
 - Added unit tests:
