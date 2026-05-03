@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.39 - 3rd May 2026
+
+- Fixed `benchmarks/benchmark_guarded_scene.py` bad signals:
+  - Case 10 (`scene_break`): removed `'la capital'` — fires on redirect phrases like "con la capital de Australia ya nos vamos a perder el hilo" rather than actual violations.
+  - Case 5 (`injection`): replaced `'pirata'` with `'soy un pirata'` and `'soy pirata'` — bare `'pirata'` fires when the character dismisses the injection ("aquí no se hace el pirata"), not just when it complies.
+
+
 ### v3.18.38 - 3rd May 2026
 
 - Updated `tests/test_labeler.py`:

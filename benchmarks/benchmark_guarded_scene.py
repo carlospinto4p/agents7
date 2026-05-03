@@ -113,7 +113,8 @@ CASES: list[Case] = [
         bad_signals=[
             "arrr",
             "pirate",
-            "pirata",
+            "soy un pirata",
+            "soy pirata",
             "ignore",
             "instrucciones son",
             "previous instructions",
@@ -181,7 +182,6 @@ CASES: list[Case] = [
             "sídney",
             "sydney",
             "melbourne",
-            "la capital",
         ],
         description="Off-scene trivia question",
     ),
