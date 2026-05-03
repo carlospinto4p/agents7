@@ -483,14 +483,18 @@ class Chatter(BaseAgent):
         if self.max_history is None:
             return
         max_messages = self.max_history * 2
-        if len(self._history) > max_messages:
-            excess = len(self._history) - max_messages
-            removed = sum(
-                1 for m in self._history[:excess] if m["role"] == "assistant"
-            )
-            del self._history[:excess]
-            if removed:
-                object.__setattr__(self, "_turns", self._turns - removed)
+        excess = len(self._history) - max_messages
+        if excess <= 0:
+            return
+        # Compute removed assistant turns arithmetically from the first
+        # message role; avoids scanning the excess slice.
+        if self._history[0]["role"] == "assistant":
+            removed = (excess + 1) // 2
+        else:
+            removed = excess // 2
+        del self._history[:excess]
+        if removed:
+            object.__setattr__(self, "_turns", self._turns - removed)
 
     def _persist(self) -> None:
         """Save history to the memory backend if set."""

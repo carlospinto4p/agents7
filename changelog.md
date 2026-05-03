@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.18.47 - 3rd May 2026
+
+- Optimised `src/agents7/agents/chatter.py` `_trim_history()`: replaced O(excess) scan over removed messages with O(1) arithmetic to compute the assistant-turn count.
+
+
 ### v3.18.46 - 3rd May 2026
 
 - Optimised `src/agents7/llm/cache.py`:

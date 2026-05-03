@@ -21,7 +21,7 @@
 - [x] `tagger_agent/src/tagger_agent/rules.py:207` — Levenshtein computed via nested list loops on every fuzzy-match call; replace with Wagner-Fischer array or use `rapidfuzz` — HIGH — M
 - [x] `src/agents7/llm/cache.py:192` — `SqliteCache.put()` calls `json.dumps()` on every call even for updates; and runs LRU eviction query on every put when at capacity — HIGH — S
 - [x] `src/agents7/llm/cache.py:82` — Cache key constructed with `json.dumps()` on every lookup with no caching of the formatted key — MED — S
-- [ ] `src/agents7/agents/chatter.py:475` — `_trim_history()` counts assistant turns by scanning entire history list on every message; track count directly — MED — S
+- [x] `src/agents7/agents/chatter.py:475` — `_trim_history()` counts assistant turns by scanning entire history list on every message; track count directly — MED — S
 - [ ] `tagger_agent/src/tagger_agent/rules.py:264` — `_name_prefix_match()` does linear scan over all names per token; replace with trie or binary search — MED — M
 - [ ] `src/agents7/ui/_pages/3_Test.py:132` — `test_history` deque and `prompt_versions` grow unbounded across browser sessions; add explicit cleanup — MED — S
 - [ ] `src/agents7/agents/batch.py:63` — Sequential `_request()` calls in batch loop; can be parallelised with `asyncio.gather()` — MED — M
