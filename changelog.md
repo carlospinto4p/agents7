@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.48 - 3rd May 2026
+
+- Parallelised `BatchProcessor.act_in_batch()` in `src/agents7/agents/batch.py`:
+  - Added `batch_settings` parameter (mirrors async variant).
+  - Replaced sequential list-comprehension with `ThreadPoolExecutor.map()`; chunks run concurrently, results returned in submission order.
+
+
 ### v3.18.47 - 3rd May 2026
 
 - Optimised `src/agents7/agents/chatter.py` `_trim_history()`: replaced O(excess) scan over removed messages with O(1) arithmetic to compute the assistant-turn count.

@@ -1,5 +1,6 @@
 import asyncio
 from asyncio import as_completed
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from math import ceil
 from typing import Callable
@@ -45,25 +46,35 @@ class BatchProcessor:
         chat_kwargs: dict | None = None,
         requests_per_prompt: int = 10,
         iter_func: Callable = tqdm,
+        batch_settings: BatchSettings | None = None,
     ) -> list[AgentResponse]:
-        """Sync batch processing.
+        """Sync batch processing with parallel chunk execution.
+
+        Chunks are dispatched concurrently via a thread pool;
+        results are re-ordered to match chunk submission order.
 
         :param input_list: List of input items.
         :param batch_prompt: System prompt for batch calls.
         :param chat_kwargs: Sanitized chat kwargs.
         :param requests_per_prompt: Items per LLM call.
         :param iter_func: Progress iterator (tqdm or None).
+        :param batch_settings: Concurrency settings
+            (max_concurrent controls thread pool size).
         :return: Flat list of AgentResponse, one per input.
         """
         from cpinto.functions import identity_func
 
         if iter_func is None:
             iter_func = identity_func
+        settings = batch_settings or BatchSettings()
         chunks = self._chunk_inputs(input_list, requests_per_prompt)
-        chunk_responses = [
-            self._request(chunk, batch_prompt, chat_kwargs)
-            for chunk in iter_func(chunks)
-        ]
+        max_workers = settings.max_concurrent or None
+
+        def _req(chunk: list) -> AgentResponse:
+            return self._request(chunk, batch_prompt, chat_kwargs)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            chunk_responses = list(iter_func(pool.map(_req, chunks)))
         return self._flatten(chunk_responses)
 
     async def act_in_batch_async(
