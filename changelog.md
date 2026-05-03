@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.46 - 3rd May 2026
+
+- Optimised `src/agents7/llm/cache.py`:
+  - `SqliteCache.put()`: moved LRU eviction query inside the `if not exists` block — updates no longer trigger an eviction check.
+  - `_CacheKeyBuilder.make_key()`: added `_FMT_CACHE` (id-keyed dict) to avoid re-serialising the same `output_format` schema dict on every call.
+
+
 ### v3.18.45 - 3rd May 2026
 
 - Fixed `agents/memory.py` `JsonFileMemory._conv_path()`:

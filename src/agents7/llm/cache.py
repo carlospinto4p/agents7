@@ -54,6 +54,12 @@ def create_cache(config: CacheConfig) -> "ResponseCache | SqliteCache":
     return ResponseCache(config)
 
 
+# Cache for serialized output_format dicts, keyed by object id.
+# Safe because schema dicts are created once per agent instance and
+# stay alive for the agent's lifetime, so id() is stable.
+_FMT_CACHE: dict[int, str] = {}
+
+
 class _CacheKeyBuilder:
     """Shared cache key generation logic."""
 
@@ -79,7 +85,10 @@ class _CacheKeyBuilder:
         # All other fields are primitives or lists with stable order.
         fmt: str | None
         if isinstance(output_format, dict):
-            fmt = json.dumps(output_format, sort_keys=True)
+            fmt_id = id(output_format)
+            if fmt_id not in _FMT_CACHE:
+                _FMT_CACHE[fmt_id] = json.dumps(output_format, sort_keys=True)
+            fmt = _FMT_CACHE[fmt_id]
         else:
             fmt = output_format  # str or None — already hashable as-is
         payload = {
@@ -207,16 +216,16 @@ class SqliteCache(_CacheKeyBuilder):
             )
             if not exists:
                 self._approx_size += 1
-            if self._max_size > 0 and self._approx_size > self._max_size:
-                excess = self._approx_size - self._max_size
-                self._conn.execute(
-                    "DELETE FROM cache WHERE key IN ("
-                    "  SELECT key FROM cache "
-                    "  ORDER BY accessed ASC LIMIT ?"
-                    ")",
-                    (excess,),
-                )
-                self._approx_size = self._max_size
+                if self._max_size > 0 and self._approx_size > self._max_size:
+                    excess = self._approx_size - self._max_size
+                    self._conn.execute(
+                        "DELETE FROM cache WHERE key IN ("
+                        "  SELECT key FROM cache "
+                        "  ORDER BY accessed ASC LIMIT ?"
+                        ")",
+                        (excess,),
+                    )
+                    self._approx_size = self._max_size
             self._conn.commit()
 
     @property
