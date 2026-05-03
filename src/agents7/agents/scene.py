@@ -4,8 +4,8 @@
 `Scene` that places the character in a specific context:
 a location, situation, time period, and behavioral rules.
 
-The system prompt wraps everything in a role-play frame so
-the agent stays both in character and in context.
+The system prompt is auto-generated from both persona and scene
+in `Chatter.__post_init__()` when both plugins are set.
 
 Usage::
 
@@ -43,50 +43,18 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agents7.agents.personality import (
-    Persona,
     PersonalityChatter,
     Scene,
 )
-
-
-def _build_scene_system_prompt(
-    persona: Persona,
-    scene: Scene,
-    extra_instructions: str = "",
-) -> str:
-    """Build the full role-play system prompt for scene-aware agents.
-
-    Shared by `SceneChatter` and `GuardedSceneChatter` so the prompt
-    construction logic lives in exactly one place.
-
-    :param persona: The character definition.
-    :param scene: The scenario definition.
-    :param extra_instructions: Optional extra guidance appended at the end.
-    :return: The complete system prompt string.
-    """
-    lines = [
-        "This is a role-play scenario. You are playing "
-        "a character in a specific context. Stay in "
-        "character and in context at all times.",
-        "",
-        scene.to_prompt(),
-        "",
-        persona.to_prompt(),
-    ]
-    prompt = "\n".join(lines)
-    if extra_instructions:
-        prompt = f"{prompt}\n\n## Extra Instructions\n{extra_instructions}"
-    return prompt
 
 
 @dataclass(frozen=True)
 class SceneChatter(PersonalityChatter):
     """PersonalityChatter placed in a specific scenario.
 
-    Extends `PersonalityChatter` by adding a `Scene` that
-    frames the conversation as a role-play with explicit
-    context, rules, and goals.  The system prompt is
-    auto-generated from both the persona and the scene.
+    Extends `PersonalityChatter` by requiring a `Scene`.
+    The system prompt is auto-generated from both persona
+    and scene in `Chatter.__post_init__()`.
 
     The ``system_prompt`` field is auto-generated — do not
     set it manually.  Use ``extra_instructions`` for any
@@ -99,11 +67,6 @@ class SceneChatter(PersonalityChatter):
         default_factory=Scene,
         kw_only=True,
     )
-
-    def _build_system_prompt(self) -> str:
-        return _build_scene_system_prompt(
-            self.persona, self.scene, self.extra_instructions
-        )
 
     @classmethod
     def from_yaml(

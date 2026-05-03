@@ -1,10 +1,15 @@
 """Guarded conversational agent with context validation.
 
-`GuardedChatter` extends `PersonalityChatter` with a built-in
+`GuardedChatter` extends `Chatter` with a built-in
 `ContextGuard` that validates every response before it enters
 conversation history.  Rejected responses are retried with
 feedback; if all retries fail the guard's suggested fix is
 used instead.
+
+Hierarchy: Chatter -> GuardedChatter -> GuardedSceneChatter
+(one level shallower than the old PersonalityChatter path).
+Pass `persona` and/or `scene` directly to `GuardedChatter`
+as composition plugins inherited from `Chatter`.
 """
 
 from collections.abc import Callable
@@ -12,15 +17,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agents7.agents.chatter import (
+    Chatter,
     _ChatterStreamBase,
 )
 from agents7.agents.context_guard import (
     ContextGuard,
     GuardReason,
     GuardVerdict,
-)
-from agents7.agents.personality import (
-    PersonalityChatter,
 )
 from agents7.logs import logger
 from agents7.models import ChatResponse, LLMMetrics
@@ -121,8 +124,8 @@ class GuardedChatterAsyncStreamResult(
 
 
 @dataclass(frozen=True)
-class GuardedChatter(PersonalityChatter):
-    """PersonalityChatter with a built-in context guard.
+class GuardedChatter(Chatter):
+    """Chatter with a built-in context guard.
 
     Every response is validated by a `ContextGuard` before
     it enters conversation history.  When the guard rejects
@@ -130,6 +133,10 @@ class GuardedChatter(PersonalityChatter):
     guard's reason as feedback) up to ``max_guard_retries``
     times.  If all retries fail the guard's suggested
     ``fix`` is used.
+
+    Accepts the same composition plugins as `Chatter`:
+    pass ``persona`` and/or ``scene`` to auto-generate the
+    system prompt from those objects.
 
     :param guard: The `ContextGuard` instance.
     :param max_guard_retries: How many times to retry on
@@ -268,9 +275,9 @@ class GuardedChatter(PersonalityChatter):
     ) -> "GuardedChatter":
         """Create from a YAML configuration file.
 
-        Extends the PersonalityChatter YAML schema with a
-        ``guard`` section (nested ContextGuard config) and
-        optional ``max_guard_retries`` /
+        Extends the Chatter YAML schema with a ``persona``
+        section, a ``guard`` section (nested ContextGuard
+        config), and optional ``max_guard_retries`` /
         ``guard_context_turns`` fields::
 
             name: guarded-david

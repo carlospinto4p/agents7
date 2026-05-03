@@ -4,6 +4,14 @@
 conversation interface. Unlike structured-output agents
 (Labeler, Detector, etc.), Chatter returns free-form text
 responses and maintains message history across turns.
+
+Persona, Scene, and extra_instructions are optional
+composition plugins.  Passing a `Persona` (and optionally a
+`Scene`) causes the system prompt to be auto-generated from
+those objects, overriding any manually supplied
+`system_prompt`.  Subclasses (`PersonalityChatter`,
+`SceneChatter`, etc.) are thin wrappers that enforce field
+presence via re-declaration.
 """
 
 from collections.abc import Callable
@@ -16,6 +24,11 @@ from agents7.agents.chatter_config_loader import (
 )
 from agents7.agents.jitter import apply_typos
 from agents7.agents.memory import MemoryBackend
+from agents7.agents.persona import (
+    Persona,
+    Scene,
+    _build_scene_system_prompt,
+)
 from agents7.exceptions import ChatEndedError
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 from agents7.logs import logger
@@ -135,6 +148,7 @@ class Chatter(BaseAgent):
         version (int): The version of the agent.
         engine (LLMEngine): The LLM engine used by the agent.
         system_prompt (str): The personality / system prompt.
+            Overridden automatically when `persona` is set.
         prompt_params (dict, optional): Substitution params
             for `$variable` placeholders in system_prompt.
         temperature (float): Sampling temperature.
@@ -163,12 +177,22 @@ class Chatter(BaseAgent):
             (list of message dicts) and returns True to
             end the conversation. Checked before each
             turn. Defaults to None.
-        typo_rate (float): Probability (0.0–1.0) that
+        typo_rate (float): Probability (0.0-1.0) that
             each word in the response gets a random typo.
             0.0 means perfect text, 0.03 means ~3% of
             words get typos. Applies to ``chat()`` and
             ``chat_async()`` only (not streaming).
             Defaults to 0.0.
+        persona (Persona, optional): Character definition.
+            When set, the system prompt is auto-generated
+            from the persona (and scene if also set).
+            Defaults to None.
+        scene (Scene, optional): Scenario definition.
+            When set alongside `persona`, the system prompt
+            is built as a role-play scene. Defaults to None.
+        extra_instructions (str): Additional instructions
+            appended after the persona/scene prompt.
+            Defaults to empty string.
     """
 
     temperature: float = field(default=0.7, kw_only=True)
@@ -181,8 +205,17 @@ class Chatter(BaseAgent):
         default=None, kw_only=True
     )
     typo_rate: float = field(default=0.0, kw_only=True)
+    persona: Persona | None = field(default=None, kw_only=True)
+    scene: Scene | None = field(default=None, kw_only=True)
+    extra_instructions: str = field(default="", kw_only=True)
 
     def __post_init__(self) -> None:
+        if self.persona is not None:
+            object.__setattr__(
+                self,
+                "system_prompt",
+                self._build_plugin_prompt(),
+            )
         super().__post_init__()
         if self.memory is not None:
             history = self.memory.load(self.conversation_id)
@@ -429,6 +462,23 @@ class Chatter(BaseAgent):
         return "\n".join(lines)
 
     # --- Private helpers ---
+
+    def _build_plugin_prompt(self) -> str:
+        """Build system prompt from persona and/or scene."""
+        if self.scene is not None:
+            return _build_scene_system_prompt(
+                self.persona,
+                self.scene,
+                self.extra_instructions,
+            )
+        prompt = self.persona.to_prompt()
+        if self.extra_instructions:
+            prompt = (
+                f"{prompt}\n\n"
+                f"## Extra Instructions\n"
+                f"{self.extra_instructions}"
+            )
+        return prompt
 
     def _check_ended(self) -> None:
         """Raise ChatEndedError if the conversation is over."""

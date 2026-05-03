@@ -10,8 +10,7 @@ while staying in character within the scene.
 from dataclasses import dataclass, field
 
 from agents7.agents.guarded import GuardedChatter
-from agents7.agents.personality import Scene
-from agents7.agents.scene import _build_scene_system_prompt
+from agents7.agents.persona import Scene
 
 
 @dataclass(frozen=True)
@@ -31,11 +30,6 @@ class GuardedSceneChatter(GuardedChatter):
     """
 
     scene: Scene = field(default_factory=Scene, kw_only=True)
-
-    def _build_system_prompt(self) -> str:
-        return _build_scene_system_prompt(
-            self.persona, self.scene, self.extra_instructions
-        )
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "GuardedSceneChatter":

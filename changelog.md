@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.21.0 - 4th May 2026
+
+- Refactored `agents/` — composition over inheritance for Chatter personality/scene:
+  - Added `agents/persona.py`: new leaf module with `PhysicalTraits`, `Persona`, `Scene`, and `_build_scene_system_prompt`. No imports from other agent modules, preventing circular dependency.
+  - Updated `agents/chatter.py`: added `persona: Persona | None`, `scene: Scene | None`, and `extra_instructions: str` as optional plugin fields. `__post_init__` auto-generates the system prompt when `persona` is set; added `_build_plugin_prompt()`.
+  - Updated `agents/personality.py`: replaced data class definitions with re-exports from `persona.py`; removed `__post_init__` and `_build_system_prompt` overrides (now handled by `Chatter`).
+  - Updated `agents/scene.py`: removed `_build_scene_system_prompt` (moved to `persona.py`); removed `_build_system_prompt` override.
+  - Updated `agents/guarded.py`: `GuardedChatter` now extends `Chatter` directly instead of `PersonalityChatter`.
+  - Updated `agents/guarded_scene.py`: removed `_build_system_prompt` override and invalid `_build_scene_system_prompt` import; imports `Scene` from `persona.py`.
+
+
 ### v3.20.3 - 4th May 2026
 
 - Refactored `src/agents7/agents/detector.py`:
