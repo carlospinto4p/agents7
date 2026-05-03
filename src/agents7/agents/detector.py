@@ -53,11 +53,8 @@ class Detector(Labeler):
         """
         Post-initialization method to validate the agent.
         This method is called after the agent is initialized.
-
-        Validates that output_model is a subclass of Property.
         """
         super().__post_init__()
-        self._validate_output_model()
         object.__setattr__(
             self,
             "_possible_reasons",

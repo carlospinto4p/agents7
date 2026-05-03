@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.20.3 - 4th May 2026
+
+- Refactored `src/agents7/agents/detector.py`:
+  - Removed redundant `self._validate_output_model()` call from `__post_init__()`; `Labeler.__post_init__()` already calls it via polymorphism before `_initialize_parser()` runs.
+
+
 ### v3.20.2 - 4th May 2026
 
 - Removed GitLab token from `agents7_ui/docker-compose.yml`:
