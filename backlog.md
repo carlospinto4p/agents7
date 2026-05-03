@@ -8,16 +8,6 @@
 - [ ] Test JSONL file upload in Step 3 (Batch Test) and Step 4 (Evaluate).
 - [ ] Test auto-discovery flow: upload JSONL, write intent, click Discover Schema, verify form fills, then Generate Prompt & Examples in Step 2.
 
-### Scan — 2nd May 2026
-
-#### Test coverage
-
-- [x] `agents/memory.py:124` — `JsonFileMemory.load()` with corrupted JSON untested. **MED/M**
-- [x] `model_selection.py:204` — `find_best_model()` with `runs=0` or empty model list untested. **MED/M**
-- [x] `llm/streaming.py:56` — `_extract()` with missing chunk attributes untested. **MED/M**
-- [x] `agents/jitter.py:49` — `_inject_typo()` word-length boundary (exactly 4 chars) untested. **MED/S**
-- [x] `tests/test_labeler.py:261` — `assert result is not None` is a weak assertion; verify actual output model contents. **MED/S**
-
 ### Bugs — 2nd May 2026
 
 - [ ] Benchmark bad_signal 'la capital' too broad — fires on in-character redirect phrases (e.g. "con la capital de Australia ya nos vamos a perder el hilo"). Narrow the signal or add an exclusion for redirect context.
