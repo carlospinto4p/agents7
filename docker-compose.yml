@@ -16,4 +16,8 @@ services:
 
 secrets:
   gitlab_token:
+    # Read from the host env var GITLAB_TOKEN at build time only.
+    # The secret is never injected into the running container's
+    # environment — it exists solely as /run/secrets/gitlab_token
+    # during the RUN --mount=type=secret layer in the Dockerfile.
     environment: GITLAB_TOKEN

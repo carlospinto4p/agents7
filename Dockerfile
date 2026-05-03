@@ -8,6 +8,8 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src/ src/
 
+# The token is consumed here and is not persisted in any image layer
+# (BuildKit secret mount) nor exported to the runtime environment.
 RUN --mount=type=secret,id=gitlab_token \
     UV_INDEX_GITLAB_CPINTO_USERNAME=oauth2 \
     UV_INDEX_GITLAB_CPINTO_PASSWORD=$(cat /run/secrets/gitlab_token) \
