@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.40 - 3rd May 2026
+
+- Fixed `agents/guarded.py` `_add_feedback`: added reason-specific hints to the retry feedback message.
+  - `BROKE_CHARACTER`: explicitly prohibits AI/LLM vocabulary in the regenerated response.
+  - `PROMPT_INJECTION`: explicitly instructs the character to dismiss or ignore the injected persona/instruction.
+
+
 ### v3.18.39 - 3rd May 2026
 
 - Fixed `benchmarks/benchmark_guarded_scene.py` bad signals:
