@@ -4,11 +4,53 @@ import random
 from unittest.mock import patch
 
 
-from agents7.agents.jitter import apply_typos
+from agents7.agents.jitter import _inject_typo, apply_typos
 from agents7.agents.chatter import Chatter
 from agents7.llm import LLMEngine
 
 from helpers import DUMMY_METRICS, ENGINE
+
+
+# --- _inject_typo word-length boundary ---
+
+
+def test_inject_typo_4char_swap_modifies():
+    """swap on a 4-char word produces a different string."""
+    rng = random.Random(0)
+    rng.choice = lambda _: "swap"  # force swap path
+    # randint(1, 2) will pick index 1 or 2 — word changes
+    result = _inject_typo("test", 0, 1, rng)
+    assert len(result) == 4
+    assert result != "test"
+
+
+def test_inject_typo_4char_drop_no_change():
+    """drop on a 4-char word is skipped (len not > 4)."""
+
+    class _ForcedRng:
+        def choice(self, seq):
+            return "drop"
+
+        def randint(self, a, b):
+            return a  # would pick index 1 if drop fired
+
+    result = _inject_typo("test", 0, 1, _ForcedRng())
+    assert result == "test"
+
+
+def test_inject_typo_5char_drop_fires():
+    """drop on a 5-char word does modify the word."""
+
+    class _ForcedRng:
+        def choice(self, seq):
+            return "drop"
+
+        def randint(self, a, b):
+            return 1
+
+    result = _inject_typo("hello", 0, 1, _ForcedRng())
+    assert len(result) == 4
+    assert result != "hello"
 
 
 # --- apply_typos ---

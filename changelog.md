@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.18.37 - 3rd May 2026
+
+- Added unit tests in `tests/test_jitter.py`:
+  - `test_inject_typo_4char_swap_modifies`: swap on a 4-char word modifies the string.
+  - `test_inject_typo_4char_drop_no_change`: drop on a 4-char word is silently skipped (`len > 4` guard).
+  - `test_inject_typo_5char_drop_fires`: drop on a 5-char word does shorten the string.
+
+
 ### v3.18.36 - 3rd May 2026
 
 - Added unit tests in `tests/test_streaming.py`:
