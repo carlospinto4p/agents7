@@ -16,8 +16,8 @@
 #### Refactoring
 
 - [x] `src/agents7/agents/detector.py:52` — Subclass `__post_init__()` calls `_validate_output_model()` after `super().__post_init__()`; validation is too late if parent assumes validated model — HIGH — M
-- [ ] `src/agents7/agents/chatter.py` — 4-level inheritance chain (Chatter → PersonalityChatter → SceneChatter → GuardedSceneChatter); consider composition (Persona, Scene, Guard as plugins) — HIGH — L
-- [ ] `src/agents7/eval/metrics.py:114` — `except Exception` blocks log but do not re-raise and do not return an error sentinel; evaluation failures are silently swallowed — HIGH — S
+- [x] `src/agents7/agents/chatter.py` — 4-level inheritance chain (Chatter → PersonalityChatter → SceneChatter → GuardedSceneChatter); consider composition (Persona, Scene, Guard as plugins) — HIGH — L
+- [x] `src/agents7/eval/metrics.py:114` — `except Exception` blocks log but do not re-raise and do not return an error sentinel; evaluation failures are silently swallowed — HIGH — S (premise no longer holds — error sentinel and logging were already present)
 - [ ] `src/agents7/llm/retry.py:120` — `retry_sync()` and `retry_async()` are near-identical; extract shared `_retry_impl()` accepting a sleep callback — MED — M
 - [ ] `src/agents7/agents/chatter.py:185` — `object.__setattr__()` for frozen dataclass mutation repeated 6+ times across Chatter and subclasses; extract `FrozenMutable` mixin with `_set_attr()` — MED — M
 - [ ] `src/agents7/agents/labeler.py:472` — Input preprocessing (`_preprocess()` + logging) duplicated in all 4 `act*()` methods; extract `_prepare_input()` helper — MED — S
