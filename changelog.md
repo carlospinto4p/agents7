@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.18.44 - 3rd May 2026
+
+- Fixed `agents/config_loader.py` `_resolve_inheritance()`: rejects
+  absolute `base_config` paths with `AgentConfigurationError`, preventing
+  injection of arbitrary system files (e.g. `base_config: /etc/passwd`).
+- Updated `tests/test_config_inheritance.py`:
+  - Changed all test fixtures from absolute `base_config` paths to
+    relative ones (the correct real-world pattern).
+  - Added `test_absolute_base_config_raises`.
+
+
 ### v3.18.43 - 3rd May 2026
 
 - Added input validation in `agents/utils.py` `import_from_path()`:

@@ -93,11 +93,16 @@ def _resolve_inheritance(
 ) -> dict:
     """Load a YAML config, resolving ``base_config`` chain.
 
+    ``base_config`` values must be relative paths. Absolute paths
+    are rejected to prevent injection of arbitrary system files
+    (e.g. ``base_config: /etc/passwd``).
+
     :param file_path: Path to the YAML file.
     :param _seen: Set of already-visited paths (for
         circular-reference detection).
     :return: Fully merged configuration dictionary.
-    :raises AgentConfigurationError: On circular references.
+    :raises AgentConfigurationError: On circular references or
+        if ``base_config`` is an absolute path.
     """
     resolved = os.path.abspath(file_path)
     if _seen is None:
@@ -114,9 +119,14 @@ def _resolve_inheritance(
     if base_path is None:
         return config
 
-    # Resolve relative paths from the current file's directory
-    if not os.path.isabs(base_path):
-        base_path = os.path.join(os.path.dirname(resolved), base_path)
+    if os.path.isabs(base_path):
+        raise AgentConfigurationError(
+            f"base_config path `{base_path}` must be relative, "
+            f"not an absolute path."
+        )
+
+    # Resolve relative path from the current file's directory
+    base_path = os.path.join(os.path.dirname(resolved), base_path)
 
     base_config = _resolve_inheritance(base_path, _seen)
     return _deep_merge(base_config, config)
