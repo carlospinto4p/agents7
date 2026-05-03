@@ -1,6 +1,21 @@
 
 ## Changelog - Agents7
 
+### v3.18.41 - 3rd May 2026
+
+- Fixed `agents/context_guard.py` `_DEFAULT_GUARD_PROMPT`:
+  - Added explicit REJECT example for "No soy un modelo de
+    lenguaje, soy David" — covers the negation pattern that
+    qwen3:4b was accepting (rej=0) despite "modelo de lenguaje"
+    being prohibited vocabulary.
+  - Added IMPORTANT note: scene rules are binding — violating
+    a scene constraint (e.g. source protection) is OFF_TOPIC
+    even if the content relates to the scene subject.
+  - Added source-protection REJECT/ACCEPT examples: responses
+    that reveal source-identifying details are OFF_TOPIC; correct
+    deflections are IN_CHARACTER.
+
+
 ### v3.18.40 - 3rd May 2026
 
 - Fixed `agents/guarded.py` `_add_feedback`: added reason-specific hints to the retry feedback message.
