@@ -1,6 +1,20 @@
 
 ## Changelog - Agents7
 
+### v3.18.42 - 3rd May 2026
+
+- Added `_resolve_env_var()` in `agents/config_loader.py`:
+  resolves `${VAR_NAME}` references to environment variables.
+  `build_engine()` now calls it for `api_key` and `base_url`,
+  so API keys can be stored as env var references instead of
+  plaintext in YAML configs.
+- Added tests in `tests/test_config_loader.py`:
+  - `test_resolve_env_var_plain_string`
+  - `test_resolve_env_var_resolves_set_var`
+  - `test_resolve_env_var_missing_raises`
+  - `test_resolve_env_var_partial_reference_unchanged`
+
+
 ### v3.18.41 - 3rd May 2026
 
 - Fixed `agents/context_guard.py` `_DEFAULT_GUARD_PROMPT`:

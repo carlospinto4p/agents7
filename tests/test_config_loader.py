@@ -8,6 +8,7 @@ are covered in test_config_inheritance.py.
 import pytest
 
 from agents7.agents.config_loader import (
+    _resolve_env_var,
     build_engine,
     load_yaml_settings,
     validate_yaml_config,
@@ -180,3 +181,30 @@ def test_load_yaml_settings_optional_max_parse_retries(tmp_path):
     yaml = _MINIMAL_YAML + "max_parse_retries: 2\n"
     result = load_yaml_settings(_write_yaml(tmp_path, yaml))
     assert result["max_parse_retries"] == 2
+
+
+# ── _resolve_env_var ──────────────────────────────────────────────
+
+
+def test_resolve_env_var_plain_string():
+    """Non-reference strings are returned unchanged."""
+    assert _resolve_env_var("plain-value") == "plain-value"
+
+
+def test_resolve_env_var_resolves_set_var(monkeypatch):
+    """${VAR} syntax resolves to the env var value."""
+    monkeypatch.setenv("TEST_API_KEY", "secret123")
+    assert _resolve_env_var("${TEST_API_KEY}") == "secret123"
+
+
+def test_resolve_env_var_missing_raises(monkeypatch):
+    """${VAR} where VAR is unset raises AgentConfigurationError."""
+    monkeypatch.delenv("MISSING_VAR", raising=False)
+    with pytest.raises(AgentConfigurationError, match="MISSING_VAR"):
+        _resolve_env_var("${MISSING_VAR}")
+
+
+def test_resolve_env_var_partial_reference_unchanged():
+    """Strings that look like ${...} but are malformed pass through."""
+    assert _resolve_env_var("${no-closing") == "${no-closing"
+    assert _resolve_env_var("no-opening}") == "no-opening}"

@@ -14,6 +14,36 @@ from agents7.llm.cache import CacheConfig
 from agents7.llm.retry import RetryConfig
 
 
+def _resolve_env_var(value: str) -> str:
+    """Resolve a value that may be an environment variable reference.
+
+    If *value* is of the form ``${VAR_NAME}``, the environment
+    variable ``VAR_NAME`` is returned. Otherwise *value* is
+    returned unchanged.
+
+    Use this format in YAML configs to avoid storing API keys
+    in plain text::
+
+        engine:
+          api_key: ${MY_API_KEY}
+
+    :param value: Raw string value from YAML config.
+    :return: Resolved string value.
+    :raises AgentConfigurationError: If the referenced
+        environment variable is not set.
+    """
+    if value.startswith("${") and value.endswith("}"):
+        var_name = value[2:-1]
+        env_value = os.environ.get(var_name)
+        if env_value is None:
+            raise AgentConfigurationError(
+                f"Environment variable `{var_name}` referenced "
+                f"in config is not set."
+            )
+        return env_value
+    return value
+
+
 def cast_optional_fields(
     source: dict,
     target: dict,
@@ -230,9 +260,9 @@ def build_engine(engine_config: dict) -> LLMEngine:
 
     extra_kwargs = {}
     if engine_config.get("base_url"):
-        extra_kwargs["base_url"] = engine_config["base_url"]
+        extra_kwargs["base_url"] = _resolve_env_var(engine_config["base_url"])
     if engine_config.get("api_key"):
-        extra_kwargs["api_key"] = engine_config["api_key"]
+        extra_kwargs["api_key"] = _resolve_env_var(engine_config["api_key"])
 
     return LLMEngine(
         engine_config["provider"],
