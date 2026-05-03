@@ -1,14 +1,6 @@
 
 # Backlog - Agents7
 
-### Pending Manual Testing
-
-- [ ] End-to-end manual test of the full Agent Builder UI (all 5 steps: Define, Configure, Test, Evaluate, Export).
-- [ ] Test prompt versioning and A/B comparison UI: save/load/delete versions, run A/B comparison, verify side-by-side results. Confirm Single Input, Batch Test, and History tabs still work.
-- [ ] Test JSONL file upload in Step 3 (Batch Test) and Step 4 (Evaluate).
-- [ ] Test auto-discovery flow: upload JSONL, write intent, click Discover Schema, verify form fills, then Generate Prompt & Examples in Step 2.
-
-
 ### Improvements — 29th March 2026
 
 - [ ] A/B testing harness — `run_ab_test(agent_a, agent_b, test_cases)` that runs both agents on same inputs and returns comparative metrics.
@@ -46,3 +38,35 @@
 - [ ] `src/agents7/agents/parsing.py:61` — `_fix_malformed_json()` untested directly; add tests for trailing commas, missing quotes, unclosed brackets — MED — S
 - [ ] `tagger_agent/tests/test_rules_classifier.py:80` — Weak assertions (enum equality only); add confidence bounds and detail field validation — MED — S
 - [ ] `tests/test_chatter.py` — Missing edge cases: empty history, `max_history=0`, `conversation_id` mutation, very long messages — MED — M
+
+
+### agents7_ui — 3rd May 2026
+
+#### Infrastructure
+
+- [ ] Backend: set up FastAPI router structure (`/api/catalog`, `/api/run`, `/api/engine`) and wire uvicorn dev server — HIGH — S
+- [ ] Frontend: add Svelte routing (e.g. `svelte-routing` or SvelteKit migration) with placeholder pages for Catalog, Runner, Engine — HIGH — S
+- [ ] Docker Compose: verify full `docker compose up --build` flow, backend + nginx-served frontend, Ollama on host — MED — S
+
+#### Catalog Browser
+
+- [ ] Backend: auto-discover all agents in `agents_catalog/` by scanning for `config.yml` files; return list with name, agent type, model, description — HIGH — M
+- [ ] Frontend: Catalog page — list all discovered catalog agents as cards (name, type, model); click to open Agent Detail — HIGH — M
+- [ ] Frontend: Agent Detail view — show system prompt, output schema (rendered from YAML config), and YAML source — MED — M
+
+#### Agent Runner
+
+- [ ] Backend: `POST /api/run/{agent_name}` — instantiate catalog agent from YAML config, run `act()` with provided input, return structured output + metrics — HIGH — M
+- [ ] Frontend: Single-input runner — JSON input form derived from agent's input fields; submit, see structured output rendered as a table/card — HIGH — M
+- [ ] Frontend: Batch runner — paste or upload JSONL, run against selected agent, show results table with pass/fail per row — MED — L
+- [ ] Frontend: Response history — store last N run results in a Svelte store, persisted to `localStorage`; show in a collapsible sidebar — MED — M
+
+#### Engine / Models
+
+- [ ] Backend: `GET /api/engine/models` — query Ollama for loaded/available models and return list — MED — S
+- [ ] Frontend: Engine status panel — show available Ollama models, which is loaded, memory usage if available — MED — S
+
+#### Evaluation
+
+- [ ] Backend: `POST /api/eval/{agent_name}` — run agent against its golden set (if present), return accuracy + per-category breakdown — MED — M
+- [ ] Frontend: Evaluation view — trigger eval run, show accuracy bar, per-category table, and list of mismatches — MED — M

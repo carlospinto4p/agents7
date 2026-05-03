@@ -1009,8 +1009,6 @@ export_eval_report(
 
 The report includes: agent/model info, date, overall accuracy, per-field breakdown, optional confusion matrix, and per-case detail with pass/fail status.
 
-The UI evaluation module (`agents7.ui.evaluation`) re-exports from `agents7.metrics`, so existing UI code continues to work unchanged.
-
 ### Input Preprocessor
 
 An optional callable that transforms input data before it reaches the LLM. Applied consistently across `act()`, `act_async()`, `act_stream()`, `act_stream_async()`, and batch methods.
@@ -1249,48 +1247,6 @@ print(result.model.category)  # SPAM
 
 Auto-generates `StrEnum` and `ClassificationProperty` subclasses. Supports custom reasons, `not_applicable` toggle, `think` mode, and extra kwargs (`examples`, `prompt_params`).
 
-### Agent Builder UI
-
-> Full workflow documentation: [docs/agent_builder.md](docs/agent_builder.md)
-
-An optional Streamlit-based UI for creating, testing, and evaluating agents interactively. Install with:
-
-```bash
-pip install agents7[ui]
-```
-
-Launch the UI:
-
-```bash
-agents7-ui
-```
-
-Custom host and port (useful for Docker / remote environments):
-
-```bash
-agents7-ui --host 0.0.0.0 --port 9000
-```
-
-Or from Python:
-
-```python
-from agents7.ui import launch
-launch()                                  # defaults
-launch(host="0.0.0.0", port=9000)        # custom
-```
-
-The wizard guides you through 5 steps:
-
-| Step | Description |
-|------|-------------|
-| **Define** | Choose agent type (Classifier, Detector, Regressor, Labeler) and define the output model. Optionally use **Discover from Data** to auto-suggest the schema from sample JSONL |
-| **Configure** | Select LLM model (auto-detected from Ollama), write the system prompt, add examples. Optionally **Generate Prompt & Examples** from intent and sample data |
-| **Test** | Quick-test with single or batch inputs (text, JSON, or JSONL file upload), save prompt versions, and run A/B comparisons side-by-side |
-| **Evaluate** | Upload CSV/JSONL or add labeled rows, run the agent, see accuracy, per-field metrics, and confusion matrix. Download results as CSV or JSONL |
-| **Export** | Save generated `models.py`, `config.yml`, `eval_data.csv`, `eval_results.csv`, `eval_results.jsonl`, and `usage_example.py` to `workspace/<agent_name>/` |
-
-The UI constructs agents in-memory during Test/Evaluate (no files written until Export). This enables fast prompt iteration without import path issues.
-
 ## Examples
 
 The `examples/` directory contains runnable scripts demonstrating each feature:
@@ -1335,32 +1291,6 @@ Run from the relevant subdirectory:
 ```bash
 cd examples/agents
 python 01_labeler.py
-```
-
-## Docker
-
-Run the Agent Builder UI in Docker, connecting to Ollama on your host
-machine:
-
-```bash
-# 1. Make sure Ollama is running locally
-ollama serve
-
-# 2. Copy and fill in your GitLab token
-cp .env.example .env
-
-# 3. Build and start the app
-docker compose up --build
-```
-
-The Streamlit UI will be available at `http://localhost:8501`.
-The container connects to Ollama on the host via
-`host.docker.internal:11434`.
-
-To stop the service:
-
-```bash
-docker compose down
 ```
 
 ## Requirements

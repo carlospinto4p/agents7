@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.19.0 - 3rd May 2026
+
+- Removed `agents7.ui` Streamlit-based Agent Builder UI:
+  - Deleted `src/agents7/ui/` and all submodules.
+  - Removed `[ui]` optional dependency group (`streamlit`, `polars`, `plotly`).
+  - Removed `agents7-ui` CLI entry point.
+  - Removed `Dockerfile` (was UI-only; new UI lives in `agents7_ui/`).
+  - Updated `README.md` and `CLAUDE.md` to remove UI references.
+
+
 ### v3.18.48 - 3rd May 2026
 
 - Parallelised `BatchProcessor.act_in_batch()` in `src/agents7/agents/batch.py`:

@@ -1,6 +1,6 @@
 [project]
 name = "agents7"
-version = "3.18.48"
+version = "3.19.0"
 description = "LLM Agents Management."
 authors = [{ name = "Carlos Pinto", email = "carlospinto4p@gmail.com" }]
 readme = "README.md"
@@ -24,14 +24,6 @@ dev = [
 openai = [
     "openai>=1.0.0",
 ]
-ui = [
-    "streamlit>=1.45.0",
-    "polars>=1.0.0",
-    "plotly>=6.0.0",
-]
-
-[project.scripts]
-agents7-ui = "agents7.ui.app:main"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
