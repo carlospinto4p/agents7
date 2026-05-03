@@ -14,10 +14,10 @@
 
 - [x] `agents/config_loader.py:61` — `_resolve_inheritance()` circular-reference detection is untested. **HIGH/S** (premise no longer holds — already tested by `test_circular_reference_raises` and `test_self_reference_raises` in `test_config_inheritance.py`)
 - [x] `agents/context_guard.py:211` — `ContextGuard.__post_init__` with empty `persona_summary` is untested. **HIGH/S** (premise no longer holds — already tested by `test_context_guard_requires_persona_summary` in `test_context_guard.py`)
-- [ ] `agents/parsing.py:47` — `ResponseParser.parse()` enum-name-to-value fallback path untested. **HIGH/M**
+- [x] `agents/parsing.py:47` — `ResponseParser.parse()` enum-name-to-value fallback path untested. **HIGH/M** (covered by `test_enum_parsing.py` in v3.18.30)
 - [x] `export.py:145,252` — `export_eval_report()` and `export_benchmark_report()` missing tests for timing sections, missing fields, and `None` best model. **HIGH/M**
-- [ ] `model_selection.py:338` — `_benchmark_model()` engine-init failure recovery untested. **HIGH/M**
-- [ ] `agents/memory.py:198` — `SqliteMemory` concurrent read/write races untested; `_lock` contention behaviour unverified. **HIGH/M**
+- [x] `model_selection.py:338` — `_benchmark_model()` engine-init failure recovery untested. **HIGH/M**
+- [x] `agents/memory.py:198` — `SqliteMemory` concurrent read/write races untested; `_lock` contention behaviour unverified. **HIGH/M**
 - [ ] `ui/ollama_utils.py:56,80` — `check_connection()` timeout and `list_available_models()` error handling both untested. **HIGH/M**
 - [ ] `agents/config_loader.py` — No test file at all; `_deep_merge()`, `load_yaml_settings()`, `build_engine()` kwargs all uncovered. **MED/M**
 - [ ] `agents/utils.py` — `run_with_semaphore()`, `resolve_strenum()`, `model_class_to_string()` have no tests. **MED/S**

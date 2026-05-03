@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.18.32 - 3rd May 2026
+
+- Added unit tests:
+  - `tests/test_model_selection.py`: `test_benchmark_model_engine_init_failure` — verifies `_benchmark_model()` returns `ModelScore(passed=False)` when `LLMEngine` init raises.
+  - `tests/test_memory.py`: `test_sqlite_concurrent_read_write` — verifies `SqliteMemory` serialises concurrent saves/loads from 10 threads without corruption.
+
+
 ### v3.18.31 - 3rd May 2026
 
 - Added `tests/test_eval_report.py`:

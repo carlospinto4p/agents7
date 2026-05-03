@@ -1,5 +1,7 @@
 """Unit tests for the memory backends (no LLM required)."""
 
+import threading
+
 import pytest
 
 from agents7.agents.memory import (
@@ -212,3 +214,33 @@ def test_sqlite_preserves_order(tmp_path):
     ]
     mem.save("conv1", msgs)
     assert mem.load("conv1") == msgs
+
+
+# --- SqliteMemory concurrent ---
+
+
+def test_sqlite_concurrent_read_write(tmp_path):
+    """Concurrent saves from multiple threads don't corrupt data."""
+    mem = SqliteMemory(str(tmp_path / "history.db"))
+    errors: list[str] = []
+
+    def writer(conv_id: str) -> None:
+        msgs = [{"role": "user", "content": conv_id}]
+        try:
+            mem.save(conv_id, msgs)
+            loaded = mem.load(conv_id)
+            if loaded != msgs:
+                errors.append(f"{conv_id}: got {loaded}")
+        except Exception as e:
+            errors.append(str(e))
+
+    threads = [
+        threading.Thread(target=writer, args=(f"conv{i}",)) for i in range(10)
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors
+    assert len(mem.list_conversations()) == 10

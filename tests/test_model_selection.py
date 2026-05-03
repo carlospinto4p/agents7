@@ -12,6 +12,7 @@ from agents7.model_selection import (
     ModelScore,
     ModelSelectionError,
     TestCase,
+    _benchmark_model,
     _compare_field,
     _compare_output,
     _create_agent,
@@ -426,3 +427,23 @@ def test_case_result_creation():
     cr = CaseResult(test_case=tc, passed=True, actual={}, run=1)
     assert cr.passed is True
     assert cr.run == 1
+
+
+# --- _benchmark_model ---
+
+
+@patch("agents7.model_selection.LLMEngine")
+def test_benchmark_model_engine_init_failure(mock_engine_cls):
+    mock_engine_cls.side_effect = RuntimeError("connection refused")
+    score = _benchmark_model(
+        config={},
+        model_name="bad:1b",
+        model_size=1_000_000,
+        test_cases=[TestCase(input={}, expected={})],
+        runs=1,
+        include_batch=False,
+    )
+    assert score.passed is False
+    assert score.model_name == "bad:1b"
+    assert score.error is not None
+    assert "Engine init failed" in score.error
