@@ -16,17 +16,8 @@
 
 ### Scan — 3rd May 2026
 
-#### Security
-
-- [x] `src/agents7/agents/config_loader.py:234` — API keys accepted in plaintext YAML `engine.api_key` field; document that this should use env var references, not literal keys — HIGH — S
-- [x] `src/agents7/agents/utils.py:109` — `import_from_path()` dynamically imports arbitrary modules from YAML config strings (`output_model`, `validators`, `preprocessor`); if config is user-controlled, this allows arbitrary code execution — HIGH — M
-- [x] `docker-compose.yml:19` — `GITLAB_TOKEN` referenced as env var; ensure it is never logged or printed anywhere in the container — MED — S
-- [x] `src/agents7/agents/config_loader.py:95` — `_resolve_inheritance()` resolves relative `base_config` paths without preventing traversal (e.g. `../../../etc/passwd`); add path validation — LOW — S
-- [x] `src/agents7/agents/memory.py:170` — Filename sanitization in `_conv_path()` is fragile; sequences like `../` become `__/` which may still resolve outside intended directory — LOW — S
-
 #### Performance
 
-- [x] `tagger_agent/scripts/benchmark_models.py:45` — Sequential `agent.act()` calls per test case; parallelise with `asyncio.gather()` for faster benchmarks — HIGH — M
 - [ ] `tagger_agent/src/tagger_agent/rules.py:207` — Levenshtein computed via nested list loops on every fuzzy-match call; replace with Wagner-Fischer array or use `rapidfuzz` — HIGH — M
 - [ ] `src/agents7/llm/cache.py:192` — `SqliteCache.put()` calls `json.dumps()` on every call even for updates; and runs LRU eviction query on every put when at capacity — HIGH — S
 - [ ] `src/agents7/llm/cache.py:82` — Cache key constructed with `json.dumps()` on every lookup with no caching of the formatted key — MED — S
@@ -44,7 +35,7 @@
 - [ ] `src/agents7/eval/metrics.py:114` — `except Exception` blocks log but do not re-raise and do not return an error sentinel; evaluation failures are silently swallowed — HIGH — S
 - [ ] `src/agents7/llm/retry.py:120` — `retry_sync()` and `retry_async()` are near-identical; extract shared `_retry_impl()` accepting a sleep callback — MED — M
 - [ ] `src/agents7/agents/chatter.py:185` — `object.__setattr__()` for frozen dataclass mutation repeated 6+ times across Chatter and subclasses; extract `FrozenMutable` mixin with `_set_attr()` — MED — M
-- [ ] `src/agents7/agents/labeler.py:472` — Input preprocessing (`_preprocess()` + logging) duplicated in all 4 `act*()`  methods; extract `_prepare_input()` helper — MED — S
+- [ ] `src/agents7/agents/labeler.py:472` — Input preprocessing (`_preprocess()` + logging) duplicated in all 4 `act*()` methods; extract `_prepare_input()` helper — MED — S
 - [ ] `src/agents7/agents/base.py:109` — Provider check is a hard-coded string comparison (`provider != "ollama"`); use a constant or `engine.supports_warmup()` method — MED — S
 - [ ] `src/agents7/llm/dispatcher.py:140` — Broad `except Exception` in 4 locations; should catch specific provider/LLM exception types and re-raise unexpected errors — MED — S
 - [ ] `src/agents7/agents/labeler.py:549` — `input_data: dict | list[dict]` not validated early; non-dict inputs silently bypass preprocessing — MED — S
