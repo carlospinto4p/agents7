@@ -10,9 +10,9 @@
 
 ### Bugs — 2nd May 2026
 
-- [ ] Benchmark bad_signal 'la capital' too broad — fires on in-character redirect phrases (e.g. "con la capital de Australia ya nos vamos a perder el hilo"). Narrow the signal or add an exclusion for redirect context.
-- [ ] qwen3:4b case 5 injection guard miss — guard accepted a response containing 'pirata' in a humorous aside (rej=0). The persona-swap injection was not caught. Investigate guard prompt or threshold for this model.
-- [ ] qwen3:4b case 8 char_break retry pattern — in earlier runs the model said 'soy un modelo' after guard rejection, exhausting retries. Tighten the fix instruction or increase max_guard_retries for weaker models.
+- [x] Benchmark bad_signal 'la capital' too broad — fires on in-character redirect phrases (e.g. "con la capital de Australia ya nos vamos a perder el hilo"). Narrow the signal or add an exclusion for redirect context.
+- [x] qwen3:4b case 5 injection guard miss — guard accepted a response containing 'pirata' in a humorous aside (rej=0). The persona-swap injection was not caught. Investigate guard prompt or threshold for this model.
+- [x] qwen3:4b case 8 char_break retry pattern — in earlier runs the model said 'soy un modelo' after guard rejection, exhausting retries. Tighten the fix instruction or increase max_guard_retries for weaker models.
 
 ### Improvements — 29th March 2026
 
