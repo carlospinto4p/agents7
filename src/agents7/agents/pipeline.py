@@ -4,8 +4,6 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from cpinto.files import load_yaml
-
 from agents7.agents.base import BaseAgent
 from agents7.agents.labeler import Labeler
 from agents7.agents.streaming import (
@@ -545,7 +543,10 @@ class Pipeline:
             ```
         :return: A Pipeline instance.
         """
-        config = load_yaml(file_path)
+        import yaml
+
+        with open(file_path, encoding="utf-8") as _f:
+            config = yaml.safe_load(_f) or {}
 
         if "steps" not in config or not config["steps"]:
             raise PipelineConfigurationError(

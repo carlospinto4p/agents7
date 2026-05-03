@@ -62,10 +62,8 @@ class BatchProcessor:
             (max_concurrent controls thread pool size).
         :return: Flat list of AgentResponse, one per input.
         """
-        from cpinto.functions import identity_func
-
         if iter_func is None:
-            iter_func = identity_func
+            iter_func = lambda x: x  # noqa: E731
         settings = batch_settings or BatchSettings()
         chunks = self._chunk_inputs(input_list, requests_per_prompt)
         max_workers = settings.max_concurrent or None

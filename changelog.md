@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.20.0 - 4th May 2026
+
+- Removed `cpinto` dependency from `agents7_framework`:
+  - `src/agents7/logs.py`: replaced `get_app_logger` with `logging.getLogger`.
+  - `src/agents7/settings.py`: replaced `load_setting` with inline `os.getenv` helper `_load_setting`.
+  - `src/agents7/agents/config_loader.py`: replaced `load_yaml` with local `_load_yaml` helper using `yaml.safe_load` (UTF-8).
+  - `src/agents7/agents/pipeline.py`: replaced `load_yaml` with inline `yaml.safe_load` (UTF-8).
+  - `src/agents7/agents/batch.py`: replaced `identity_func` with `lambda x: x`.
+  - `pyproject.toml`: removed `cpinto>=0.4.10` dependency and GitLab private index config.
+  - `agents7_ui/Dockerfile.backend`: removed BuildKit secret mount and GitLab token env vars.
+- Added `.dropboxignore` at repo root to prevent `.venv/` from syncing to Dropbox.
+
+
 ### v3.19.0 - 3rd May 2026
 
 - Removed `agents7.ui` Streamlit-based Agent Builder UI:

@@ -2,7 +2,6 @@
 
 import os
 
-from cpinto.files import load_yaml
 
 from agents7.agents.utils import (
     get_examples_str,
@@ -87,6 +86,13 @@ def _deep_merge(base: dict, override: dict) -> dict:
     return merged
 
 
+def _load_yaml(file_path: str) -> dict:
+    import yaml
+
+    with open(file_path, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
 def _resolve_inheritance(
     file_path: str,
     _seen: set[str] | None = None,
@@ -114,7 +120,7 @@ def _resolve_inheritance(
         )
     _seen.add(resolved)
 
-    config = load_yaml(file_path)
+    config = _load_yaml(file_path)
     base_path = config.pop("base_config", None)
     if base_path is None:
         return config

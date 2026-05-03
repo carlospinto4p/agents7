@@ -1,6 +1,12 @@
+import os
 from dataclasses import dataclass
 
-from cpinto.settings import load_setting
+
+def _load_setting(name: str, default):
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return type(default)(val)
 
 
 @dataclass(frozen=True)
@@ -15,7 +21,7 @@ class BatchSettings:
             `None` means unlimited concurrency.
     """
 
-    max_concurrent: int | None = load_setting("BATCH_MAX_CONCURRENT", 5)
+    max_concurrent: int | None = _load_setting("BATCH_MAX_CONCURRENT", 5)
 
 
 @dataclass(frozen=True)
@@ -29,4 +35,4 @@ class OllamaSettings:
             `"qwen3"`.
     """
 
-    model_name: str = load_setting("OLLAMA_MODEL_NAME", "qwen3")
+    model_name: str = _load_setting("OLLAMA_MODEL_NAME", "qwen3")

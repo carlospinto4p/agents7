@@ -1,6 +1,5 @@
-from cpinto.logs.config import get_app_logger
-
+import logging
 
 APP_NAME: str = "agents7"
 
-logger = get_app_logger(app_name=APP_NAME)
+logger = logging.getLogger(APP_NAME)
