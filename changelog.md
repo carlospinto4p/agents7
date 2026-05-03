@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.18.30 - 3rd May 2026
+
+- Added `tests/test_enum_parsing.py`:
+  - `test_parse_fallback_converts_enum_names`: verifies `parse()` falls back to enum-name conversion when direct validation fails.
+  - `test_parse_direct_path_succeeds`: verifies `parse()` succeeds without fallback when values are already correct.
+  - `test_parse_raises_when_fallback_also_fails`: verifies `parse()` raises `ParseError` when both paths fail.
+
+
 ### v3.18.29 - 2nd May 2026
 
 - Refactored `src/agents7/`:

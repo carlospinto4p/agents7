@@ -12,8 +12,8 @@
 
 #### Test coverage
 
-- [ ] `agents/config_loader.py:61` — `_resolve_inheritance()` circular-reference detection is untested. **HIGH/S**
-- [ ] `agents/context_guard.py:211` — `ContextGuard.__post_init__` with empty `persona_summary` is untested. **HIGH/S**
+- [x] `agents/config_loader.py:61` — `_resolve_inheritance()` circular-reference detection is untested. **HIGH/S** (premise no longer holds — already tested by `test_circular_reference_raises` and `test_self_reference_raises` in `test_config_inheritance.py`)
+- [x] `agents/context_guard.py:211` — `ContextGuard.__post_init__` with empty `persona_summary` is untested. **HIGH/S** (premise no longer holds — already tested by `test_context_guard_requires_persona_summary` in `test_context_guard.py`)
 - [ ] `agents/parsing.py:47` — `ResponseParser.parse()` enum-name-to-value fallback path untested. **HIGH/M**
 - [ ] `export.py:145,252` — `export_eval_report()` and `export_benchmark_report()` missing tests for timing sections, missing fields, and `None` best model. **HIGH/M**
 - [ ] `model_selection.py:338` — `_benchmark_model()` engine-init failure recovery untested. **HIGH/M**

@@ -7,6 +7,7 @@ import pytest
 from pydantic import BaseModel
 
 from agents7.agents.parsing import ResponseParser
+from agents7.exceptions import ParseError
 
 from helpers import make_labeler
 
@@ -166,3 +167,29 @@ def test_integer_value_in_data():
     data = {"color": 42, "label": "test"}
     result = ResponseParser._apply_enum_mappings(data, _MAPPINGS)
     assert result["color"] == 42
+
+
+# --- parse() fallback path ---
+
+
+def test_parse_fallback_converts_enum_names(multi_parser):
+    """parse() falls back to enum-name conversion when direct parse fails."""
+    raw = json.dumps({"color": "RED", "size": "SMALL"})
+    result = multi_parser.parse(raw)
+    assert result.color == Color.RED
+    assert result.size == Size.SMALL
+
+
+def test_parse_direct_path_succeeds(multi_parser):
+    """parse() succeeds without fallback when values are already correct."""
+    raw = json.dumps({"color": "Red color.", "size": "Small size."})
+    result = multi_parser.parse(raw)
+    assert result.color == Color.RED
+    assert result.size == Size.SMALL
+
+
+def test_parse_raises_when_fallback_also_fails(multi_parser):
+    """parse() raises ParseError when both direct and fallback validation fail."""
+    raw = json.dumps({"color": "INVALID", "size": "ALSO_INVALID"})
+    with pytest.raises(ParseError):
+        multi_parser.parse(raw)
