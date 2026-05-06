@@ -5,14 +5,16 @@
 # References:
 #  <https://github.com/python-poetry/poetry/issues/2062#issuecomment-1056793536>
 #  <https://docs.gitlab.com/ee/user/packages/pypi_repository/index.html#authenticate-with-a-ci-job-token>
-#  <https://github.com/python-poetry/poetry/issues/2062>
 
 # Adapted to upload data in a specified base git repository.
 
 build-wheel:
   when: manual
   image: python:latest
+  variables:
+    TWINE_USERNAME: gitlab-ci-token
+    TWINE_PASSWORD: $CI_JOB_TOKEN
   script:
     - pip install twine
     - pip wheel --no-deps .
-    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_API_V4_URL}/projects/42232103/packages/pypi *.whl
+    - python -m twine upload --repository-url ${CI_API_V4_URL}/projects/42232103/packages/pypi *.whl
