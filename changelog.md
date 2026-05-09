@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.21.7 - 9th May 2026
+
+- Updated `.claude/rules/committing.md` to v1.1: added a
+  "When to Skip Tests" section with an explicit allowlist
+  (markdown, version bump, lock file, `.claude/` config,
+  `CLAUDE.md`) of diffs where tests can be safely skipped.
+  Canonical source for the rule — pushed to 15 linked
+  projects via `push_to_projects.py`.
+
+
 ### v3.21.6 - 9th May 2026
 
 - Added unit tests for scan-identified coverage gaps:
