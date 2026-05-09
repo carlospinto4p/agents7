@@ -1,22 +1,38 @@
 
 ## Changelog - Agents7
 
+### v3.21.2 - 9th May 2026
+
+- Regrouped 9 historical changelog entries flagged by `/changelog-review`:
+  - `agents7_framework/changelog.md` v3.21.1: 3 `src/agents7/llm/` and 3 `src/agents7/agents/` bullets each grouped under their module parent.
+  - `agents7_framework/changelog.md` v3.18.25: 4 `agents/` bullets grouped under one parent.
+  - `agents7_framework/changelog.md` v3.17.7: 3 `agents/` bullets grouped under one parent.
+  - `agents7_framework/changelog.md` v3.15.12: 3 `tests/` bullets grouped under one parent.
+  - `agents7_framework/changelog.md` v3.15.6: 3 `llm/` bullets grouped under one parent.
+  - `agents7_framework/changelog.md` v3.15.5: 3 `agents/` bullets grouped under one parent.
+  - `agents7_framework/changelog/2026.md` v1.2.7: 3 `.claude/rules/` bullets grouped under one parent.
+  - `agents7_framework/changelog/2026.md` v1.3.0: 3 `_pages/` bullets grouped under one parent.
+- Closes the resume-pointer from session 2026.05.09: completes the 28-entry historical changelog regrouping pass started across 10 projects.
+
+
 ### v3.21.1 - 9th May 2026
 
-- Refactored `src/agents7/llm/retry.py`:
-  - Extracted `_retry_impl()`: shared sync retry loop accepting a `sleep_fn` callable; `retry_sync()` now delegates to it.
-  - Added `_all_provider_errors()`: helper returning all known provider error types (ollama + openai).
-- Refactored `src/agents7/agents/base.py`:
-  - Added `_set_attr()`: replaces `object.__setattr__()` calls across all agent subclasses.
-  - `warm_up()` / `warm_up_async()`: use `engine.supports_warmup()` instead of hard-coded `provider != "ollama"` string.
-- Added `LLMEngine.supports_warmup()` in `src/agents7/llm/base.py`.
-- Refactored `src/agents7/agents/labeler.py`:
-  - Extracted `_prepare_input()`: consolidates `_sanitize_chat_kwargs` + `_preprocess` + `_build_act_messages` called in all four `act*()` methods.
-  - Added `_validate_input()`: raises `AgentConfigurationError` for non-dict / non-list-of-dicts inputs before preprocessing.
-- Refactored `src/agents7/llm/dispatcher.py`:
-  - Added `_dispatch_errors()` helper; replaced four broad `except Exception` clauses with specific provider/LLM error types so programming bugs propagate instead of triggering fallback.
-- Refactored `src/agents7/agents/detector.py`:
-  - `__post_init__()` caches `_prompt` and `_prompt_for_batch`; properties now return cached values instead of recomputing on every access.
+- `src/agents7/llm/`:
+  - Refactored `retry.py`:
+    - Extracted `_retry_impl()`: shared sync retry loop accepting a `sleep_fn` callable; `retry_sync()` now delegates to it.
+    - Added `_all_provider_errors()`: helper returning all known provider error types (ollama + openai).
+  - Added `LLMEngine.supports_warmup()` in `base.py`.
+  - Refactored `dispatcher.py`:
+    - Added `_dispatch_errors()` helper; replaced four broad `except Exception` clauses with specific provider/LLM error types so programming bugs propagate instead of triggering fallback.
+- `src/agents7/agents/`:
+  - Refactored `base.py`:
+    - Added `_set_attr()`: replaces `object.__setattr__()` calls across all agent subclasses.
+    - `warm_up()` / `warm_up_async()`: use `engine.supports_warmup()` instead of hard-coded `provider != "ollama"` string.
+  - Refactored `labeler.py`:
+    - Extracted `_prepare_input()`: consolidates `_sanitize_chat_kwargs` + `_preprocess` + `_build_act_messages` called in all four `act*()` methods.
+    - Added `_validate_input()`: raises `AgentConfigurationError` for non-dict / non-list-of-dicts inputs before preprocessing.
+  - Refactored `detector.py`:
+    - `__post_init__()` caches `_prompt` and `_prompt_for_batch`; properties now return cached values instead of recomputing on every access.
 - Updated `object.__setattr__()` → `self._set_attr()` in `chatter.py`, `classifier.py`, `context_guard.py`, `detector.py`, `labeler.py`.
 
 
@@ -317,15 +333,16 @@
 
 ### v3.18.25 - 2nd May 2026
 
-- Refactored `agents/personality.py`:
-  - Added `PersonalityChatter._build_system_prompt()` override point so subclasses can change prompt construction without duplicating `__post_init__` plumbing.
-- Refactored `agents/scene.py`:
-  - Extracted `_build_scene_system_prompt()` module-level helper (shared by `SceneChatter` and `GuardedSceneChatter`).
-  - `SceneChatter` now overrides `_build_system_prompt()` instead of calling `Chatter.__post_init__()` directly; fragile super-chain skip removed.
-- Refactored `agents/guarded_scene.py`:
-  - `GuardedSceneChatter` now overrides `_build_system_prompt()` using the shared helper instead of inlining duplicate scene-prompt logic; fragile direct `Chatter.__post_init__()` call removed.
-- Updated `agents/classifier.py`:
-  - Added a comment explaining why `super(Detector, self).__post_init__()` is necessary (`ClassificationProperty` is not a `Property` subclass).
+- `agents/`:
+  - Refactored `personality.py`:
+    - Added `PersonalityChatter._build_system_prompt()` override point so subclasses can change prompt construction without duplicating `__post_init__` plumbing.
+  - Refactored `scene.py`:
+    - Extracted `_build_scene_system_prompt()` module-level helper (shared by `SceneChatter` and `GuardedSceneChatter`).
+    - `SceneChatter` now overrides `_build_system_prompt()` instead of calling `Chatter.__post_init__()` directly; fragile super-chain skip removed.
+  - Refactored `guarded_scene.py`:
+    - `GuardedSceneChatter` now overrides `_build_system_prompt()` using the shared helper instead of inlining duplicate scene-prompt logic; fragile direct `Chatter.__post_init__()` call removed.
+  - Updated `classifier.py`:
+    - Added a comment explaining why `super(Detector, self).__post_init__()` is necessary (`ClassificationProperty` is not a `Property` subclass).
 
 
 ### v3.18.24 - 2nd May 2026
@@ -541,13 +558,14 @@
 
 ### v3.17.7 - 25th April 2026
 
-- Refactored `agents/guarded.py`:
-  - Extracted `_run_guard_retry()` and `_run_guard_retry_async()` as parametric loop helpers taking `check_fn` / `generate_fn` callables.
-  - Reduced `_guard_and_fix()` and `_guard_and_fix_async()` to thin delegates that wire the correct sync/async callables.
-- Refactored `agents/labeler.py`:
-  - Inlined `_retry_parse_loop()` and `_retry_parse_loop_async()` into `_retry_parse_sync()` / `_retry_parse_async()`, removing the delegation layer and the `chat_fn` parameter abstraction.
-- Fixed `agents/detector.py`, `agents/classifier.py`, `agents/regressor.py`:
-  - Converted `from_yaml()` docstrings from NumPy style (`Args:` / `Returns:`) to project-standard Sphinx/reST (`:param:` / `:return:`).
+- `agents/`:
+  - Refactored `guarded.py`:
+    - Extracted `_run_guard_retry()` and `_run_guard_retry_async()` as parametric loop helpers taking `check_fn` / `generate_fn` callables.
+    - Reduced `_guard_and_fix()` and `_guard_and_fix_async()` to thin delegates that wire the correct sync/async callables.
+  - Refactored `labeler.py`:
+    - Inlined `_retry_parse_loop()` and `_retry_parse_loop_async()` into `_retry_parse_sync()` / `_retry_parse_async()`, removing the delegation layer and the `chat_fn` parameter abstraction.
+  - Fixed `detector.py`, `classifier.py`, `regressor.py`:
+    - Converted `from_yaml()` docstrings from NumPy style (`Args:` / `Returns:`) to project-standard Sphinx/reST (`:param:` / `:return:`).
 
 
 ### v3.17.6 - 25th April 2026
@@ -670,14 +688,14 @@
 
 ### v3.15.12 - 11th April 2026
 
-- `tests/conftest.py`:
-  - Removed plain helper functions (`mock_metrics`,
-    `make_agent_mock`, `MockModel`, `make_response`).
-    Now contains only pytest fixtures.
-- `tests/helpers.py`:
-  - Moved UI test helpers from `conftest.py`. Now the
-    single location for all non-fixture test utilities.
 - `tests/`:
+  - `conftest.py`:
+    - Removed plain helper functions (`mock_metrics`,
+      `make_agent_mock`, `MockModel`, `make_response`).
+      Now contains only pytest fixtures.
+  - `helpers.py`:
+    - Moved UI test helpers from `conftest.py`. Now the
+      single location for all non-fixture test utilities.
   - Updated `test_ui_comparison.py` and
     `test_ui_evaluation.py` to import from `helpers`.
 
@@ -738,29 +756,31 @@
 
 ### v3.15.6 - 11th April 2026
 
-- `llm/base.py`:
-  - Moved `_prompt_to_messages()`, `generate()`,
-    `generate_async()`, `generate_stream()`, and
-    `generate_stream_async()` from abstract to default
-    implementations in `LLMProvider`.
-- `llm/anthropic.py`:
-  - Removed 6 methods now inherited from `LLMProvider`.
-- `llm/openai_compat.py`:
-  - Removed 6 methods now inherited from `LLMProvider`.
+- `llm/`:
+  - `base.py`:
+    - Moved `_prompt_to_messages()`, `generate()`,
+      `generate_async()`, `generate_stream()`, and
+      `generate_stream_async()` from abstract to default
+      implementations in `LLMProvider`.
+  - `anthropic.py`:
+    - Removed 6 methods now inherited from `LLMProvider`.
+  - `openai_compat.py`:
+    - Removed 6 methods now inherited from `LLMProvider`.
 
 
 ### v3.15.5 - 11th April 2026
 
-- `agents/config_loader.py`:
-  - Added `cast_optional_fields()`: shared helper that
-    replaces repetitive `if "field" in config` blocks
-    across YAML loaders.
-- `agents/personality.py`:
-  - Replaced 6 field-casting blocks with
-    `cast_optional_fields()` call.
-- `agents/guarded.py`:
-  - Replaced 8 field-casting blocks with
-    `cast_optional_fields()` call.
+- `agents/`:
+  - `config_loader.py`:
+    - Added `cast_optional_fields()`: shared helper that
+      replaces repetitive `if "field" in config` blocks
+      across YAML loaders.
+  - `personality.py`:
+    - Replaced 6 field-casting blocks with
+      `cast_optional_fields()` call.
+  - `guarded.py`:
+    - Replaced 8 field-casting blocks with
+      `cast_optional_fields()` call.
 
 
 ### v3.15.4 - 11th April 2026
