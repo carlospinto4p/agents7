@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.21.12 - 10th May 2026
+
+- Added tests in `tests/test_guarded_chatter.py`:
+  - `test_chat_stream_guard_accepted`: chunks yielded and guard accepts.
+  - `test_chat_stream_guard_rejected_uses_fix`: fix applied in `_finalize`.
+  - `test_chat_stream_finalize_fires_callback`: `guard_callback` fires after stream.
+  - `test_chat_stream_async_guard_accepted`: async chunks yielded and guard accepts.
+  - `test_chat_stream_async_guard_rejected_uses_fix`: fix applied in `_finalize_async`.
+  - `test_chat_stream_async_finalize_fires_callback`: callback fires after async stream.
+
+
 ### v3.21.11 - 9th May 2026
 
 - Refactored `agents7_framework/src/agents7/agents/`:
