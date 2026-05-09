@@ -18,6 +18,7 @@ import json
 import sqlite3
 import threading
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -121,7 +122,7 @@ class JsonFileMemory(MemoryBackend):
     def __init__(self, path: str) -> None:
         self._dir = Path(path)
         self._lock = threading.Lock()
-        self._cache: dict[str, list[dict[str, str]]] = {}
+        self._cache: OrderedDict[str, list[dict[str, str]]] = OrderedDict()
 
     def load(self, conversation_id: str) -> list[dict[str, str]]:
         """Load conversation from its JSON file."""
@@ -135,7 +136,7 @@ class JsonFileMemory(MemoryBackend):
                 messages: list[dict[str, str]] = json.load(f)
             self._cache[conversation_id] = messages
             if len(self._cache) > self._MAX_CACHE:
-                self._cache.pop(next(iter(self._cache)))
+                self._cache.popitem(last=False)
             return messages
 
     def save(
@@ -152,7 +153,7 @@ class JsonFileMemory(MemoryBackend):
                 json.dump(messages, f, ensure_ascii=False, indent=2)
             self._cache[conversation_id] = messages
             if len(self._cache) > self._MAX_CACHE:
-                self._cache.pop(next(iter(self._cache)))
+                self._cache.popitem(last=False)
 
     def clear(self, conversation_id: str) -> None:
         """Remove a conversation's JSON file."""

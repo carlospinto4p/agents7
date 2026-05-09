@@ -215,10 +215,11 @@ class Chatter(BaseAgent):
         super().__post_init__()
         if self.memory is not None:
             history = self.memory.load(self.conversation_id)
-            self._set_attr("_history", history)
+            turns = sum(1 for m in history if m["role"] == "assistant")
         else:
-            self._set_attr("_history", [])
-        turns = sum(1 for m in self._history if m["role"] == "assistant")
+            history = []
+            turns = 0
+        self._set_attr("_history", history)
         self._set_attr("_turns", turns)
 
     @classmethod

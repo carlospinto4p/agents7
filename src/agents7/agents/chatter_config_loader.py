@@ -127,22 +127,19 @@ def _derive_persona_summary(
         parts.append(persona.occupation)
     if persona.personality:
         parts.append(", ".join(persona.personality[:3]))
-    summary = ", ".join(parts) + "."
+    lines: list[str] = [", ".join(parts) + "."]
 
     if scene is not None:
-        scene_lines: list[str] = []
         if scene.setting:
-            scene_lines.append(f"Setting: {scene.setting.strip()}")
+            lines.append(f"Setting: {scene.setting.strip()}")
         if scene.situation:
-            scene_lines.append(f"Situation: {scene.situation.strip()}")
+            lines.append(f"Situation: {scene.situation.strip()}")
         if scene.rules:
-            scene_lines.append("Scene rules:")
+            lines.append("Scene rules:")
             for rule in scene.rules:
-                scene_lines.append(f"  - {rule}")
-        if scene_lines:
-            summary += "\n" + "\n".join(scene_lines)
+                lines.append(f"  - {rule}")
 
-    return summary
+    return "\n".join(lines)
 
 
 def _load_base_chatter_config(

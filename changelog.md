@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.21.8 - 9th May 2026
+
+- Performance improvements:
+  - `memory.py`: Use `OrderedDict.popitem(last=False)` for O(1) LRU eviction (was `pop(next(iter())))`); use `OrderedDict` for `_cache`.
+  - `chatter.py`: Avoid redundant history scan when `memory` is `None`; use local `history` variable for turn count.
+  - `chatter_config_loader.py`: Eliminate intermediate string in `_derive_persona_summary()` — build one list and `join` once.
+  - `agents7_ui/Runner.svelte`: Parallelize batch requests with 4-slot semaphore + `Promise.allSettled()`; combine three `$derived` filter passes into single `$derived.by()` loop; replace two `results.filter()` calls in `runBatch()` with one loop.
+- Fixed global `format-python.sh` hook to use `uvx ruff` instead of `uv run ruff`.
+
+
 ### v3.21.7 - 9th May 2026
 
 - Updated `.claude/rules/committing.md` to v1.1: added a
