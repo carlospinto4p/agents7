@@ -10,10 +10,10 @@
 
 #### Engine / Models
 
-- [ ] Backend: `GET /api/engine/models` — query Ollama for loaded/available models and return list — MED — S
-- [ ] Frontend: Engine status panel — show available Ollama models, which is loaded, memory usage if available — MED — S
+- [x] Backend: `GET /api/engine/models` — query Ollama for loaded/available models and return list — MED — S
+- [x] Frontend: Engine status panel — show available Ollama models, which is loaded, memory usage if available — MED — S
 
 #### Evaluation
 
-- [ ] Backend: `POST /api/eval/{agent_name}` — run agent against its golden set (if present), return accuracy + per-category breakdown — MED — M
+- [x] Backend: `POST /api/eval/{agent_name}` — run agent against its golden set (if present), return accuracy + per-category breakdown — MED — M
 - [ ] Frontend: Evaluation view — trigger eval run, show accuracy bar, per-category table, and list of mismatches — MED — M
