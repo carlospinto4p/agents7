@@ -10,4 +10,4 @@
 
 #### Test coverage
 
-- [ ] `agents7_framework/src/agents7/agents/guarded_scene.py:35` — Test `from_yaml()` persona_summary derivation with scene context — MED — M
+- [x] `agents7_framework/src/agents7/agents/guarded_scene.py:35` — Test `from_yaml()` persona_summary derivation with scene context — MED — M
