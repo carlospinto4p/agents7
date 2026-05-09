@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from agents7.agents.context_guard import (
+    ContextGuard,
     GuardReason,
     GuardVerdict,
 )
@@ -157,6 +158,27 @@ def test_context_guard_requires_persona_summary():
     """Empty persona_summary raises GuardConfigurationError."""
     with pytest.raises(GuardConfigurationError):
         make_guard(persona_summary="")
+
+
+def test_context_guard_from_yaml_returns_instance(tmp_path):
+    """from_yaml() returns a ContextGuard with persona_summary from YAML."""
+    config_file = tmp_path / "guard.yml"
+    config_file.write_text(
+        "name: TestGuard\n"
+        "version: 2\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "system_prompt: '(auto-generated)'\n"
+        "output_model: agents7.agents.context_guard.GuardVerdict\n"
+        "persona_summary: David Garcia, Spanish journalist.\n",
+        encoding="utf-8",
+    )
+    guard = ContextGuard.from_yaml(str(config_file))
+    assert isinstance(guard, ContextGuard)
+    assert guard.name == "TestGuard"
+    assert guard.version == 2
+    assert guard.persona_summary == "David Garcia, Spanish journalist."
 
 
 # --- ContextGuard.act() ---

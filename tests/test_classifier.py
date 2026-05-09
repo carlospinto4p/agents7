@@ -60,6 +60,17 @@ def test_empty_input(sentiment_classifier: Classifier) -> None:
     assert response == []
 
 
+# --- from_yaml ---
+
+
+def test_classifier_from_yaml_returns_instance() -> None:
+    """from_yaml() returns a Classifier with correct name and version."""
+    c = Classifier.from_yaml("examples/configs/demo_sentiment_classifier.yml")
+    assert isinstance(c, Classifier)
+    assert c.name == "DemoSentimentClassifier"
+    assert c.version == 1
+
+
 # --- NOT_APPLICABLE auto-extension ---
 
 

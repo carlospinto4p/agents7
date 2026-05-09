@@ -7,7 +7,7 @@ import pytest
 
 from agents7.llm import LLMEngine
 
-from helpers import batch_chat_response, make_labeler
+from helpers import DUMMY_METRICS, batch_chat_response, make_labeler
 
 
 # --- Sync: act_in_batch ---
@@ -186,3 +186,45 @@ async def test_async_empty_input_list(mock_chat):
 
     assert results == []
     assert mock_chat.call_count == 0
+
+
+# --- Malformed chunk responses ---
+
+_MALFORMED = {
+    "role": "assistant",
+    "response": "NOT VALID JSON }{ unparseable",
+    "thinking": None,
+    "metrics": DUMMY_METRICS,
+}
+
+
+@patch.object(LLMEngine, "chat")
+def test_malformed_chunk_is_skipped(mock_chat):
+    """Unparseable LLM response is skipped; no crash, empty output."""
+    mock_chat.return_value = dict(_MALFORMED)
+    agent = make_labeler()
+    results = agent.act_in_batch(
+        [{"x": 1}, {"x": 2}],
+        requests_per_prompt=10,
+        iter_func=None,
+    )
+    assert results == []
+
+
+@patch.object(LLMEngine, "chat")
+def test_valid_chunks_preserved_around_malformed(mock_chat):
+    """Valid chunks before/after a malformed one are returned correctly."""
+    mock_chat.side_effect = [
+        batch_chat_response([{"value": "a"}]),
+        dict(_MALFORMED),
+        batch_chat_response([{"value": "c"}]),
+    ]
+    agent = make_labeler()
+    results = agent.act_in_batch(
+        [{"x": 1}, {"x": 2}, {"x": 3}],
+        requests_per_prompt=1,
+        iter_func=None,
+    )
+    assert len(results) == 2
+    assert results[0].model.value == "a"
+    assert results[1].model.value == "c"

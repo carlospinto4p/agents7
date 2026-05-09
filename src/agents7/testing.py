@@ -19,12 +19,14 @@ Usage::
     assert_accuracy_above(agent, eval_data, ["category"], 0.9)
 """
 
+import ast
+import json
 from typing import Any
 from unittest.mock import Mock
 
+from agents7.eval.metrics import compute_metrics, run_evaluation
 from agents7.llm.base import LLMEngine
 from agents7.llm.dispatcher import EngineDispatcher
-from agents7.eval.metrics import compute_metrics, run_evaluation
 
 
 _DEFAULT_METRICS = {
@@ -32,6 +34,8 @@ _DEFAULT_METRICS = {
     "prompt_tokens": 5,
     "total_duration": 0.1,
 }
+
+_BATCH_PREFIX = "Process the following:\n"
 
 
 def create_mock_engine(
@@ -80,6 +84,16 @@ def create_mock_engine(
             "metrics": dict(_DEFAULT_METRICS),
         }
 
+    def _wrap_for_batch(response_str: str, user_content: str) -> str:
+        """Wrap a single-item response as a batch response."""
+        try:
+            chunk = ast.literal_eval(user_content[len(_BATCH_PREFIX) :])
+            count = len(chunk)
+        except Exception:
+            count = 1
+        item = json.loads(response_str)
+        return json.dumps({"items": [item] * count})
+
     def _chat_side_effect(**kwargs: Any) -> dict:
         messages = kwargs.get("messages", [])
         user_content = ""
@@ -88,12 +102,27 @@ def create_mock_engine(
                 user_content = msg.get("content", "")
                 break
 
+        body = user_content[len(_BATCH_PREFIX) :]
+        is_batch = user_content.startswith(
+            _BATCH_PREFIX
+        ) and body.lstrip().startswith("[")
+
         if responses is not None:
             for key, val in responses.items():
                 if key in user_content:
-                    return _make_response(val)
+                    out = (
+                        _wrap_for_batch(val, user_content)
+                        if is_batch
+                        else val
+                    )
+                    return _make_response(out)
 
-        return _make_response(default_response)
+        out = (
+            _wrap_for_batch(default_response, user_content)
+            if is_batch
+            else default_response
+        )
+        return _make_response(out)
 
     async def _chat_async_side_effect(**kwargs: Any) -> dict:
         return _chat_side_effect(**kwargs)

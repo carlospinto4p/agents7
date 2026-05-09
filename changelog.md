@@ -1,6 +1,21 @@
 
 ## Changelog - Agents7
 
+### v3.21.13 - 10th May 2026
+
+- Added `from_yaml()` tests in:
+  - `tests/test_detector.py`: `test_detector_from_yaml_returns_instance`.
+  - `tests/test_classifier.py`: `test_classifier_from_yaml_returns_instance`.
+  - `tests/test_regressor.py`: `test_regressor_from_yaml_returns_instance`.
+  - `tests/test_context_guard.py`: `test_context_guard_from_yaml_returns_instance`.
+- Fixed `ContextGuard.from_yaml()` in `agents/context_guard.py`: now extracts `persona_summary` from the raw YAML via `_resolve_inheritance`, making YAML-based construction work end-to-end.
+- Fixed `BatchProcessor._flatten()` in `agents/batch.py`: skips chunks with `model=None` (malformed LLM response) instead of crashing with `AttributeError`.
+- Added malformed-chunk tests in `tests/test_batch.py`:
+  - `test_malformed_chunk_is_skipped`.
+  - `test_valid_chunks_preserved_around_malformed`.
+- Items 4 and 5 from the `/scan` backlog (`_compare_output()` `None`-field tests and `asyncio.TimeoutError` dispatcher test) were already implemented; marked done.
+
+
 ### v3.21.12 - 10th May 2026
 
 - Added tests in `tests/test_guarded_chatter.py`:

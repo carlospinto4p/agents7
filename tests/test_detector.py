@@ -89,6 +89,17 @@ def test_explicit_not_applicable_preserved() -> None:
     assert reason_enum.NOT_APPLICABLE == "Custom N/A message."
 
 
+# --- from_yaml ---
+
+
+def test_detector_from_yaml_returns_instance() -> None:
+    """from_yaml() returns a Detector with correct name and version."""
+    d = Detector.from_yaml("examples/configs/demo_temperature_detector.yml")
+    assert isinstance(d, Detector)
+    assert d.name == "DemoTemperatureDetector"
+    assert d.version == 1
+
+
 # --- Validation ---
 
 

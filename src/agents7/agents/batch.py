@@ -191,6 +191,12 @@ class BatchProcessor:
     ) -> list[AgentResponse]:
         agent_responses: list[AgentResponse] = []
         for chunk in chunk_responses:
+            if chunk.model is None:
+                logger.warning(
+                    "Agent `%s`: skipping malformed chunk response",
+                    self.name,
+                )
+                continue
             for item in chunk.model.items:
                 agent_responses.append(
                     AgentResponse(

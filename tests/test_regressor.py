@@ -32,6 +32,17 @@ def test_possible_reasons(temperature_regressor: Regressor) -> None:
     assert temperature_regressor.possible_reasons == expected_reasons
 
 
+# --- from_yaml ---
+
+
+def test_regressor_from_yaml_returns_instance() -> None:
+    """from_yaml() returns a Regressor with correct name and version."""
+    r = Regressor.from_yaml("examples/configs/demo_temperature_detector.yml")
+    assert isinstance(r, Regressor)
+    assert r.name == "DemoTemperatureDetector"
+    assert r.version == 1
+
+
 # --- Edge cases ---
 
 

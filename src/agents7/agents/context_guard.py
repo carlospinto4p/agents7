@@ -12,7 +12,10 @@ from enum import StrEnum
 
 from pydantic import Field
 
-from agents7.agents.config_loader import load_yaml_settings
+from agents7.agents.config_loader import (
+    _resolve_inheritance,
+    load_yaml_settings,
+)
 from agents7.agents.detector import Detector
 from agents7.exceptions import GuardConfigurationError
 from agents7.models.base import Property
@@ -272,6 +275,9 @@ class ContextGuard(Detector):
         :return: A configured ContextGuard instance.
         """
         config = load_yaml_settings(file_path)
+        raw = _resolve_inheritance(file_path)
+        if persona_summary := raw.get("persona_summary"):
+            config["persona_summary"] = persona_summary
         return ContextGuard(**config)
 
 
