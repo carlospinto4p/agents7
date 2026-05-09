@@ -17,3 +17,7 @@
 
 - [x] Backend: `POST /api/eval/{agent_name}` — run agent against its golden set (if present), return accuracy + per-category breakdown — MED — M
 - [ ] Frontend: Evaluation view — trigger eval run, show accuracy bar, per-category table, and list of mismatches — MED — M
+
+### 9th May 2026
+
+- [ ] Fix pre-commit ruff hook: `uv run ruff` fails when no root `pyproject.toml` exists — needs root-level dev dep or `uv tool install ruff` — LOW — S
