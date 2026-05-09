@@ -281,3 +281,44 @@ def test_sqlite_concurrent_read_write(tmp_path):
 
     assert not errors
     assert len(mem.list_conversations()) == 10
+
+
+def test_sqlite_concurrent_same_conversation(tmp_path):
+    """Concurrent saves to the same conversation_id don't raise or corrupt."""
+    mem = SqliteMemory(str(tmp_path / "history.db"))
+    errors: list[str] = []
+
+    def writer(n: int) -> None:
+        msgs = [{"role": "user", "content": f"msg{n}"}]
+        try:
+            mem.save("shared", msgs)
+        except Exception as e:
+            errors.append(str(e))
+
+    threads = [threading.Thread(target=writer, args=(i,)) for i in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors
+    loaded = mem.load("shared")
+    assert isinstance(loaded, list)
+    assert len(loaded) >= 1
+
+
+def test_sqlite_clear_nonexistent(tmp_path):
+    """clear() on a missing conversation_id is a no-op."""
+    mem = SqliteMemory(str(tmp_path / "history.db"))
+    mem.clear("does-not-exist")
+    assert mem.load("does-not-exist") == []
+
+
+def test_sqlite_corrupted_db_file_raises(tmp_path):
+    """Connecting to a non-SQLite file raises sqlite3.DatabaseError."""
+    import sqlite3
+
+    bad_db = tmp_path / "bad.db"
+    bad_db.write_bytes(b"this is not a sqlite database at all!!")
+    with pytest.raises(sqlite3.DatabaseError):
+        SqliteMemory(str(bad_db))

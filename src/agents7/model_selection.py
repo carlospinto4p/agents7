@@ -345,6 +345,8 @@ def _benchmark_model(
     include_batch: bool,
 ) -> ModelScore:
     """Benchmark a single model against all test cases."""
+    if runs < 1:
+        raise ValueError(f"runs must be >= 1, got {runs}")
     try:
         engine = LLMEngine(provider="ollama", model_name=model_name)
     except Exception as e:

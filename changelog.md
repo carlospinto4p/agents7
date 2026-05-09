@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.21.6 - 9th May 2026
+
+- Added unit tests for scan-identified coverage gaps:
+  - `src/agents7/model_selection.py`: `_benchmark_model` now raises `ValueError` when `runs < 1`; updated `tests/test_model_selection.py` accordingly.
+  - `tests/test_memory.py`: 4 new `SqliteMemory` edge-case tests — concurrent same-conversation writes, `clear()` on missing id, corrupted DB file.
+  - `tests/test_parsing.py`: 4 new `_fix_malformed_json()` pass-through tests — trailing comma, unclosed bracket, missing quotes, whitespace stripping.
+  - `tests/test_chatter.py`: 5 new edge-case tests — chat after `reset()`, `max_history=0` behaviour, `conversation_id` isolation in memory, very long messages.
+  - `tagger_agent/tests/test_rules_classifier.py`: 6 new tests asserting `confidence`, `rule`, and `detail` fields for name lookup, keyword substring, and fallback rules.
+
+
 ### v3.21.5 - 9th May 2026
 
 - Added unit tests:

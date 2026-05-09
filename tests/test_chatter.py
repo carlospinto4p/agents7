@@ -506,3 +506,96 @@ def test_warm_up_noop_for_non_ollama():
     # Should not raise, and generate should NOT be called
     agent.warm_up()
     engine.llm_provider.generate.assert_not_called()
+
+
+# --- Edge cases ---
+
+
+@patch.object(LLMEngine, "chat")
+def test_chat_after_reset_sends_no_history(mock_chat):
+    """chat() after reset() sends only system+user, no prior turns."""
+    mock_chat.return_value = chat_response_dict("OK")
+    agent = make_chatter(system_prompt="Be helpful.")
+
+    # First turn builds history
+    agent.chat("First message")
+    agent.reset()
+    assert agent.history == []
+
+    # Second turn after reset should only see system + new message
+    agent.chat("Fresh start")
+    messages = mock_chat.call_args.kwargs["messages"]
+    assert len(messages) == 2
+    assert messages[0]["role"] == "system"
+    assert messages[1]["content"] == "Fresh start"
+
+
+@patch.object(LLMEngine, "chat")
+def test_max_history_zero_keeps_no_turns(mock_chat):
+    """max_history=0 means history is always empty after each turn."""
+    mock_chat.return_value = chat_response_dict("R")
+    agent = make_chatter(max_history=0)
+
+    agent.chat("A")
+    agent.chat("B")
+
+    assert agent.history == []
+
+
+@patch.object(LLMEngine, "chat")
+def test_max_history_zero_engine_sees_only_system(mock_chat):
+    """With max_history=0, trim fires before engine call so only system sent.
+
+    _append_user() trims immediately after appending, which with
+    max_history=0 removes the just-added user message too. The engine
+    therefore only sees the system prompt.
+    """
+    mock_chat.return_value = chat_response_dict("R")
+    agent = make_chatter(max_history=0)
+
+    agent.chat("First")
+    agent.chat("Second")
+
+    for call in mock_chat.call_args_list:
+        messages = call.kwargs["messages"]
+        assert len(messages) == 1
+        assert messages[0]["role"] == "system"
+
+
+@patch.object(LLMEngine, "chat")
+def test_conversation_id_isolation_in_memory(mock_chat, tmp_path):
+    """Two Chatters with different conversation_ids have separate histories."""
+    from agents7.agents.memory import MemoryConfig, create_memory
+
+    mock_chat.return_value = chat_response_dict("R")
+    mem = create_memory(
+        MemoryConfig(backend="sqlite", path=str(tmp_path / "m.db"))
+    )
+
+    agent_a = make_chatter(
+        memory=mem, conversation_id="conv-a", system_prompt="A"
+    )
+    agent_b = make_chatter(
+        memory=mem, conversation_id="conv-b", system_prompt="B"
+    )
+
+    agent_a.chat("Hello from A")
+    agent_b.chat("Hello from B")
+
+    assert len(agent_a.history) == 2
+    assert len(agent_b.history) == 2
+    assert agent_a.history[0]["content"] == "Hello from A"
+    assert agent_b.history[0]["content"] == "Hello from B"
+
+
+@patch.object(LLMEngine, "chat")
+def test_chat_very_long_message(mock_chat):
+    """Very long user messages are passed through unchanged."""
+    long_msg = "x" * 10_000
+    mock_chat.return_value = chat_response_dict("OK")
+    agent = make_chatter()
+
+    agent.chat(long_msg)
+
+    messages = mock_chat.call_args.kwargs["messages"]
+    assert messages[-1]["content"] == long_msg

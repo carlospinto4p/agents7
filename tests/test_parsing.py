@@ -79,6 +79,30 @@ def test_fix_clean_json_unchanged():
     assert ResponseParser._fix_malformed_json(raw) == raw
 
 
+def test_fix_trailing_comma_passes_through():
+    """Trailing commas are not fixed — passed through as-is."""
+    raw = '{"value": "ok",}'
+    assert ResponseParser._fix_malformed_json(raw) == raw
+
+
+def test_fix_unclosed_bracket_passes_through():
+    """Unclosed brackets are not fixed — passed through as-is."""
+    raw = '{"value": "ok"'
+    assert ResponseParser._fix_malformed_json(raw) == raw
+
+
+def test_fix_missing_quotes_passes_through():
+    """Unquoted string values are not fixed — passed through as-is."""
+    raw = "{value: ok}"
+    assert ResponseParser._fix_malformed_json(raw) == raw
+
+
+def test_fix_whitespace_stripped():
+    """Leading and trailing whitespace is stripped."""
+    raw = '  {"value": "ok"}  '
+    assert ResponseParser._fix_malformed_json(raw) == '{"value": "ok"}'
+
+
 def test_parse_strips_backtick_block():
     """parse() handles backtick-wrapped JSON end-to-end."""
     result = make_parser().parse('```json\n{"value": "clean"}\n```')

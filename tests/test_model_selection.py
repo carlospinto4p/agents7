@@ -449,23 +449,17 @@ def test_benchmark_model_engine_init_failure(mock_engine_cls):
     assert "Engine init failed" in score.error
 
 
-@patch("agents7.model_selection._create_agent")
-@patch("agents7.model_selection.LLMEngine")
-def test_benchmark_model_runs_zero(mock_engine_cls, mock_create_agent):
-    """runs=0 produces a vacuous pass with no case results."""
-    mock_engine_cls.return_value = MagicMock()
-    mock_create_agent.return_value = MagicMock()
-    score = _benchmark_model(
-        config={},
-        model_name="any:1b",
-        model_size=1_000_000,
-        test_cases=[TestCase(input={}, expected={})],
-        runs=0,
-        include_batch=False,
-    )
-    assert score.passed is True
-    assert score.pass_rate == 0.0
-    assert score.case_results == []
+def test_benchmark_model_runs_zero_raises():
+    """runs=0 raises ValueError — vacuous passes hide bugs."""
+    with pytest.raises(ValueError, match="runs must be >= 1"):
+        _benchmark_model(
+            config={},
+            model_name="any:1b",
+            model_size=1_000_000,
+            test_cases=[TestCase(input={}, expected={})],
+            runs=0,
+            include_batch=False,
+        )
 
 
 @patch("agents7.model_selection._benchmark_model")
