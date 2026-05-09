@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.21.4 - 9th May 2026
+
+- Added unit tests:
+  - `tests/test_parsing.py`: 16 tests for `ResponseParser.parse()`, `_fix_malformed_json()`, enum name fallback, and `run_validators()`.
+  - `tests/test_parse_retry.py`: 6 direct `ParseRetryHandler` unit tests (zero retries, success, exhaustion, temperature override, async).
+  - `tests/test_dispatcher.py`: 10 tests for `EngineDispatcher` — cache hit/miss, fallback, cost injection, async, timeout.
+
+
 ### v3.21.3 - 9th May 2026
 
 - Refactored `src/agents7/agents/`:

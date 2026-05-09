@@ -1,11 +1,15 @@
 """Unit tests for max_parse_retries on Labeler."""
 
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from pydantic import BaseModel, create_model
 
 from agents7.agents.labeler import Labeler
+from agents7.agents.parsing import ResponseParser
+from agents7.agents.retry import ParseRetryHandler
+from agents7.exceptions import ParseError
 from agents7.llm import LLMEngine
 
 from helpers import DUMMY_METRICS, make_labeler
@@ -195,11 +199,117 @@ def test_yaml_no_max_parse_retries(tmp_path):
 
 def test_parse_retry_message_content():
     """ParseRetryHandler._retry_message builds correct retry message."""
-    from agents7.agents.retry import ParseRetryHandler
-    from agents7.exceptions import ParseError
 
     error = ParseError("bad json")
     msg = ParseRetryHandler._retry_message(error)
     assert msg["role"] == "user"
     assert "bad json" in msg["content"]
     assert "valid JSON" in msg["content"]
+
+
+# --- Direct ParseRetryHandler unit tests ---
+
+
+class _Out(BaseModel):
+    value: str
+
+
+_OutList = create_model("RetryTestOutList", items=(list[_Out], ...))
+
+
+def _make_handler(max_retries: int = 1, chat_return: dict | None = None):
+    engine = Mock()
+    if chat_return is not None:
+        engine.chat.return_value = chat_return
+    parser = ResponseParser(
+        output_model=_Out,
+        output_model_list=_OutList,
+        name="test",
+    )
+    handler = ParseRetryHandler(
+        engine=engine,
+        parser=parser,
+        name="test",
+        max_retries=max_retries,
+        output_schema=_Out.model_json_schema(),
+    )
+    return handler, engine
+
+
+def test_handler_zero_retries_skips_engine():
+    """max_retries=0 returns None immediately without calling engine."""
+    handler, engine = _make_handler(max_retries=0)
+    result = handler.retry_sync(
+        error=ParseError("bad"), messages=[], chat_kwargs={}
+    )
+    assert result is None
+    engine.chat.assert_not_called()
+
+
+def test_handler_succeeds_on_retry():
+    """retry_sync returns parsed model when engine returns valid JSON."""
+    handler, engine = _make_handler(
+        max_retries=1,
+        chat_return={
+            "role": "assistant",
+            "response": json.dumps({"value": "ok"}),
+        },
+    )
+    result = handler.retry_sync(
+        error=ParseError("bad"), messages=[], chat_kwargs={}
+    )
+    assert result is not None
+    assert result.value == "ok"
+
+
+def test_handler_all_retries_fail_returns_none():
+    """retry_sync returns None when all retry attempts fail."""
+    handler, engine = _make_handler(max_retries=2)
+    engine.chat.return_value = {"role": "assistant", "response": "not json"}
+    result = handler.retry_sync(
+        error=ParseError("first"), messages=[], chat_kwargs={}
+    )
+    assert result is None
+    assert engine.chat.call_count == 2
+
+
+def test_handler_chat_uses_temperature_zero():
+    """retry_sync always calls engine with temperature=0."""
+    handler, engine = _make_handler(
+        max_retries=1,
+        chat_return={
+            "role": "assistant",
+            "response": json.dumps({"value": "ok"}),
+        },
+    )
+    handler.retry_sync(error=ParseError("err"), messages=[], chat_kwargs={})
+    assert engine.chat.call_args.kwargs["temperature"] == 0
+
+
+@pytest.mark.asyncio
+async def test_handler_async_zero_retries_skips_engine():
+    """async: max_retries=0 returns None without calling engine."""
+    handler, engine = _make_handler(max_retries=0)
+    engine.chat_async = AsyncMock()
+    result = await handler.retry_async(
+        error=ParseError("bad"), messages=[], chat_kwargs={}
+    )
+    assert result is None
+    engine.chat_async.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_handler_async_succeeds_on_retry():
+    """async: retry_async returns parsed model on success."""
+    handler, engine = _make_handler(max_retries=1)
+    engine.chat_async = AsyncMock(
+        return_value={
+            "role": "assistant",
+            "response": json.dumps({"value": "async_ok"}),
+        }
+    )
+    result = await handler.retry_async(
+        error=ParseError("bad"), messages=[], chat_kwargs={}
+    )
+    assert result is not None
+    assert result.value == "async_ok"
