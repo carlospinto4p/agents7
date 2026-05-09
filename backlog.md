@@ -8,15 +8,8 @@
 
 ### agents7_ui — 3rd May 2026
 
-#### Infrastructure
-
-- [x] Backend: set up FastAPI router structure (`/api/catalog`, `/api/run`, `/api/engine`) and wire uvicorn dev server — HIGH — S
-- [x] Frontend: add Svelte routing (e.g. `svelte-routing` or SvelteKit migration) with placeholder pages for Catalog, Runner, Engine — HIGH — S
-- [x] Docker Compose: verify full `docker compose up --build` flow, backend + nginx-served frontend, Ollama on host — MED — S
-
 #### Catalog Browser
 
-- [x] Backend: auto-discover all agents in `agents_catalog/` by scanning for `config.yml` files; return list with name, agent type, model, description — HIGH — M
 - [ ] Frontend: Catalog page — list all discovered catalog agents as cards (name, type, model); click to open Agent Detail — HIGH — M
 - [ ] Frontend: Agent Detail view — show system prompt, output schema (rendered from YAML config), and YAML source — MED — M
 
