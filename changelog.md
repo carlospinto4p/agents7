@@ -1,6 +1,16 @@
 
 ## Changelog - Agents7
 
+### v3.21.3 - 9th May 2026
+
+- Refactored `src/agents7/agents/`:
+  - `classifier.py`: `_extra_prompt_sections()` delegates NOT_APPLICABLE guidance to `super()`, eliminating duplication with `Detector`.
+  - `export.py`: Added `DeprecationWarning`; canonical import location is `agents7.eval.export`.
+- Updated `tests/`:
+  - `test_eval_report.py`, `test_export_dataframe.py`: Switched to `agents7.eval.export` directly.
+  - `test_export.py`: Suppressed deprecation warning via `warnings.filterwarnings`.
+
+
 ### v3.21.2 - 9th May 2026
 
 - Regrouped 9 historical changelog entries flagged by `/changelog-review`:

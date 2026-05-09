@@ -6,7 +6,7 @@ pl = pytest.importorskip("polars")
 
 from pydantic import BaseModel  # noqa: E402
 
-from agents7.export import export_dataframe  # noqa: E402
+from agents7.eval.export import export_dataframe  # noqa: E402
 from agents7.models.base import AgentResponse, LLMMetrics  # noqa: E402
 
 

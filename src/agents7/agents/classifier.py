@@ -130,7 +130,6 @@ class Classifier(Detector):
 
     def _extra_prompt_sections(self) -> list[str]:
         """Extra sections for classification prompts."""
-        extra = [self.category_reasons_constraints]
-        if self._has_not_applicable:
-            extra.append(self._not_applicable_guidance)
-        return extra
+        return [
+            self.category_reasons_constraints
+        ] + super()._extra_prompt_sections()

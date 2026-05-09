@@ -1,6 +1,6 @@
 [project]
 name = "agents7"
-version = "3.21.2"
+version = "3.21.3"
 description = "LLM Agents Management."
 authors = [{ name = "Carlos Pinto", email = "carlospinto4p@gmail.com" }]
 readme = "README.md"
@@ -27,6 +27,9 @@ openai = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = ["tests", "integration_tests"]
+filterwarnings = [
+    "ignore:agents7\\.export is deprecated:DeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 78
