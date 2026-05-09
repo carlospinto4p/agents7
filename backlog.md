@@ -10,10 +10,6 @@
 
 #### Refactoring
 
-- [x] `agents7_ui/backend/routers/eval.py:73,103` & `catalog.py:40` — Replace broad `except Exception: pass` with specific exceptions — HIGH — S
-- [x] `agents7_framework/integration_tests/test_multi_model.py:31` & `conftest.py:25` — Replace bare `except Exception:` in availability checks with specific exceptions — HIGH — S
-- [x] `agents7_ui/backend/routers/eval.py:100-104` — Log exception before swallowing in agent execution error handler — HIGH — M
-- [x] `agents7_framework/src/agents7/agents/labeler.py:81-132` & `detector.py:52-75` — Replace `_set_attr` frozen-bypass pattern with `__init__` or composition — HIGH — M
 - [ ] `agents7_ui/backend/routers/catalog.py:26-54` & `eval.py:65-74` — Extract shared output model/schema parsing into `_load_output_schema()` helper — MED — M
 - [ ] `agents7_ui/backend/routers/catalog.py:14-23` & `eval.py:53-54` — Extract duplicate YAML config loading into a shared helper — MED — M
 - [ ] `agents7_framework/src/agents7/agents/detector.py:78`, `classifier.py:60`, `regressor.py:35` — Extract identical `from_yaml` logic to base class or mixin — MED — M
