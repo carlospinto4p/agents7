@@ -10,13 +10,6 @@
 
 #### Refactoring
 
-- [x] `src/agents7/llm/retry.py:120` — `retry_sync()` and `retry_async()` are near-identical; extract shared `_retry_impl()` accepting a sleep callback — MED — M
-- [x] `src/agents7/agents/chatter.py:185` — `object.__setattr__()` for frozen dataclass mutation repeated 6+ times across Chatter and subclasses; extract `FrozenMutable` mixin with `_set_attr()` — MED — M
-- [x] `src/agents7/agents/labeler.py:472` — Input preprocessing (`_preprocess()` + logging) duplicated in all 4 `act*()` methods; extract `_prepare_input()` helper — MED — S
-- [x] `src/agents7/agents/base.py:109` — Provider check is a hard-coded string comparison (`provider != "ollama"`); use a constant or `engine.supports_warmup()` method — MED — S
-- [x] `src/agents7/llm/dispatcher.py:140` — Broad `except Exception` in 4 locations; should catch specific provider/LLM exception types and re-raise unexpected errors — MED — S
-- [x] `src/agents7/agents/labeler.py:549` — `input_data: dict | list[dict]` not validated early; non-dict inputs silently bypass preprocessing — MED — S
-- [x] `src/agents7/agents/detector.py:77` — Heavy `@property` overuse; `_build_prompt()` re-runs on every access to `prompt`/`prompt_for_batch`; cache result in `__post_init__()` — MED — S
 - [ ] `src/agents7/agents/detector.py:121` — `_extra_prompt_sections()` duplicated in Detector and Classifier with minor differences; parameterise Detector's version — LOW — S
 - [ ] `src/agents7/export.py` — Pure re-export module with no logic; document as deprecated or remove — LOW — S
 
