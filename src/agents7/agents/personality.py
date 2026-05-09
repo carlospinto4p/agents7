@@ -124,13 +124,11 @@ def _load_personality_yaml(
     :return: A PersonalityChatter instance.
     """
 
-    from agents7.agents.chatter_config_loader import (
-        validate_chatter_yaml_config,
-    )
     from agents7.agents.config_loader import (
         _resolve_inheritance,
         build_engine,
         cast_optional_fields,
+        validate_chatter_yaml_config,
     )
     from agents7.agents.memory import (
         MemoryConfig,

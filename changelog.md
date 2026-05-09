@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.21.11 - 9th May 2026
+
+- Refactored `agents7_framework/src/agents7/agents/`:
+  - Merged `chatter_config_loader.py` into `config_loader.py` — all chatter-family loader functions (`load_chatter_yaml_settings`, `load_guarded_yaml_settings`, `load_guarded_scene_yaml_settings`, `validate_chatter_yaml_config`, `_derive_persona_summary`, `_load_base_chatter_config`, `_build_guard`) now live in a single module.
+  - Deleted `chatter_config_loader.py`.
+  - Updated all consumers (`chatter.py`, `guarded.py`, `guarded_scene.py`, `personality.py`, `scene.py`, `tests/test_guarded_chatter.py`, `tests/test_guarded_scene.py`) to import from `config_loader`.
+
+
 ### v3.21.10 - 9th May 2026
 
 - Refactored `agents/`:

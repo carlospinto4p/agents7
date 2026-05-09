@@ -110,10 +110,8 @@ def _load_scene_yaml(
     :param file_path: Path to the YAML file.
     :return: A SceneChatter instance.
     """
-    from agents7.agents.chatter_config_loader import (
-        _load_base_chatter_config,
-    )
     from agents7.agents.config_loader import (
+        _load_base_chatter_config,
         build_engine,
         cast_optional_fields,
     )

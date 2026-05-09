@@ -10,7 +10,7 @@ from agents7.agents.context_guard import (
     GuardReason,
     GuardVerdict,
 )
-from agents7.agents.chatter_config_loader import (
+from agents7.agents.config_loader import (
     _derive_persona_summary,
 )
 from agents7.agents.guarded import (
