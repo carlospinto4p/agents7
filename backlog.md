@@ -10,8 +10,8 @@
 
 #### Refactoring
 
-- [ ] `agents7_ui/backend/routers/catalog.py:26-54` & `eval.py:65-74` — Extract shared output model/schema parsing into `_load_output_schema()` helper — MED — M
-- [ ] `agents7_ui/backend/routers/catalog.py:14-23` & `eval.py:53-54` — Extract duplicate YAML config loading into a shared helper — MED — M
+- [x] `agents7_ui/backend/routers/catalog.py:26-54` & `eval.py:65-74` — Extract shared output model/schema parsing into `_load_output_schema()` helper — MED — M
+- [x] `agents7_ui/backend/routers/catalog.py:14-23` & `eval.py:53-54` — Extract duplicate YAML config loading into a shared helper — MED — M
 - [ ] `agents7_framework/src/agents7/agents/detector.py:78`, `classifier.py:60`, `regressor.py:35` — Extract identical `from_yaml` logic to base class or mixin — MED — M
 - [ ] `agents7_framework/src/agents7/agents/config_loader.py` & `chatter_config_loader.py` — Consolidate into single config loader module — MED — L
 

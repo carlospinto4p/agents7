@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Self
 
 from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.labeler import Labeler
@@ -78,14 +79,14 @@ class Detector(Labeler):
         )
 
     @classmethod
-    def from_yaml(cls, file_path: str) -> "Detector":
-        """Create a Detector agent from a YAML configuration file.
+    def from_yaml(cls, file_path: str) -> Self:
+        """Create an agent instance from a YAML configuration file.
 
         :param file_path: Path to the YAML configuration file.
-        :return: A Detector instance.
+        :return: An instance of the calling class.
         """
         config = load_yaml_settings(file_path)
-        return Detector(**config)
+        return cls(**config)
 
     @property
     def possible_reasons(self) -> dict[str, str]:

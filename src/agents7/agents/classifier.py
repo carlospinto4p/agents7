@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.detector import Detector
 from agents7.agents.utils import extract_enum_members
 from agents7.exceptions import PropertyConfigurationError
@@ -56,16 +55,6 @@ class Classifier(Detector):
             "_possible_categories",
             extract_enum_members(self.output_model, "category"),
         )
-
-    @classmethod
-    def from_yaml(cls, file_path: str) -> "Classifier":
-        """Create a Classifier agent from a YAML configuration file.
-
-        :param file_path: Path to the YAML configuration file.
-        :return: A Classifier instance.
-        """
-        config = load_yaml_settings(file_path)
-        return Classifier(**config)
 
     @property
     def possible_categories(self) -> dict[str, str]:

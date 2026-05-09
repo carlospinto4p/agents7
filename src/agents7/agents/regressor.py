@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.detector import Detector
 from agents7.models.base import Property
 
@@ -30,16 +29,6 @@ class Regressor(Detector):
     """
 
     output_model: type[Property]
-
-    @classmethod
-    def from_yaml(cls, file_path: str) -> "Regressor":
-        """Create a Regressor agent from a YAML configuration file.
-
-        :param file_path: Path to the YAML configuration file.
-        :return: A Regressor instance.
-        """
-        config = load_yaml_settings(file_path)
-        return Regressor(**config)
 
     @property
     def prompt(self) -> str:

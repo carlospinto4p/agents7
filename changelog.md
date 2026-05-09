@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.21.10 - 9th May 2026
+
+- Refactored `agents/`:
+  - `detector.py`: moved `from_yaml()` to base class using `cls(**config)` and `typing.Self` return type — subclasses now inherit it automatically.
+  - `classifier.py`: removed redundant `from_yaml()` override and `load_yaml_settings` import.
+  - `regressor.py`: removed redundant `from_yaml()` override and `load_yaml_settings` import.
+
+
 ### v3.21.9 - 9th May 2026
 
 - Refactored `src/agents7/agents/`:
