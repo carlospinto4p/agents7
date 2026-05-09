@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.21.14 - 10th May 2026
+
+- Added `tests/test_guarded_scene.py`:
+  - `test_from_yaml_persona_summary_includes_situation`: verifies `situation` appears in derived guard persona_summary.
+  - `test_from_yaml_persona_summary_explicit_override`: verifies explicit `guard.persona_summary` in YAML overrides the derived value.
+  - `test_from_yaml_persona_summary_no_scene_omits_scene_keys`: verifies persona_summary has no scene keys when no scene is in YAML.
+
+
 ### v3.21.13 - 10th May 2026
 
 - Added `from_yaml()` tests in:

@@ -231,3 +231,88 @@ max_guard_retries: 1
     assert "medieval tavern" in agent.guard.persona_summary.lower()
     assert "No knowledge of modern things" in agent.guard.persona_summary
     assert "medieval tavern" in agent.system_prompt
+
+
+def test_from_yaml_persona_summary_includes_situation(tmp_path):
+    """Derived persona_summary includes situation when scene has one."""
+    yaml_text = """
+name: guarded-thomas
+version: 1
+engine:
+  provider: ollama
+  model: qwen3:4b
+persona:
+  full_name: Old Thomas
+  occupation: tavern keeper
+scene:
+  setting: A medieval tavern at night
+  situation: The last customer is leaving.
+  rules:
+    - No knowledge of modern things.
+guard:
+  engine:
+    provider: ollama
+    model: qwen3:4b
+"""
+    path = tmp_path / "guarded_scene.yml"
+    path.write_text(yaml_text, encoding="utf-8")
+
+    agent = GuardedSceneChatter.from_yaml(str(path))
+    summary = agent.guard.persona_summary
+    assert "Situation: The last customer is leaving." in summary
+    assert "Setting: A medieval tavern at night" in summary
+    assert "Scene rules:" in summary
+
+
+def test_from_yaml_persona_summary_explicit_override(tmp_path):
+    """Explicit guard.persona_summary in YAML overrides derived one."""
+    yaml_text = """
+name: guarded-thomas
+version: 1
+engine:
+  provider: ollama
+  model: qwen3:4b
+persona:
+  full_name: Old Thomas
+  occupation: tavern keeper
+scene:
+  setting: A medieval tavern at night
+guard:
+  engine:
+    provider: ollama
+    model: qwen3:4b
+  persona_summary: Custom summary for guard.
+"""
+    path = tmp_path / "guarded_scene.yml"
+    path.write_text(yaml_text, encoding="utf-8")
+
+    agent = GuardedSceneChatter.from_yaml(str(path))
+    assert agent.guard.persona_summary == "Custom summary for guard."
+    assert "medieval tavern" not in agent.guard.persona_summary.lower()
+
+
+def test_from_yaml_persona_summary_no_scene_omits_scene_keys(tmp_path):
+    """Without a scene section, persona_summary has no scene keys."""
+    yaml_text = """
+name: guarded-thomas
+version: 1
+engine:
+  provider: ollama
+  model: qwen3:4b
+persona:
+  full_name: Old Thomas
+  occupation: tavern keeper
+guard:
+  engine:
+    provider: ollama
+    model: qwen3:4b
+"""
+    path = tmp_path / "guarded_scene.yml"
+    path.write_text(yaml_text, encoding="utf-8")
+
+    agent = GuardedSceneChatter.from_yaml(str(path))
+    summary = agent.guard.persona_summary
+    assert "Old Thomas" in summary
+    assert "Setting:" not in summary
+    assert "Situation:" not in summary
+    assert "Scene rules:" not in summary
