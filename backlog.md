@@ -14,11 +14,11 @@
 - [x] `src/agents7/agents/streaming.py` — `AgentStreamResult`/`AgentAsyncStreamResult` tested via Chatter only; add pure Labeler/Detector streaming tests — MED — M
 - [x] `src/agents7/models/base.py` — `Property` and `ClassificationProperty` lack unit tests; add direct tests for `NOT_APPLICABLE`, `CATEGORY_REASONS`, field interaction — MED — M
 - [x] `src/agents7/eval/metrics.py` — `run_evaluation_async()` only covered by integration tests; add unit tests for cancellation, timeout, async errors — MED — M
-- [ ] `tests/test_model_selection.py:454` — `_benchmark_model(runs=0)` passes trivially with empty results; should raise a ValueError — MED — S
-- [ ] `src/agents7/agents/memory.py` — Edge cases untested: corrupted JSON recovery, concurrent `SqliteMemory` writes, purge with missing `conversation_id` — MED — M
-- [ ] `src/agents7/agents/parsing.py:61` — `_fix_malformed_json()` untested directly; add tests for trailing commas, missing quotes, unclosed brackets — MED — S
-- [ ] `tagger_agent/tests/test_rules_classifier.py:80` — Weak assertions (enum equality only); add confidence bounds and detail field validation — MED — S
-- [ ] `tests/test_chatter.py` — Missing edge cases: empty history, `max_history=0`, `conversation_id` mutation, very long messages — MED — M
+- [x] `tests/test_model_selection.py:454` — `_benchmark_model(runs=0)` passes trivially with empty results; should raise a ValueError — MED — S
+- [x] `src/agents7/agents/memory.py` — Edge cases untested: corrupted JSON recovery, concurrent `SqliteMemory` writes, purge with missing `conversation_id` — MED — M
+- [x] `src/agents7/agents/parsing.py:61` — `_fix_malformed_json()` untested directly; add tests for trailing commas, missing quotes, unclosed brackets — MED — S
+- [x] `tagger_agent/tests/test_rules_classifier.py:80` — Weak assertions (enum equality only); add confidence bounds and detail field validation — MED — S
+- [x] `tests/test_chatter.py` — Missing edge cases: empty history, `max_history=0`, `conversation_id` mutation, very long messages — MED — M
 
 
 ### agents7_ui — 3rd May 2026
