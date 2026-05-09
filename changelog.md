@@ -1,6 +1,25 @@
 
 ## Changelog - Agents7
 
+### v3.21.1 - 9th May 2026
+
+- Refactored `src/agents7/llm/retry.py`:
+  - Extracted `_retry_impl()`: shared sync retry loop accepting a `sleep_fn` callable; `retry_sync()` now delegates to it.
+  - Added `_all_provider_errors()`: helper returning all known provider error types (ollama + openai).
+- Refactored `src/agents7/agents/base.py`:
+  - Added `_set_attr()`: replaces `object.__setattr__()` calls across all agent subclasses.
+  - `warm_up()` / `warm_up_async()`: use `engine.supports_warmup()` instead of hard-coded `provider != "ollama"` string.
+- Added `LLMEngine.supports_warmup()` in `src/agents7/llm/base.py`.
+- Refactored `src/agents7/agents/labeler.py`:
+  - Extracted `_prepare_input()`: consolidates `_sanitize_chat_kwargs` + `_preprocess` + `_build_act_messages` called in all four `act*()` methods.
+  - Added `_validate_input()`: raises `AgentConfigurationError` for non-dict / non-list-of-dicts inputs before preprocessing.
+- Refactored `src/agents7/llm/dispatcher.py`:
+  - Added `_dispatch_errors()` helper; replaced four broad `except Exception` clauses with specific provider/LLM error types so programming bugs propagate instead of triggering fallback.
+- Refactored `src/agents7/agents/detector.py`:
+  - `__post_init__()` caches `_prompt` and `_prompt_for_batch`; properties now return cached values instead of recomputing on every access.
+- Updated `object.__setattr__()` → `self._set_attr()` in `chatter.py`, `classifier.py`, `context_guard.py`, `detector.py`, `labeler.py`.
+
+
 ### v3.21.0 - 4th May 2026
 
 - Refactored `agents/` — composition over inheritance for Chatter personality/scene:

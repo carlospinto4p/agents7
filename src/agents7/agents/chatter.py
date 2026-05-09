@@ -211,19 +211,15 @@ class Chatter(BaseAgent):
 
     def __post_init__(self) -> None:
         if self.persona is not None:
-            object.__setattr__(
-                self,
-                "system_prompt",
-                self._build_plugin_prompt(),
-            )
+            self._set_attr("system_prompt", self._build_plugin_prompt())
         super().__post_init__()
         if self.memory is not None:
             history = self.memory.load(self.conversation_id)
-            object.__setattr__(self, "_history", history)
+            self._set_attr("_history", history)
         else:
-            object.__setattr__(self, "_history", [])
+            self._set_attr("_history", [])
         turns = sum(1 for m in self._history if m["role"] == "assistant")
-        object.__setattr__(self, "_turns", turns)
+        self._set_attr("_turns", turns)
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "Chatter":
@@ -405,7 +401,7 @@ class Chatter(BaseAgent):
         persisted history for this conversation.
         """
         self._history.clear()
-        object.__setattr__(self, "_turns", 0)
+        self._set_attr("_turns", 0)
         if self.memory is not None:
             self.memory.clear(self.conversation_id)
 
@@ -518,7 +514,7 @@ class Chatter(BaseAgent):
     def _append_assistant(self, message: str) -> None:
         """Append an assistant message to history."""
         self._history.append({"role": "assistant", "content": message})
-        object.__setattr__(self, "_turns", self._turns + 1)
+        self._set_attr("_turns", self._turns + 1)
         self._trim_history()
         self._persist()
 
@@ -544,7 +540,7 @@ class Chatter(BaseAgent):
             removed = excess // 2
         del self._history[:excess]
         if removed:
-            object.__setattr__(self, "_turns", self._turns - removed)
+            self._set_attr("_turns", self._turns - removed)
 
     def _persist(self) -> None:
         """Save history to the memory backend if set."""

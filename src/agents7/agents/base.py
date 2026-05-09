@@ -96,6 +96,10 @@ class BaseAgent(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+    def _set_attr(self, name: str, value) -> None:
+        """Mutate a field on a frozen dataclass instance."""
+        object.__setattr__(self, name, value)
+
     def warm_up(self) -> None:
         """Pre-load the LLM model by sending a trivial prompt.
 
@@ -106,7 +110,7 @@ class BaseAgent(ABC):
 
         For non-Ollama providers this is a no-op.
         """
-        if self.engine.provider != "ollama":
+        if not self.engine.supports_warmup():
             return
         self._log_warm_up_start()
         self.engine.generate(prompt="ping", max_tokens=1)
@@ -114,7 +118,7 @@ class BaseAgent(ABC):
 
     async def warm_up_async(self) -> None:
         """Async version of `warm_up`."""
-        if self.engine.provider != "ollama":
+        if not self.engine.supports_warmup():
             return
         self._log_warm_up_start()
         await self.engine.generate_async(

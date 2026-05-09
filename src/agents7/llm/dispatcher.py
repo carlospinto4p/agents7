@@ -3,11 +3,28 @@
 import asyncio
 import functools
 
+import ollama
+
 from agents7.exceptions import LLMException
 from agents7.llm.cache import ResponseCache
-from agents7.llm.retry import RetryConfig, retry_async, retry_sync
+from agents7.llm.retry import (
+    RetryConfig,
+    _openai_errors,
+    retry_async,
+    retry_sync,
+)
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 from agents7.logs import logger
+
+
+def _dispatch_errors() -> tuple:
+    """Provider and LLM error types that trigger fallback or re-raise."""
+    return (
+        LLMException,
+        ollama.RequestError,
+        ollama.ResponseError,
+        *_openai_errors(),
+    )
 
 
 def _cache_store_callback(
@@ -137,7 +154,7 @@ class EngineDispatcher:
                 **{input_kwarg: input_val},
                 **common,
             )
-        except Exception as e:
+        except _dispatch_errors() as e:
             logger.warning("Fallback model also failed: %s", e, exc_info=True)
             raise primary_error
 
@@ -161,7 +178,7 @@ class EngineDispatcher:
                 **{input_kwarg: input_val},
                 **common,
             )
-        except Exception as e:
+        except _dispatch_errors() as e:
             logger.warning("Fallback model also failed: %s", e, exc_info=True)
             raise primary_error
 
@@ -189,7 +206,7 @@ class EngineDispatcher:
                 **{input_kwarg: input_val},
                 **common,
             )
-        except Exception as primary_error:
+        except _dispatch_errors() as primary_error:
             if self._fallback is None:
                 raise
             result = self._fallback_sync(
@@ -226,7 +243,7 @@ class EngineDispatcher:
                     **{input_kwarg: input_val},
                     **common,
                 )
-            except Exception as primary_error:
+            except _dispatch_errors() as primary_error:
                 if self._fallback is None:
                     raise
                 return await self._fallback_async(

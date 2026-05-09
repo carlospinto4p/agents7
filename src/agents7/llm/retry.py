@@ -117,6 +117,34 @@ def _retry_delay(
     return delay
 
 
+def _all_provider_errors() -> tuple:
+    """Return all known provider error types."""
+    return (ollama.RequestError, ollama.ResponseError, *_openai_errors())
+
+
+def _retry_impl(
+    fn: Callable,
+    sleep_fn: Callable[[float], None],
+    retry_config: RetryConfig | None,
+    **kwargs,
+):
+    """Shared sync retry loop with pluggable sleep callable."""
+    if retry_config is None or retry_config.max_retries == 0:
+        return fn(**kwargs)
+    for attempt in range(retry_config.max_retries + 1):
+        try:
+            return fn(**kwargs)
+        except (
+            ollama.RequestError,
+            ollama.ResponseError,
+            *_openai_errors(),
+        ) as e:
+            if not _is_retryable(e):
+                raise
+            delay = _retry_delay(e, attempt, retry_config)
+            sleep_fn(delay)
+
+
 def retry_sync(
     fn: Callable,
     retry_config: RetryConfig | None,
@@ -131,21 +159,7 @@ def retry_sync(
     :return: The result of fn(**kwargs).
     :raises LLMException: When all retry attempts are exhausted.
     """
-    if retry_config is None or retry_config.max_retries == 0:
-        return fn(**kwargs)
-
-    for attempt in range(retry_config.max_retries + 1):
-        try:
-            return fn(**kwargs)
-        except (
-            ollama.RequestError,
-            ollama.ResponseError,
-            *_openai_errors(),
-        ) as e:
-            if not _is_retryable(e):
-                raise
-            delay = _retry_delay(e, attempt, retry_config)
-            time.sleep(delay)
+    return _retry_impl(fn, time.sleep, retry_config, **kwargs)
 
 
 async def retry_async(

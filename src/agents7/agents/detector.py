@@ -55,10 +55,23 @@ class Detector(Labeler):
         This method is called after the agent is initialized.
         """
         super().__post_init__()
-        object.__setattr__(
-            self,
+        self._set_attr(
             "_possible_reasons",
             extract_enum_members(self.output_model, "reason"),
+        )
+        self._set_attr(
+            "_prompt",
+            self._build_prompt(
+                self._agent_instruction(),
+                extra_sections=self._extra_prompt_sections(),
+            ),
+        )
+        self._set_attr(
+            "_prompt_for_batch",
+            self._build_prompt(
+                self._batch_instruction(),
+                extra_sections=self._extra_prompt_sections(),
+            ),
         )
 
     @classmethod
@@ -125,15 +138,9 @@ class Detector(Labeler):
     @property
     def prompt(self) -> str:
         """Full prompt used by the agent."""
-        return self._build_prompt(
-            self._agent_instruction(),
-            extra_sections=self._extra_prompt_sections(),
-        )
+        return self._prompt
 
     @property
     def prompt_for_batch(self) -> str:
         """Full prompt for batch processing."""
-        return self._build_prompt(
-            self._batch_instruction(),
-            extra_sections=self._extra_prompt_sections(),
-        )
+        return self._prompt_for_batch

@@ -354,6 +354,10 @@ class LLMEngine:
             seed=seed,
         )
 
+    def supports_warmup(self) -> bool:
+        """Whether this engine supports warm-up (Ollama only)."""
+        return self.provider == "ollama"
+
     def get_model_info(self) -> dict:
         """
         Get information about the model. Keys:

@@ -104,14 +104,13 @@ class Labeler(BaseAgent):
             name=self.name,
             validators=self.validators,
         )
-        object.__setattr__(self, "_output_model_list", output_model_list)
-        object.__setattr__(self, "_output_schema", output_schema)
-        object.__setattr__(self, "_output_list_schema", output_list_schema)
-        object.__setattr__(self, "_parser", parser)
+        self._set_attr("_output_model_list", output_model_list)
+        self._set_attr("_output_schema", output_schema)
+        self._set_attr("_output_list_schema", output_list_schema)
+        self._set_attr("_parser", parser)
 
     def _initialize_handlers(self) -> None:
-        object.__setattr__(
-            self,
+        self._set_attr(
             "_retry_handler",
             ParseRetryHandler(
                 engine=self.engine,
@@ -121,8 +120,7 @@ class Labeler(BaseAgent):
                 output_schema=self._output_schema,
             ),
         )
-        object.__setattr__(
-            self,
+        self._set_attr(
             "_batch_processor",
             BatchProcessor(
                 engine=self.engine,
@@ -312,9 +310,7 @@ class Labeler(BaseAgent):
                  in seconds.
             - idx: Optional index for tracking purposes.
         """
-        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
-        input_data = self._preprocess(input_data)
-        messages = self._build_act_messages(input_data)
+        messages, chat_kwargs = self._prepare_input(input_data, chat_kwargs)
         response = self._strip_role(
             self.engine.chat(
                 messages=messages,
@@ -345,9 +341,7 @@ class Labeler(BaseAgent):
             Should not be set by the user.
         :return: See `act()` for return schema.
         """
-        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
-        input_data = self._preprocess(input_data)
-        messages = self._build_act_messages(input_data)
+        messages, chat_kwargs = self._prepare_input(input_data, chat_kwargs)
         response = self._strip_role(
             await self.engine.chat_async(
                 messages=messages,
@@ -379,9 +373,7 @@ class Labeler(BaseAgent):
         :param chat_kwargs: See `act()` for details.
         :return: An `AgentStreamResult` yielding text chunks.
         """
-        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
-        input_data = self._preprocess(input_data)
-        messages = self._build_act_messages(input_data)
+        messages, chat_kwargs = self._prepare_input(input_data, chat_kwargs)
         stream = self.engine.chat_stream(
             messages=messages,
             temperature=0,
@@ -407,9 +399,7 @@ class Labeler(BaseAgent):
         :return: An `AgentAsyncStreamResult` yielding text
             chunks.
         """
-        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
-        input_data = self._preprocess(input_data)
-        messages = self._build_act_messages(input_data)
+        messages, chat_kwargs = self._prepare_input(input_data, chat_kwargs)
         stream = await self.engine.chat_stream_async(
             messages=messages,
             temperature=0,
@@ -550,6 +540,41 @@ class Labeler(BaseAgent):
         """
         response.pop("role", None)
         return response
+
+    def _validate_input(self, input_data) -> None:
+        """Raise AgentConfigurationError for non-dict/list input.
+
+        :param input_data: Raw input data to validate.
+        :raises AgentConfigurationError: If input_data is not
+            a dict or list of dicts.
+        """
+        if isinstance(input_data, dict):
+            return
+        if isinstance(input_data, list) and all(
+            isinstance(item, dict) for item in input_data
+        ):
+            return
+        raise AgentConfigurationError(
+            "`input_data` must be a dict or list of dicts, "
+            f"got {type(input_data).__name__}"
+        )
+
+    def _prepare_input(
+        self,
+        input_data: dict | list[dict],
+        chat_kwargs: dict | None,
+    ) -> tuple[list[dict[str, str]], dict]:
+        """Validate, preprocess input, and build messages.
+
+        :param input_data: Raw input data.
+        :param chat_kwargs: Raw chat keyword arguments.
+        :return: Tuple of (messages, sanitized chat_kwargs).
+        """
+        self._validate_input(input_data)
+        chat_kwargs = self._sanitize_chat_kwargs(chat_kwargs)
+        input_data = self._preprocess(input_data)
+        messages = self._build_act_messages(input_data)
+        return messages, chat_kwargs
 
     def _preprocess(self, input_data):
         """Apply the preprocessor if set.

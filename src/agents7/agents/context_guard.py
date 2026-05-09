@@ -247,11 +247,7 @@ class ContextGuard(Detector):
                 "$persona_summary",
                 self.persona_summary,
             )
-            object.__setattr__(
-                self,
-                "system_prompt",
-                prompt,
-            )
+            self._set_attr("system_prompt", prompt)
         super().__post_init__()
 
     def _agent_instruction(self) -> str:
