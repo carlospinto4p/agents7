@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.21.5 - 9th May 2026
+
+- Added unit tests:
+  - `tests/test_base_agent.py`: 12 tests for `describe()`, `_set_attr()`, and `resolved_system_prompt` edge cases.
+  - `tests/test_agent_streaming.py`: 11 tests for `AgentStreamResult.from_failed()`, `AgentAsyncStreamResult.from_failed()`, and Detector streaming.
+  - `tests/test_models_base.py`: 18 tests for `LLMMetrics`, `AgentResponse`, `ChatResponse`, `Property`, `ClassificationProperty`, and `_extend_enum_with_not_applicable()`.
+  - `tests/test_metrics.py`: 14 new tests for timing stats, `_build_eval_result`, `_extract_fields`, `_fallback_sequential`, async batch failure fallback, and row-level async errors.
+
+
 ### v3.21.4 - 9th May 2026
 
 - Added unit tests:

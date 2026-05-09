@@ -1,18 +1,26 @@
 """Unit tests for agents7.metrics (core evaluation module)."""
 
 import json
+from enum import StrEnum
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import BaseModel
 
+from agents7.eval.metrics import (
+    _build_eval_result,
+    _fallback_sequential,
+)
 from agents7.metrics import (
     EvalResult,
     _compare_field,
+    _extract_fields,
     build_confusion_matrix,
     compute_metrics,
     run_evaluation,
     run_evaluation_async,
 )
+from agents7.models.base import AgentResponse, LLMMetrics
 
 from helpers import DUMMY_METRICS, make_labeler
 
@@ -101,6 +109,42 @@ def test_metrics_empty_results():
     assert m["accuracy"] == 0.0
 
 
+def test_metrics_timing_included():
+    """compute_metrics includes timing stats from response metrics."""
+    metrics = LLMMetrics(tokens=5, prompt_tokens=3, total_duration=0.4)
+    response = AgentResponse(response="{}", model=None, metrics=metrics)
+    results = [
+        EvalResult(
+            input_data={},
+            expected={"cat": "A"},
+            passed=True,
+            field_results={"cat": True},
+            response=response,
+        ),
+    ]
+    m = compute_metrics(results, ["cat"])
+    assert m["timing"]["total_s"] == pytest.approx(0.4)
+    assert m["timing"]["avg_s"] == pytest.approx(0.4)
+    assert m["timing"]["min_s"] == pytest.approx(0.4)
+    assert m["timing"]["max_s"] == pytest.approx(0.4)
+    assert m["timing"]["per_case"] == [pytest.approx(0.4)]
+
+
+def test_metrics_timing_no_response_uses_zero():
+    """Rows without a response contribute 0.0 to timing."""
+    results = [
+        EvalResult(
+            input_data={},
+            expected={"cat": "A"},
+            passed=False,
+            error="Model parsing failed",
+        ),
+    ]
+    m = compute_metrics(results, ["cat"])
+    assert m["timing"]["total_s"] == 0.0
+    assert m["timing"]["per_case"] == [0.0]
+
+
 # --- build_confusion_matrix ---
 
 
@@ -134,6 +178,100 @@ def test_confusion_matrix_empty():
     cm = build_confusion_matrix([], "cat")
     assert cm["labels"] == []
     assert cm["matrix"] == []
+
+
+# --- _build_eval_result ---
+
+
+def test_build_eval_result_model_none_records_error():
+    """When response.model is None, error is set to 'Model parsing failed'."""
+    metrics = LLMMetrics(tokens=5, prompt_tokens=3, total_duration=0.1)
+    response = AgentResponse(response="{}", model=None, metrics=metrics)
+    row = {"input": {"text": "x"}, "cat": "A"}
+    result = _build_eval_result(row, ["cat"], response)
+    assert result.error == "Model parsing failed"
+    assert result.passed is False
+
+
+def test_build_eval_result_with_error_arg():
+    """When error is supplied directly, it propagates to EvalResult."""
+    row = {"input": {"text": "x"}, "cat": "A"}
+    result = _build_eval_result(row, ["cat"], None, error="timeout")
+    assert result.error == "timeout"
+    assert result.passed is False
+    assert result.response is None
+
+
+# --- _extract_fields ---
+
+
+def test_extract_fields_plain_values():
+    class _Out(BaseModel):
+        value: str
+        score: int
+
+    out = _Out(value="hello", score=42)
+    extracted = _extract_fields(out, ["value", "score"])
+    assert extracted == {"value": "hello", "score": 42}
+
+
+def test_extract_fields_enum_uses_name():
+    class _Label(StrEnum):
+        YES = "Yes it is."
+        NO = "No it is not."
+
+    class _Out(BaseModel):
+        label: _Label
+
+    out = _Out(label=_Label.YES)
+    extracted = _extract_fields(out, ["label"])
+    assert extracted["label"] == "YES"
+
+
+def test_extract_fields_missing_field_returns_none():
+    class _Out(BaseModel):
+        value: str
+
+    out = _Out(value="x")
+    extracted = _extract_fields(out, ["value", "nonexistent"])
+    assert extracted["nonexistent"] is None
+
+
+# --- _fallback_sequential ---
+
+
+@patch("agents7.llm.base.LLMEngine.chat")
+def test_fallback_sequential_row_exception_records_error(mock_chat):
+    """A per-row exception in sequential fallback sets EvalResult.error."""
+    mock_chat.side_effect = RuntimeError("row failed")
+    agent = make_labeler()
+    data = [{"input": {"text": "x"}, "value": "a"}]
+    results = _fallback_sequential(agent, data, ["value"])
+    assert len(results) == 1
+    assert results[0].error == "row failed"
+    assert results[0].passed is False
+
+
+@patch("agents7.llm.base.LLMEngine.chat")
+def test_fallback_sequential_partial_failure(mock_chat):
+    """Only failing rows get errors; passing rows still succeed."""
+    mock_chat.side_effect = [
+        RuntimeError("row 0 failed"),
+        {
+            "role": "assistant",
+            "response": json.dumps({"value": "ok"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+    ]
+    agent = make_labeler()
+    data = [
+        {"input": {"text": "x"}, "value": "a"},
+        {"input": {"text": "y"}, "value": "ok"},
+    ]
+    results = _fallback_sequential(agent, data, ["value"])
+    assert results[0].error is not None
+    assert results[1].passed is True
 
 
 # --- run_evaluation (batch-based) ---
@@ -216,6 +354,15 @@ def test_run_evaluation_progress_callback(mock_chat):
     callback.assert_called_once_with(1, 1)
 
 
+@patch("agents7.llm.base.LLMEngine.chat")
+def test_run_evaluation_empty_data(mock_chat):
+    """Empty eval_data returns empty list without calling the agent."""
+    agent = make_labeler()
+    results = run_evaluation(agent, [], ["value"])
+    assert results == []
+    mock_chat.assert_not_called()
+
+
 # --- run_evaluation_async ---
 
 
@@ -250,4 +397,79 @@ async def test_run_evaluation_async_progress_callback(mock_chat):
         agent, data, ["value"], progress_callback=callback
     )
 
+    callback.assert_called_once_with(1, 1)
+
+
+@patch("agents7.llm.base.LLMEngine.chat")
+@patch("agents7.llm.base.LLMEngine.chat_async", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_run_evaluation_async_batch_failure_falls_back(
+    mock_chat_async, mock_chat
+):
+    """Async batch failure triggers sequential fallback (sync act())."""
+    mock_chat_async.side_effect = RuntimeError("async batch failed")
+    mock_chat.return_value = {
+        "role": "assistant",
+        "response": json.dumps({"value": "ok"}),
+        "thinking": None,
+        "metrics": DUMMY_METRICS,
+    }
+    agent = make_labeler()
+
+    data = [{"input": {"text": "x"}, "value": "ok"}]
+    results = await run_evaluation_async(agent, data, ["value"])
+
+    assert len(results) == 1
+    assert results[0].passed is True
+
+
+@patch("agents7.llm.base.LLMEngine.chat")
+@patch("agents7.llm.base.LLMEngine.chat_async", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_run_evaluation_async_row_error_recorded(
+    mock_chat_async, mock_chat
+):
+    """Per-row exception in async sequential fallback sets error on result."""
+    mock_chat_async.side_effect = RuntimeError("batch boom")
+    mock_chat.side_effect = RuntimeError("row boom")
+    agent = make_labeler()
+
+    data = [{"input": {"text": "x"}, "value": "a"}]
+    results = await run_evaluation_async(agent, data, ["value"])
+
+    assert len(results) == 1
+    assert results[0].error == "row boom"
+    assert results[0].passed is False
+
+
+@patch("agents7.llm.base.LLMEngine.chat_async", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_run_evaluation_async_empty_data(mock_chat):
+    """Empty eval_data returns empty list without calling the agent."""
+    agent = make_labeler()
+    results = await run_evaluation_async(agent, [], ["value"])
+    assert results == []
+    mock_chat.assert_not_called()
+
+
+@patch("agents7.llm.base.LLMEngine.chat")
+@patch("agents7.llm.base.LLMEngine.chat_async", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_run_evaluation_async_progress_callback_called_on_fallback(
+    mock_chat_async, mock_chat
+):
+    """Progress callback fires even when async batch fails and falls back."""
+    mock_chat_async.side_effect = RuntimeError("batch boom")
+    mock_chat.return_value = {
+        "role": "assistant",
+        "response": json.dumps({"value": "a"}),
+        "thinking": None,
+        "metrics": DUMMY_METRICS,
+    }
+    agent = make_labeler()
+    callback = MagicMock()
+    data = [{"input": {"text": "x"}, "value": "a"}]
+    await run_evaluation_async(
+        agent, data, ["value"], progress_callback=callback
+    )
     callback.assert_called_once_with(1, 1)
