@@ -8,12 +8,6 @@
 
 ### agents7_ui — 3rd May 2026
 
-#### Agent Runner
-
-- [x] Frontend: Single-input runner — JSON input form derived from agent's input fields; submit, see structured output rendered as a table/card — HIGH — M
-- [x] Frontend: Batch runner — paste or upload JSONL, run against selected agent, show results table with pass/fail per row — MED — L
-- [x] Frontend: Response history — store last N run results in a Svelte store, persisted to `localStorage`; show in a collapsible sidebar — MED — M
-
 #### Engine / Models
 
 - [ ] Backend: `GET /api/engine/models` — query Ollama for loaded/available models and return list — MED — S
