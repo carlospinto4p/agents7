@@ -8,13 +8,8 @@
 
 ### 9th May 2026 — /scan
 
-#### Refactoring
-
-- [x] `agents7_framework/src/agents7/agents/config_loader.py` & `chatter_config_loader.py` — Consolidate into single config loader module — MED — L
-
 #### Test coverage
 
-- [x] `agents7_framework/src/agents7/agents/guarded.py:219,247` — Add tests for `chat_stream()` and `chat_stream_async()` including `_finalize` callbacks — HIGH — M
 - [ ] `agents7_framework/src/agents7/agents/classifier.py`, `detector.py`, `regressor.py`, `context_guard.py` — Add unit tests for `from_yaml()` in all four agents — MED — S
 - [ ] `agents7_framework/tests/test_model_selection.py:78-108` — Add tests for `_compare_output()` with `None` fields and partial field matching — MED — S
 - [ ] `agents7_framework/src/agents7/llm/dispatcher.py:259` — Add dedicated test for `asyncio.TimeoutError` path in `execute_async()` — MED — S
