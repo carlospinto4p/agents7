@@ -10,14 +10,14 @@
 
 #### Refactoring
 
-- [ ] `src/agents7/agents/detector.py:121` — `_extra_prompt_sections()` duplicated in Detector and Classifier with minor differences; parameterise Detector's version — LOW — S
-- [ ] `src/agents7/export.py` — Pure re-export module with no logic; document as deprecated or remove — LOW — S
+- [x] `src/agents7/agents/detector.py:121` — `_extra_prompt_sections()` duplicated in Detector and Classifier with minor differences; parameterise Detector's version — LOW — S
+- [x] `src/agents7/export.py` — Pure re-export module with no logic; document as deprecated or remove — LOW — S
 
 #### Test Coverage
 
-- [ ] `src/agents7/agents/parsing.py` — No dedicated test file for `ResponseParser.parse()` or `run_validators()`; add tests for JSON malformation, enum fallback, validator chaining — HIGH — M
-- [ ] `src/agents7/agents/retry.py` — No dedicated test file for agent retry logic; add tests for zero retries, max_retries=1, jitter, cumulative failures — HIGH — M
-- [ ] `src/agents7/llm/dispatcher.py` — `EngineDispatcher` has no dedicated test file; add tests for fallback on primary failure, cache hit/miss with fallback, retry exhaustion — HIGH — M
+- [x] `src/agents7/agents/parsing.py` — No dedicated test file for `ResponseParser.parse()` or `run_validators()`; add tests for JSON malformation, enum fallback, validator chaining — HIGH — M
+- [x] `src/agents7/agents/retry.py` — No dedicated test file for agent retry logic; add tests for zero retries, max_retries=1, jitter, cumulative failures — HIGH — M
+- [x] `src/agents7/llm/dispatcher.py` — `EngineDispatcher` has no dedicated test file; add tests for fallback on primary failure, cache hit/miss with fallback, retry exhaustion — HIGH — M
 - [ ] `src/agents7/agents/base.py` — `BaseAgent` base functionality untested directly; add tests for `describe()`, `resolved_system_prompt` with prompt_params edge cases — MED — M
 - [ ] `src/agents7/agents/streaming.py` — `AgentStreamResult`/`AgentAsyncStreamResult` tested via Chatter only; add pure Labeler/Detector streaming tests — MED — M
 - [ ] `src/agents7/models/base.py` — `Property` and `ClassificationProperty` lack unit tests; add direct tests for `NOT_APPLICABLE`, `CATEGORY_REASONS`, field interaction — MED — M
