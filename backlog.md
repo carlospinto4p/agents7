@@ -10,7 +10,7 @@
 
 #### Refactoring
 
-- [ ] `agents7_framework/src/agents7/agents/config_loader.py` & `chatter_config_loader.py` — Consolidate into single config loader module — MED — L
+- [x] `agents7_framework/src/agents7/agents/config_loader.py` & `chatter_config_loader.py` — Consolidate into single config loader module — MED — L
 
 #### Test coverage
 
