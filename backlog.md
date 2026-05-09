@@ -8,16 +8,6 @@
 
 ### 9th May 2026 — /scan
 
-#### Performance
-
-- [x] `agents7_framework/src/agents7/agents/memory.py:138,155` — Replace `pop(next(iter()))` LRU eviction with `popitem(last=False)` (O(1)) — HIGH — S
-- [x] `agents7_ui/frontend/src/pages/Runner.svelte:188-194` — Combine multiple `results.filter()` in `$derived` blocks into a single pass — MED — S
-- [x] `agents7_ui/frontend/src/pages/Runner.svelte:166-169` — Merge double-scan filter calls in `runBatch()` into one loop — MED — S
-- [x] `agents7_framework/src/agents7/agents/chatter.py:221` — Cache assistant-turn count instead of re-counting on every init — MED — S
-- [x] `agents7_ui/frontend/src/pages/Runner.svelte:139-164` — Parallelize batch requests with `Promise.allSettled()` + semaphore — MED — M
-- [x] `agents7_framework/src/agents7/agents/memory.py:119-139` — Use `deque` for O(1) FIFO eviction in `JsonFileMemory` — MED — M
-- [x] `agents7_framework/src/agents7/agents/chatter_config_loader.py:143` — Replace string concat in loop with list accumulation and single `join` — LOW — S
-
 #### Refactoring
 
 - [ ] `agents7_ui/backend/routers/eval.py:73,103` & `catalog.py:40` — Replace broad `except Exception: pass` with specific exceptions — HIGH — S
