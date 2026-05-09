@@ -8,14 +8,8 @@
 
 ### agents7_ui — 3rd May 2026
 
-#### Catalog Browser
-
-- [x] Frontend: Catalog page — list all discovered catalog agents as cards (name, type, model); click to open Agent Detail — HIGH — M
-- [x] Frontend: Agent Detail view — show system prompt, output schema (rendered from YAML config), and YAML source — MED — M
-
 #### Agent Runner
 
-- [x] Backend: `POST /api/run/{agent_name}` — instantiate catalog agent from YAML config, run `act()` with provided input, return structured output + metrics — HIGH — M
 - [ ] Frontend: Single-input runner — JSON input form derived from agent's input fields; submit, see structured output rendered as a table/card — HIGH — M
 - [ ] Frontend: Batch runner — paste or upload JSONL, run against selected agent, show results table with pass/fail per row — MED — L
 - [ ] Frontend: Response history — store last N run results in a Svelte store, persisted to `localStorage`; show in a collapsible sidebar — MED — M
