@@ -51,7 +51,8 @@ class Classifier(Detector):
         Validates that output_model is a subclass of ClassificationProperty.
         """
         super().__post_init__()
-        self._set_attr(
+        object.__setattr__(
+            self,
             "_possible_categories",
             extract_enum_members(self.output_model, "category"),
         )

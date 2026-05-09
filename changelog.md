@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.21.9 - 9th May 2026
+
+- Refactored `src/agents7/agents/`:
+  - `labeler.py`: replaced `self._set_attr()` calls in `_initialize_parser` and `_initialize_handlers` with `object.__setattr__()` to make the frozen-bypass explicit at each call site.
+  - `detector.py`: same replacement in `__post_init__`.
+  - `classifier.py`: same replacement in `__post_init__`.
+- Refactored `integration_tests/`:
+  - `test_multi_model.py`: narrowed `except Exception` to `except (OSError, subprocess.TimeoutExpired)` in `is_model_available`.
+  - `conftest.py`: narrowed `except Exception` to `except (OSError, subprocess.TimeoutExpired)` in `_check_ollama`.
+
+
 ### v3.21.8 - 9th May 2026
 
 - Performance improvements:

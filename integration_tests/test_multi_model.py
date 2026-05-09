@@ -28,7 +28,7 @@ def is_model_available(model_name: str) -> bool:
             timeout=10,
         )
         return model_name in result.stdout
-    except Exception:
+    except (OSError, subprocess.TimeoutExpired):
         return False
 
 

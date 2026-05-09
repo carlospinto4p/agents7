@@ -22,7 +22,7 @@ def _check_ollama() -> bool:
             ).returncode
             == 0
         )
-    except Exception:
+    except (OSError, subprocess.TimeoutExpired):
         return False
 
 

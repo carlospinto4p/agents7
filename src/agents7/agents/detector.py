@@ -55,18 +55,21 @@ class Detector(Labeler):
         This method is called after the agent is initialized.
         """
         super().__post_init__()
-        self._set_attr(
+        object.__setattr__(
+            self,
             "_possible_reasons",
             extract_enum_members(self.output_model, "reason"),
         )
-        self._set_attr(
+        object.__setattr__(
+            self,
             "_prompt",
             self._build_prompt(
                 self._agent_instruction(),
                 extra_sections=self._extra_prompt_sections(),
             ),
         )
-        self._set_attr(
+        object.__setattr__(
+            self,
             "_prompt_for_batch",
             self._build_prompt(
                 self._batch_instruction(),

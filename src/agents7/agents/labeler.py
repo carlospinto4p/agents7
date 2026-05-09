@@ -104,13 +104,14 @@ class Labeler(BaseAgent):
             name=self.name,
             validators=self.validators,
         )
-        self._set_attr("_output_model_list", output_model_list)
-        self._set_attr("_output_schema", output_schema)
-        self._set_attr("_output_list_schema", output_list_schema)
-        self._set_attr("_parser", parser)
+        object.__setattr__(self, "_output_model_list", output_model_list)
+        object.__setattr__(self, "_output_schema", output_schema)
+        object.__setattr__(self, "_output_list_schema", output_list_schema)
+        object.__setattr__(self, "_parser", parser)
 
     def _initialize_handlers(self) -> None:
-        self._set_attr(
+        object.__setattr__(
+            self,
             "_retry_handler",
             ParseRetryHandler(
                 engine=self.engine,
@@ -120,7 +121,8 @@ class Labeler(BaseAgent):
                 output_schema=self._output_schema,
             ),
         )
-        self._set_attr(
+        object.__setattr__(
+            self,
             "_batch_processor",
             BatchProcessor(
                 engine=self.engine,
