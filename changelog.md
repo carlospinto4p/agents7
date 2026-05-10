@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.21.15 - 11th May 2026
+
+- Removed `.claude/rules/ui.md`: stale Streamlit UI guidelines; project has moved to `agents7_ui` (Svelte + FastAPI).
+- Added `.gitignore` entry for `.claude/scheduled_tasks.lock` (Claude Code runtime artifact).
+
+
 ### v3.21.14 - 10th May 2026
 
 - Added `tests/test_guarded_scene.py`:
