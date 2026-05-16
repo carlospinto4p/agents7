@@ -10,8 +10,6 @@
 
 #### Security
 
-- [x] `agents7_ui/backend` — No authentication/authorization on any endpoint (`/api/chat`, `/api/run`, `/api/eval`, etc.) — HIGH — L
-- [x] `agents7_ui/backend/main.py:13` — CORS configured with `allow_methods=["*"]` and `allow_headers=["*"]`; restrict to specific methods — HIGH — M
 - [ ] `agents7_ui/backend/routers/chat.py:78` — Raw exception message returned to client (`detail=f"Chat error: {exc}"`); return generic message — HIGH — M
 - [ ] `agents7_ui/backend/routers/chat.py:20` — In-memory session dict has no expiration/cleanup; sessions accumulate indefinitely — HIGH — M
 - [ ] `agents7_ui/backend/routers/run.py:35-37` — Pipeline agent paths resolved without bounds check; path traversal possible via `../../` — MED — M
@@ -61,10 +59,3 @@
 - [ ] `agents7_framework/src/agents7/eval/metrics.py:79-140` — Error isolation in batch evaluation never tested (partial batch completion) — MED — M
 - [ ] `agents7_framework/src/agents7/export.py` — No dedicated unit tests for DataFrame export with mixed types, NaN, datetimes — MED — M
 - [ ] `agents7_framework/src/agents7/agents/config_loader.py` — Circular YAML references and missing field defaults untested — MED — M
-
-
-### 9th May 2026 — /scan
-
-#### Test coverage
-
-- [x] `agents7_framework/src/agents7/agents/guarded_scene.py:35` — Test `from_yaml()` persona_summary derivation with scene context — MED — M
