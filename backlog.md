@@ -10,8 +10,8 @@
 
 #### Refactoring
 
-- [ ] `agents7_framework/src/agents7/llm/streaming.py:11` — `_StreamBase` replicates state management logic from `_AgentStreamBase`; extract shared base — MED — M
-- [ ] `agents7_framework/src/agents7/agents/detector.py` vs `classifier.py` vs `regressor.py` — Duplicated `_validate_output_model` and inheritance; extract to mixin — MED — M
+- [x] `agents7_framework/src/agents7/llm/streaming.py:11` — `_StreamBase` replicates state management logic from `_AgentStreamBase`; extract shared base — MED — M (premise no longer holds — classes operate at different abstraction levels with no shared logic)
+- [x] `agents7_framework/src/agents7/agents/detector.py` vs `classifier.py` vs `regressor.py` — Duplicated `_validate_output_model` and inheritance; extract to mixin — MED — M (skipped — overrides correctly narrow BaseModel→Property→ClassificationProperty; mixin would add ClassVar indirection for 3×4-line methods, premature abstraction)
 
 #### Test coverage
 
