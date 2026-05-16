@@ -118,24 +118,38 @@ async def test_async_single_chunk_flattening(mock_chat):
 @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
 @pytest.mark.asyncio
 async def test_async_multi_chunk_preserves_order(mock_chat):
-    """5 items, requests_per_prompt=2 → correct order."""
-    # Map chunk content to its response (order-independent)
-    chunk_map = {
-        "{'x': 0}": ([{"value": "a"}, {"value": "b"}], 0.06),
-        "{'x': 2}": ([{"value": "c"}, {"value": "d"}], 0.04),
-        "{'x': 4}": ([{"value": "e"}], 0.02),
-    }
+    """5 items, requests_per_prompt=2 → correct order even when chunks complete out of order."""
+    # chunk_info[i] = (marker, items) for chunk i
+    chunk_info = [
+        ("{'x': 0}", [{"value": "a"}, {"value": "b"}]),
+        ("{'x': 2}", [{"value": "c"}, {"value": "d"}]),
+        ("{'x': 4}", [{"value": "e"}]),
+    ]
+    # ready[i] is set when chunk i has started waiting to be released.
+    # release[i] is set when chunk i may complete.
+    ready = [asyncio.Event() for _ in chunk_info]
+    release = [asyncio.Event() for _ in chunk_info]
 
     async def _side_effect(**kwargs):
         content = kwargs["messages"][1]["content"]
-        for marker, (items, delay) in chunk_map.items():
+        for idx, (marker, items) in enumerate(chunk_info):
             if marker in content:
-                await asyncio.sleep(delay)
+                ready[idx].set()
+                await release[idx].wait()
                 return batch_chat_response(items)
 
     mock_chat.side_effect = _side_effect
 
+    async def _release_in_reverse():
+        # Wait until all chunks are waiting, then release chunk2 first.
+        for e in ready:
+            await e.wait()
+        for i in [2, 1, 0]:
+            release[i].set()
+            await asyncio.sleep(0)  # yield so the released chunk runs
+
     agent = make_labeler()
+    asyncio.create_task(_release_in_reverse())
     results = await agent.act_in_batch_async(
         [{"x": i} for i in range(5)],
         requests_per_prompt=2,

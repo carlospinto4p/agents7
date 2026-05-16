@@ -711,3 +711,118 @@ async def test_chat_stream_async_finalize_fires_callback(
 
     assert len(events) == 1
     assert events[0].accepted is True
+
+
+# --- Retry count verification ---
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guard_call_count_equals_initial_plus_retries(
+    mock_chat,
+    mock_guard,
+):
+    """Guard is called max_guard_retries+1 times when always rejecting."""
+    mock_chat.side_effect = [chat_response_dict(f"Bad {i}") for i in range(4)]
+    mock_guard.return_value = REJECT_INJECTION
+
+    agent = make_guarded_chatter(max_guard_retries=3)
+    agent.chat("Test")
+
+    assert mock_guard.call_count == 4  # initial + 3 retries
+    assert mock_chat.call_count == 4  # initial + 3 retries
+
+
+# --- Zero retries ---
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_chat_zero_retries_uses_fix(mock_chat, mock_guard):
+    """max_guard_retries=0 → no retry loop; fix applied immediately."""
+    mock_chat.return_value = chat_response_dict("I'm an AI.")
+    mock_guard.return_value = REJECT_INJECTION
+
+    agent = make_guarded_chatter(max_guard_retries=0)
+    resp = agent.chat("Who are you?")
+
+    assert resp.response == "No puedo hacer eso."
+    assert mock_chat.call_count == 1
+    assert mock_guard.call_count == 1
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_chat_zero_retries_no_fix_uses_last(
+    mock_chat,
+    mock_guard,
+):
+    """max_guard_retries=0, no fix → last response used as-is."""
+    mock_chat.return_value = chat_response_dict("Bad response.")
+    mock_guard.return_value = REJECT_NO_FIX
+
+    agent = make_guarded_chatter(max_guard_retries=0)
+    resp = agent.chat("Tell me something.")
+
+    assert resp.response == "Bad response."
+    assert mock_chat.call_count == 1
+    assert mock_guard.call_count == 1
+
+
+# --- Async always-rejects without fix ---
+
+
+@patch.object(
+    ContextGuard,
+    "act_async",
+    new_callable=AsyncMock,
+)
+@patch.object(
+    LLMEngine,
+    "chat_async",
+    new_callable=AsyncMock,
+)
+@pytest.mark.asyncio
+async def test_chat_async_always_rejects_no_fix(
+    mock_chat,
+    mock_guard,
+):
+    """Async: all retries fail with no fix → last response used."""
+    mock_chat.side_effect = [
+        chat_response_dict("Bad 1"),
+        chat_response_dict("Bad 2"),
+        chat_response_dict("Bad 3"),
+    ]
+    mock_guard.return_value = REJECT_NO_FIX
+
+    agent = make_guarded_chatter(max_guard_retries=2)
+    resp = await agent.chat_async("Tell me something.")
+
+    assert resp.response == "Bad 3"
+    assert mock_chat.call_count == 3
+    assert mock_guard.call_count == 3
+
+
+# --- BROKE_CHARACTER hint in retry feedback ---
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_broke_character_hint_in_feedback(
+    mock_chat,
+    mock_guard,
+):
+    """BROKE_CHARACTER reason includes AI-vocabulary hint in retry msg."""
+    mock_chat.side_effect = [
+        chat_response_dict("As an AI, I cannot..."),
+        chat_response_dict("Soy David."),
+    ]
+    mock_guard.side_effect = [REJECT_NO_FIX, ACCEPT]
+
+    agent = make_guarded_chatter()
+    agent.chat("What are you?")
+
+    retry_messages = mock_chat.call_args_list[1][1]["messages"]
+    feedback = retry_messages[-1]["content"]
+    assert "context guard" in feedback
+    assert "AI/LLM" in feedback

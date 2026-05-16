@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.21.23 - 16th May 2026
+
+- Added tests in `tests/test_guarded_chatter.py`:
+  - `test_guard_call_count_equals_initial_plus_retries`: guard called `max_guard_retries+1` times when always rejecting.
+  - `test_chat_zero_retries_uses_fix`: `max_guard_retries=0` skips retry loop and applies fix immediately.
+  - `test_chat_zero_retries_no_fix_uses_last`: `max_guard_retries=0` with no fix uses last response.
+  - `test_chat_async_always_rejects_no_fix`: async path, all retries exhausted, no fix available.
+  - `test_broke_character_hint_in_feedback`: BROKE_CHARACTER reason produces AI-vocabulary hint in retry message.
+- Fixed `tests/test_batch.py` `test_async_multi_chunk_preserves_order`: replaced timing-dependent `asyncio.sleep` delays with `asyncio.Event` synchronization to eliminate CI flakiness.
+
+
 ### v3.21.22 - 16th May 2026
 
 - Added unit tests in `tests/test_memory.py`:
