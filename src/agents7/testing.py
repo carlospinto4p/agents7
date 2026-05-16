@@ -89,7 +89,7 @@ def create_mock_engine(
         try:
             chunk = ast.literal_eval(user_content[len(_BATCH_PREFIX) :])
             count = len(chunk)
-        except Exception:
+        except (ValueError, SyntaxError):
             count = 1
         item = json.loads(response_str)
         return json.dumps({"items": [item] * count})

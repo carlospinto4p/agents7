@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.21.20 - 16th May 2026
+
+- Refactored `testing.py`: narrowed bare `except Exception` in `_wrap_for_batch` to `except (ValueError, SyntaxError)`.
+
+
 ### v3.21.19 - 16th May 2026
 
 - Refactored `model_selection.py`: added `logger.debug()` to engine-init and agent-creation `except Exception` blocks, standardising debug-logging across all four catch sites.
