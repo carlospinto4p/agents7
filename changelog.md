@@ -1,6 +1,17 @@
 
 ## Changelog - Agents7
 
+### v3.21.27 - 16th May 2026
+
+- Added unit tests:
+  - `tests/test_export_dataframe.py`: mixed primitive types (int/float/bool),
+    Optional field set to None within valid model, datetime field stringification.
+  - `tests/test_config_loader.py`: `parse_yaml_examples()` (absent, valid,
+    not-a-list, non-dict item, missing/extra keys), `cast_optional_fields()`
+    (present fields cast, absent fields skipped, source not mutated),
+    `load_yaml_settings()` edge cases (empty `prompt_params`, malformed examples).
+
+
 ### v3.21.26 - 16th May 2026
 
 - Added unit tests (`agents7_framework/tests/`):

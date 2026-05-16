@@ -1,8 +1,9 @@
 """Unit tests for agents7.agents.config_loader.
 
-Covers load_yaml_settings(), build_engine(), and
-validate_yaml_config(). _deep_merge() and _resolve_inheritance()
-are covered in test_config_inheritance.py.
+Covers load_yaml_settings(), build_engine(), validate_yaml_config(),
+parse_yaml_examples(), and cast_optional_fields().
+_deep_merge() and _resolve_inheritance() are covered in
+test_config_inheritance.py.
 """
 
 import pytest
@@ -10,7 +11,9 @@ import pytest
 from agents7.agents.config_loader import (
     _resolve_env_var,
     build_engine,
+    cast_optional_fields,
     load_yaml_settings,
+    parse_yaml_examples,
     validate_yaml_config,
 )
 from agents7.exceptions import AgentConfigurationError
@@ -181,6 +184,109 @@ def test_load_yaml_settings_optional_max_parse_retries(tmp_path):
     yaml = _MINIMAL_YAML + "max_parse_retries: 2\n"
     result = load_yaml_settings(_write_yaml(tmp_path, yaml))
     assert result["max_parse_retries"] == 2
+
+
+def test_load_yaml_settings_empty_prompt_params_treated_as_none(tmp_path):
+    """Empty prompt_params dict is falsy and treated as absent."""
+    yaml = _MINIMAL_YAML + "prompt_params: {}\n"
+    result = load_yaml_settings(_write_yaml(tmp_path, yaml))
+    assert result["prompt_params"] is None
+
+
+def test_load_yaml_settings_malformed_examples_raise(tmp_path):
+    """system_examples with a missing key raises AgentConfigurationError."""
+    yaml = (
+        _MINIMAL_YAML
+        + "system_examples:\n"
+        + "  - input: hi\n"
+        + "    wrong_key: hello\n"
+    )
+    with pytest.raises(AgentConfigurationError):
+        load_yaml_settings(_write_yaml(tmp_path, yaml))
+
+
+# ── parse_yaml_examples ───────────────────────────────────────────
+
+
+def test_parse_yaml_examples_absent_returns_none():
+    """Returns None when system_examples is not in config."""
+    result = parse_yaml_examples({}, "dummy.yml")
+    assert result is None
+
+
+def test_parse_yaml_examples_valid_returns_list():
+    """Valid examples list is returned unchanged."""
+    examples = [{"input": "hi", "output": "hello"}]
+    result = parse_yaml_examples({"system_examples": examples}, "dummy.yml")
+    assert result == examples
+
+
+def test_parse_yaml_examples_not_a_list_raises():
+    """Non-list system_examples raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError, match="list"):
+        parse_yaml_examples({"system_examples": "not a list"}, "dummy.yml")
+
+
+def test_parse_yaml_examples_example_not_dict_raises():
+    """Example that is not a dict raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError):
+        parse_yaml_examples(
+            {"system_examples": ["just a string"]}, "dummy.yml"
+        )
+
+
+def test_parse_yaml_examples_missing_output_key_raises():
+    """Example missing the output key raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError):
+        parse_yaml_examples(
+            {"system_examples": [{"input": "hi"}]}, "dummy.yml"
+        )
+
+
+def test_parse_yaml_examples_extra_key_raises():
+    """Example with extra keys raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError):
+        parse_yaml_examples(
+            {
+                "system_examples": [
+                    {"input": "hi", "output": "hello", "extra": "bad"}
+                ]
+            },
+            "dummy.yml",
+        )
+
+
+# ── cast_optional_fields ──────────────────────────────────────────
+
+
+def test_cast_optional_fields_copies_present_fields():
+    """Present fields are cast and copied to target."""
+    source = {"temperature": "0.7", "max_history": "50"}
+    target: dict = {}
+    cast_optional_fields(
+        source, target, {"temperature": float, "max_history": int}
+    )
+    assert target["temperature"] == 0.7
+    assert target["max_history"] == 50
+
+
+def test_cast_optional_fields_skips_absent_fields():
+    """Absent fields are not added to target."""
+    source = {"temperature": "0.5"}
+    target: dict = {}
+    cast_optional_fields(
+        source, target, {"temperature": float, "think": bool}
+    )
+    assert "think" not in target
+    assert target["temperature"] == 0.5
+
+
+def test_cast_optional_fields_does_not_modify_source():
+    """Source dict is not mutated."""
+    source = {"x": "1"}
+    original = dict(source)
+    cast_optional_fields(source, {}, {"x": int})
+    assert source == original
 
 
 # ── _resolve_env_var ──────────────────────────────────────────────

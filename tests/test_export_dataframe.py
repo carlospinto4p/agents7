@@ -1,5 +1,7 @@
 """Unit tests for export_dataframe (Polars DataFrame export)."""
 
+from datetime import datetime, timezone
+
 import pytest
 
 pl = pytest.importorskip("polars")
@@ -31,6 +33,14 @@ def _make_none_response():
         response="bad",
         model=None,
         metrics=LLMMetrics(tokens=5, prompt_tokens=3, total_duration=0.5),
+    )
+
+
+def _make_agent_response(model):
+    return AgentResponse(
+        response="raw",
+        model=model,
+        metrics=LLMMetrics(tokens=10, prompt_tokens=5, total_duration=1.0),
     )
 
 
@@ -120,3 +130,59 @@ def test_no_fields_all_none():
     df = export_dataframe(responses)
     assert df.columns == ["response"]
     assert df.shape == (1, 1)
+
+
+# --- Mixed primitive types ---
+
+
+class MixedModel(BaseModel):
+    label: str
+    count: int
+    ratio: float
+    active: bool
+
+
+def test_mixed_primitive_types():
+    """int, float, bool, str fields are all stringified correctly."""
+    model = MixedModel(label="x", count=42, ratio=3.14, active=True)
+    responses = [_make_agent_response(model)]
+    df = export_dataframe(responses)
+    assert df["label"][0] == "x"
+    assert df["count"][0] == "42"
+    assert df["ratio"][0] == "3.14"
+    assert df["active"][0] == "True"
+
+
+# --- Optional field None within valid model ---
+
+
+class OptionalModel(BaseModel):
+    name: str
+    tag: str | None = None
+
+
+def test_optional_field_none_within_valid_model():
+    """Optional field set to None produces empty string, not null row."""
+    model = OptionalModel(name="Alice", tag=None)
+    responses = [_make_agent_response(model)]
+    df = export_dataframe(responses)
+    assert df["name"][0] == "Alice"
+    assert df["tag"][0] == ""
+
+
+# --- Datetime field ---
+
+
+class DateModel(BaseModel):
+    label: str
+    created_at: datetime
+
+
+def test_datetime_field_stringified():
+    """Datetime fields are converted to their str() representation."""
+    dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+    model = DateModel(label="event", created_at=dt)
+    responses = [_make_agent_response(model)]
+    df = export_dataframe(responses)
+    assert df["label"][0] == "event"
+    assert df["created_at"][0] == str(dt)
