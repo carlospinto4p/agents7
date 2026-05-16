@@ -8,13 +8,6 @@
 
 ### 10th May 2026 — /scan
 
-#### Performance
-
-- [x] `agents7_framework/src/agents7/agents/pipeline.py:506-519` — `list(await asyncio.gather(...))` is redundant; `gather` already returns a list — MED — S
-- [x] `agents7_ui/frontend/src/pages/Runner.svelte:165-177` — Manual slot-based concurrency; replace with `Promise.all` over batched chunks — MED — S
-- [x] `agents7_ui/frontend/src/pages/Runner.svelte:202-213` — Count aggregation recalculated on every render; use simpler `$derived` — MED — S
-- [x] `agents7_framework/src/agents7/agents/guarded.py:557-570` — Guard retry loop is fully sequential; check whether guard can run on prior response — MED — M (investigated: loop is inherently sequential — `generate_{i+1}` depends on `verdict_i` via `_add_feedback`; no safe parallelisation without changing algorithm semantics)
-
 #### Refactoring
 
 - [ ] `agents7_ui/backend/routers/run.py:17` + `chat.py:23` — `_import_agent_class`/`_import_class` duplicated across routers; extract to shared util — MED — S
