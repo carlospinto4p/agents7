@@ -7,6 +7,52 @@ typically LLM-powered, but the framework's models and output
 structure work equally well for rule-based or hybrid agents
 where deterministic logic is faster or more reliable.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Design](#design)
+- [Architecture](#architecture)
+  - [LLM Layer](#llm-layer-agents7llm)
+  - [Agents Layer](#agents-layer-agents7agents)
+  - [Models Layer](#models-layer-agents7models)
+- [Quick Start](#quick-start)
+  - [Using a Labeler](#using-a-labeler-entity-extraction)
+  - [Using a Classifier](#using-a-classifier-sentiment-analysis)
+  - [Using a Regressor](#using-a-regressor-value-extraction)
+  - [Defining Custom Models](#defining-custom-models)
+  - [Prompt Parameterization](#prompt-parameterization)
+  - [YAML Configuration](#yaml-configuration)
+  - [Retry / Resilience](#retry--resilience)
+  - [Exception Hierarchy](#exception-hierarchy)
+  - [Fallback Model](#fallback-model)
+  - [Thinking Mode](#thinking-mode)
+  - [Parse Retry](#parse-retry)
+  - [OpenAI-Compatible Provider](#openai-compatible-provider)
+  - [Anthropic/Claude Provider](#anthropicclaude-provider)
+  - [Model Selection](#model-selection)
+  - [Streaming](#streaming)
+    - [Agent-Level Streaming](#agent-level-streaming)
+  - [Caching](#caching)
+  - [Validation Hooks](#validation-hooks)
+  - [Agent Pipelines](#agent-pipelines)
+  - [Batch Concurrency Control](#batch-concurrency-control)
+  - [Agent Introspection](#agent-introspection)
+  - [Agent Cloning with Overrides](#agent-cloning-with-overrides)
+  - [Batch Export](#batch-export)
+  - [Evaluation Metrics](#evaluation-metrics)
+  - [Input Preprocessor](#input-preprocessor)
+  - [Model Warm-Up](#model-warm-up)
+  - [Structured Call Logging](#structured-call-logging)
+  - [Personality Chatter](#personality-chatter-roleplay-agent)
+  - [Scene Chatter](#scene-chatter-contextual-roleplay-agent)
+  - [Testing Utilities](#testing-utilities)
+  - [Simple Classifier](#simple-classifier)
+- [Examples](#examples)
+- [Requirements](#requirements)
+- [Model Compatibility](#model-compatibility)
+- [Development](#development)
+  - [Integration Test Models](#integration-test-models)
+
 ## Installation
 
 ```bash

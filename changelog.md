@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.21.28 - 17th May 2026
+
+- Added Table of Contents to `README.md` with links to all 34 sections and subsections.
+
+
 ### v3.21.27 - 16th May 2026
 
 - Added unit tests:
