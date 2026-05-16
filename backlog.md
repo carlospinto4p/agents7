@@ -8,13 +8,6 @@
 
 ### 10th May 2026 — /scan
 
-#### Security
-
-- [x] `agents7_ui/backend/routers/eval.py:96-99` — Raw `input_data` logged via `logger.warning`; may expose PII — MED — M
-- [x] `agents7_ui/backend/routers/engine.py:18` — Raw `str(exc)` returned in error response; return generic message — MED — M
-- [x] `agents7_ui/backend/routers/chat.py:56` — No rate limiting on session endpoints; session enumeration possible — MED — S
-- [x] `agents7_framework/src/agents7/llm/cache.py` — `check_same_thread=False` on SQLite connection is unnecessary given the existing lock — MED — M (false positive: flag required for cross-thread use)
-
 #### Performance
 
 - [ ] `agents7_ui/frontend/src/pages/Engine.svelte:20` — `fetchModels()` called in `$effect` without dependency guard; fires on every state change — HIGH — S
