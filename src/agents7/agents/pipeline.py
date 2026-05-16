@@ -503,19 +503,17 @@ class Pipeline:
                 active = skipped
                 continue
             batch_inputs = [active[i] for i in ordered]
-            batch_responses = list(
-                await asyncio.gather(
-                    *[
-                        run_with_semaphore(
-                            step.agent.act_async(
-                                inp,
-                                chat_kwargs=chat_kwargs,
-                            ),
-                            sem,
-                        )
-                        for inp in batch_inputs
-                    ]
-                )
+            batch_responses = await asyncio.gather(
+                *[
+                    run_with_semaphore(
+                        step.agent.act_async(
+                            inp,
+                            chat_kwargs=chat_kwargs,
+                        ),
+                        sem,
+                    )
+                    for inp in batch_inputs
+                ]
             )
             active = self._evaluate_batch_step(
                 step_idx,

@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.21.17 - 16th May 2026
+
+- Performance:
+  - `agents/pipeline.py`: removed redundant `list()` wrapper around `asyncio.gather()` return value.
+  - `agents7_ui/frontend/src/pages/Runner.svelte`: replaced slot-based concurrency with batched `Promise.all` chunks.
+  - `agents7_ui/frontend/src/pages/Runner.svelte`: simplified count aggregation from `$derived.by` + three `$derived` accessors to three direct `$derived` filters.
+
+
 ### v3.21.16 - 16th May 2026
 
 - Extracted `_row_input()` helper in `eval/metrics.py`: removes four
