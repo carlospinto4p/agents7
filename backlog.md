@@ -10,8 +10,8 @@
 
 #### Security
 
-- [ ] `agents7_ui/backend/routers/run.py:35-37` — Pipeline agent paths resolved without bounds check; path traversal possible via `../../` — MED — M
-- [ ] `agents7_ui/backend/main.py:12-13` — `CORS_ORIGINS` env var used without URL validation; add whitelist check — MED — S
+- [x] `agents7_ui/backend/routers/run.py:35-37` — Pipeline agent paths resolved without bounds check; path traversal possible via `../../` — MED — M
+- [x] `agents7_ui/backend/main.py:12-13` — `CORS_ORIGINS` env var used without URL validation; add whitelist check — MED — S
 - [ ] `agents7_ui/backend/routers/eval.py:96-99` — Raw `input_data` logged via `logger.warning`; may expose PII — MED — M
 - [ ] `agents7_ui/backend/routers/engine.py:18` — Raw `str(exc)` returned in error response; return generic message — MED — M
 - [ ] `agents7_ui/backend/routers/chat.py:56` — No rate limiting on session endpoints; session enumeration possible — MED — S
