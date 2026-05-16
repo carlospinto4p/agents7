@@ -15,6 +15,16 @@ from agents7.logs import logger
 from agents7.models.base import AgentResponse
 
 
+def _row_input(row: dict) -> dict:
+    """Return the agent input from an eval row.
+
+    Rows may embed the input under an ``"input"`` key (so the
+    same dict can carry both input and expected fields) or be
+    the input dict directly.
+    """
+    return row.get("input", row)
+
+
 @dataclass
 class EvalResult:
     """Result of evaluating a single row.
@@ -53,7 +63,7 @@ def _build_eval_result(
     :param error: Error message, or None.
     :return: Populated `EvalResult`.
     """
-    input_data = row.get("input", row)
+    input_data = _row_input(row)
     expected = {k: row[k] for k in expected_fields if k in row}
     result = EvalResult(input_data=input_data, expected=expected)
 
@@ -102,7 +112,7 @@ def run_evaluation(
         callable invoked after the batch completes.
     :return: List of `EvalResult`, one per row.
     """
-    inputs = [row.get("input", row) for row in eval_data]
+    inputs = [_row_input(row) for row in eval_data]
     total = len(eval_data)
 
     try:
@@ -144,7 +154,7 @@ async def run_evaluation_async(
         callable invoked after the batch completes.
     :return: List of `EvalResult`, one per row.
     """
-    inputs = [row.get("input", row) for row in eval_data]
+    inputs = [_row_input(row) for row in eval_data]
     total = len(eval_data)
 
     try:
@@ -182,7 +192,7 @@ def _fallback_sequential(
     """
     results: list[EvalResult] = []
     for row in eval_data:
-        input_data = row.get("input", row)
+        input_data = _row_input(row)
         try:
             response = agent.act(input_data)
             results.append(_build_eval_result(row, expected_fields, response))

@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.21.16 - 16th May 2026
+
+- Extracted `_row_input()` helper in `eval/metrics.py`: removes four
+  inline `row.get("input", row)` repetitions in `_build_eval_result`,
+  `run_evaluation`, `run_evaluation_async`, and `_fallback_sequential`.
+
+
 ### v3.21.15 - 11th May 2026
 
 - Removed `.claude/rules/ui.md`: stale Streamlit UI guidelines; project has moved to `agents7_ui` (Svelte + FastAPI).
