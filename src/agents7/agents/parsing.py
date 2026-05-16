@@ -3,7 +3,7 @@
 import json
 from typing import Callable
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from agents7.agents.utils import enum_members, resolve_strenum
 from agents7.exceptions import ParseError
@@ -62,7 +62,7 @@ class ResponseParser:
 
         try:
             model = model_cls.model_validate_json(response)
-        except Exception as e:
+        except (ValidationError, json.JSONDecodeError) as e:
             logger.debug(
                 "Agent `%s`: direct parse failed, trying"
                 " enum-name conversion: %s",
@@ -72,7 +72,7 @@ class ResponseParser:
             try:
                 converted = self._convert_enum_names_to_values(response)
                 model = model_cls.model_validate_json(converted)
-            except Exception as e:
+            except (ValidationError, json.JSONDecodeError) as e:
                 logger.error(
                     "Agent `%s`: error parsing structured response: %s",
                     self.name,

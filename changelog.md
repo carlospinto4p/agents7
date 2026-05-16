@@ -1,6 +1,12 @@
 
 ## Changelog - Agents7
 
+### v3.21.18 - 16th May 2026
+
+- Narrowed broad `except Exception` in `agents/parsing.py`:
+  - `parse()` now catches `(ValidationError, json.JSONDecodeError)` for both parse attempts instead of `Exception`
+
+
 ### v3.21.17 - 16th May 2026
 
 - Performance:
