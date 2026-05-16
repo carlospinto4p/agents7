@@ -10,9 +10,6 @@
 
 #### Test coverage
 
-- [x] `agents7_framework/src/agents7/llm/cache.py:63-100` — Cache key builder incomplete; no hash-collision or malformed-dict tests — MED — M
-- [x] `agents7_framework/src/agents7/llm/retry.py:62-100` — Missing negative-status tests (400, 401, 403) for `_is_retryable()` — MED — S
-- [x] `agents7_framework/src/agents7/llm/dispatcher.py:30-120` — `_cache_store_callback` never tested in isolation — MED — M
 - [ ] `agents7_framework/src/agents7/agents/context_guard.py:53-160` — Guard prompt templates untested; no test for injection via `persona_summary` — MED — M
 - [ ] `agents7_framework/src/agents7/agents/guarded_scene.py` — No specific tests for auto-generated system prompt combining persona + scene — MED — S
 - [ ] `agents7_framework/src/agents7/agents/utils.py:87-120` — `get_examples_str()` untested for malformed examples (missing keys, type mismatches) — MED — S
