@@ -10,9 +10,6 @@
 
 #### Refactoring
 
-- [x] `agents7_framework/src/agents7/model_selection.py:352` — Multiple broad `except Exception` blocks with inconsistent handling; standardise pattern — MED — M
-- [x] `agents7_framework/src/agents7/testing.py:92` — Bare `except Exception` in response parsing fallback; add specific type — MED — S
-- [x] `agents7_framework/src/agents7/metrics.py:1` — Backward-compatibility re-export duplicates interface; remove or consolidate — HIGH — S
 - [ ] `agents7_framework/src/agents7/llm/streaming.py:11` — `_StreamBase` replicates state management logic from `_AgentStreamBase`; extract shared base — MED — M
 - [ ] `agents7_framework/src/agents7/agents/detector.py` vs `classifier.py` vs `regressor.py` — Duplicated `_validate_output_model` and inheritance; extract to mixin — MED — M
 
