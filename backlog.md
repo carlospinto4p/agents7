@@ -10,10 +10,10 @@
 
 #### Refactoring
 
-- [ ] `agents7_ui/backend/routers/run.py:17` + `chat.py:23` — `_import_agent_class`/`_import_class` duplicated across routers; extract to shared util — MED — S
-- [ ] `agents7_ui/backend/routers/run.py:9` — `_AGENT_TYPE_MAP` defined in multiple routers; centralise in one place — MED — S
-- [ ] `agents7_ui/backend/routers/chat.py:76` + `run.py:84` + `eval.py:95` — Broad `except Exception` catches without specific types; narrow them — MED — S
-- [ ] `agents7_framework/src/agents7/agents/parsing.py:65,75,106` — Overly broad `except Exception` swallows parse/validation errors silently; catch `ParseError`, `ValidationError` specifically — MED — M
+- [x] `agents7_ui/backend/routers/run.py:17` + `chat.py:23` — `_import_agent_class`/`_import_class` duplicated across routers; extract to shared util — MED — S
+- [x] `agents7_ui/backend/routers/run.py:9` — `_AGENT_TYPE_MAP` defined in multiple routers; centralise in one place — MED — S
+- [x] `agents7_ui/backend/routers/chat.py:76` + `run.py:84` + `eval.py:95` — Broad `except Exception` catches without specific types; narrow them — MED — S
+- [x] `agents7_framework/src/agents7/agents/parsing.py:65,75,106` — Overly broad `except Exception` swallows parse/validation errors silently; catch `ParseError`, `ValidationError` specifically — MED — M
 - [ ] `agents7_framework/src/agents7/model_selection.py:352` — Multiple broad `except Exception` blocks with inconsistent handling; standardise pattern — MED — M
 - [ ] `agents7_framework/src/agents7/testing.py:92` — Bare `except Exception` in response parsing fallback; add specific type — MED — S
 - [ ] `agents7_framework/src/agents7/metrics.py:1` — Backward-compatibility re-export duplicates interface; remove or consolidate — HIGH — S
