@@ -10,8 +10,6 @@
 
 #### Test coverage
 
-- [x] `agents7_framework/src/agents7/agents/memory.py` — No dedicated unit tests; concurrent access and `max_size` eviction never tested — HIGH — M
-- [x] `agents7_framework/src/agents7/agents/pipeline.py` — `act_stream()` / `act_stream_async()` untested; step failure mid-pipeline never verified — HIGH — M (premise no longer holds — test_pipeline_stream.py already covers act_stream, act_stream_async, and mid-pipeline failures)
 - [ ] `agents7_framework/src/agents7/agents/guarded.py` — Retry loop on guard rejection untested; no test for guard that always rejects — HIGH — M
 - [ ] `agents7_framework/src/agents7/llm/openai_compat.py` — No dedicated unit tests for error handling, retry logic, or streaming chunk parsing — HIGH — L
 - [ ] `agents7_framework/src/agents7/agents/batch.py:42-80` — Async concurrency test has timing dependencies; flaky in CI — HIGH — M
