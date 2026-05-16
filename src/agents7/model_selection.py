@@ -350,6 +350,7 @@ def _benchmark_model(
     try:
         engine = LLMEngine(provider="ollama", model_name=model_name)
     except Exception as e:
+        logger.debug(f"  Engine init failed for {model_name}: {e}")
         return ModelScore(
             model_name=model_name,
             model_size=model_size,
@@ -364,6 +365,7 @@ def _benchmark_model(
     try:
         agent = _create_agent(agent_config)
     except Exception as e:
+        logger.debug(f"  Agent creation failed for {model_name}: {e}")
         return ModelScore(
             model_name=model_name,
             model_size=model_size,
