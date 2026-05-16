@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import BaseModel
 
+from agents7.agents.labeler import Labeler
 from agents7.eval.metrics import (
     EvalResult,
     _build_eval_result,
@@ -20,7 +21,7 @@ from agents7.eval.metrics import (
 )
 from agents7.models.base import AgentResponse, LLMMetrics
 
-from helpers import DUMMY_METRICS, make_labeler
+from helpers import DUMMY_METRICS, DummyOutput, make_labeler
 
 # --- _compare_field ---
 
@@ -471,3 +472,38 @@ async def test_run_evaluation_async_progress_callback_called_on_fallback(
         agent, data, ["value"], progress_callback=callback
     )
     callback.assert_called_once_with(1, 1)
+
+
+# --- partial batch completion ---
+
+
+@patch.object(Labeler, "act_in_batch")
+def test_run_evaluation_partial_batch_model_none(mock_batch):
+    """Batch rows with model=None are individually marked as errors."""
+    metrics = LLMMetrics(tokens=5, prompt_tokens=3, total_duration=0.1)
+    good = AgentResponse(
+        response=json.dumps({"value": "ok"}),
+        model=DummyOutput(value="ok"),
+        thinking=None,
+        metrics=metrics,
+    )
+    bad = AgentResponse(
+        response="{}",
+        model=None,
+        thinking=None,
+        metrics=metrics,
+    )
+    mock_batch.return_value = [good, bad]
+
+    agent = make_labeler()
+    data = [
+        {"input": {"text": "x"}, "value": "ok"},
+        {"input": {"text": "y"}, "value": "a"},
+    ]
+    results = run_evaluation(agent, data, ["value"])
+
+    assert len(results) == 2
+    assert results[0].passed is True
+    assert results[0].error is None
+    assert results[1].passed is False
+    assert results[1].error == "Model parsing failed"

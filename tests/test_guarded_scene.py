@@ -87,6 +87,30 @@ def test_empty_scene_still_generates_prompt():
     assert "role-play" in agent.system_prompt.lower()
 
 
+def test_system_prompt_includes_situation():
+    """Scene situation appears in the auto-generated system prompt."""
+    agent = make_guarded_scene()
+    assert "The tavern is about to close" in agent.system_prompt
+
+
+def test_system_prompt_includes_time_period():
+    """Scene time_period appears in the auto-generated system prompt."""
+    agent = make_guarded_scene()
+    assert "Medieval England" in agent.system_prompt
+
+
+def test_system_prompt_includes_goal():
+    """Scene goal appears in the auto-generated system prompt."""
+    agent = make_guarded_scene()
+    assert "Close the tavern" in agent.system_prompt
+
+
+def test_system_prompt_includes_occupation():
+    """Persona occupation appears in the auto-generated system prompt."""
+    agent = make_guarded_scene()
+    assert "tavern keeper" in agent.system_prompt
+
+
 # --- Guard integration ---
 
 

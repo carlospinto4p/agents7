@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.21.26 - 16th May 2026
+
+- Added unit tests (`agents7_framework/tests/`):
+  - `test_context_guard.py`: 3 tests for `persona_summary` injection — placeholder fully replaced, injection attempts embedded verbatim, self-referential `$persona_summary` not re-substituted.
+  - `test_guarded_scene.py`: 4 tests verifying all scene/persona fields in auto-generated system prompt (situation, time_period, goal, occupation).
+  - `test_utils.py`: 8 tests for `get_examples_str()` — happy path, empty list, non-list input, non-dict entry, missing keys, extra keys.
+  - `test_metrics.py`: 1 test for partial batch completion — rows with `model=None` are individually marked as errors without affecting passing rows.
+
+
 ### v3.21.25 - 16th May 2026
 
 - Added tests in `agents7_framework/tests/`:

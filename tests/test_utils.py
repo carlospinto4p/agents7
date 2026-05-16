@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 
 from agents7.agents.utils import (
+    get_examples_str,
     import_from_path,
     model_class_to_string,
     resolve_strenum,
@@ -174,3 +175,61 @@ def test_model_class_to_string_enum_possible_values():
     assert "Possible values:" in result
     assert "A: Option A." in result
     assert "B: Option B." in result
+
+
+# ── get_examples_str ──────────────────────────────────────────────
+
+
+def test_get_examples_str_valid_single():
+    """Single valid example is formatted correctly."""
+    result = get_examples_str([{"input": "hello", "output": "world"}])
+    assert "## Examples:" in result
+    assert "- Input: hello" in result
+    assert "- Output: world" in result
+
+
+def test_get_examples_str_valid_multiple():
+    """Multiple examples are all included in the output."""
+    result = get_examples_str(
+        [{"input": "a", "output": "1"}, {"input": "b", "output": "2"}]
+    )
+    assert "- Input: a" in result
+    assert "- Output: 1" in result
+    assert "- Input: b" in result
+    assert "- Output: 2" in result
+
+
+def test_get_examples_str_empty_list():
+    """Empty list returns just the header."""
+    result = get_examples_str([])
+    assert result == "## Examples:"
+
+
+def test_get_examples_str_not_a_list_raises():
+    """Non-list input raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError, match="must be a list"):
+        get_examples_str({"input": "x", "output": "y"})  # type: ignore[arg-type]
+
+
+def test_get_examples_str_example_not_dict_raises():
+    """Example entry that is not a dict raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError, match="must be a dictionary"):
+        get_examples_str(["not a dict"])
+
+
+def test_get_examples_str_missing_output_key_raises():
+    """Example missing 'output' key raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError, match="input.*output"):
+        get_examples_str([{"input": "x"}])
+
+
+def test_get_examples_str_missing_input_key_raises():
+    """Example missing 'input' key raises AgentConfigurationError."""
+    with pytest.raises(AgentConfigurationError, match="input.*output"):
+        get_examples_str([{"output": "x"}])
+
+
+def test_get_examples_str_extra_key_raises():
+    """Example with extra key beyond 'input'/'output' raises error."""
+    with pytest.raises(AgentConfigurationError, match="input.*output"):
+        get_examples_str([{"input": "x", "output": "y", "extra": "z"}])
