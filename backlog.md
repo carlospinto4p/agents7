@@ -10,9 +10,9 @@
 
 #### Test coverage
 
-- [ ] `agents7_framework/src/agents7/agents/guarded.py` — Retry loop on guard rejection untested; no test for guard that always rejects — HIGH — M
+- [x] `agents7_framework/src/agents7/agents/guarded.py` — Retry loop on guard rejection untested; no test for guard that always rejects — HIGH — M
 - [ ] `agents7_framework/src/agents7/llm/openai_compat.py` — No dedicated unit tests for error handling, retry logic, or streaming chunk parsing — HIGH — L
-- [ ] `agents7_framework/src/agents7/agents/batch.py:42-80` — Async concurrency test has timing dependencies; flaky in CI — HIGH — M
+- [x] `agents7_framework/src/agents7/agents/batch.py:42-80` — Async concurrency test has timing dependencies; flaky in CI — HIGH — M
 - [ ] `agents7_framework/src/agents7/agents/parsing.py` — No dedicated test file; `ResponseParser.parse()` only tested indirectly — MED — M
 - [ ] `agents7_framework/src/agents7/llm/cache.py:63-100` — Cache key builder incomplete; no hash-collision or malformed-dict tests — MED — M
 - [ ] `agents7_framework/src/agents7/llm/retry.py:62-100` — Missing negative-status tests (400, 401, 403) for `_is_retryable()` — MED — S
