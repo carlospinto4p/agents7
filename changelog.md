@@ -1,6 +1,19 @@
 
 ## Changelog - Agents7
 
+### v3.21.24 - 16th May 2026
+
+- Added unit tests in `tests/test_openai_compat.py`:
+  - `test_chat_sync_propagates_api_error`: error propagation from sync client.
+  - `test_chat_async_propagates_api_error`: error propagation from async client.
+  - `test_oai_chunk_empty_choices`: `_OAIChunk` with empty choices list.
+  - `test_oai_chunk_delta_with_reasoning`: `reasoning_content` in delta.
+  - `test_adapt_stream_sync_filters_empty_chunks`: empty-chunk filtering.
+  - `test_adapt_stream_sync_yields_usage_chunk`: usage-only chunk passthrough.
+  - `test_chat_stream_returns_stream_result`: `chat_stream()` integration.
+  - `test_chat_stream_async_returns_async_stream_result`: `chat_stream_async()` integration.
+
+
 ### v3.21.23 - 16th May 2026
 
 - Added tests in `tests/test_guarded_chatter.py`:

@@ -314,3 +314,140 @@ def test_engine_openai_compat_with_fallback():
         )
         assert mock_cls.call_count == 2
         assert mock_cls.call_args_list[1][0][0] == "gpt-3.5-turbo"
+
+
+# --- Error handling ---
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_chat_sync_propagates_api_error(mock_openai):
+    """chat() propagates exceptions from the API client."""
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = RuntimeError("api down")
+    mock_openai.OpenAI.return_value = mock_client
+    mock_openai.AsyncOpenAI.return_value = MagicMock()
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    with pytest.raises(RuntimeError, match="api down"):
+        p.chat([{"role": "user", "content": "hi"}])
+
+
+@patch("agents7.llm.openai_compat._openai")
+@pytest.mark.asyncio
+async def test_chat_async_propagates_api_error(mock_openai):
+    """chat_async() propagates exceptions from the async client."""
+    mock_async_client = MagicMock()
+    mock_async_client.chat.completions.create = AsyncMock(
+        side_effect=RuntimeError("async api down")
+    )
+    mock_openai.OpenAI.return_value = MagicMock()
+    mock_openai.AsyncOpenAI.return_value = mock_async_client
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    with pytest.raises(RuntimeError, match="async api down"):
+        await p.chat_async([{"role": "user", "content": "hi"}])
+
+
+# --- Stream adapter edge cases ---
+
+
+def test_oai_chunk_empty_choices():
+    """_OAIChunk with empty choices list yields empty content."""
+    from agents7.llm.openai_compat import _OAIChunk
+
+    chunk = SimpleNamespace(choices=[], usage=None)
+    adapted = _OAIChunk(chunk)
+    assert adapted.message.content == ""
+    assert adapted.message.role is None
+    assert adapted.done is False
+
+
+def test_oai_chunk_delta_with_reasoning():
+    """_OAIChunk adapts reasoning_content from the delta."""
+    from agents7.llm.openai_compat import _OAIChunk
+
+    chunk = _make_stream_chunk(content="ans", role="assistant")
+    chunk.choices[0].delta.reasoning_content = "  thought  "
+    adapted = _OAIChunk(chunk)
+    assert adapted.message.thinking == "  thought  "
+
+
+def test_adapt_stream_sync_filters_empty_chunks():
+    """_adapt_stream_sync skips chunks with no choices and no usage."""
+    from agents7.llm.openai_compat import _adapt_stream_sync
+
+    empty = SimpleNamespace(choices=[], usage=None)
+    content_chunk = _make_stream_chunk(content="hello")
+    results = list(_adapt_stream_sync([empty, content_chunk]))
+    assert len(results) == 1
+    assert results[0].message.content == "hello"
+
+
+def test_adapt_stream_sync_yields_usage_chunk():
+    """_adapt_stream_sync yields a no-choices chunk when it carries usage."""
+    from agents7.llm.openai_compat import _adapt_stream_sync
+
+    usage_chunk = SimpleNamespace(choices=[], usage=_make_usage(5, 10))
+    results = list(_adapt_stream_sync([usage_chunk]))
+    assert len(results) == 1
+    assert results[0].done is True
+    assert results[0].eval_count == 10
+
+
+# --- Streaming integration ---
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_chat_stream_returns_stream_result(mock_openai):
+    """chat_stream() returns a StreamResult that yields text chunks."""
+    from agents7.llm.streaming import StreamResult
+
+    chunks = [
+        _make_stream_chunk(content="hello"),
+        _make_stream_chunk(content="", usage=_make_usage(5, 10)),
+    ]
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = iter(chunks)
+    mock_openai.OpenAI.return_value = mock_client
+    mock_openai.AsyncOpenAI.return_value = MagicMock()
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    result = p.chat_stream([{"role": "user", "content": "hi"}])
+    assert isinstance(result, StreamResult)
+    assert "".join(result) == "hello"
+    assert result.metrics["tokens"] == 10
+
+
+@patch("agents7.llm.openai_compat._openai")
+@pytest.mark.asyncio
+async def test_chat_stream_async_returns_async_stream_result(mock_openai):
+    """chat_stream_async() returns an AsyncStreamResult that yields chunks."""
+    from agents7.llm.streaming import AsyncStreamResult
+
+    async def fake_raw_stream():
+        yield _make_stream_chunk(content="world")
+        yield _make_stream_chunk(content="", usage=_make_usage(3, 7))
+
+    mock_async_client = MagicMock()
+    mock_async_client.chat.completions.create = AsyncMock(
+        return_value=fake_raw_stream()
+    )
+    mock_openai.OpenAI.return_value = MagicMock()
+    mock_openai.AsyncOpenAI.return_value = mock_async_client
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    result = await p.chat_stream_async([{"role": "user", "content": "hi"}])
+    assert isinstance(result, AsyncStreamResult)
+    collected = []
+    async for text in result:
+        collected.append(text)
+    assert "".join(collected) == "world"
+    assert result.metrics["tokens"] == 7
