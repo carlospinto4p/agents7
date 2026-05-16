@@ -177,6 +177,51 @@ def test_json_conv_path_traversal_chars_replaced(tmp_path):
     assert files[0].parent == history_dir
 
 
+# --- JsonFileMemory cache eviction ---
+
+
+def test_json_cache_max_size_evicts_oldest(tmp_path, monkeypatch):
+    """Oldest cache entry is evicted when _MAX_CACHE is exceeded."""
+    monkeypatch.setattr(JsonFileMemory, "_MAX_CACHE", 2)
+    mem = JsonFileMemory(str(tmp_path / "history"))
+    mem.save("conv1", [{"role": "user", "content": "1"}])
+    mem.save("conv2", [{"role": "user", "content": "2"}])
+    mem.save("conv3", [{"role": "user", "content": "3"}])
+    assert "conv1" not in mem._cache
+    assert len(mem._cache) <= 2
+    assert mem.load("conv1") == [{"role": "user", "content": "1"}]
+
+
+# --- JsonFileMemory concurrent ---
+
+
+def test_json_concurrent_saves(tmp_path):
+    """Concurrent saves from multiple threads don't corrupt data."""
+    mem = JsonFileMemory(str(tmp_path / "history"))
+    errors: list[str] = []
+
+    def writer(conv_id: str) -> None:
+        msgs = [{"role": "user", "content": conv_id}]
+        try:
+            mem.save(conv_id, msgs)
+            loaded = mem.load(conv_id)
+            if loaded != msgs:
+                errors.append(f"{conv_id}: got {loaded}")
+        except Exception as e:
+            errors.append(str(e))
+
+    threads = [
+        threading.Thread(target=writer, args=(f"conv{i}",)) for i in range(10)
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors
+    assert len(mem.list_conversations()) == 10
+
+
 # --- SqliteMemory ---
 
 
