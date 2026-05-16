@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.21.25 - 16th May 2026
+
+- Added tests in `agents7_framework/tests/`:
+  - `test_cache.py`: key-order invariance, non-serializable `output_format`, and distinct-payload collision tests for `_CacheKeyBuilder.make_key`.
+  - `test_retry.py`: `_is_retryable()` coverage for non-retryable status codes (400, 401, 403), generic 429, and plain exceptions.
+  - `test_dispatcher.py`: `_cache_store_callback` isolation tests (store, overwrite, key isolation).
+
+
 ### v3.21.24 - 16th May 2026
 
 - Added unit tests in `tests/test_openai_compat.py`:

@@ -174,6 +174,48 @@ def test_different_model_different_key():
     assert k1 != k2
 
 
+def test_output_format_key_order_invariant():
+    """output_format dict with different key order produces the same key."""
+    k1 = ResponseCache.make_key(
+        model_id="ollama::qwen3",
+        method="chat",
+        output_format={"b": 2, "a": 1},
+    )
+    k2 = ResponseCache.make_key(
+        model_id="ollama::qwen3",
+        method="chat",
+        output_format={"a": 1, "b": 2},
+    )
+    assert k1 == k2
+
+
+def test_output_format_non_serializable_raises():
+    """output_format dict with non-JSON-serializable value raises TypeError."""
+    with pytest.raises(TypeError):
+        ResponseCache.make_key(
+            model_id="ollama::qwen3",
+            method="chat",
+            output_format={"fn": lambda x: x},
+        )
+
+
+def test_distinct_payloads_produce_distinct_keys():
+    """Each differing field (model, method, temperature, think) changes the key."""
+    base = dict(
+        model_id="ollama::qwen3",
+        method="chat",
+        messages=[{"role": "user", "content": "hi"}],
+        temperature=0.0,
+    )
+    k_base = ResponseCache.make_key(**base)
+    assert k_base != ResponseCache.make_key(
+        **{**base, "model_id": "ollama::llama3"}
+    )
+    assert k_base != ResponseCache.make_key(**{**base, "method": "generate"})
+    assert k_base != ResponseCache.make_key(**{**base, "temperature": 0.5})
+    assert k_base != ResponseCache.make_key(**{**base, "think": True})
+
+
 # --- EngineCacheIntegration ---
 
 

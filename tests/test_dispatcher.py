@@ -6,7 +6,7 @@ import pytest
 
 from agents7.exceptions import LLMException
 from agents7.llm.cache import CacheConfig, ResponseCache
-from agents7.llm.dispatcher import EngineDispatcher
+from agents7.llm.dispatcher import EngineDispatcher, _cache_store_callback
 
 
 DUMMY_RESULT = {
@@ -234,3 +234,30 @@ async def test_timeout_raises_llm_exception():
         await dispatcher.execute_async(
             "chat_async", slow_fn, "messages", [], **COMMON, timeout=0.01
         )
+
+
+# ── _cache_store_callback ──────────────────────────────────────────────────
+
+
+def test_cache_store_callback_stores_value():
+    """_cache_store_callback writes data to cache at the given key."""
+    cache = ResponseCache(CacheConfig())
+    data = {"response": "hello", "metrics": {}}
+    _cache_store_callback(cache, "my-key", data)
+    assert cache.get("my-key") == data
+
+
+def test_cache_store_callback_overwrites_existing():
+    """_cache_store_callback replaces an existing value at the same key."""
+    cache = ResponseCache(CacheConfig())
+    cache.put("k", {"response": "old"})
+    _cache_store_callback(cache, "k", {"response": "new"})
+    assert cache.get("k") == {"response": "new"}
+
+
+def test_cache_store_callback_does_not_affect_other_keys():
+    """_cache_store_callback only modifies the specified key."""
+    cache = ResponseCache(CacheConfig())
+    cache.put("other", {"response": "other"})
+    _cache_store_callback(cache, "my-key", {"response": "hello"})
+    assert cache.get("other") == {"response": "other"}

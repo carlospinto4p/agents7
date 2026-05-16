@@ -7,7 +7,71 @@ import pytest
 
 from agents7.agents.labeler import Labeler
 from agents7.exceptions import LLMException
-from agents7.llm.retry import RetryConfig, retry_async, retry_sync
+from agents7.llm.retry import (
+    RetryConfig,
+    _is_retryable,
+    retry_async,
+    retry_sync,
+)
+
+
+# --- _is_retryable ---
+
+
+def test_is_retryable_request_error():
+    """ollama.RequestError is always retryable."""
+    assert _is_retryable(ollama.RequestError("conn refused")) is True
+
+
+def test_is_retryable_response_error_500():
+    """ollama.ResponseError with status >= 500 is retryable."""
+    err = ollama.ResponseError("server error")
+    err.status_code = 500
+    assert _is_retryable(err) is True
+
+
+def test_is_not_retryable_response_error_400():
+    """ollama.ResponseError with status 400 is not retryable."""
+    err = ollama.ResponseError("bad request")
+    err.status_code = 400
+    assert _is_retryable(err) is False
+
+
+def test_is_not_retryable_response_error_401():
+    """ollama.ResponseError with status 401 is not retryable."""
+    err = ollama.ResponseError("unauthorized")
+    err.status_code = 401
+    assert _is_retryable(err) is False
+
+
+def test_is_not_retryable_response_error_403():
+    """ollama.ResponseError with status 403 is not retryable."""
+    err = ollama.ResponseError("forbidden")
+    err.status_code = 403
+    assert _is_retryable(err) is False
+
+
+def test_is_retryable_generic_429():
+    """Generic error with status_code=429 is retryable."""
+
+    class FakeAPIError(Exception):
+        status_code = 429
+
+    assert _is_retryable(FakeAPIError()) is True
+
+
+def test_is_not_retryable_generic_400():
+    """Generic error with status_code=400 is not retryable."""
+
+    class FakeAPIError(Exception):
+        status_code = 400
+
+    assert _is_retryable(FakeAPIError()) is False
+
+
+def test_is_not_retryable_no_status():
+    """Plain exception without status_code is not retryable."""
+    assert _is_retryable(ValueError("generic")) is False
 
 
 # --- RetryConfig validation ---
