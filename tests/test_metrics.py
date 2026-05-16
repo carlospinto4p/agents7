@@ -8,13 +8,11 @@ import pytest
 from pydantic import BaseModel
 
 from agents7.eval.metrics import (
-    _build_eval_result,
-    _fallback_sequential,
-)
-from agents7.metrics import (
     EvalResult,
+    _build_eval_result,
     _compare_field,
     _extract_fields,
+    _fallback_sequential,
     build_confusion_matrix,
     compute_metrics,
     run_evaluation,

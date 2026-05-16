@@ -961,7 +961,7 @@ The `agents7.metrics` module provides evaluation primitives usable without Strea
 `run_evaluation` uses `act_in_batch()` internally for efficient processing. If the batch fails, it falls back to sequential `act()` calls so individual errors don't break the entire evaluation. An async variant `run_evaluation_async` is also available.
 
 ```python
-from agents7.metrics import (
+from agents7.eval.metrics import (
     EvalResult,
     run_evaluation,
     run_evaluation_async,

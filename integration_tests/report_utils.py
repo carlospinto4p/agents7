@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from agents7.export import export_eval_report
-from agents7.metrics import (
+from agents7.eval.metrics import (
     EvalResult,
     _compare_field,
     _extract_fields,

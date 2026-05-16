@@ -1,7 +1,7 @@
 """Unit tests for export_eval_report."""
 
 from agents7.eval.export import export_eval_report
-from agents7.metrics import EvalResult
+from agents7.eval.metrics import EvalResult
 
 
 def _make_results():
