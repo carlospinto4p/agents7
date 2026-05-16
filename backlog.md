@@ -10,10 +10,10 @@
 
 #### Performance
 
-- [ ] `agents7_ui/frontend/src/pages/Engine.svelte:20` — `fetchModels()` called in `$effect` without dependency guard; fires on every state change — HIGH — S
-- [ ] `agents7_ui/frontend/src/pages/Catalog.svelte:8-12` — Three `.filter()` calls on agents array run reactively; wrap in `$derived` — HIGH — S
-- [ ] `agents7_ui/backend/routers/engine.py:13-16` — Two sequential `httpx` calls; batch with `asyncio.gather` — MED — S
-- [ ] `agents7_framework/src/agents7/llm/cache.py:87-106` — `json.dumps(output_format, sort_keys=True)` called on every cache key build; cache the result — MED — S
+- [x] `agents7_ui/frontend/src/pages/Engine.svelte:20` — `fetchModels()` called in `$effect` without dependency guard; fires on every state change — HIGH — S
+- [x] `agents7_ui/frontend/src/pages/Catalog.svelte:8-12` — Three `.filter()` calls on agents array run reactively; wrap in `$derived` — HIGH — S (premise no longer holds — already uses `$derived`)
+- [x] `agents7_ui/backend/routers/engine.py:13-16` — Two sequential `httpx` calls; batch with `asyncio.gather` — MED — S
+- [x] `agents7_framework/src/agents7/llm/cache.py:87-106` — `json.dumps(output_format, sort_keys=True)` called on every cache key build; cache the result — MED — S (premise no longer holds — `_FMT_CACHE` added in v3.18.13)
 - [ ] `agents7_framework/src/agents7/agents/pipeline.py:506-519` — `list(await asyncio.gather(...))` is redundant; `gather` already returns a list — MED — S
 - [ ] `agents7_ui/frontend/src/pages/Runner.svelte:165-177` — Manual slot-based concurrency; replace with `Promise.all` over batched chunks — MED — S
 - [ ] `agents7_ui/frontend/src/pages/Runner.svelte:202-213` — Count aggregation recalculated on every render; use simpler `$derived` — MED — S
