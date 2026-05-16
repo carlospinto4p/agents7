@@ -10,8 +10,6 @@
 
 #### Security
 
-- [x] `agents7_ui/backend/routers/chat.py:78` — Raw exception message returned to client (`detail=f"Chat error: {exc}"`); return generic message — HIGH — M
-- [x] `agents7_ui/backend/routers/chat.py:20` — In-memory session dict has no expiration/cleanup; sessions accumulate indefinitely — HIGH — M
 - [ ] `agents7_ui/backend/routers/run.py:35-37` — Pipeline agent paths resolved without bounds check; path traversal possible via `../../` — MED — M
 - [ ] `agents7_ui/backend/main.py:12-13` — `CORS_ORIGINS` env var used without URL validation; add whitelist check — MED — S
 - [ ] `agents7_ui/backend/routers/eval.py:96-99` — Raw `input_data` logged via `logger.warning`; may expose PII — MED — M
