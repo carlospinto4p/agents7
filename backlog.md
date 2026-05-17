@@ -10,9 +10,6 @@
 
 #### Test Coverage
 
-- [x] Add dedicated unit tests for `eval/metrics.py`: `compute_metrics()`, `accuracy()`, `precision()`, `recall()`, `f1_score()` — currently only report generation is tested (HIGH, M)
-- [x] Add tests for public utilities in `agents/utils.py:181-210`: `get_examples_str()`, `model_class_to_string()`, `import_from_path()` (HIGH, M)
-- [x] Add tests for `Chatter.from_yaml()` error paths: missing engine section, invalid memory backend, circular inheritance, malformed YAML (HIGH, M)
 - [ ] Add tests for guard retry loop exhaustion in `agents/guarded.py:506-570`: parse failure on retry, all retries exhausted, `max_guard_retries=0` (HIGH, M)
 - [ ] Add integration tests: `GuardedChatter` with real guard, `Pipeline+GuardedChatter` steps, `SceneChatter` system prompt generation, memory persistence across restarts (HIGH, M)
 - [ ] Add tests for `agents/config_loader.py`: YAML inheritance (`_resolve_inheritance()`), variable substitution, multi-file pipeline configs (HIGH, M)
