@@ -980,7 +980,7 @@ The original agent is unchanged (frozen dataclass). Works with all agent types (
 Export agent responses to JSONL or CSV files after `act_in_batch`:
 
 ```python
-from agents7.export import export_jsonl, export_csv
+from agents7.eval.export import export_jsonl, export_csv
 
 responses = agent.act_in_batch(inputs)
 
@@ -994,7 +994,7 @@ export_csv(responses, "results.csv")
 export_csv(responses, "results.csv", fields=["category", "reason"])
 
 # Export to Polars DataFrame (requires polars)
-from agents7.export import export_dataframe
+from agents7.eval.export import export_dataframe
 
 df = export_dataframe(responses)
 df = export_dataframe(responses, fields=["category", "reason"])
@@ -1041,7 +1041,7 @@ print(f"Matrix: {cm['matrix']}")
 **Evaluation reports:** Generate a formatted Markdown report from evaluation results:
 
 ```python
-from agents7.export import export_eval_report
+from agents7.eval.export import export_eval_report
 
 export_eval_report(
     results,

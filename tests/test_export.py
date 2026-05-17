@@ -1,10 +1,10 @@
-"""Unit tests for agents7.export (JSONL and CSV export)."""
+"""Unit tests for agents7.eval.export (JSONL and CSV export)."""
 
 import json
 
 from pydantic import BaseModel
 
-from agents7.export import (
+from agents7.eval.export import (
     export_csv,
     export_jsonl,
 )
@@ -170,7 +170,7 @@ def _make_benchmark_result():
 
 def test_export_benchmark_report_basic(tmp_path):
     """Writes a markdown report with scores and per-case tables."""
-    from agents7.export import export_benchmark_report
+    from agents7.eval.export import export_benchmark_report
 
     path = tmp_path / "bench.md"
     export_benchmark_report(
@@ -187,7 +187,7 @@ def test_export_benchmark_report_basic(tmp_path):
 
 def test_export_benchmark_report_no_best(tmp_path):
     """Handles the case where no model passed."""
-    from agents7.export import export_benchmark_report
+    from agents7.eval.export import export_benchmark_report
     from agents7.model_selection import BenchmarkResult
 
     path = tmp_path / "bench.md"

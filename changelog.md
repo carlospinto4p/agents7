@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.21.31 - 17th May 2026
+
+- Removed deprecated `src/agents7/export.py` re-export shim:
+  - Migrated all callers to `agents7.eval.export` directly.
+  - Updated `tests/test_export.py`, `integration_tests/report_utils.py`, `examples/features/02_export.py`, `README.md`, and `agents_catalog/tagger_agent/tests/test_tagger_agent.py`.
+
+
 ### v3.21.30 - 17th May 2026
 
 - Added return type annotations to previously unannotated public/private methods:

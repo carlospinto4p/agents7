@@ -14,7 +14,7 @@
 
 #### Refactoring
 
-- [ ] Add missing return type annotations to `settings.py`, `llm/cache.py`, `llm/base.py`, `llm/ollama.py`, `agents/labeler.py`, `agents/utils.py`, `agents/models/base.py` (MED, S)
+- [x] Add missing return type annotations to `settings.py`, `llm/cache.py`, `llm/base.py`, `llm/ollama.py`, `agents/labeler.py`, `agents/utils.py`, `agents/models/base.py` (MED, S)
 - [ ] Schedule removal of deprecated `src/agents7/export.py` re-export shim (LOW, S)
 
 #### Test Coverage
