@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.21.34 - 17th May 2026
+
+- Added unit tests:
+  - `tests/test_guarded_chatter.py`: parse failure on retry (sync + async), GuardedChatter as pipeline step, GuardedChatter memory persistence.
+  - `tests/test_config_loader.py`: `load_yaml_settings()` with `base_config` inheritance chain, `build_engine()` resolving `${VAR}` in `api_key`, error on unset env var.
+
+
 ### v3.21.33 - 17th May 2026
 
 - Rotated changelog: archived 84 old entries to `changelog/2026.md`.

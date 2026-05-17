@@ -5,13 +5,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from agents7.agents.config_loader import (
+    _derive_persona_summary,
+)
 from agents7.agents.context_guard import (
     ContextGuard,
     GuardReason,
     GuardVerdict,
-)
-from agents7.agents.config_loader import (
-    _derive_persona_summary,
 )
 from agents7.agents.guarded import (
     GuardEvent,
@@ -826,3 +826,124 @@ def test_broke_character_hint_in_feedback(
     feedback = retry_messages[-1]["content"]
     assert "context guard" in feedback
     assert "AI/LLM" in feedback
+
+
+# --- Parse failure on retry ---
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_chat_parse_failure_on_retry_passes_through(
+    mock_chat,
+    mock_guard,
+):
+    """Parse failure during retry → fail-open, retried text passes through."""
+    mock_chat.side_effect = [
+        chat_response_dict("I'm an AI."),
+        chat_response_dict("Soy David."),
+    ]
+    mock_guard.side_effect = [
+        REJECT_INJECTION,
+        AgentResponse(
+            response="unparseable",
+            model=None,
+            thinking=None,
+            metrics=DUMMY_METRICS,
+        ),
+    ]
+
+    agent = make_guarded_chatter(max_guard_retries=2)
+    resp = agent.chat("Who are you?")
+
+    assert resp.response == "Soy David."
+    assert mock_chat.call_count == 2
+    assert mock_guard.call_count == 2
+
+
+@patch.object(
+    ContextGuard,
+    "act_async",
+    new_callable=AsyncMock,
+)
+@patch.object(
+    LLMEngine,
+    "chat_async",
+    new_callable=AsyncMock,
+)
+@pytest.mark.asyncio
+async def test_chat_async_parse_failure_on_retry_passes_through(
+    mock_chat,
+    mock_guard,
+):
+    """Async: parse failure during retry → fail-open."""
+    mock_chat.side_effect = [
+        chat_response_dict("I'm an AI."),
+        chat_response_dict("Soy David."),
+    ]
+    mock_guard.side_effect = [
+        REJECT_INJECTION,
+        AgentResponse(
+            response="unparseable",
+            model=None,
+            thinking=None,
+            metrics=DUMMY_METRICS,
+        ),
+    ]
+
+    agent = make_guarded_chatter(max_guard_retries=2)
+    resp = await agent.chat_async("Who are you?")
+
+    assert resp.response == "Soy David."
+    assert mock_chat.call_count == 2
+    assert mock_guard.call_count == 2
+
+
+# --- Pipeline integration ---
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guarded_chatter_as_pipeline_step(mock_chat, mock_guard):
+    """GuardedChatter can be used as a PipelineStep; guard is invoked."""
+    from agents7.agents.pipeline import Pipeline, PipelineStep
+
+    mock_chat.return_value = chat_response_dict("Hola.")
+    mock_guard.return_value = ACCEPT
+
+    guarded = make_guarded_chatter()
+    pipeline = Pipeline(steps=[PipelineStep(agent=guarded)])
+    result = pipeline.act({"message": "Hello"})
+
+    # GuardedChatter returns model=None — pipeline marks this as not-success,
+    # but the guard and chat were both called correctly.
+    assert result.steps[0].response == "Hola."
+    mock_chat.assert_called_once()
+    mock_guard.assert_called_once()
+
+
+# --- Memory persistence ---
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guarded_chatter_persists_to_memory(mock_chat, mock_guard, tmp_path):
+    """GuardedChatter history persists to memory and loads in new instance."""
+    from agents7.agents.memory import JsonFileMemory
+
+    mock_chat.return_value = chat_response_dict("Soy David.")
+    mock_guard.return_value = ACCEPT
+
+    path = str(tmp_path / "history.json")
+    mem = JsonFileMemory(path)
+
+    agent1 = make_guarded_chatter(memory=mem, conversation_id="g1")
+    agent1.chat("Hi")
+    assert len(agent1.history) == 2
+
+    agent2 = make_guarded_chatter(
+        memory=JsonFileMemory(path),
+        conversation_id="g1",
+    )
+    assert len(agent2.history) == 2
+    assert agent2.history[0]["content"] == "Hi"
+    assert agent2.history[1]["content"] == "Soy David."

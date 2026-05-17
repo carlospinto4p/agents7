@@ -314,3 +314,59 @@ def test_resolve_env_var_partial_reference_unchanged():
     """Strings that look like ${...} but are malformed pass through."""
     assert _resolve_env_var("${no-closing") == "${no-closing"
     assert _resolve_env_var("no-opening}") == "no-opening}"
+
+
+# ── load_yaml_settings with inheritance ──────────────────────────
+
+
+def test_load_yaml_settings_with_base_config(tmp_path):
+    """load_yaml_settings() resolves a base_config chain end-to-end."""
+    base = tmp_path / "base.yml"
+    base.write_text(
+        "name: BaseAgent\n"
+        "version: 1\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "system_prompt: Base prompt.\n"
+        "output_model: agents7.models.demo.PersonInfo\n"
+    )
+    child = tmp_path / "child.yml"
+    child.write_text("base_config: base.yml\nname: ChildAgent\nversion: 2\n")
+
+    result = load_yaml_settings(str(child))
+
+    assert result["name"] == "ChildAgent"
+    assert result["version"] == 2
+    assert result["system_prompt"] == "Base prompt."
+    assert isinstance(result["engine"], LLMEngine)
+    assert result["engine"].model_name == "qwen3"
+
+
+# ── variable substitution in engine section ───────────────────────
+
+
+def test_build_engine_resolves_env_var_in_api_key(monkeypatch):
+    """build_engine resolves ${VAR} in engine.api_key."""
+    monkeypatch.setenv("MY_API_KEY_TEST", "sk-secret")
+    engine = build_engine(
+        {
+            "provider": "ollama",
+            "model": "qwen3",
+            "api_key": "${MY_API_KEY_TEST}",
+        }
+    )
+    assert isinstance(engine, LLMEngine)
+
+
+def test_build_engine_missing_env_var_raises(monkeypatch):
+    """build_engine raises AgentConfigurationError for unset ${VAR}."""
+    monkeypatch.delenv("UNSET_VAR_XYZ", raising=False)
+    with pytest.raises(AgentConfigurationError, match="UNSET_VAR_XYZ"):
+        build_engine(
+            {
+                "provider": "ollama",
+                "model": "qwen3",
+                "api_key": "${UNSET_VAR_XYZ}",
+            }
+        )
