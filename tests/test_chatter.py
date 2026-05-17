@@ -126,6 +126,46 @@ def test_from_yaml_missing_engine(tmp_path):
         Chatter.from_yaml(str(yaml_file))
 
 
+def test_from_yaml_invalid_memory_backend(tmp_path):
+    """Invalid memory backend raises AgentConfigurationError."""
+    yaml_content = (
+        "name: Mem\n"
+        "version: 1\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "system_prompt: Hello.\n"
+        "memory:\n"
+        "    backend: redis\n"
+        "    path: /tmp/mem\n"
+    )
+    yaml_file = tmp_path / "mem.yml"
+    yaml_file.write_text(yaml_content)
+
+    with pytest.raises(AgentConfigurationError, match="backend"):
+        Chatter.from_yaml(str(yaml_file))
+
+
+def test_from_yaml_circular_inheritance(tmp_path):
+    """Circular base_config raises AgentConfigurationError."""
+    (tmp_path / "a.yml").write_text("base_config: b.yml\nname: A\n")
+    (tmp_path / "b.yml").write_text("base_config: a.yml\nname: B\n")
+
+    with pytest.raises(AgentConfigurationError, match="Circular"):
+        Chatter.from_yaml(str(tmp_path / "a.yml"))
+
+
+def test_from_yaml_malformed_yaml(tmp_path):
+    """Malformed YAML raises a YAML parse error."""
+    import yaml
+
+    yaml_file = tmp_path / "bad.yml"
+    yaml_file.write_text("name: Bad\n  unexpected_indent: [unclosed\n")
+
+    with pytest.raises(yaml.YAMLError):
+        Chatter.from_yaml(str(yaml_file))
+
+
 # --- chat() ---
 
 

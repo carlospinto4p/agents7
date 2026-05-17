@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.21.32 - 17th May 2026
+
+- Added unit tests in `tests/test_chatter.py`:
+  - `test_from_yaml_invalid_memory_backend`: invalid backend raises `AgentConfigurationError`.
+  - `test_from_yaml_circular_inheritance`: circular `base_config` raises `AgentConfigurationError`.
+  - `test_from_yaml_malformed_yaml`: malformed YAML raises `yaml.YAMLError`.
+
+
 ### v3.21.31 - 17th May 2026
 
 - Removed deprecated `src/agents7/export.py` re-export shim:
