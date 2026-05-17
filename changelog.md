@@ -1,6 +1,13 @@
 
 ## Changelog - Agents7
 
+### v3.21.36 - 17th May 2026
+
+- Added unit tests:
+  - `tests/test_batch.py`: 3 edge-case tests for `BatchProcessor._chunk_inputs()` (empty list, single item, `requests_per_prompt=1`).
+  - `tests/test_llm_engine.py`: 10 tests for `LLMEngine` initialization, provider lowercasing, fallback wiring, `supports_warmup()`, and `_create_provider()` for all three providers and the unknown-provider error path.
+
+
 ### v3.21.35 - 17th May 2026
 
 - Added unit tests:

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from agents7.agents.batch import BatchProcessor
 from agents7.llm import LLMEngine
 
 from helpers import DUMMY_METRICS, batch_chat_response, make_labeler
@@ -242,3 +243,25 @@ def test_valid_chunks_preserved_around_malformed(mock_chat):
     assert len(results) == 2
     assert results[0].model.value == "a"
     assert results[1].model.value == "c"
+
+
+# ── BatchProcessor._chunk_inputs ──────────────────────────────────────────
+
+
+def test_chunk_inputs_empty_list():
+    """Empty input → empty chunk list."""
+    assert BatchProcessor._chunk_inputs([], requests_per_prompt=5) == []
+
+
+def test_chunk_inputs_single_item():
+    """Single item → one chunk containing that item."""
+    result = BatchProcessor._chunk_inputs(["x"], requests_per_prompt=5)
+    assert result == [["x"]]
+
+
+def test_chunk_inputs_requests_per_prompt_one():
+    """requests_per_prompt=1 → one chunk per item."""
+    result = BatchProcessor._chunk_inputs(
+        ["a", "b", "c"], requests_per_prompt=1
+    )
+    assert result == [["a"], ["b"], ["c"]]
