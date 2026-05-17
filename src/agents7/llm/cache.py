@@ -54,12 +54,6 @@ def create_cache(config: CacheConfig) -> "ResponseCache | SqliteCache":
     return ResponseCache(config)
 
 
-# Cache for serialized output_format dicts, keyed by object id.
-# Safe because schema dicts are created once per agent instance and
-# stay alive for the agent's lifetime, so id() is stable.
-_FMT_CACHE: dict[int, str] = {}
-
-
 class _CacheKeyBuilder:
     """Shared cache key generation logic."""
 
@@ -80,17 +74,6 @@ class _CacheKeyBuilder:
 
         Returns a hex SHA-256 digest.
         """
-        # Canonicalize output_format separately: it is the only field
-        # whose keys can vary in order (Pydantic JSON schema dicts).
-        # All other fields are primitives or lists with stable order.
-        fmt: str | None
-        if isinstance(output_format, dict):
-            fmt_id = id(output_format)
-            if fmt_id not in _FMT_CACHE:
-                _FMT_CACHE[fmt_id] = json.dumps(output_format, sort_keys=True)
-            fmt = _FMT_CACHE[fmt_id]
-        else:
-            fmt = output_format  # str or None — already hashable as-is
         payload = {
             "model_id": model_id,
             "method": method,
@@ -99,10 +82,10 @@ class _CacheKeyBuilder:
             "temperature": temperature,
             "seed": seed,
             "max_tokens": max_tokens,
-            "output_format": fmt,
+            "output_format": output_format,
             "think": think,
         }
-        raw = json.dumps(payload)
+        raw = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(raw.encode()).hexdigest()
 
 

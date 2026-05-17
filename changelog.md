@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.21.29 - 17th May 2026
+
+- Perf: `llm/cache.py` `_CacheKeyBuilder.make_key()`: removed module-level `_FMT_CACHE` dict and pre-serialization of `output_format`; now passes all fields through a single `json.dumps(..., sort_keys=True)` call.
+
+
 ### v3.21.28 - 17th May 2026
 
 - Added Table of Contents to `README.md` with links to all 34 sections and subsections.
