@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, replace
-from typing import Callable
+from typing import Any, Callable
 
 from pydantic import BaseModel, create_model
 from tqdm import tqdm
@@ -578,7 +578,7 @@ class Labeler(BaseAgent):
         messages = self._build_act_messages(input_data)
         return messages, chat_kwargs
 
-    def _preprocess(self, input_data):
+    def _preprocess(self, input_data: Any) -> Any:
         """Apply the preprocessor if set.
 
         :param input_data: Raw input data.

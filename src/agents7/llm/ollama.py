@@ -73,7 +73,9 @@ class OllamaProvider(LLMProvider):
         """Check if the error is due to thinking not supported."""
         return OllamaProvider._THINKING_NOT_SUPPORTED_MSG in str(error)
 
-    def _with_think_fallback(self, fn: Callable, think: bool, kwargs: dict):
+    def _with_think_fallback(
+        self, fn: Callable, think: bool, kwargs: dict
+    ) -> dict:
         """Call ``fn(**kwargs)``, retrying without ``think``
         if the model does not support it.
         """
@@ -87,7 +89,7 @@ class OllamaProvider(LLMProvider):
 
     async def _with_think_fallback_async(
         self, fn: Callable, think: bool, kwargs: dict
-    ):
+    ) -> dict:
         """Async version of `_with_think_fallback`."""
         try:
             return await fn(**kwargs)

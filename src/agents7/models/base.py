@@ -213,7 +213,7 @@ class ClassificationProperty(BaseModel):
                 )
 
     @model_validator(mode="after")
-    def validate_category_reason_link(self):
+    def validate_category_reason_link(self) -> "ClassificationProperty":
         """Ensure reason is valid for the selected category."""
         if not self.CATEGORY_REASONS:
             return self  # No validation if mapping not defined

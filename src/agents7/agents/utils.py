@@ -2,6 +2,7 @@ import asyncio
 import importlib
 import re
 from enum import Enum, StrEnum
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -16,7 +17,7 @@ from agents7.exceptions import (
 _SAFE_MODULE_PATH = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
 
 
-async def run_with_semaphore(coro, sem: asyncio.Semaphore | None):
+async def run_with_semaphore(coro: Any, sem: asyncio.Semaphore | None) -> Any:
     """
     Await a coroutine with optional semaphore concurrency limiting.
     :param coro: The coroutine to await.

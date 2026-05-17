@@ -10,7 +10,7 @@
 
 #### Performance
 
-- [ ] Combine double `json.dumps` in `llm/cache.py:90,105` into a single serialization call per cache key (MED, S)
+- [x] Combine double `json.dumps` in `llm/cache.py:90,105` into a single serialization call per cache key (MED, S)
 
 #### Refactoring
 

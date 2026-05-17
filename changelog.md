@@ -1,6 +1,15 @@
 
 ## Changelog - Agents7
 
+### v3.21.30 - 17th May 2026
+
+- Added return type annotations to previously unannotated public/private methods:
+  - `llm/ollama.py`: `_with_think_fallback()` and `_with_think_fallback_async()` → `dict`
+  - `agents/labeler.py`: `_preprocess()` → `Any`
+  - `agents/utils.py`: `run_with_semaphore()` → `Any`
+  - `models/base.py`: `ClassificationProperty.validate_category_reason_link()` → `"ClassificationProperty"`
+
+
 ### v3.21.29 - 17th May 2026
 
 - Perf: `llm/cache.py` `_CacheKeyBuilder.make_key()`: removed module-level `_FMT_CACHE` dict and pre-serialization of `output_format`; now passes all fields through a single `json.dumps(..., sort_keys=True)` call.
