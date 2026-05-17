@@ -10,9 +10,9 @@
 
 #### Test Coverage
 
-- [ ] Add tests for guard retry loop exhaustion in `agents/guarded.py:506-570`: parse failure on retry, all retries exhausted, `max_guard_retries=0` (HIGH, M)
-- [ ] Add integration tests: `GuardedChatter` with real guard, `Pipeline+GuardedChatter` steps, `SceneChatter` system prompt generation, memory persistence across restarts (HIGH, M)
-- [ ] Add tests for `agents/config_loader.py`: YAML inheritance (`_resolve_inheritance()`), variable substitution, multi-file pipeline configs (HIGH, M)
+- [x] Add tests for guard retry loop exhaustion in `agents/guarded.py:506-570`: parse failure on retry, all retries exhausted, `max_guard_retries=0` (HIGH, M)
+- [x] Add integration tests: `GuardedChatter` with real guard, `Pipeline+GuardedChatter` steps, `SceneChatter` system prompt generation, memory persistence across restarts (HIGH, M)
+- [x] Add tests for `agents/config_loader.py`: YAML inheritance (`_resolve_inheritance()`), variable substitution, multi-file pipeline configs (HIGH, M)
 - [ ] Add edge-case tests for `ResponseCache.make_key()` in `llm/cache.py`: empty messages, `None` values, special characters (HIGH, L)
 - [ ] Add tests for `BenchmarkResult.select_best()`, `TestCase`, `CaseResult` in `model_selection.py` (HIGH, L)
 - [ ] Add tests for `Pipeline.act_in_batch()` edge cases: empty input, all-fail, mixed condition partitioning, mapper failures (MED, M)
