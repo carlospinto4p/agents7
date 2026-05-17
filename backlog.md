@@ -8,15 +8,6 @@
 
 ### Scan — 17th May 2026
 
-#### Performance
-
-- [x] Combine double `json.dumps` in `llm/cache.py:90,105` into a single serialization call per cache key (MED, S)
-
-#### Refactoring
-
-- [x] Add missing return type annotations to `settings.py`, `llm/cache.py`, `llm/base.py`, `llm/ollama.py`, `agents/labeler.py`, `agents/utils.py`, `agents/models/base.py` (MED, S)
-- [x] Schedule removal of deprecated `src/agents7/export.py` re-export shim (LOW, S)
-
 #### Test Coverage
 
 - [ ] Add dedicated unit tests for `eval/metrics.py`: `compute_metrics()`, `accuracy()`, `precision()`, `recall()`, `f1_score()` — currently only report generation is tested (HIGH, M)
