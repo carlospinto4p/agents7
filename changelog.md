@@ -1,6 +1,14 @@
 
 ## Changelog - Agents7
 
+### v3.21.35 - 17th May 2026
+
+- Added unit tests:
+  - `tests/test_cache.py`: edge-case tests for `ResponseCache.make_key()` — `messages=[]` vs `None`, `prompt=None` vs `""`, Unicode/special-character content.
+  - `tests/test_model_selection.py`: additional tests for `TestCase`, `CaseResult`, and `BenchmarkResult` — empty fields, nested input, `passed=False`, run number, immutability.
+  - `tests/test_pipeline.py`: edge-case tests for `Pipeline.act_in_batch()` — empty input, all-fail, mapper failure per item, all-items-skipped-by-condition.
+
+
 ### v3.21.34 - 17th May 2026
 
 - Added unit tests:

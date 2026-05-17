@@ -419,6 +419,131 @@ def test_batch_partial_failure(mock_chat):
     assert results[1].model.greeting == "Hello, Bob!"
 
 
+def test_batch_empty_input():
+    """act_in_batch with empty list returns empty list."""
+    agent = _make_labeler(StepOneOutput)
+    pipeline = Pipeline(steps=[PipelineStep(agent=agent)])
+    results = pipeline.act_in_batch([])
+    assert results == []
+
+
+@patch.object(LLMEngine, "chat")
+def test_batch_all_fail(mock_chat):
+    """All items fail in step 1; step 2 is never called."""
+    mock_chat.side_effect = [
+        {
+            "role": "assistant",
+            "response": "invalid",
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+        {
+            "role": "assistant",
+            "response": "also invalid",
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+    ]
+    agent1 = _make_labeler(StepOneOutput)
+    agent2 = _make_labeler(StepTwoOutput)
+    pipeline = Pipeline(
+        steps=[
+            PipelineStep(agent=agent1, mapper=_step_one_to_step_two),
+            PipelineStep(agent=agent2),
+        ]
+    )
+
+    results = pipeline.act_in_batch([{"text": "a"}, {"text": "b"}])
+
+    assert len(results) == 2
+    assert all(r.success is False for r in results)
+    assert all(r.model is None for r in results)
+    assert mock_chat.call_count == 2  # step 2 never called
+
+
+@patch.object(LLMEngine, "chat")
+def test_batch_mapper_failure_excludes_item(mock_chat):
+    """Mapper failure for one item marks it failed; others continue."""
+    mock_chat.side_effect = [
+        {
+            "role": "assistant",
+            "response": json.dumps({"name": "Alice"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+        {
+            "role": "assistant",
+            "response": json.dumps({"name": "Bob"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+        {
+            "role": "assistant",
+            "response": json.dumps({"greeting": "Hi Bob"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+    ]
+
+    def mapper_fails_for_alice(response: AgentResponse) -> dict:
+        if response.model.name == "Alice":
+            raise RuntimeError("mapper failure")
+        return {"text": f"Hello, {response.model.name}!"}
+
+    agent1 = _make_labeler(StepOneOutput)
+    agent2 = _make_labeler(StepTwoOutput)
+    pipeline = Pipeline(
+        steps=[
+            PipelineStep(agent=agent1, mapper=mapper_fails_for_alice),
+            PipelineStep(agent=agent2),
+        ]
+    )
+
+    results = pipeline.act_in_batch([{"text": "a"}, {"text": "b"}])
+
+    assert len(results) == 2
+    assert results[0].success is False  # Alice failed at mapper
+    assert results[0].model is None
+    assert results[1].success is True  # Bob succeeded
+    assert results[1].model.greeting == "Hi Bob"
+
+
+@patch.object(LLMEngine, "chat")
+def test_batch_all_skipped_by_condition(mock_chat):
+    """When all items skip a step, that step's agent is never called."""
+    mock_chat.side_effect = [
+        {
+            "role": "assistant",
+            "response": json.dumps({"name": "Alice"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+        {
+            "role": "assistant",
+            "response": json.dumps({"name": "Bob"}),
+            "thinking": None,
+            "metrics": DUMMY_METRICS,
+        },
+    ]
+    agent1 = _make_labeler(StepOneOutput)
+    agent2 = _make_labeler(StepTwoOutput)
+    pipeline = Pipeline(
+        steps=[
+            PipelineStep(agent=agent1),
+            PipelineStep(agent=agent2, condition=_always_false),
+        ]
+    )
+
+    results = pipeline.act_in_batch([{"text": "a"}, {"text": "b"}])
+
+    assert len(results) == 2
+    assert results[0].success is True
+    assert results[0].model.name == "Alice"
+    assert results[1].success is True
+    assert results[1].model.name == "Bob"
+    assert mock_chat.call_count == 2  # agent2 never called
+
+
 # --- Pipeline.act_in_batch_async() Tests ---
 
 

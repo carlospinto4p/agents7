@@ -216,6 +216,46 @@ def test_distinct_payloads_produce_distinct_keys():
     assert k_base != ResponseCache.make_key(**{**base, "think": True})
 
 
+def test_make_key_empty_messages_vs_none():
+    """messages=[] and messages=None produce different keys."""
+    k_none = ResponseCache.make_key(
+        model_id="m", method="chat", messages=None
+    )
+    k_empty = ResponseCache.make_key(model_id="m", method="chat", messages=[])
+    assert k_none != k_empty
+
+
+def test_make_key_none_prompt_vs_empty():
+    """prompt=None and prompt='' produce different keys."""
+    k_none = ResponseCache.make_key(model_id="m", method="chat", prompt=None)
+    k_empty = ResponseCache.make_key(model_id="m", method="chat", prompt="")
+    assert k_none != k_empty
+
+
+def test_make_key_special_chars_stable():
+    """Unicode, newlines, and quotes in content give a stable key."""
+    msgs = [{"role": "user", "content": '日本語\n"quoted"'}]
+    k1 = ResponseCache.make_key(model_id="m", method="chat", messages=msgs)
+    k2 = ResponseCache.make_key(model_id="m", method="chat", messages=msgs)
+    assert k1 == k2
+    assert len(k1) == 64  # SHA-256 hex length
+
+
+def test_make_key_special_chars_differ_from_plain():
+    """Special-character content produces a different key than plain ASCII."""
+    k_plain = ResponseCache.make_key(
+        model_id="m",
+        method="chat",
+        messages=[{"role": "user", "content": "hello"}],
+    )
+    k_special = ResponseCache.make_key(
+        model_id="m",
+        method="chat",
+        messages=[{"role": "user", "content": "héllo"}],
+    )
+    assert k_plain != k_special
+
+
 # --- EngineCacheIntegration ---
 
 

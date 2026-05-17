@@ -216,6 +216,22 @@ def test_testcase_frozen():
         tc.input = {"new": "value"}
 
 
+def test_testcase_empty_fields():
+    """TestCase with empty dicts is valid."""
+    tc = TestCase(input={}, expected={})
+    assert tc.input == {}
+    assert tc.expected == {}
+
+
+def test_testcase_nested_input():
+    """TestCase handles nested input dicts."""
+    tc = TestCase(
+        input={"data": {"key": "value"}, "count": 3},
+        expected={"label": "X"},
+    )
+    assert tc.input["data"]["key"] == "value"
+
+
 # --- ModelScore ---
 
 
@@ -240,6 +256,32 @@ def test_benchmarkresult_no_best():
         scores=[],
     )
     assert result.best_model is None
+
+
+def test_benchmarkresult_with_best():
+    """BenchmarkResult stores best model, size, and scores."""
+    score = ModelScore(
+        model_name="small:1b",
+        model_size=1_000_000,
+        passed=True,
+        pass_rate=1.0,
+    )
+    result = BenchmarkResult(
+        best_model="small:1b",
+        best_model_size=1_000_000,
+        scores=[score],
+    )
+    assert result.best_model == "small:1b"
+    assert result.best_model_size == 1_000_000
+    assert len(result.scores) == 1
+    assert result.scores[0].passed is True
+
+
+def test_benchmarkresult_frozen():
+    """BenchmarkResult is immutable."""
+    result = BenchmarkResult(best_model=None, best_model_size=None, scores=[])
+    with pytest.raises(AttributeError):
+        result.best_model = "something"
 
 
 # --- find_best_model ---
@@ -427,6 +469,29 @@ def test_case_result_creation():
     cr = CaseResult(test_case=tc, passed=True, actual={}, run=1)
     assert cr.passed is True
     assert cr.run == 1
+
+
+def test_case_result_failed_with_none_actual():
+    """CaseResult with passed=False and actual=None."""
+    tc = TestCase(input={}, expected={})
+    cr = CaseResult(test_case=tc, passed=False, actual=None, run=1)
+    assert cr.passed is False
+    assert cr.actual is None
+
+
+def test_case_result_run_number():
+    """CaseResult stores run number correctly for multi-run benchmarks."""
+    tc = TestCase(input={}, expected={})
+    cr = CaseResult(test_case=tc, passed=True, actual={"x": 1}, run=3)
+    assert cr.run == 3
+
+
+def test_case_result_frozen():
+    """CaseResult is immutable."""
+    tc = TestCase(input={}, expected={})
+    cr = CaseResult(test_case=tc, passed=True, actual={}, run=1)
+    with pytest.raises(AttributeError):
+        cr.passed = False
 
 
 # --- _benchmark_model ---
