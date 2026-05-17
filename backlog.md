@@ -10,5 +10,5 @@
 
 #### Test Coverage
 
-- [ ] Add edge-case tests for `BatchProcessor._chunk_inputs()` in `agents/batch.py:212-222`: `requests_per_prompt=1`, single item, empty list (MED, M)
-- [ ] Add tests for `LLMEngine` initialization and provider fallback in `llm/base.py` (MED, M)
+- [x] Add edge-case tests for `BatchProcessor._chunk_inputs()` in `agents/batch.py:212-222`: `requests_per_prompt=1`, single item, empty list (MED, M)
+- [x] Add tests for `LLMEngine` initialization and provider fallback in `llm/base.py` (MED, M)
