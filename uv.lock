@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -15,8 +15,8 @@ resolution-markers = [
 
 [[package]]
 name = "agents7"
-version = "3.21.36"
-source = { virtual = "." }
+version = "3.21.37"
+source = { editable = "." }
 dependencies = [
     { name = "ollama" },
     { name = "pydantic" },

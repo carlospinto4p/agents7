@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+### v3.21.37 - 31st May 2026
+
+- Added `[build-system]` to `pyproject.toml`; `uv sync --all-extras` now handles the editable install automatically.
+
+
 ### v3.21.36 - 17th May 2026
 
 - Added unit tests:
