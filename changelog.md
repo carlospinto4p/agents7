@@ -1,6 +1,10 @@
 
 ## Changelog - Agents7
 
+### v3.21.38 - 3rd June 2026
+
+- Synced `.claude/rules/testing.md` from the programme registry: added the SQLite-backed fixtures pointer to the session-scoped template pattern (see the shared `testing-python` rule).
+
 ### v3.21.37 - 31st May 2026
 
 - Added `[build-system]` to `pyproject.toml`; `uv sync --all-extras` now handles the editable install automatically.
