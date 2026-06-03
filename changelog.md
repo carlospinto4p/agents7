@@ -1,6 +1,10 @@
 
 ## Changelog - Agents7
 
+### v3.21.39 - 4th June 2026
+
+- Synced `.claude/rules/committing.md` from the programme registry: step 6 now scopes `uv.lock` regeneration to code-related bumps only — non-code patch bumps (`.claude/` config, docs, changelog, rule syncs) skip `uv lock`.
+
 ### v3.21.38 - 3rd June 2026
 
 - Synced `.claude/rules/testing.md` from the programme registry: added the SQLite-backed fixtures pointer to the session-scoped template pattern (see the shared `testing-python` rule).
