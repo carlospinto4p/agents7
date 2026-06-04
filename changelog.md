@@ -1,6 +1,11 @@
 
 ## Changelog - Agents7
 
+
+### v3.21.40 - 4th June 2026
+
+- Rotated changelog: archived 7 entries to `changelog/2026.md`.
+
 ### v3.21.39 - 4th June 2026
 
 - Synced `.claude/rules/committing.md` from the programme registry: step 6 now scopes `uv.lock` regeneration to code-related bumps only — non-code patch bumps (`.claude/` config, docs, changelog, rule syncs) skip `uv lock`.
@@ -230,73 +235,5 @@
   - `detector.py`: moved `from_yaml()` to base class using `cls(**config)` and `typing.Self` return type — subclasses now inherit it automatically.
   - `classifier.py`: removed redundant `from_yaml()` override and `load_yaml_settings` import.
   - `regressor.py`: removed redundant `from_yaml()` override and `load_yaml_settings` import.
-
-
-### v3.21.9 - 9th May 2026
-
-- Refactored `src/agents7/agents/`:
-  - `labeler.py`: replaced `self._set_attr()` calls in `_initialize_parser` and `_initialize_handlers` with `object.__setattr__()` to make the frozen-bypass explicit at each call site.
-  - `detector.py`: same replacement in `__post_init__`.
-  - `classifier.py`: same replacement in `__post_init__`.
-- Refactored `integration_tests/`:
-  - `test_multi_model.py`: narrowed `except Exception` to `except (OSError, subprocess.TimeoutExpired)` in `is_model_available`.
-  - `conftest.py`: narrowed `except Exception` to `except (OSError, subprocess.TimeoutExpired)` in `_check_ollama`.
-
-
-### v3.21.8 - 9th May 2026
-
-- Performance improvements:
-  - `memory.py`: Use `OrderedDict.popitem(last=False)` for O(1) LRU eviction (was `pop(next(iter())))`); use `OrderedDict` for `_cache`.
-  - `chatter.py`: Avoid redundant history scan when `memory` is `None`; use local `history` variable for turn count.
-  - `chatter_config_loader.py`: Eliminate intermediate string in `_derive_persona_summary()` — build one list and `join` once.
-  - `agents7_ui/Runner.svelte`: Parallelize batch requests with 4-slot semaphore + `Promise.allSettled()`; combine three `$derived` filter passes into single `$derived.by()` loop; replace two `results.filter()` calls in `runBatch()` with one loop.
-- Fixed global `format-python.sh` hook to use `uvx ruff` instead of `uv run ruff`.
-
-
-### v3.21.7 - 9th May 2026
-
-- Updated `.claude/rules/committing.md` to v1.1: added a
-  "When to Skip Tests" section with an explicit allowlist
-  (markdown, version bump, lock file, `.claude/` config,
-  `CLAUDE.md`) of diffs where tests can be safely skipped.
-  Canonical source for the rule — pushed to 15 linked
-  projects via `push_to_projects.py`.
-
-
-### v3.21.6 - 9th May 2026
-
-- Added unit tests for scan-identified coverage gaps:
-  - `src/agents7/model_selection.py`: `_benchmark_model` now raises `ValueError` when `runs < 1`; updated `tests/test_model_selection.py` accordingly.
-  - `tests/test_memory.py`: 4 new `SqliteMemory` edge-case tests — concurrent same-conversation writes, `clear()` on missing id, corrupted DB file.
-  - `tests/test_parsing.py`: 4 new `_fix_malformed_json()` pass-through tests — trailing comma, unclosed bracket, missing quotes, whitespace stripping.
-  - `tests/test_chatter.py`: 5 new edge-case tests — chat after `reset()`, `max_history=0` behaviour, `conversation_id` isolation in memory, very long messages.
-  - `tagger_agent/tests/test_rules_classifier.py`: 6 new tests asserting `confidence`, `rule`, and `detail` fields for name lookup, keyword substring, and fallback rules.
-
-
-### v3.21.5 - 9th May 2026
-
-- Added unit tests:
-  - `tests/test_base_agent.py`: 12 tests for `describe()`, `_set_attr()`, and `resolved_system_prompt` edge cases.
-  - `tests/test_agent_streaming.py`: 11 tests for `AgentStreamResult.from_failed()`, `AgentAsyncStreamResult.from_failed()`, and Detector streaming.
-  - `tests/test_models_base.py`: 18 tests for `LLMMetrics`, `AgentResponse`, `ChatResponse`, `Property`, `ClassificationProperty`, and `_extend_enum_with_not_applicable()`.
-  - `tests/test_metrics.py`: 14 new tests for timing stats, `_build_eval_result`, `_extract_fields`, `_fallback_sequential`, async batch failure fallback, and row-level async errors.
-
-
-### v3.21.4 - 9th May 2026
-
-- Added unit tests:
-  - `tests/test_parsing.py`: 16 tests for `ResponseParser.parse()`, `_fix_malformed_json()`, enum name fallback, and `run_validators()`.
-  - `tests/test_parse_retry.py`: 6 direct `ParseRetryHandler` unit tests (zero retries, success, exhaustion, temperature override, async).
-  - `tests/test_dispatcher.py`: 10 tests for `EngineDispatcher` — cache hit/miss, fallback, cost injection, async, timeout.
-
-
-### v3.21.3 - 9th May 2026
-
-- Refactored `src/agents7/agents/`:
-  - `classifier.py`: `_extra_prompt_sections()` delegates NOT_APPLICABLE guidance to `super()`, eliminating duplication with `Detector`.
-  - `export.py`: Added `DeprecationWarning`; canonical import location is `agents7.eval.export`.
-- Updated `tests/`:
-  - `test_eval_report.py`, `test_export_dataframe.py`: Switched to `agents7.eval.export` directly.
-  - `test_export.py`: Suppressed deprecation warning via `warnings.filterwarnings`.
 
 
