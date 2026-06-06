@@ -1002,7 +1002,7 @@ df = export_dataframe(responses, fields=["category", "reason"])
 
 ### Evaluation Metrics
 
-The `agents7.metrics` module provides evaluation primitives usable without Streamlit. Run an agent against labeled data and compute accuracy, per-field metrics, and confusion matrices.
+The `agents7.metrics` module provides headless evaluation primitives. Run an agent against labeled data and compute accuracy, per-field metrics, and confusion matrices.
 
 `run_evaluation` uses `act_in_batch()` internally for efficient processing. If the batch fails, it falls back to sequential `act()` calls so individual errors don't break the entire evaluation. An async variant `run_evaluation_async` is also available.
 

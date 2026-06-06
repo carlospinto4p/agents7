@@ -1,6 +1,6 @@
 """Agent evaluation metrics.
 
-Provides evaluation primitives usable without Streamlit:
+Provides headless evaluation primitives:
 `EvalResult`, `run_evaluation`, `run_evaluation_async`,
 `compute_metrics`, and `build_confusion_matrix`.
 """
