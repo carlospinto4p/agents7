@@ -5,13 +5,66 @@ hierarchy. Unlike the structured-output branch (Labeler,
 Detector, Classifier, Regressor), Chatter returns free-form
 text and maintains message history across turns.
 
+```mermaid
+classDiagram
+    direction LR
+
+    BaseAgent <|-- Chatter
+    BaseAgent <|-- Labeler
+    Labeler <|-- Detector
+    Detector <|-- ContextGuard
+
+    Chatter <|-- PersonalityChatter
+    PersonalityChatter <|-- SceneChatter
+    Chatter <|-- GuardedChatter
+    GuardedChatter <|-- GuardedSceneChatter
+
+    Chatter o-- "0..1" Persona : persona
+    Chatter o-- "0..1" Scene : scene
+    GuardedChatter *-- "1" ContextGuard : guard
+    ContextGuard ..> GuardVerdict : returns
+
+    class Chatter {
+      +chat() ChatResponse
+      -history
+      persona / scene optional
+    }
+    class PersonalityChatter {
+      persona required
+    }
+    class SceneChatter {
+      persona + scene required
+    }
+    class GuardedChatter {
+      guard required
+      max_guard_retries
+      guard_context_turns
+    }
+    class GuardedSceneChatter {
+      persona + scene + guard
+    }
+    class ContextGuard {
+      persona_summary
+      +act() GuardVerdict
+    }
+    class GuardVerdict {
+      value : bool
+      reason : GuardReason
+      fix : str
+    }
 ```
-BaseAgent
-  ├── Labeler → Detector → Classifier / Regressor
-  │                └── ContextGuard
-  └── Chatter → PersonalityChatter → SceneChatter
-                                    → GuardedChatter
-```
+
+The chatter branch has two parallel sub-branches:
+
+- **Persona / scene as enforcement** — `PersonalityChatter`
+  requires a `Persona`; `SceneChatter` requires both a `Persona`
+  and a `Scene`. These are the same composition plugins the base
+  `Chatter` already accepts optionally, just made mandatory.
+- **Guarding** — `GuardedChatter` extends `Chatter` directly
+  (not `PersonalityChatter`) and adds a `ContextGuard`.
+  `GuardedSceneChatter` is the convergence point: persona +
+  scene + guard. Pass `persona` and `scene` to either guarded
+  class as ordinary composition plugins.
 
 
 ## Quick start
@@ -423,10 +476,12 @@ Load with `SceneChatter.from_yaml("thomas.yml")`.
 
 ## GuardedChatter
 
-Extends `PersonalityChatter` with a built-in `ContextGuard`
+Extends `Chatter` with a built-in `ContextGuard`
 that validates every response before it enters conversation
 history. Protects against prompt injection, character breaks,
-and off-topic responses.
+and off-topic responses. Pass `persona` (and optionally `scene`)
+as composition plugins — the same way the base `Chatter` accepts
+them.
 
 ### How it works
 
@@ -587,6 +642,82 @@ structured output mode (as of v0.20.2).
 Each guarded turn costs at least 2 LLM calls (chatter +
 guard). If retries happen, up to `2 + max_guard_retries`
 calls per turn.
+
+
+## GuardedSceneChatter
+
+Combines `SceneChatter`'s scene-based role-play framing with
+`GuardedChatter`'s response guard. It extends `GuardedChatter`
+and adds a required `Scene`, so the system prompt is
+auto-generated from **both** the persona and the scene, and
+every reply is validated by the guard.
+
+This is the convergence of all three concepts — persona, scene,
+and guard — in one agent.
+
+### Scene-aware guarding
+
+When built from YAML, the guard's `persona_summary` is
+automatically enriched with scene context (setting, situation,
+and rules) so the guard can flag responses that violate scene
+rules as `OFF_TOPIC`. The guard prompt's "see Scene rules above"
+references exactly this injected context.
+
+> **Caveat (Python construction):** the scene enrichment of the
+> guard happens in the YAML loader (`_derive_persona_summary`).
+> If you construct a `GuardedSceneChatter` directly in Python you
+> must pass the scene context into the guard's `persona_summary`
+> yourself — the `scene` field on the chatter does not propagate
+> to the guard automatically. Prefer `from_yaml` for scene-aware
+> guarding.
+
+### YAML configuration
+
+```yaml
+name: guarded-thomas
+version: 1
+agent_type: guarded_scene_chatter
+engine:
+    provider: ollama
+    model: gemma4:e4b
+persona:
+    full_name: Old Thomas
+    occupation: tavern keeper
+    personality:
+        - gruff
+        - shrewd
+scene:
+    setting: A medieval tavern at night
+    situation: The tavern is about to close.
+    time_period: Medieval England, 14th century
+    rules:
+        - No knowledge of anything after the 14th century.
+        - Suspicious of strangers.
+    goal: Close the tavern and get everyone out.
+guard:
+    engine:
+        provider: ollama
+        model: gemma4:e4b
+    # persona_summary auto-derived from persona + scene
+max_guard_retries: 2
+guard_context_turns: 3
+```
+
+```python
+from agents7.agents.guarded_scene import GuardedSceneChatter
+
+agent = GuardedSceneChatter.from_yaml("guarded_thomas.yml")
+```
+
+### Fields
+
+Inherits all fields from `GuardedChatter` (`guard`,
+`max_guard_retries`, `guard_context_turns`, plus the base
+`Chatter` fields) and adds:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `scene` | `Scene` | empty `Scene` | The scenario definition |
 
 
 ## Chatter vs Labeler

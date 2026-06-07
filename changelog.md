@@ -3,6 +3,18 @@
 
 
 
+### v3.21.43 - 7th June 2026
+
+- Updated `docs/chatter.md`:
+  - Replaced the stale ASCII agent hierarchy with a Mermaid
+    `classDiagram` showing inheritance plus persona/scene/guard
+    composition.
+  - Corrected `GuardedChatter` to extend `Chatter` (not
+    `PersonalityChatter`).
+  - Added a `GuardedSceneChatter` section, including the
+    YAML-only scene enrichment of the guard's `persona_summary`.
+
+
 ### v3.21.42 - 7th June 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
