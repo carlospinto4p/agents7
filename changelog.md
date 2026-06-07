@@ -3,6 +3,26 @@
 
 
 
+### v3.25.0 - 7th June 2026
+
+- Added language-aware forbidden vocabulary to the guard:
+  - `ContextGuard.forbidden_terms`: list injected into the
+    prompt (via a `$forbidden_terms` placeholder), defaulting
+    to the previous bilingual ES/EN list so the default prompt
+    is byte-identical.
+  - `forbidden_terms_for_language()` in `agents/context_guard.py`:
+    starter lists for Spanish, English, French, German,
+    Portuguese, Italian; unknown/empty falls back to the
+    default.
+  - YAML loaders derive `forbidden_terms` from
+    `persona.language` unless `guard.forbidden_terms` is set;
+    `ContextGuard.from_yaml` accepts the field.
+  - `GuardedChatter._add_feedback` now lists the guard's
+    `forbidden_terms` instead of a hardcoded Spanish set.
+- Updated `docs/chatter.md`: documented language-aware
+  forbidden vocabulary.
+
+
 ### v3.24.1 - 7th June 2026
 
 - Updated `Chatter.__post_init__`: a non-empty `scene` with no

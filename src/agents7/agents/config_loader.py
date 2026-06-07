@@ -488,6 +488,7 @@ def _build_guard(
     from agents7.agents.context_guard import (
         ContextGuard,
         _PLACEHOLDER,
+        forbidden_terms_for_language,
     )
 
     guard_raw = raw.get("guard", {})
@@ -505,6 +506,14 @@ def _build_guard(
         "system_prompt": _PLACEHOLDER,
         "persona_summary": persona_summary,
     }
+    # Explicit forbidden_terms win; otherwise derive from the
+    # persona's language (defaulting to the bilingual list).
+    if "forbidden_terms" in guard_raw:
+        guard_kwargs["forbidden_terms"] = list(guard_raw["forbidden_terms"])
+    elif getattr(persona, "language", ""):
+        guard_kwargs["forbidden_terms"] = forbidden_terms_for_language(
+            persona.language
+        )
     if "think" in guard_raw:
         guard_kwargs["think"] = bool(guard_raw["think"])
     return ContextGuard(**guard_kwargs)

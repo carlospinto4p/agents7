@@ -148,6 +148,65 @@ def test_context_guard_prompt_fix_vocabulary_constraint():
     assert "fix`` must NOT use prohibited vocabulary" in guard.system_prompt
 
 
+# --- Forbidden terms ---
+
+
+def test_default_forbidden_terms_in_prompt():
+    """Default (bilingual) forbidden terms render into the prompt."""
+    guard = make_guard()
+    assert '"modelo de lenguaje"' in guard.system_prompt
+    assert '"language model"' in guard.system_prompt
+    assert '"IA"' in guard.system_prompt
+
+
+def test_custom_forbidden_terms_replace_default():
+    """Custom forbidden_terms replace the default vocab line.
+
+    The validated few-shot examples still mention default terms
+    (they are intentionally untouched); only the parameterized
+    vocabulary line reflects the custom list.
+    """
+    guard = make_guard(forbidden_terms=["robot", "android"])
+    assert (
+        'Uses AI/LLM-specific vocabulary: "robot", "android",'
+        in guard.system_prompt
+    )
+    assert (
+        'Uses AI/LLM-specific vocabulary: "IA", "AI"'
+        not in guard.system_prompt
+    )
+
+
+def test_forbidden_terms_for_language_known():
+    """English derivation omits Spanish-only terms."""
+    from agents7.agents.context_guard import forbidden_terms_for_language
+
+    terms = forbidden_terms_for_language("English")
+    assert "AI" in terms
+    assert "modelo de lenguaje" not in terms
+
+
+def test_forbidden_terms_for_language_unknown_falls_back():
+    """Unknown or empty language falls back to the bilingual default."""
+    from agents7.agents.context_guard import (
+        _DEFAULT_FORBIDDEN_TERMS,
+        forbidden_terms_for_language,
+    )
+
+    assert forbidden_terms_for_language("Klingon") == _DEFAULT_FORBIDDEN_TERMS
+    assert forbidden_terms_for_language("") == _DEFAULT_FORBIDDEN_TERMS
+
+
+def test_forbidden_terms_for_language_spanish_matches_default():
+    """Spanish derivation is byte-identical to the default list."""
+    from agents7.agents.context_guard import (
+        _DEFAULT_FORBIDDEN_TERMS,
+        forbidden_terms_for_language,
+    )
+
+    assert forbidden_terms_for_language("Spanish") == _DEFAULT_FORBIDDEN_TERMS
+
+
 def test_context_guard_custom_prompt():
     """Custom system_prompt is preserved, not overwritten."""
     guard = make_guard(system_prompt="Custom guard prompt.")

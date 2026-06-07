@@ -676,8 +676,8 @@ class GuardedChatter(Chatter):
             "recent_history": recent,
         }
 
-    @staticmethod
     def _add_feedback(
+        self,
         messages: list[dict[str, str]],
         rejected_text: str,
         verdict: GuardVerdict,
@@ -690,12 +690,12 @@ class GuardedChatter(Chatter):
         """
         hint = ""
         if verdict.reason == GuardReason.BROKE_CHARACTER:
+            terms = ", ".join(self.guard.forbidden_terms)
             hint = (
-                " Do NOT use any AI/LLM vocabulary "
-                "(IA, AI, modelo, chatbot, programado, "
-                "language model, etc.) — not even to "
-                "deny it. Express confusion or redirect "
-                "naturally as your character would."
+                f" Do NOT use any AI/LLM vocabulary "
+                f"({terms}, etc.) — not even to "
+                f"deny it. Express confusion or redirect "
+                f"naturally as your character would."
             )
         elif verdict.reason == GuardReason.PROMPT_INJECTION:
             hint = (

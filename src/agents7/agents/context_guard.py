@@ -50,6 +50,97 @@ class GuardVerdict(Property[bool]):
     )
 
 
+# Default AI/LLM vocabulary the guard flags as a character
+# break. The list is bilingual (Spanish + English) to preserve
+# the benchmark-validated default behaviour; rendered into the
+# guard prompt via the ``$forbidden_terms`` placeholder.
+_DEFAULT_FORBIDDEN_TERMS = [
+    "IA",
+    "AI",
+    "language model",
+    "modelo de lenguaje",
+    "chatbot",
+    "assistant",
+    "programado",
+    "programmed",
+    "trained",
+]
+
+# Starter per-language vocabulary lists. Unknown languages (and
+# Spanish) fall back to the bilingual default so existing
+# Spanish/unspecified agents are unchanged. Extend per agent via
+# the ``forbidden_terms`` field rather than editing this map.
+_FORBIDDEN_TERMS_BY_LANGUAGE = {
+    "spanish": _DEFAULT_FORBIDDEN_TERMS,
+    "english": [
+        "AI",
+        "language model",
+        "chatbot",
+        "assistant",
+        "programmed",
+        "trained",
+        "neural network",
+        "artificial intelligence",
+    ],
+    "french": [
+        "IA",
+        "intelligence artificielle",
+        "modèle de langage",
+        "chatbot",
+        "assistant",
+        "programmé",
+        "entraîné",
+    ],
+    "german": [
+        "KI",
+        "künstliche Intelligenz",
+        "Sprachmodell",
+        "Chatbot",
+        "Assistent",
+        "programmiert",
+        "trainiert",
+    ],
+    "portuguese": [
+        "IA",
+        "inteligência artificial",
+        "modelo de linguagem",
+        "chatbot",
+        "assistente",
+        "programado",
+        "treinado",
+    ],
+    "italian": [
+        "IA",
+        "intelligenza artificiale",
+        "modello linguistico",
+        "chatbot",
+        "assistente",
+        "programmato",
+        "addestrato",
+    ],
+}
+
+
+def forbidden_terms_for_language(language: str) -> list[str]:
+    """Return the AI-vocabulary list for a persona language.
+
+    Falls back to the bilingual default for unknown or empty
+    languages so existing agents keep their validated behaviour.
+
+    :param language: A persona language (e.g. ``"English"``).
+    :return: A new list of forbidden terms for that language.
+    """
+    key = language.strip().lower()
+    return list(
+        _FORBIDDEN_TERMS_BY_LANGUAGE.get(key, _DEFAULT_FORBIDDEN_TERMS)
+    )
+
+
+def _render_forbidden_terms(terms: list[str]) -> str:
+    """Render terms as a quoted, comma-separated string."""
+    return ", ".join(f'"{term}"' for term in terms)
+
+
 _DEFAULT_GUARD_PROMPT = """\
 You are a strict response quality guard for a roleplay \
 character. Your job is to REJECT bad responses.
@@ -78,9 +169,7 @@ refuses, or is confused by the request is IN_CHARACTER \
 character reacted to or mentioned the request.
 2. **BROKE_CHARACTER** — the response contains ANY of \
 these signals:
-   - Uses AI/LLM-specific vocabulary: "IA", "AI", \
-"language model", "modelo de lenguaje", "chatbot", \
-"assistant", "programado", "programmed", "trained", \
+   - Uses AI/LLM-specific vocabulary: $forbidden_terms, \
 or similar — even when denying it.
    - Says "I am programmed to", "I was designed to", \
 "my instructions say", or similar.
@@ -228,6 +317,11 @@ class ContextGuard(Detector):
     :param persona_summary: One-line character description
         used in the guard prompt (e.g. ``"David Garcia,
         Spanish journalist, curious and empathetic"``).
+    :param forbidden_terms: AI/LLM vocabulary the guard flags
+        as a character break, injected into the prompt. Defaults
+        to a bilingual (Spanish + English) list. For other
+        languages set this explicitly, or let the YAML loader
+        derive it from ``persona.language``.
     """
 
     persona_summary: str = field(
@@ -236,6 +330,10 @@ class ContextGuard(Detector):
     )
     output_model: type[Property] = field(
         default=GuardVerdict,
+        kw_only=True,
+    )
+    forbidden_terms: list[str] = field(
+        default_factory=lambda: list(_DEFAULT_FORBIDDEN_TERMS),
         kw_only=True,
     )
 
@@ -249,6 +347,9 @@ class ContextGuard(Detector):
             prompt = _DEFAULT_GUARD_PROMPT.replace(
                 "$persona_summary",
                 self.persona_summary,
+            ).replace(
+                "$forbidden_terms",
+                _render_forbidden_terms(self.forbidden_terms),
             )
             self._set_attr("system_prompt", prompt)
         super().__post_init__()
@@ -268,8 +369,8 @@ class ContextGuard(Detector):
     ) -> "ContextGuard":
         """Create a ContextGuard from a YAML config file.
 
-        Extends the standard Detector YAML schema with
-        an optional ``persona_summary`` field.
+        Extends the standard Detector YAML schema with optional
+        ``persona_summary`` and ``forbidden_terms`` fields.
 
         :param file_path: Path to the YAML file.
         :return: A configured ContextGuard instance.
@@ -278,6 +379,8 @@ class ContextGuard(Detector):
         raw = _resolve_inheritance(file_path)
         if persona_summary := raw.get("persona_summary"):
             config["persona_summary"] = persona_summary
+        if forbidden_terms := raw.get("forbidden_terms"):
+            config["forbidden_terms"] = list(forbidden_terms)
         return ContextGuard(**config)
 
 

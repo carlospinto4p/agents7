@@ -1006,6 +1006,78 @@ def test_broke_character_hint_in_feedback(
     assert "AI/LLM" in feedback
 
 
+# --- Forbidden terms (language-aware) ---
+
+
+def test_add_feedback_uses_guard_forbidden_terms():
+    """BROKE_CHARACTER feedback lists the guard's forbidden terms."""
+    agent = make_guarded_chatter(
+        guard=make_guard(
+            persona_summary=PERSONA_SUMMARY,
+            forbidden_terms=["zzzbot", "qqqmodel"],
+        ),
+    )
+    verdict = GuardVerdict(
+        value=False,
+        reason=GuardReason.BROKE_CHARACTER,
+        fix=None,
+    )
+    messages = agent._add_feedback([], "rejected text", verdict)
+    feedback = messages[-1]["content"]
+    assert "zzzbot" in feedback
+    assert "qqqmodel" in feedback
+
+
+def test_from_yaml_derives_forbidden_terms_from_language(tmp_path):
+    """Guard forbidden_terms are derived from persona.language."""
+    yaml_text = """
+name: guarded-en
+version: 1
+engine:
+  provider: ollama
+  model: qwen3:4b
+persona:
+  full_name: Jane Doe
+  language: English
+guard:
+  engine:
+    provider: ollama
+    model: qwen3:4b
+"""
+    path = tmp_path / "guarded_en.yml"
+    path.write_text(yaml_text, encoding="utf-8")
+
+    agent = GuardedChatter.from_yaml(str(path))
+    assert "AI" in agent.guard.forbidden_terms
+    assert "modelo de lenguaje" not in agent.guard.forbidden_terms
+
+
+def test_from_yaml_explicit_forbidden_terms_win(tmp_path):
+    """Explicit guard.forbidden_terms override language derivation."""
+    yaml_text = """
+name: guarded-custom
+version: 1
+engine:
+  provider: ollama
+  model: qwen3:4b
+persona:
+  full_name: Jane Doe
+  language: English
+guard:
+  engine:
+    provider: ollama
+    model: qwen3:4b
+  forbidden_terms:
+    - robot
+    - android
+"""
+    path = tmp_path / "guarded_custom.yml"
+    path.write_text(yaml_text, encoding="utf-8")
+
+    agent = GuardedChatter.from_yaml(str(path))
+    assert agent.guard.forbidden_terms == ["robot", "android"]
+
+
 # --- Parse failure on retry ---
 
 

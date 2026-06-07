@@ -516,6 +516,36 @@ The guard's system prompt is auto-generated from a
 the LLM to check for prompt injection, character breaks,
 and off-topic responses.
 
+#### Forbidden vocabulary (language-aware)
+
+The AI/LLM vocabulary the guard treats as a character break
+is no longer hardcoded. `ContextGuard` takes a
+`forbidden_terms` list, injected into the prompt; it defaults
+to a bilingual (Spanish + English) list — byte-identical to
+the previous hardcoded prompt, so existing agents are
+unchanged. The retry feedback to the chatter uses the same
+list.
+
+When loading from YAML, if `guard.forbidden_terms` is not set,
+the list is derived from `persona.language` (starter lists ship
+for Spanish, English, French, German, Portuguese, Italian;
+unknown or unset languages fall back to the bilingual default).
+Set `guard.forbidden_terms` explicitly to override:
+
+```yaml
+persona:
+    language: English   # → derives English forbidden terms
+guard:
+    forbidden_terms:    # ...or pin them explicitly
+        - AI
+        - language model
+        - chatbot
+```
+
+The few-shot examples in the guard prompt are intentionally
+left as-is (they are benchmark-validated); only the
+vocabulary line and retry feedback are parameterized.
+
 ### Usage (Python)
 
 ```python
