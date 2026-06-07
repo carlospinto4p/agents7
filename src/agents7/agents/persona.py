@@ -296,9 +296,8 @@ def _build_scene_system_prompt(
     """Build the full role-play system prompt.
 
     Combines persona and scene into a single prompt string.
-    Shared by `SceneChatter`, `GuardedSceneChatter`, and
-    `Chatter._build_plugin_prompt()` when both plugins are
-    set.
+    Shared by `Chatter._build_plugin_prompt()` and
+    `GuardedSceneChatter` when both plugins are set.
 
     :param persona: The character definition.
     :param scene: The scenario definition.

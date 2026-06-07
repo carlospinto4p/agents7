@@ -1,14 +1,17 @@
 """
-Example: Contextual Roleplay with SceneChatter
+Example: Contextual Roleplay with a scene-driven Chatter
 
 Demonstrates how to place a character in a specific scene.
 Old Thomas is a medieval tavern keeper trying to close up
 for the night. He has no knowledge of anything modern, is
 suspicious of strangers, and won't serve anyone who can't
 pay.
+
+A `persona:` + `scene:` section in the YAML auto-generates a
+role-play system prompt — no dedicated subclass is needed.
 """
 
-from agents7.agents.scene import SceneChatter
+from agents7.agents import Chatter
 
 
 def _ask(agent, question: str) -> None:
@@ -22,7 +25,7 @@ def _ask(agent, question: str) -> None:
 
 
 if __name__ == "__main__":
-    thomas = SceneChatter.from_yaml("../configs/demo_scene_chatter.yml")
+    thomas = Chatter.from_yaml("../configs/demo_scene_chatter.yml")
 
     print(f"Agent: {thomas.name} (v{thomas.version})")
     print(f"Model: {thomas.engine.model_id}")

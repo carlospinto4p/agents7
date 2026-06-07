@@ -3,6 +3,27 @@
 
 
 
+### v4.0.0 - 7th June 2026
+
+- Removed `PersonalityChatter` and `SceneChatter`. Persona and
+  scene are composition plugins on the base `Chatter`, so the
+  enforcement-via-subclass idiom was redundant.
+  - Use `Chatter(persona=...)` / `Chatter(persona=..., scene=...)`
+    or `Chatter.from_yaml(...)` with `persona:` / `scene:`
+    sections instead.
+  - `Chatter.from_yaml` now parses optional `persona`, `scene`,
+    and `extra_instructions` sections and auto-generates the
+    system prompt (no manual `system_prompt` needed when a
+    persona is present).
+  - Deleted `agents/scene.py`; `agents/personality.py` now only
+    re-exports `Persona` / `Scene` / `PhysicalTraits` for
+    backward-compatible imports.
+  - Dropped `PersonalityChatter` / `SceneChatter` from the public
+    API (`agents7.agents`).
+- Updated docs (`docs/chatter.md`, `docs/design.md`,
+  `README.md`, `examples/`) to the persona/scene plugin idiom.
+
+
 ### v3.26.0 - 7th June 2026
 
 - Updated `GuardedChatter` fix fallback: when retries are

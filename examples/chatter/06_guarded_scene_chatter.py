@@ -1,7 +1,7 @@
 """
 Example: GuardedSceneChatter (Scene + ContextGuard)
 
-Combines SceneChatter's scene-based role-play framing with
+Combines scene-based role-play framing with
 GuardedChatter's response guard. David García is a Spanish
 journalist meeting an anonymous source at a café in Madrid —
 the scene frames the conversation, the guard catches prompt

@@ -40,10 +40,9 @@ BaseAgent (abstract — name, version, engine, system_prompt)
 │           ├── Classifier (category + reason)
 │           ├── Regressor (numeric value + reason)
 │           └── ContextGuard (response validation)
-└── Chatter (multi-turn conversation)
-      └── PersonalityChatter (roleplay with Persona)
-            ├── SceneChatter (+ Scene context/scenario)
-            └── GuardedChatter (+ ContextGuard pipeline)
+└── Chatter (multi-turn conversation; optional persona + scene)
+      └── GuardedChatter (+ ContextGuard pipeline)
+            └── GuardedSceneChatter (persona + scene + guard)
 ```
 
 The tree has two branches: **Labeler** for structured data

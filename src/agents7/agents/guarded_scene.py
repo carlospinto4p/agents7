@@ -1,7 +1,7 @@
 """Scene-aware conversational agent with context guard.
 
-`GuardedSceneChatter` combines `SceneChatter`'s scene-based
-role-play framing with `GuardedChatter`'s response guard.
+`GuardedSceneChatter` combines scene-based role-play framing
+(a `Persona` + `Scene`) with `GuardedChatter`'s response guard.
 Every reply is validated by the guard, retried on rejection,
 and optionally replaced by the guard's suggested fix — all
 while staying in character within the scene.
@@ -62,7 +62,7 @@ class GuardedSceneChatter(GuardedChatter):
         """Create from a YAML configuration file.
 
         Extends the `GuardedChatter` YAML schema with a
-        ``scene`` section (same structure as `SceneChatter`).
+        ``scene`` section.
 
         :param file_path: Path to the YAML file.
         :return: A `GuardedSceneChatter` instance.

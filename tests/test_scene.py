@@ -1,12 +1,13 @@
-"""Unit tests for Scene and SceneChatter (no LLM required)."""
+"""Unit tests for Scene and scene-driven Chatter.
+
+`SceneChatter` was removed in v4.0.0; scene behaviour now lives
+on the base `Chatter` via the optional `persona` + `scene`
+composition plugins.
+"""
 
 from unittest.mock import patch
 
-from agents7.agents.personality import (
-    Persona,
-    Scene,
-)
-from agents7.agents.scene import SceneChatter
+from agents7.agents import Chatter, Persona, Scene
 from agents7.llm import LLMEngine
 
 from helpers import DUMMY_METRICS, ENGINE
@@ -99,7 +100,7 @@ def test_scene_from_dict_empty():
     assert scene.rules == []
 
 
-# --- SceneChatter ---
+# --- Chatter with persona + scene plugins ---
 
 
 def _chat_response(text: str = "Hello!") -> dict:
@@ -112,10 +113,10 @@ def _chat_response(text: str = "Hello!") -> dict:
 
 
 def test_scene_chatter_creates():
-    """SceneChatter initializes correctly."""
+    """Chatter initializes with persona + scene plugins."""
     persona = Persona(full_name="Old Thomas")
     scene = Scene(setting="A tavern")
-    agent = SceneChatter(
+    agent = Chatter(
         name="thomas",
         version=1,
         engine=ENGINE,
@@ -126,14 +127,14 @@ def test_scene_chatter_creates():
     assert agent.name == "thomas"
     assert agent.persona.full_name == "Old Thomas"
     assert agent.scene.setting == "A tavern"
-    assert isinstance(agent, SceneChatter)
+    assert isinstance(agent, Chatter)
 
 
 def test_system_prompt_contains_roleplay_frame():
     """System prompt starts with role-play framing."""
     persona = Persona(full_name="Old Thomas")
     scene = Scene(setting="A tavern")
-    agent = SceneChatter(
+    agent = Chatter(
         name="thomas",
         version=1,
         engine=ENGINE,
@@ -155,7 +156,7 @@ def test_system_prompt_contains_persona_and_scene():
         time_period="14th century",
         rules=["No modern technology."],
     )
-    agent = SceneChatter(
+    agent = Chatter(
         name="thomas",
         version=1,
         engine=ENGINE,
@@ -178,7 +179,7 @@ def test_scene_before_persona_in_prompt():
     """Scene section appears before persona section."""
     persona = Persona(full_name="Test Character")
     scene = Scene(setting="A dark forest")
-    agent = SceneChatter(
+    agent = Chatter(
         name="test",
         version=1,
         engine=ENGINE,
@@ -196,7 +197,7 @@ def test_extra_instructions_appended():
     """extra_instructions appear after scene + persona."""
     persona = Persona(full_name="Test")
     scene = Scene(setting="Anywhere")
-    agent = SceneChatter(
+    agent = Chatter(
         name="test",
         version=1,
         engine=ENGINE,
@@ -214,7 +215,7 @@ def test_system_prompt_overrides_manual():
     """Manual system_prompt is overridden by scene + persona."""
     persona = Persona(full_name="Override Test")
     scene = Scene(setting="Override Scene")
-    agent = SceneChatter(
+    agent = Chatter(
         name="test",
         version=1,
         engine=ENGINE,
@@ -241,7 +242,7 @@ def test_chat_uses_scene_prompt(mock_chat):
         setting="A medieval tavern at night",
         rules=["No modern technology."],
     )
-    agent = SceneChatter(
+    agent = Chatter(
         name="thomas",
         version=1,
         engine=ENGINE,
@@ -260,11 +261,11 @@ def test_chat_uses_scene_prompt(mock_chat):
     assert "No modern technology." in system_msg
 
 
-# --- YAML loading ---
+# --- YAML loading (persona + scene sections) ---
 
 
 def test_from_yaml(tmp_path):
-    """Loads SceneChatter from YAML."""
+    """Loads a scene-driven Chatter from YAML."""
     yaml_content = (
         "name: thomas\n"
         "version: 1\n"
@@ -292,7 +293,7 @@ def test_from_yaml(tmp_path):
     yaml_file = tmp_path / "config.yml"
     yaml_file.write_text(yaml_content, encoding="utf-8")
 
-    agent = SceneChatter.from_yaml(str(yaml_file))
+    agent = Chatter.from_yaml(str(yaml_file))
     assert agent.name == "thomas"
     assert agent.persona.full_name == "Old Thomas"
     assert agent.scene.setting == "A medieval tavern at night"
@@ -306,7 +307,7 @@ def test_from_yaml(tmp_path):
 
 
 def test_from_yaml_minimal(tmp_path):
-    """Minimal YAML with only persona and empty scene."""
+    """Minimal YAML with a persona and a one-field scene."""
     yaml_content = (
         "name: agent\n"
         "version: 1\n"
@@ -315,13 +316,15 @@ def test_from_yaml_minimal(tmp_path):
         "    model: qwen3:4b\n"
         "persona:\n"
         "    full_name: Alice\n"
+        "scene:\n"
+        "    setting: A quiet library\n"
     )
     yaml_file = tmp_path / "config.yml"
     yaml_file.write_text(yaml_content, encoding="utf-8")
 
-    agent = SceneChatter.from_yaml(str(yaml_file))
+    agent = Chatter.from_yaml(str(yaml_file))
     assert agent.persona.full_name == "Alice"
-    assert agent.scene.setting == ""
+    assert agent.scene.setting == "A quiet library"
     assert "You are Alice." in agent.system_prompt
     assert "role-play scenario" in agent.system_prompt
 
@@ -348,7 +351,7 @@ def test_from_yaml_with_memory(tmp_path):
     yaml_file = tmp_path / "config.yml"
     yaml_file.write_text(yaml_content, encoding="utf-8")
 
-    agent = SceneChatter.from_yaml(str(yaml_file))
+    agent = Chatter.from_yaml(str(yaml_file))
     assert agent.temperature == 0.9
     assert agent.max_history == 20
     assert agent.memory is not None

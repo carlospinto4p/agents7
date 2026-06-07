@@ -1,13 +1,14 @@
-"""Unit tests for PersonalityChatter (no LLM required)."""
+"""Unit tests for Persona/PhysicalTraits and Chatter personas.
+
+`PersonalityChatter` was removed in v4.0.0; persona behaviour
+now lives on the base `Chatter` via the optional `persona`
+composition plugin.
+"""
 
 from unittest.mock import patch
 
 
-from agents7.agents.personality import (
-    Persona,
-    PersonalityChatter,
-    PhysicalTraits,
-)
+from agents7.agents import Chatter, Persona, PhysicalTraits
 from agents7.llm import LLMEngine
 
 from helpers import DUMMY_METRICS, ENGINE
@@ -139,7 +140,7 @@ def test_persona_from_dict_no_physical():
     assert persona.physical.height == ""
 
 
-# --- PersonalityChatter ---
+# --- Chatter with a persona plugin ---
 
 
 def _chat_response(text: str = "Hello!") -> dict:
@@ -151,10 +152,10 @@ def _chat_response(text: str = "Hello!") -> dict:
     }
 
 
-def test_personality_chatter_creates():
-    """PersonalityChatter initializes correctly."""
+def test_chatter_with_persona_creates():
+    """Chatter initializes with a persona plugin."""
     persona = Persona(full_name="David García")
-    agent = PersonalityChatter(
+    agent = Chatter(
         name="david",
         version=1,
         engine=ENGINE,
@@ -163,7 +164,7 @@ def test_personality_chatter_creates():
     )
     assert agent.name == "david"
     assert agent.persona.full_name == "David García"
-    assert isinstance(agent, PersonalityChatter)
+    assert isinstance(agent, Chatter)
 
 
 def test_system_prompt_auto_generated():
@@ -173,7 +174,7 @@ def test_system_prompt_auto_generated():
         nationality="Spanish",
         occupation="journalist",
     )
-    agent = PersonalityChatter(
+    agent = Chatter(
         name="david",
         version=1,
         engine=ENGINE,
@@ -189,7 +190,7 @@ def test_system_prompt_auto_generated():
 def test_extra_instructions_appended():
     """extra_instructions appear after persona prompt."""
     persona = Persona(full_name="Test")
-    agent = PersonalityChatter(
+    agent = Chatter(
         name="test",
         version=1,
         engine=ENGINE,
@@ -204,7 +205,7 @@ def test_extra_instructions_appended():
 def test_system_prompt_not_manually_set():
     """Manual system_prompt is overridden by persona."""
     persona = Persona(full_name="Override Test")
-    agent = PersonalityChatter(
+    agent = Chatter(
         name="test",
         version=1,
         engine=ENGINE,
@@ -223,7 +224,7 @@ def test_chat_uses_persona_prompt(mock_chat):
         full_name="David García",
         occupation="journalist",
     )
-    agent = PersonalityChatter(
+    agent = Chatter(
         name="david",
         version=1,
         engine=ENGINE,
@@ -241,9 +242,9 @@ def test_chat_uses_persona_prompt(mock_chat):
 
 
 def test_describe_includes_persona_name():
-    """describe() mentions the character name."""
+    """describe() mentions the agent name."""
     persona = Persona(full_name="David García")
-    agent = PersonalityChatter(
+    agent = Chatter(
         name="david",
         version=1,
         engine=ENGINE,
@@ -254,11 +255,11 @@ def test_describe_includes_persona_name():
     assert "david" in desc
 
 
-# --- YAML loading ---
+# --- YAML loading (persona section) ---
 
 
 def test_from_yaml(tmp_path):
-    """Loads PersonalityChatter from YAML."""
+    """Loads a persona-driven Chatter from YAML."""
     yaml_content = (
         "name: david\n"
         "version: 1\n"
@@ -285,7 +286,7 @@ def test_from_yaml(tmp_path):
     yaml_file = tmp_path / "config.yml"
     yaml_file.write_text(yaml_content, encoding="utf-8")
 
-    agent = PersonalityChatter.from_yaml(str(yaml_file))
+    agent = Chatter.from_yaml(str(yaml_file))
     assert agent.name == "david"
     assert agent.persona.full_name == "David García"
     assert agent.persona.birthdate == "1990-12-04"
@@ -310,6 +311,6 @@ def test_from_yaml_minimal(tmp_path):
     yaml_file = tmp_path / "config.yml"
     yaml_file.write_text(yaml_content, encoding="utf-8")
 
-    agent = PersonalityChatter.from_yaml(str(yaml_file))
+    agent = Chatter.from_yaml(str(yaml_file))
     assert agent.persona.full_name == "Alice"
     assert "You are Alice." in agent.system_prompt

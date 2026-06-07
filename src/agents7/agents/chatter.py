@@ -9,9 +9,7 @@ Persona, Scene, and extra_instructions are optional
 composition plugins.  Passing a `Persona` (and optionally a
 `Scene`) causes the system prompt to be auto-generated from
 those objects, overriding any manually supplied
-`system_prompt`.  Subclasses (`PersonalityChatter`,
-`SceneChatter`, etc.) are thin wrappers that enforce field
-presence via re-declaration.
+`system_prompt`.  A `Scene` requires a `Persona`.
 """
 
 from collections.abc import Callable
@@ -257,7 +255,17 @@ class Chatter(BaseAgent):
                 backend: <json | sqlite>
                 path: <file path>
             conversation_id: <optional, default "default">
+            persona:        # optional — auto-generates the prompt
+                full_name: <name>
+                ...
+            scene:          # optional — requires a persona
+                setting: <...>
+                ...
+            extra_instructions: <optional, appended to prompt>
             ```
+            When a ``persona`` (and optionally ``scene``) section
+            is present, ``system_prompt`` is auto-generated and
+            need not be provided.
         :return: A configured Chatter instance.
         """
         config = load_chatter_yaml_settings(file_path)

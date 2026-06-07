@@ -164,8 +164,8 @@ reliably at the 1-2 sentence response length.
 
 **Config:** `demo_personality_chatter.yml` · **Model:** `qwen2.5:3b`
 
-Loads a `PersonalityChatter` for David García López, a Spanish
-journalist from Madrid. Asks biographical, descriptive, and interest
+Loads a persona-driven `Chatter` (a `persona:` section in the
+config) for David García López, a Spanish journalist from Madrid. Asks biographical, descriptive, and interest
 questions, then verifies character consistency by re-asking the name.
 
 **Expected result:** All responses in Spanish. Consistent persona
@@ -220,9 +220,10 @@ swap on each turn — the Ollama daemon keeps the model in VRAM.
 
 **Config:** `demo_scene_chatter.yml` · **Model:** `qwen2.5:3b`
 
-Loads a `SceneChatter` for Old Thomas, a medieval tavern keeper.
-The config adds a `scene` block with `setting`, `situation`,
-`time_period`, `rules`, `other_characters`, and `goal`.
+Loads a scene-driven `Chatter` (a `persona:` + `scene:` config)
+for Old Thomas, a medieval tavern keeper. The `scene` block adds
+`setting`, `situation`, `time_period`, `rules`,
+`other_characters`, and `goal`.
 
 **Expected result:** Thomas responds in period-appropriate blunt
 English, ignores modern references ("Can I charge my phone
@@ -248,7 +249,7 @@ is the recommended path.
 **Config:** `demo_guarded_scene_chatter.yml`
 **Agent model:** `gemma4:e4b` · **Guard model:** `gemma4:e4b + think:true`
 
-Combines `SceneChatter` and `ContextGuard` into a
+Combines a persona + scene with a `ContextGuard` in a
 `GuardedSceneChatter`. David García is meeting an anonymous source
 at a Madrid café. Scene rules include: speak Spanish, stay focused,
 protect source identity. Guard catches injection, character breaks,

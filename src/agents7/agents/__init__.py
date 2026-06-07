@@ -26,13 +26,11 @@ from agents7.agents.memory import (
     SqliteMemory,
     create_memory,
 )
-from agents7.agents.personality import (
+from agents7.agents.persona import (
     Persona,
-    PersonalityChatter,
     PhysicalTraits,
     Scene,
 )
-from agents7.agents.scene import SceneChatter
 from agents7.agents.pipeline import Pipeline, PipelineResponse, PipelineStep
 from agents7.agents.regressor import Regressor
 from agents7.agents.streaming import (
@@ -62,7 +60,6 @@ __all__ = [
     "JsonFileMemory",
     "Labeler",
     "Persona",
-    "PersonalityChatter",
     "PhysicalTraits",
     "MemoryBackend",
     "MemoryConfig",
@@ -71,7 +68,6 @@ __all__ = [
     "PipelineStep",
     "Regressor",
     "Scene",
-    "SceneChatter",
     "SqliteMemory",
     "create_memory",
 ]

@@ -1,12 +1,15 @@
 """
-Example: Roleplay Agent with PersonalityChatter
+Example: Roleplay Agent with a persona-driven Chatter
 
 Demonstrates how to create a character with a structured
 persona. David is a Spanish journalist who always responds
 in Spanish, staying in character across all questions.
+
+A `persona:` section in the YAML auto-generates the system
+prompt — no dedicated subclass is needed.
 """
 
-from agents7.agents.personality import PersonalityChatter
+from agents7.agents import Chatter
 
 
 def _ask(agent, question: str) -> None:
@@ -20,9 +23,7 @@ def _ask(agent, question: str) -> None:
 
 
 if __name__ == "__main__":
-    david = PersonalityChatter.from_yaml(
-        "../configs/demo_personality_chatter.yml"
-    )
+    david = Chatter.from_yaml("../configs/demo_personality_chatter.yml")
 
     print(f"Agent: {david.name} (v{david.version})")
     print(f"Model: {david.engine.model_id}")

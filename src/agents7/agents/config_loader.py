@@ -367,6 +367,14 @@ def load_chatter_yaml_settings(file_path: str) -> dict:
     :return: Configuration dictionary for Chatter.
     """
     config = _resolve_inheritance(file_path)
+
+    # Persona/scene-driven chatters auto-generate the system
+    # prompt, so a manual `system_prompt` is not required.
+    has_persona = "persona" in config
+    has_scene = "scene" in config
+    if has_persona or has_scene:
+        config.setdefault("system_prompt", "(auto-generated)")
+
     validate_chatter_yaml_config(config, file_path)
 
     prompt_params = None
@@ -377,9 +385,23 @@ def load_chatter_yaml_settings(file_path: str) -> dict:
         "name": config["name"],
         "version": config["version"],
         "engine": build_engine(config["engine"]),
-        "system_prompt": config["system_prompt"].strip(),
+        "system_prompt": (
+            ""
+            if (has_persona or has_scene)
+            else config["system_prompt"].strip()
+        ),
         "prompt_params": prompt_params,
     }
+
+    if has_persona or has_scene:
+        from agents7.agents.persona import Persona, Scene
+
+        if has_persona:
+            result["persona"] = Persona.from_dict(dict(config["persona"]))
+        if has_scene:
+            result["scene"] = Scene.from_dict(dict(config["scene"]))
+        if extra := config.get("extra_instructions"):
+            result["extra_instructions"] = str(extra).strip()
 
     cast_optional_fields(
         config,

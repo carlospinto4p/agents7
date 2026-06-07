@@ -14,8 +14,6 @@ classDiagram
     Labeler <|-- Detector
     Detector <|-- ContextGuard
 
-    Chatter <|-- PersonalityChatter
-    PersonalityChatter <|-- SceneChatter
     Chatter <|-- GuardedChatter
     GuardedChatter <|-- GuardedSceneChatter
 
@@ -28,12 +26,6 @@ classDiagram
       +chat() ChatResponse
       -history
       persona / scene optional
-    }
-    class PersonalityChatter {
-      persona required
-    }
-    class SceneChatter {
-      persona + scene required
     }
     class GuardedChatter {
       guard required
@@ -54,21 +46,23 @@ classDiagram
     }
 ```
 
-The chatter branch has two parallel sub-branches:
+`Persona` and `Scene` are **composition plugins**, not
+subclasses. The base `Chatter` accepts an optional `persona`
+and `scene`; when present, the system prompt is auto-generated
+from them. A `Scene` always needs a `Persona` (it frames the
+persona's role-play), so passing a non-empty `scene` without a
+`persona` raises `AgentConfigurationError` rather than silently
+dropping the scene.
 
-- **Persona / scene as enforcement** — `PersonalityChatter`
-  requires a `Persona`; `SceneChatter` requires both a `Persona`
-  and a `Scene`. These are the same composition plugins the base
-  `Chatter` already accepts optionally, just made mandatory. A
-  `Scene` always needs a `Persona` (it frames the persona's
-  role-play), so passing a non-empty `scene` without a `persona`
-  raises `AgentConfigurationError` rather than silently dropping
-  the scene.
-- **Guarding** — `GuardedChatter` extends `Chatter` directly
-  (not `PersonalityChatter`) and adds a `ContextGuard`.
-  `GuardedSceneChatter` is the convergence point: persona +
-  scene + guard. Pass `persona` and `scene` to either guarded
-  class as ordinary composition plugins.
+> **Removed in v4.0.0:** `PersonalityChatter` and `SceneChatter`
+> were thin enforcement subclasses. They are gone — use
+> `Chatter(persona=...)` or `Chatter(persona=..., scene=...)`
+> (or the matching YAML sections) instead.
+
+`GuardedChatter` extends `Chatter` directly and adds a
+`ContextGuard`. `GuardedSceneChatter` is the convergence point:
+persona + scene + guard. Pass `persona` and `scene` to either
+guarded class as ordinary composition plugins.
 
 
 ## Quick start
@@ -276,11 +270,12 @@ bob   = Chatter(..., memory=memory, conversation_id="bob")
 Each conversation has its own independent history.
 
 
-## PersonalityChatter
+## Personas
 
-Extends `Chatter` with a structured `Persona` that
-auto-generates the system prompt. The agent stays in character
-across all conversations without manually writing a prompt.
+Give a `Chatter` a structured `Persona` and it auto-generates
+the system prompt, staying in character across all conversations
+without a hand-written prompt. The `persona` is an optional
+composition plugin on the base `Chatter` — no dedicated subclass.
 
 ### Persona
 
@@ -308,7 +303,7 @@ personality data:
 
 ```python
 from agents7.agents import (
-    PersonalityChatter, Persona, PhysicalTraits,
+    Chatter, Persona, PhysicalTraits,
 )
 
 persona = Persona(
@@ -329,7 +324,7 @@ persona = Persona(
     language="Spanish",
 )
 
-agent = PersonalityChatter(
+agent = Chatter(
     name="david",
     version=1,
     engine=engine,
@@ -375,7 +370,7 @@ extra_instructions: |
 ```
 
 ```python
-agent = PersonalityChatter.from_yaml("david.yml")
+agent = Chatter.from_yaml("david.yml")
 ```
 
 ### Auto-generated prompt
@@ -394,13 +389,13 @@ Do not set `system_prompt` manually — use
 `extra_instructions` for additional guidance.
 
 
-## SceneChatter
+## Scenes
 
-Extends `PersonalityChatter` by placing the character in a
-specific **scene** — a location, situation, time period, and
-set of behavioral rules. The system prompt wraps everything
-in a role-play frame so the agent stays both in character and
-in context.
+Add a `Scene` alongside the `persona` to place the character in
+a specific context — a location, situation, time period, and set
+of behavioral rules. The system prompt wraps everything in a
+role-play frame so the agent stays both in character and in
+context. A `scene` requires a `persona`.
 
 ### Scene fields
 
@@ -420,14 +415,13 @@ The auto-generated prompt is structured as:
 
 1. **Role-play framing** — establishes this is a scenario
 2. **Scene** — setting, situation, time period, rules, etc.
-3. **Character profile** — full persona (from `PersonalityChatter`)
+3. **Character profile** — the full persona
 4. **Extra instructions** — optional additional guidance
 
 ### Usage
 
 ```python
-from agents7.agents.personality import Persona, Scene
-from agents7.agents.scene import SceneChatter
+from agents7.agents import Chatter, Persona, Scene
 
 persona = Persona(
     full_name="Old Thomas",
@@ -444,10 +438,11 @@ scene = Scene(
     ],
     goal="Close the tavern and get everyone out.",
 )
-agent = SceneChatter(
+agent = Chatter(
     name="thomas",
     version=1,
     engine=engine,
+    system_prompt="",
     persona=persona,
     scene=scene,
 )
@@ -475,7 +470,7 @@ scene:
     goal: Close the tavern and get everyone out.
 ```
 
-Load with `SceneChatter.from_yaml("thomas.yml")`.
+Load with `Chatter.from_yaml("thomas.yml")`.
 
 
 ## GuardedChatter
@@ -725,7 +720,7 @@ calls per turn.
 
 ## GuardedSceneChatter
 
-Combines `SceneChatter`'s scene-based role-play framing with
+Combines scene-based role-play framing (persona + scene) with
 `GuardedChatter`'s response guard. It extends `GuardedChatter`
 and adds a required `Scene`, so the system prompt is
 auto-generated from **both** the persona and the scene, and

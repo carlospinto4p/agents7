@@ -93,11 +93,9 @@ BaseAgent
   │           ├── Classifier (ClassificationProperty)
   │           ├── Regressor (Property[T])
   │           └── ContextGuard (response validation)
-  └── Chatter (multi-turn conversation)
-        ├── PersonalityChatter (roleplay with Persona)
-        │     └── SceneChatter (+ Scene context/scenario)
+  └── Chatter (multi-turn conversation; optional persona + scene)
         └── GuardedChatter (+ ContextGuard pipeline)
-              └── GuardedSceneChatter (Scene + ContextGuard)
+              └── GuardedSceneChatter (persona + scene + guard)
 
 Pipeline (chains multiple agents sequentially)
 ```
@@ -1141,12 +1139,15 @@ call_logger: mymodule.my_logger
 
 The `call_logger` value is a dotted import path to any callable accepting a `CallRecord`.
 
-### Personality Chatter (Roleplay Agent)
+### Persona-Driven Chatter (Roleplay Agent)
 
-`PersonalityChatter` extends `Chatter` with a structured `Persona` for consistent character roleplay. The system prompt is auto-generated from biographical data:
+Give a `Chatter` a structured `Persona` for consistent character
+roleplay — the system prompt is auto-generated from biographical
+data. `persona` is an optional plugin on the base `Chatter` (the
+former `PersonalityChatter` subclass was removed in v4.0.0):
 
 ```python
-from agents7.agents import PersonalityChatter, Persona, PhysicalTraits
+from agents7.agents import Chatter, Persona, PhysicalTraits
 
 persona = Persona(
     full_name="David García",
@@ -1165,7 +1166,7 @@ persona = Persona(
     speaking_style="casual and direct",
 )
 
-agent = PersonalityChatter(
+agent = Chatter(
     name="david",
     version=1,
     engine=engine,
@@ -1212,12 +1213,16 @@ extra_instructions: |
 
 The persona includes: name, birthdate, nationality, occupation, physical traits, personality adjectives, backstory, interests, speaking style, and a freeform `extra` dict for any additional details.
 
-### Scene Chatter (Contextual Roleplay Agent)
+### Scene-Driven Chatter (Contextual Roleplay Agent)
 
-`SceneChatter` extends `PersonalityChatter` by placing the character in a specific **scene** — a location, situation, time period, and set of behavioral rules. The system prompt frames everything as a role-play scenario:
+Add a `Scene` alongside the persona to place the character in a
+specific **scene** — a location, situation, time period, and set
+of behavioral rules. The system prompt frames everything as a
+role-play scenario. A `scene` requires a `persona` (the former
+`SceneChatter` subclass was removed in v4.0.0):
 
 ```python
-from agents7.agents import SceneChatter, Persona, Scene
+from agents7.agents import Chatter, Persona, Scene
 
 persona = Persona(
     full_name="Old Thomas",
@@ -1234,7 +1239,7 @@ scene = Scene(
     ],
     goal="Close the tavern and get everyone out.",
 )
-agent = SceneChatter(
+agent = Chatter(
     name="thomas",
     version=1,
     engine=engine,

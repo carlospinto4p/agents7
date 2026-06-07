@@ -1,8 +1,8 @@
 """
 Example: GuardedChatter with ContextGuard
 
-Demonstrates how GuardedChatter protects a PersonalityChatter
-from prompt injection, character breaks, and off-topic
+Demonstrates how GuardedChatter protects a persona-driven
+chatter from prompt injection, character breaks, and off-topic
 responses.  The ContextGuard validates every response before
 it enters conversation history.
 
