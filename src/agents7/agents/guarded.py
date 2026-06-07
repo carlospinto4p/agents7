@@ -28,6 +28,12 @@ from agents7.agents.context_guard import (
 from agents7.logs import logger
 from agents7.models import ChatResponse, LLMMetrics
 
+# Generic, AI-vocabulary-free deflection used when the guard
+# output is unparseable and ``guard_fail_open`` is False. Keep
+# it character-neutral; override per agent via
+# ``guard_fallback_response`` for language/persona fit.
+_DEFAULT_FALLBACK = "Sorry, I didn't quite catch that. What were you saying?"
+
 
 @dataclass(frozen=True)
 class GuardEvent:
@@ -182,6 +188,15 @@ class GuardedChatter(Chatter):
         the guard runs afterwards, so the raw text is shown
         before validation. Has no effect on non-streaming
         ``chat`` calls.  Defaults to ``False``.
+    :param guard_fail_open: Behaviour when the guard's output
+        is unparseable (no verdict). When ``True`` (default)
+        the unvalidated response passes through. When ``False``
+        the response is replaced with ``guard_fallback_response``
+        so unvalidated content never reaches the caller.
+    :param guard_fallback_response: The in-character deflection
+        substituted when ``guard_fail_open`` is False and the
+        guard cannot render a verdict. Empty uses a generic
+        default — set this to match the persona's language.
     """
 
     guard: ContextGuard = field(kw_only=True)
@@ -198,6 +213,14 @@ class GuardedChatter(Chatter):
     )
     guard_buffer_stream: bool = field(
         default=False,
+        kw_only=True,
+    )
+    guard_fail_open: bool = field(
+        default=True,
+        kw_only=True,
+    )
+    guard_fallback_response: str = field(
+        default="",
         kw_only=True,
     )
 
@@ -446,7 +469,7 @@ class GuardedChatter(Chatter):
             self.guard_callback(
                 GuardEvent(
                     attempt=attempt,
-                    accepted=True,
+                    accepted=self.guard_fail_open,
                     reason=None,
                     response_text=text,
                     duration=duration,
@@ -466,12 +489,19 @@ class GuardedChatter(Chatter):
             )
         )
 
-    @staticmethod
     def _is_accepted(
+        self,
         verdict: GuardVerdict | None,
     ) -> bool:
-        """Check if a verdict passed (or parse failed)."""
-        return verdict is None or bool(verdict.value)
+        """Check if a verdict passed.
+
+        A ``None`` verdict means the guard output was
+        unparseable; it passes only when ``guard_fail_open``
+        is True.
+        """
+        if verdict is None:
+            return self.guard_fail_open
+        return bool(verdict.value)
 
     def _try_accept(
         self,
@@ -510,6 +540,19 @@ class GuardedChatter(Chatter):
             return verdict.fix
         return text
 
+    def _fail_closed_text(self, text: str) -> str:
+        """Return a safe deflection on an unparseable verdict.
+
+        Reached only when ``guard_fail_open`` is False and the
+        guard produced no verdict, so the unvalidated response
+        must not pass through.
+        """
+        logger.warning(
+            f"GuardedChatter `{self.name}`: guard parse failed "
+            f"and fail-closed — substituting fallback response"
+        )
+        return self.guard_fallback_response or _DEFAULT_FALLBACK
+
     def _guard_and_fix(
         self,
         user_message: str,
@@ -517,8 +560,9 @@ class GuardedChatter(Chatter):
     ) -> str:
         """Guard a response; retry or fix if rejected.
 
-        When the guard fails to parse (verdict is ``None``),
-        the response passes through (fail-open).
+        When the guard fails to parse (verdict is ``None``) the
+        response passes through if ``guard_fail_open`` is True,
+        otherwise it is replaced with the fallback response.
 
         :return: The accepted (or fixed) response text.
         """
@@ -559,6 +603,8 @@ class GuardedChatter(Chatter):
         result = self._try_accept(0, verdict, text, dur)
         if result is not None:
             return result
+        if verdict is None:
+            return self._fail_closed_text(text)
         messages = self._build_messages()
         for i in range(self.max_guard_retries):
             logger.debug(
@@ -573,6 +619,8 @@ class GuardedChatter(Chatter):
             result = self._try_accept(i + 1, verdict, text, dur)
             if result is not None:
                 return result
+            if verdict is None:
+                return self._fail_closed_text(text)
         return self._use_fix_or_text(verdict, text)
 
     async def _run_guard_retry_async(
@@ -592,6 +640,8 @@ class GuardedChatter(Chatter):
         result = self._try_accept(0, verdict, text, dur)
         if result is not None:
             return result
+        if verdict is None:
+            return self._fail_closed_text(text)
         messages = self._build_messages()
         for i in range(self.max_guard_retries):
             logger.debug(
@@ -606,6 +656,8 @@ class GuardedChatter(Chatter):
             result = self._try_accept(i + 1, verdict, text, dur)
             if result is not None:
                 return result
+            if verdict is None:
+                return self._fail_closed_text(text)
         return self._use_fix_or_text(verdict, text)
 
     def _build_guard_input(

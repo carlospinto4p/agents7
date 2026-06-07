@@ -579,9 +579,22 @@ agent = GuardedChatter.from_yaml("guarded_david.yml")
 | `max_guard_retries` | `int` | `2` | Retry budget on rejection |
 | `guard_context_turns` | `int` | `3` | Recent history turns sent to guard |
 | `guard_buffer_stream` | `bool` | `False` | Buffer the stream and guard before yielding |
+| `guard_fail_open` | `bool` | `True` | Pass unparseable guard output through (`False` = use fallback) |
+| `guard_fallback_response` | `str` | `""` | Deflection used when fail-closed and the guard gives no verdict |
 
 Plus all fields from `Chatter` (including the optional
 `persona` and `scene` composition plugins).
+
+### Fail-open vs fail-closed
+
+When the guard LLM returns unparseable output there is no
+verdict. By default (`guard_fail_open=True`) the chatter's
+response passes through unvalidated — favouring availability.
+For a security-sensitive guard set `guard_fail_open=False`:
+the unvalidated response is then dropped and replaced with
+`guard_fallback_response` (or a generic deflection if unset),
+so no unchecked content ever reaches the caller. Set
+`guard_fallback_response` to match the persona's language.
 
 ### Streaming
 

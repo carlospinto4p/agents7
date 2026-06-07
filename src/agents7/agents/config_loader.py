@@ -552,6 +552,8 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
             "max_guard_retries": int,
             "guard_context_turns": int,
             "guard_buffer_stream": bool,
+            "guard_fail_open": bool,
+            "guard_fallback_response": str,
         },
     )
     if memory_settings := raw.get("memory"):
@@ -609,6 +611,8 @@ def load_guarded_scene_yaml_settings(file_path: str) -> Any:
             "max_guard_retries": int,
             "guard_context_turns": int,
             "guard_buffer_stream": bool,
+            "guard_fail_open": bool,
+            "guard_fallback_response": str,
         },
     )
     if memory_settings := raw.get("memory"):

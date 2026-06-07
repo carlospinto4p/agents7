@@ -14,6 +14,7 @@ from agents7.agents.context_guard import (
     GuardVerdict,
 )
 from agents7.agents.guarded import (
+    _DEFAULT_FALLBACK,
     GuardEvent,
     GuardedChatter,
 )
@@ -496,6 +497,73 @@ def test_callback_on_parse_failure(
     assert events[0].parse_failed is True
     assert events[0].accepted is True
     assert events[0].reason is None
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guard_fail_closed_uses_default_fallback(mock_chat, mock_guard):
+    """Fail-closed parse failure replaces text with the default."""
+    mock_chat.return_value = chat_response_dict("I'm an AI, actually.")
+    mock_guard.return_value = AgentResponse(
+        response="unparseable",
+        model=None,
+        thinking=None,
+        metrics=DUMMY_METRICS,
+    )
+
+    agent = make_guarded_chatter(guard_fail_open=False)
+    resp = agent.chat("Are you a bot?")
+
+    assert resp.response == _DEFAULT_FALLBACK
+    assert "I'm an AI" not in resp.response
+    assert agent.history[-1]["content"] == _DEFAULT_FALLBACK
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guard_fail_closed_uses_custom_fallback(mock_chat, mock_guard):
+    """A custom guard_fallback_response is used when fail-closed."""
+    mock_chat.return_value = chat_response_dict("I'm an AI, actually.")
+    mock_guard.return_value = AgentResponse(
+        response="unparseable",
+        model=None,
+        thinking=None,
+        metrics=DUMMY_METRICS,
+    )
+
+    agent = make_guarded_chatter(
+        guard_fail_open=False,
+        guard_fallback_response="¿Perdona? No te he oído bien.",
+    )
+    resp = agent.chat("Are you a bot?")
+
+    assert resp.response == "¿Perdona? No te he oído bien."
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_guard_fail_closed_callback_reports_not_accepted(
+    mock_chat,
+    mock_guard,
+):
+    """Under fail-closed, the parse-failure event is not accepted."""
+    mock_chat.return_value = chat_response_dict("I'm an AI, actually.")
+    mock_guard.return_value = AgentResponse(
+        response="unparseable",
+        model=None,
+        thinking=None,
+        metrics=DUMMY_METRICS,
+    )
+
+    events: list[GuardEvent] = []
+    agent = make_guarded_chatter(
+        guard_fail_open=False,
+        guard_callback=events.append,
+    )
+    agent.chat("Are you a bot?")
+
+    assert events[0].parse_failed is True
+    assert events[0].accepted is False
 
 
 # --- chat_stream() ---

@@ -3,6 +3,23 @@
 
 
 
+### v3.24.0 - 7th June 2026
+
+- Added fail-closed guarding to `GuardedChatter` (and
+  `GuardedSceneChatter`):
+  - `guard_fail_open` (default `True`): when `False`, an
+    unparseable guard verdict no longer passes through —
+    the response is replaced with a fallback deflection.
+  - `guard_fallback_response`: the in-character deflection
+    used when fail-closed and the guard gives no verdict
+    (empty uses a generic default).
+  - `_is_accepted` now honours `guard_fail_open`; the
+    parse-failure `GuardEvent` reports `accepted` truthfully.
+  - YAML loaders accept both new fields.
+- Updated `docs/chatter.md`: documented fail-open vs
+  fail-closed guarding.
+
+
 ### v3.23.0 - 7th June 2026
 
 - Added `guard_buffer_stream` field to `GuardedChatter` (and
