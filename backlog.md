@@ -1,6 +1,17 @@
 
 # Backlog - Agents7
 
+### Chatter/Guard/Scene design review — 7th June 2026
+
+- [ ] Guard scene-enrichment is YAML-only. `_derive_persona_summary(persona, scene)` (`config_loader.py:413`) folds scene rules into the guard's `persona_summary` only in the YAML loaders; direct Python construction of `GuardedSceneChatter` never propagates `scene` to the guard, so the guard references "Scene rules above" that aren't in its context. Derive/merge scene context into the guard inside `GuardedSceneChatter.__post_init__` so both paths match. (HIGH, medium)
+- [ ] Streaming bypasses the guard for display. `GuardedChatterStreamResult._finalize` streams chunks live and guards afterwards, so rejected/injected text is already shown to the user; only history gets the corrected version. Add a buffer-then-guard mode for sensitive deployments, or document the leak prominently. (HIGH, medium)
+- [ ] Guard fails open on parse failure. `_is_accepted` returns `True` when the verdict is `None` (unparseable guard output). Add a configurable `guard_fail_open` flag; fail-closed should emit the guard's `fix` or a canned in-character deflection. (MEDIUM, low)
+- [ ] `scene` without `persona` is silently dropped. `Chatter.__post_init__` (`chatter.py:213`) only builds the plugin prompt when `persona is not None`, so a `scene` set alone is ignored with no error. Validate (scene requires persona) or warn. (MEDIUM, low)
+- [ ] Default guard prompt is hardcoded, Spanish-specific, and tuned to catalog personas. `_DEFAULT_GUARD_PROMPT` and `_add_feedback` bake in Spanish AI-vocabulary lists and domain-specific examples (David the journalist, tavern source-protection), limiting generality for other languages/use-cases. Derive forbidden-vocabulary from `persona.language` and/or move domain examples into config. (MEDIUM, medium)
+- [ ] Guard `fix` used verbatim from a one-line summary. `_use_fix_or_text` returns the guard's `fix` as the final turn, but the guard only sees `persona_summary`, not the full persona, so the fallback can be off-character. Treat `fix` as guidance for one more chatter regeneration instead of the final word. (LOW, low-medium)
+- [ ] Two idioms for persona/scene. Since `GuardedChatter` extends `Chatter` directly (composition plugins), `PersonalityChatter`/`SceneChatter` (enforcement via subclass) are a parallel idiom. Consider folding them into a validated factory over `Chatter`. Public-API change — major bump. (LOW, medium)
+
+
 ### Improvements — 29th March 2026
 
 - [ ] A/B testing harness — `run_ab_test(agent_a, agent_b, test_cases)` that runs both agents on same inputs and returns comparative metrics.
