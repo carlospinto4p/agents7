@@ -434,14 +434,9 @@ def _derive_persona_summary(
     lines: list[str] = [", ".join(parts) + "."]
 
     if scene is not None:
-        if scene.setting:
-            lines.append(f"Setting: {scene.setting.strip()}")
-        if scene.situation:
-            lines.append(f"Situation: {scene.situation.strip()}")
-        if scene.rules:
-            lines.append("Scene rules:")
-            for rule in scene.rules:
-                lines.append(f"  - {rule}")
+        scene_summary = scene.to_summary()
+        if scene_summary:
+            lines.append(scene_summary)
 
     return "\n".join(lines)
 

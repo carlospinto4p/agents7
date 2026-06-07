@@ -3,6 +3,23 @@
 
 
 
+### v3.22.0 - 7th June 2026
+
+- Added `Scene.to_summary()` in `agents/persona.py`: renders a
+  compact scene summary (setting, situation, rules) for the guard
+  prompt.
+- Updated `GuardedSceneChatter`:
+  - Added `__post_init__` that folds the scene context into the
+    guard's `persona_summary`, so direct Python construction now
+    matches the YAML loader. Idempotent; an explicit
+    `persona_summary` overrides the persona description but the
+    scene context is still appended.
+- Updated `_derive_persona_summary` (`agents/config_loader.py`)
+  to reuse `Scene.to_summary()`.
+- Updated `docs/chatter.md`: scene-aware guarding now applies to
+  both construction paths.
+
+
 ### v3.21.43 - 7th June 2026
 
 - Updated `docs/chatter.md`:

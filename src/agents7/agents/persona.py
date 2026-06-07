@@ -219,6 +219,29 @@ class Scene:
     goal: str = ""
     extra: dict[str, str] = field(default_factory=dict)
 
+    def to_summary(self) -> str:
+        """Render a compact scene summary for the guard prompt.
+
+        Includes setting, situation, and rules so the guard
+        can judge scene-specific off-topic responses and rule
+        violations. Returns an empty string when none of those
+        fields are set. Shared by `_derive_persona_summary`
+        (YAML path) and `GuardedSceneChatter.__post_init__`
+        (Python path) so both produce identical text.
+
+        :return: Multi-line summary string, or ``""``.
+        """
+        lines: list[str] = []
+        if self.setting:
+            lines.append(f"Setting: {self.setting.strip()}")
+        if self.situation:
+            lines.append(f"Situation: {self.situation.strip()}")
+        if self.rules:
+            lines.append("Scene rules:")
+            for rule in self.rules:
+                lines.append(f"  - {rule}")
+        return "\n".join(lines)
+
     def to_prompt(self) -> str:
         """Render the scene as a system prompt section.
 

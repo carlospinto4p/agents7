@@ -657,19 +657,20 @@ and guard — in one agent.
 
 ### Scene-aware guarding
 
-When built from YAML, the guard's `persona_summary` is
-automatically enriched with scene context (setting, situation,
-and rules) so the guard can flag responses that violate scene
-rules as `OFF_TOPIC`. The guard prompt's "see Scene rules above"
-references exactly this injected context.
+The guard's `persona_summary` is automatically enriched with the
+scene context (setting, situation, and rules) so the guard can
+flag responses that violate scene rules as `OFF_TOPIC`. The guard
+prompt's "see Scene rules above" references exactly this injected
+context.
 
-> **Caveat (Python construction):** the scene enrichment of the
-> guard happens in the YAML loader (`_derive_persona_summary`).
-> If you construct a `GuardedSceneChatter` directly in Python you
-> must pass the scene context into the guard's `persona_summary`
-> yourself — the `scene` field on the chatter does not propagate
-> to the guard automatically. Prefer `from_yaml` for scene-aware
-> guarding.
+This enrichment happens regardless of how the agent is built —
+both `from_yaml` and direct Python construction fold the scene
+into the guard in `GuardedSceneChatter.__post_init__`. It is
+idempotent, so re-using an already-enriched guard does not
+duplicate the scene block. An explicit `guard.persona_summary`
+overrides the auto-derived persona *description*, but the scene
+context is still appended so the guard can always enforce scene
+rules.
 
 ### YAML configuration
 

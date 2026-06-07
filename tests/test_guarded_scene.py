@@ -289,7 +289,12 @@ guard:
 
 
 def test_from_yaml_persona_summary_explicit_override(tmp_path):
-    """Explicit guard.persona_summary in YAML overrides derived one."""
+    """Explicit persona_summary overrides the persona description.
+
+    Scene context is still appended so the guard can enforce
+    scene constraints — the explicit summary replaces only the
+    auto-derived persona description, not the scene rules.
+    """
     yaml_text = """
 name: guarded-thomas
 version: 1
@@ -311,8 +316,37 @@ guard:
     path.write_text(yaml_text, encoding="utf-8")
 
     agent = GuardedSceneChatter.from_yaml(str(path))
-    assert agent.guard.persona_summary == "Custom summary for guard."
-    assert "medieval tavern" not in agent.guard.persona_summary.lower()
+    # Explicit persona description preserved.
+    assert "Custom summary for guard." in agent.guard.persona_summary
+    # Scene context still reaches the guard.
+    assert "medieval tavern" in agent.guard.persona_summary.lower()
+
+
+def test_python_construction_enriches_guard_with_scene():
+    """Direct Python construction folds scene into the guard.
+
+    Regression: previously the scene reached the guard only via
+    the YAML loader, so a Python-built GuardedSceneChatter had a
+    guard that could not see the scene rules its prompt refers
+    to.
+    """
+    agent = make_guarded_scene()
+    summary = agent.guard.persona_summary
+    # Persona portion preserved, scene portion appended.
+    assert PERSONA_SUMMARY in summary
+    assert "Setting: A medieval tavern at night" in summary
+    assert "No knowledge of anything modern" in summary
+    # The regenerated guard prompt embeds the scene context too.
+    assert "No knowledge of anything modern" in agent.guard.system_prompt
+
+
+def test_python_construction_scene_enrichment_idempotent():
+    """Re-using an already-enriched guard does not double-add."""
+    agent = make_guarded_scene()
+    # Build a second agent from the first's (already enriched)
+    # guard — the scene block must not be appended twice.
+    agent2 = make_guarded_scene(guard=agent.guard)
+    assert agent2.guard.persona_summary.count("Setting: A medieval") == 1
 
 
 def test_from_yaml_persona_summary_no_scene_omits_scene_keys(tmp_path):
