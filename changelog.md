@@ -3,6 +3,22 @@
 
 
 
+### v3.26.0 - 7th June 2026
+
+- Updated `GuardedChatter` fix fallback: when retries are
+  exhausted and the guard supplied a `fix`, the chatter now
+  regenerates once using the fix as guidance (in full persona
+  voice) and guards the result, instead of returning the
+  guard's one-line fix verbatim. Falls back to the verbatim fix
+  if the regeneration is still rejected.
+  - Added `_regenerate_from_fix` / `_regenerate_from_fix_async`
+    and `_add_fix_guidance`.
+  - Adds one chatter call + guard check only on the
+    exhausted-retry path, and only when a `fix` exists.
+- Updated `docs/chatter.md`: documented the fix-guided
+  regeneration step.
+
+
 ### v3.25.0 - 7th June 2026
 
 - Added language-aware forbidden vocabulary to the guard:

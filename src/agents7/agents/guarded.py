@@ -540,6 +540,78 @@ class GuardedChatter(Chatter):
             return verdict.fix
         return text
 
+    @staticmethod
+    def _add_fix_guidance(
+        messages: list[dict[str, str]],
+        rejected_text: str,
+        verdict: GuardVerdict,
+    ) -> list[dict[str, str]]:
+        """Append fix-guided feedback for a final regeneration.
+
+        Returns a **new** list — the original is not mutated and
+        the feedback is never stored in conversation history.
+        """
+        feedback = (
+            f"[Your previous response was rejected by the "
+            f"context guard. A corrected version was suggested: "
+            f'"{verdict.fix}". Rewrite your reply in your own '
+            f"words, fully in character, keeping the intent of "
+            f"that correction. Do not break character.]"
+        )
+        return [
+            *messages,
+            {"role": "assistant", "content": rejected_text},
+            {"role": "user", "content": feedback},
+        ]
+
+    def _regenerate_from_fix(
+        self,
+        user_message: str,
+        messages: list[dict[str, str]],
+        text: str,
+        verdict: GuardVerdict,
+        check_fn: Callable,
+        generate_fn: Callable,
+    ) -> str | None:
+        """Regenerate once using the guard's fix as guidance.
+
+        Called after retries are exhausted. Asks the chatter to
+        rewrite in its own voice using the guard's suggested
+        correction, then guards the result.
+
+        :return: The accepted regenerated text, or ``None`` to
+            fall back to the verbatim fix.
+        """
+        guided = self._add_fix_guidance(messages, text, verdict)
+        new_text, _ = generate_fn(guided)
+        new_verdict, dur = check_fn(user_message, new_text)
+        return self._try_accept(
+            self.max_guard_retries + 1,
+            new_verdict,
+            new_text,
+            dur,
+        )
+
+    async def _regenerate_from_fix_async(
+        self,
+        user_message: str,
+        messages: list[dict[str, str]],
+        text: str,
+        verdict: GuardVerdict,
+        check_fn: Callable,
+        generate_fn: Callable,
+    ) -> str | None:
+        """Async version of `_regenerate_from_fix`."""
+        guided = self._add_fix_guidance(messages, text, verdict)
+        new_text, _ = await generate_fn(guided)
+        new_verdict, dur = await check_fn(user_message, new_text)
+        return self._try_accept(
+            self.max_guard_retries + 1,
+            new_verdict,
+            new_text,
+            dur,
+        )
+
     def _fail_closed_text(self, text: str) -> str:
         """Return a safe deflection on an unparseable verdict.
 
@@ -621,6 +693,17 @@ class GuardedChatter(Chatter):
                 return result
             if verdict is None:
                 return self._fail_closed_text(text)
+        if verdict is not None and verdict.fix:
+            regenerated = self._regenerate_from_fix(
+                user_message,
+                messages,
+                text,
+                verdict,
+                check_fn,
+                generate_fn,
+            )
+            if regenerated is not None:
+                return regenerated
         return self._use_fix_or_text(verdict, text)
 
     async def _run_guard_retry_async(
@@ -658,6 +741,17 @@ class GuardedChatter(Chatter):
                 return result
             if verdict is None:
                 return self._fail_closed_text(text)
+        if verdict is not None and verdict.fix:
+            regenerated = await self._regenerate_from_fix_async(
+                user_message,
+                messages,
+                text,
+                verdict,
+                check_fn,
+                generate_fn,
+            )
+            if regenerated is not None:
+                return regenerated
         return self._use_fix_or_text(verdict, text)
 
     def _build_guard_input(

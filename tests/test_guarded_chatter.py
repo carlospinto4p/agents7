@@ -181,11 +181,12 @@ def test_chat_uses_fix_after_retries(
     mock_chat,
     mock_guard,
 ):
-    """All retries fail — guard's fix is used."""
+    """All retries fail; fix-guided regen also fails — fix is used."""
     mock_chat.side_effect = [
         chat_response_dict("I'm an AI assistant."),
         chat_response_dict("I'm a language model."),
         chat_response_dict("I'm ChatGPT."),
+        chat_response_dict("Still an AI."),
     ]
     mock_guard.return_value = REJECT_INJECTION
 
@@ -193,8 +194,8 @@ def test_chat_uses_fix_after_retries(
     resp = agent.chat("What are you really?")
 
     assert resp.response == "No puedo hacer eso."
-    # 3 calls: initial + 2 retries
-    assert mock_chat.call_count == 3
+    # 4 calls: initial + 2 retries + 1 fix-guided regeneration
+    assert mock_chat.call_count == 4
 
 
 # --- chat() — no fix available, uses last response ---
@@ -349,11 +350,12 @@ async def test_chat_async_rejected_then_fixed(
     mock_chat,
     mock_guard,
 ):
-    """Async: all retries fail, fix is used."""
+    """Async: all retries fail, fix-guided regen fails — fix used."""
     mock_chat.side_effect = [
         chat_response_dict("I'm an AI."),
         chat_response_dict("Still an AI."),
         chat_response_dict("Yep, AI."),
+        chat_response_dict("Definitely AI."),
     ]
     mock_guard.return_value = REJECT_INJECTION
 
@@ -453,6 +455,7 @@ def test_callback_on_fix(mock_chat, mock_guard):
         chat_response_dict("Bad 1"),
         chat_response_dict("Bad 2"),
         chat_response_dict("Bad 3"),
+        chat_response_dict("Bad 4"),
     ]
     mock_guard.return_value = REJECT_INJECTION
 
@@ -463,8 +466,8 @@ def test_callback_on_fix(mock_chat, mock_guard):
     )
     agent.chat("Test")
 
-    # initial + 2 retries + 1 fix event = 4
-    assert len(events) == 4
+    # initial + 2 retries + 1 fix-guided regen + 1 fix event = 5
+    assert len(events) == 5
     assert events[-1].used_fix is True
     assert events[-1].response_text == "No puedo hacer eso."
 
@@ -601,8 +604,13 @@ def test_chat_stream_guard_accepted(mock_stream, mock_guard):
 
 
 @patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
 @patch.object(LLMEngine, "chat_stream")
-def test_chat_stream_guard_rejected_uses_fix(mock_stream, mock_guard):
+def test_chat_stream_guard_rejected_uses_fix(
+    mock_stream,
+    mock_chat,
+    mock_guard,
+):
     """chat_stream() _finalize uses guard's fix when all retries fail."""
     from agents7.llm.streaming import StreamResult
 
@@ -617,6 +625,9 @@ def test_chat_stream_guard_rejected_uses_fix(mock_stream, mock_guard):
     ]
     stream = StreamResult(iter(chunks), "chat")
     mock_stream.return_value = stream
+    # Fix-guided regeneration uses non-streaming chat; guard
+    # rejects it too, so the verbatim fix is the final text.
+    mock_chat.return_value = chat_response_dict("Still an AI.")
     mock_guard.return_value = REJECT_INJECTION
 
     agent = make_guarded_chatter(max_guard_retries=0)
@@ -658,8 +669,13 @@ def test_chat_stream_finalize_fires_callback(mock_stream, mock_guard):
 
 
 @patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
 @patch.object(LLMEngine, "chat_stream")
-def test_chat_stream_buffered_hides_rejected_text(mock_stream, mock_guard):
+def test_chat_stream_buffered_hides_rejected_text(
+    mock_stream,
+    mock_chat,
+    mock_guard,
+):
     """Buffered mode never yields raw text; only the guarded fix."""
     from agents7.llm.streaming import StreamResult
 
@@ -674,6 +690,7 @@ def test_chat_stream_buffered_hides_rejected_text(mock_stream, mock_guard):
     ]
     stream = StreamResult(iter(chunks), "chat")
     mock_stream.return_value = stream
+    mock_chat.return_value = chat_response_dict("Still an AI.")
     mock_guard.return_value = REJECT_INJECTION
 
     agent = make_guarded_chatter(
@@ -775,11 +792,17 @@ async def test_chat_stream_async_guard_accepted(
 )
 @patch.object(
     LLMEngine,
+    "chat_async",
+    new_callable=AsyncMock,
+)
+@patch.object(
+    LLMEngine,
     "chat_stream_async",
     new_callable=AsyncMock,
 )
 async def test_chat_stream_async_guard_rejected_uses_fix(
     mock_stream,
+    mock_chat,
     mock_guard,
 ):
     """chat_stream_async() _finalize_async uses fix when retries fail."""
@@ -796,6 +819,8 @@ async def test_chat_stream_async_guard_rejected_uses_fix(
     ]
     stream = AsyncStreamResult(async_iter(chunks), "chat")
     mock_stream.return_value = stream
+    # Fix-guided regeneration uses non-streaming chat_async.
+    mock_chat.return_value = chat_response_dict("Still an AI.")
     mock_guard.return_value = REJECT_INJECTION
 
     agent = make_guarded_chatter(max_guard_retries=0)
@@ -856,11 +881,17 @@ async def test_chat_stream_async_finalize_fires_callback(
 )
 @patch.object(
     LLMEngine,
+    "chat_async",
+    new_callable=AsyncMock,
+)
+@patch.object(
+    LLMEngine,
     "chat_stream_async",
     new_callable=AsyncMock,
 )
 async def test_chat_stream_async_buffered_hides_rejected_text(
     mock_stream,
+    mock_chat,
     mock_guard,
 ):
     """Buffered async mode never yields raw text; only the fix."""
@@ -877,6 +908,10 @@ async def test_chat_stream_async_buffered_hides_rejected_text(
     ]
     stream = AsyncStreamResult(async_iter(chunks), "chat")
     mock_stream.return_value = stream
+    # The fix-guided regeneration (max_guard_retries=0) uses the
+    # non-streaming chat_async; the guard rejects it too, so the
+    # verbatim fix is the final, buffered output.
+    mock_chat.return_value = chat_response_dict("Still an AI.")
     mock_guard.return_value = REJECT_INJECTION
 
     agent = make_guarded_chatter(
@@ -900,15 +935,16 @@ def test_guard_call_count_equals_initial_plus_retries(
     mock_chat,
     mock_guard,
 ):
-    """Guard is called max_guard_retries+1 times when always rejecting."""
-    mock_chat.side_effect = [chat_response_dict(f"Bad {i}") for i in range(4)]
+    """Always-reject: initial + retries + one fix-guided regen."""
+    mock_chat.side_effect = [chat_response_dict(f"Bad {i}") for i in range(5)]
     mock_guard.return_value = REJECT_INJECTION
 
     agent = make_guarded_chatter(max_guard_retries=3)
     agent.chat("Test")
 
-    assert mock_guard.call_count == 4  # initial + 3 retries
-    assert mock_chat.call_count == 4  # initial + 3 retries
+    # initial + 3 retries + 1 fix-guided regeneration
+    assert mock_guard.call_count == 5
+    assert mock_chat.call_count == 5
 
 
 # --- Zero retries ---
@@ -917,7 +953,7 @@ def test_guard_call_count_equals_initial_plus_retries(
 @patch.object(ContextGuard, "act")
 @patch.object(LLMEngine, "chat")
 def test_chat_zero_retries_uses_fix(mock_chat, mock_guard):
-    """max_guard_retries=0 → no retry loop; fix applied immediately."""
+    """max_guard_retries=0 → no retries; one fix-guided regen, then fix."""
     mock_chat.return_value = chat_response_dict("I'm an AI.")
     mock_guard.return_value = REJECT_INJECTION
 
@@ -925,8 +961,28 @@ def test_chat_zero_retries_uses_fix(mock_chat, mock_guard):
     resp = agent.chat("Who are you?")
 
     assert resp.response == "No puedo hacer eso."
-    assert mock_chat.call_count == 1
-    assert mock_guard.call_count == 1
+    # initial + 1 fix-guided regeneration (both rejected → verbatim fix)
+    assert mock_chat.call_count == 2
+    assert mock_guard.call_count == 2
+
+
+@patch.object(ContextGuard, "act")
+@patch.object(LLMEngine, "chat")
+def test_fix_guided_regeneration_accepted(mock_chat, mock_guard):
+    """An accepted fix-guided regen is used, not the verbatim fix."""
+    mock_chat.side_effect = [
+        chat_response_dict("I'm an AI."),
+        chat_response_dict("Soy David, periodista."),
+    ]
+    # Initial rejected (with fix), then the regeneration accepted.
+    mock_guard.side_effect = [REJECT_INJECTION, ACCEPT]
+
+    agent = make_guarded_chatter(max_guard_retries=0)
+    resp = agent.chat("Who are you?")
+
+    assert resp.response == "Soy David, periodista."
+    assert resp.response != "No puedo hacer eso."
+    assert agent.history[-1]["content"] == "Soy David, periodista."
 
 
 @patch.object(ContextGuard, "act")

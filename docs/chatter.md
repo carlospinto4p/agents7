@@ -491,15 +491,26 @@ them.
 
 ```
 User message
-    → PersonalityChatter generates response
+    → Chatter generates response
     → ContextGuard evaluates response
     → Accepted? → append to history, return
     → Rejected? → retry with feedback (up to N times)
-    → All retries failed? → use guard's suggested fix
+    → All retries failed and guard gave a fix?
+          → regenerate once, guided by the fix (in character)
+          → guard the regeneration
+          → Accepted? → use it
+          → still rejected? → use the verbatim fix
 ```
 
 Rejected responses **never enter history**. Feedback messages
 sent during retries are temporary and not persisted.
+
+The final fix-guided regeneration adds one extra chatter call
+(plus a guard check) only on the exhausted-retry path, and only
+when the guard supplied a `fix`. It exists because the guard's
+verbatim `fix` is written from the one-line `persona_summary`,
+not the full persona — letting the chatter rewrite it keeps the
+fallback in the character's full voice.
 
 ### ContextGuard
 
