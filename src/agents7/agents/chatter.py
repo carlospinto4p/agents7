@@ -29,7 +29,10 @@ from agents7.agents.persona import (
     Scene,
     _build_scene_system_prompt,
 )
-from agents7.exceptions import ChatEndedError
+from agents7.exceptions import (
+    AgentConfigurationError,
+    ChatEndedError,
+)
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
 from agents7.logs import logger
 from agents7.models import AgentResponse, ChatResponse, LLMMetrics
@@ -210,6 +213,17 @@ class Chatter(BaseAgent):
     extra_instructions: str = field(default="", kw_only=True)
 
     def __post_init__(self) -> None:
+        if (
+            self.persona is None
+            and self.scene is not None
+            and self.scene != Scene()
+        ):
+            raise AgentConfigurationError(
+                f"Chatter `{self.name}`: a `scene` requires a "
+                f"`persona`. The scene frames the persona's "
+                f"role-play, so without a persona it would be "
+                f"silently ignored."
+            )
         if self.persona is not None:
             self._set_attr("system_prompt", self._build_plugin_prompt())
         super().__post_init__()

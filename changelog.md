@@ -3,6 +3,17 @@
 
 
 
+### v3.24.1 - 7th June 2026
+
+- Updated `Chatter.__post_init__`: a non-empty `scene` with no
+  `persona` now raises `AgentConfigurationError` instead of
+  silently dropping the scene (the scene frames the persona's
+  role-play and is unusable on its own). An empty `scene`
+  without a persona is still allowed.
+- Updated `docs/chatter.md`: noted the scene-requires-persona
+  rule.
+
+
 ### v3.24.0 - 7th June 2026
 
 - Added fail-closed guarding to `GuardedChatter` (and

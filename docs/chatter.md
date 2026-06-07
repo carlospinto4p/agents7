@@ -59,7 +59,11 @@ The chatter branch has two parallel sub-branches:
 - **Persona / scene as enforcement** — `PersonalityChatter`
   requires a `Persona`; `SceneChatter` requires both a `Persona`
   and a `Scene`. These are the same composition plugins the base
-  `Chatter` already accepts optionally, just made mandatory.
+  `Chatter` already accepts optionally, just made mandatory. A
+  `Scene` always needs a `Persona` (it frames the persona's
+  role-play), so passing a non-empty `scene` without a `persona`
+  raises `AgentConfigurationError` rather than silently dropping
+  the scene.
 - **Guarding** — `GuardedChatter` extends `Chatter` directly
   (not `PersonalityChatter`) and adds a `ContextGuard`.
   `GuardedSceneChatter` is the convergence point: persona +

@@ -7,6 +7,7 @@ import pytest
 from agents7.agents.chatter import (
     Chatter,
 )
+from agents7.agents.personality import Persona, Scene
 from agents7.exceptions import AgentConfigurationError
 from agents7.llm import LLMEngine
 from agents7.models import ChatResponse
@@ -44,6 +45,30 @@ def test_chatter_custom_params():
     assert agent.temperature == 0.9
     assert agent.think is True
     assert agent.max_history == 10
+
+
+def test_scene_without_persona_raises():
+    """A meaningful scene with no persona is a misconfiguration."""
+    scene = Scene(setting="A medieval tavern", rules=["No modern tech."])
+    with pytest.raises(AgentConfigurationError, match="scene.*requires"):
+        make_chatter(scene=scene)
+
+
+def test_empty_scene_without_persona_ok():
+    """An empty scene (no content) with no persona does not raise."""
+    agent = make_chatter(scene=Scene())
+    assert agent.scene == Scene()
+    assert agent.persona is None
+
+
+def test_scene_with_persona_ok():
+    """A scene paired with a persona builds the role-play prompt."""
+    agent = make_chatter(
+        persona=Persona(full_name="Old Thomas"),
+        scene=Scene(setting="A medieval tavern"),
+    )
+    assert "medieval tavern" in agent.system_prompt
+    assert "Old Thomas" in agent.system_prompt
 
 
 def test_chatter_invalid_prompt_params():
