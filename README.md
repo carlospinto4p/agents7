@@ -94,9 +94,9 @@ BaseAgent
   │           ├── Regressor (Property[T])
   │           └── ContextGuard (response validation)
   └── Chatter (multi-turn conversation)
-        └── PersonalityChatter (roleplay with Persona)
-              ├── SceneChatter (+ Scene context/scenario)
-              ├── GuardedChatter (+ ContextGuard pipeline)
+        ├── PersonalityChatter (roleplay with Persona)
+        │     └── SceneChatter (+ Scene context/scenario)
+        └── GuardedChatter (+ ContextGuard pipeline)
               └── GuardedSceneChatter (Scene + ContextGuard)
 
 Pipeline (chains multiple agents sequentially)

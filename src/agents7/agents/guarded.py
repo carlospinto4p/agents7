@@ -12,7 +12,7 @@ Pass `persona` and/or `scene` directly to `GuardedChatter`
 as composition plugins inherited from `Chatter`.
 """
 
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -64,11 +64,17 @@ class GuardEvent:
 class GuardedChatterStreamResult(_ChatterStreamBase):
     """Sync streaming wrapper with post-stream guard.
 
-    Yields text chunks normally.  After iteration the guard
-    evaluates the full response.  If rejected, the
-    ``chat_response.response`` contains the corrected text
-    (which may differ from the streamed chunks).  History
-    always stores the authoritative version.
+    By default yields text chunks live, then the guard
+    evaluates the full response after iteration — so the raw,
+    unvalidated text reaches the caller before the guard runs
+    (``chat_response.response`` holds the authoritative,
+    possibly-corrected version, and history always stores it).
+
+    When the chatter sets ``guard_buffer_stream=True`` the
+    wrapper instead drains the underlying stream silently,
+    runs the guard, and yields the guarded text as a single
+    chunk — so unvalidated content never reaches the caller,
+    at the cost of live streaming.
 
     Usage::
 
@@ -80,6 +86,16 @@ class GuardedChatterStreamResult(_ChatterStreamBase):
     """
 
     __slots__ = ()
+
+    def __iter__(self) -> Iterator[str]:
+        if not self._chatter.guard_buffer_stream:
+            yield from super().__iter__()
+            return
+        for _ in self._stream:
+            pass
+        self._finalize()
+        if self._chat_response is not None:
+            yield self._chat_response.response
 
     def _finalize(self) -> None:
         text = self._stream.response
@@ -105,6 +121,17 @@ class GuardedChatterAsyncStreamResult(
     """
 
     __slots__ = ()
+
+    async def _async_iterate(self) -> AsyncIterator[str]:
+        if not self._chatter.guard_buffer_stream:
+            async for chunk in super()._async_iterate():
+                yield chunk
+            return
+        async for _ in self._stream:
+            pass
+        await self._finalize_async()
+        if self._chat_response is not None:
+            yield self._chat_response.response
 
     async def _finalize_async(self) -> None:
         text = self._stream.response
@@ -147,6 +174,14 @@ class GuardedChatter(Chatter):
     :param guard_callback: Optional callable invoked on
         every guard check with a `GuardEvent`.  Useful for
         logging or debugging the guard flow.
+    :param guard_buffer_stream: When ``True``, streaming
+        buffers the full response, runs the guard, and yields
+        only the guarded text — so unvalidated content never
+        reaches the caller (at the cost of live streaming).
+        When ``False`` (default), chunks are streamed live and
+        the guard runs afterwards, so the raw text is shown
+        before validation. Has no effect on non-streaming
+        ``chat`` calls.  Defaults to ``False``.
     """
 
     guard: ContextGuard = field(kw_only=True)
@@ -160,6 +195,10 @@ class GuardedChatter(Chatter):
     )
     guard_callback: Callable[[GuardEvent], None] | None = field(
         default=None, kw_only=True
+    )
+    guard_buffer_stream: bool = field(
+        default=False,
+        kw_only=True,
     )
 
     # --- Public API overrides ---

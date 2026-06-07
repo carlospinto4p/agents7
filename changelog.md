@@ -3,6 +3,23 @@
 
 
 
+### v3.23.0 - 7th June 2026
+
+- Added `guard_buffer_stream` field to `GuardedChatter` (and
+  `GuardedSceneChatter`): when `True`, streaming buffers the
+  full response, runs the guard, and yields only the guarded
+  text, so unvalidated content never reaches the caller.
+  Defaults to `False` (live streaming, guard runs after).
+  - `GuardedChatterStreamResult` / `GuardedChatterAsyncStreamResult`
+    override iteration to drain-then-guard in buffered mode.
+  - YAML loaders accept `guard_buffer_stream`.
+- Updated docs:
+  - `docs/chatter.md`: documented `guard_buffer_stream` and the
+    streaming guard trade-off.
+  - `README.md`: corrected the agent hierarchy diagram
+    (`GuardedChatter` extends `Chatter`, not `PersonalityChatter`).
+
+
 ### v3.22.0 - 7th June 2026
 
 - Added `Scene.to_summary()` in `agents/persona.py`: renders a
