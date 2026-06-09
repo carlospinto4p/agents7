@@ -1,6 +1,10 @@
 
 # Backlog - Agents7
 
+### 2026.06.09
+
+- [ ] Remove (or repair) the orphaned `agents7_framework/docker-compose.yml`. Its `app` service has `build: context: .` but there is **no Dockerfile** in `agents7_framework/` — the Dockerfile was deleted in v3.19.0 ("replace Streamlit UI with Svelte app scaffold"), so `docker compose build/up` here fails. The compose still targets the old Streamlit port (8501); the live app now builds from `agents7_ui/`. Delete this dead compose (and its `.dockerignore`) unless the framework is meant to ship its own image, in which case restore the Dockerfile. — LOW — S
+
 ### Scan findings — 7th June 2026
 
 Performance:
