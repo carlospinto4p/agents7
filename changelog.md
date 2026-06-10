@@ -3,6 +3,11 @@
 
 
 
+
+### v4.0.1 - 10th June 2026
+
+- Rotated changelog: archived 9 entries to `changelog/2026.md`.
+
 ### v4.0.0 - 7th June 2026
 
 - Removed `PersonalityChatter` and `SceneChatter`. Persona and
@@ -294,76 +299,5 @@
   - `agents7_framework/integration_tests/report_utils.py`
   - `agents_catalog/tagger_agent/tests/test_tagger_agent.py`
   - `agents7_framework/README.md`
-
-
-### v3.21.20 - 16th May 2026
-
-- Refactored `testing.py`: narrowed bare `except Exception` in `_wrap_for_batch` to `except (ValueError, SyntaxError)`.
-
-
-### v3.21.19 - 16th May 2026
-
-- Refactored `model_selection.py`: added `logger.debug()` to engine-init and agent-creation `except Exception` blocks, standardising debug-logging across all four catch sites.
-
-
-### v3.21.18 - 16th May 2026
-
-- Narrowed broad `except Exception` in `agents/parsing.py`:
-  - `parse()` now catches `(ValidationError, json.JSONDecodeError)` for both parse attempts instead of `Exception`
-
-
-### v3.21.17 - 16th May 2026
-
-- Performance:
-  - `agents/pipeline.py`: removed redundant `list()` wrapper around `asyncio.gather()` return value.
-  - `agents7_ui/frontend/src/pages/Runner.svelte`: replaced slot-based concurrency with batched `Promise.all` chunks.
-  - `agents7_ui/frontend/src/pages/Runner.svelte`: simplified count aggregation from `$derived.by` + three `$derived` accessors to three direct `$derived` filters.
-
-
-### v3.21.16 - 16th May 2026
-
-- Extracted `_row_input()` helper in `eval/metrics.py`: removes four
-  inline `row.get("input", row)` repetitions in `_build_eval_result`,
-  `run_evaluation`, `run_evaluation_async`, and `_fallback_sequential`.
-
-
-### v3.21.15 - 11th May 2026
-
-- Removed `.claude/rules/ui.md`: stale Streamlit UI guidelines; project has moved to `agents7_ui` (Svelte + FastAPI).
-- Added `.gitignore` entry for `.claude/scheduled_tasks.lock` (Claude Code runtime artifact).
-
-
-### v3.21.14 - 10th May 2026
-
-- Added `tests/test_guarded_scene.py`:
-  - `test_from_yaml_persona_summary_includes_situation`: verifies `situation` appears in derived guard persona_summary.
-  - `test_from_yaml_persona_summary_explicit_override`: verifies explicit `guard.persona_summary` in YAML overrides the derived value.
-  - `test_from_yaml_persona_summary_no_scene_omits_scene_keys`: verifies persona_summary has no scene keys when no scene is in YAML.
-
-
-### v3.21.13 - 10th May 2026
-
-- Added `from_yaml()` tests in:
-  - `tests/test_detector.py`: `test_detector_from_yaml_returns_instance`.
-  - `tests/test_classifier.py`: `test_classifier_from_yaml_returns_instance`.
-  - `tests/test_regressor.py`: `test_regressor_from_yaml_returns_instance`.
-  - `tests/test_context_guard.py`: `test_context_guard_from_yaml_returns_instance`.
-- Fixed `ContextGuard.from_yaml()` in `agents/context_guard.py`: now extracts `persona_summary` from the raw YAML via `_resolve_inheritance`, making YAML-based construction work end-to-end.
-- Fixed `BatchProcessor._flatten()` in `agents/batch.py`: skips chunks with `model=None` (malformed LLM response) instead of crashing with `AttributeError`.
-- Added malformed-chunk tests in `tests/test_batch.py`:
-  - `test_malformed_chunk_is_skipped`.
-  - `test_valid_chunks_preserved_around_malformed`.
-- Items 4 and 5 from the `/scan` backlog (`_compare_output()` `None`-field tests and `asyncio.TimeoutError` dispatcher test) were already implemented; marked done.
-
-
-### v3.21.12 - 10th May 2026
-
-- Added tests in `tests/test_guarded_chatter.py`:
-  - `test_chat_stream_guard_accepted`: chunks yielded and guard accepts.
-  - `test_chat_stream_guard_rejected_uses_fix`: fix applied in `_finalize`.
-  - `test_chat_stream_finalize_fires_callback`: `guard_callback` fires after stream.
-  - `test_chat_stream_async_guard_accepted`: async chunks yielded and guard accepts.
-  - `test_chat_stream_async_guard_rejected_uses_fix`: fix applied in `_finalize_async`.
-  - `test_chat_stream_async_finalize_fires_callback`: callback fires after async stream.
 
 
