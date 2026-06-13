@@ -2,6 +2,14 @@
 ## Changelog - Agents7
 
 
+### v4.0.4 - 13th June 2026
+
+- Removed `benchmarks/output_qwen3_8b.txt`: a failed-run capture
+  (model `qwen3:8b` was never pulled, so it logged only a 404
+  traceback with stale Windows/Dropbox paths and no results). The
+  sibling captures hold the real benchmark data.
+
+
 ### v4.0.3 - 13th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
