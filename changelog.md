@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.0.3 - 13th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
+
 ### v4.0.2 - 13th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
@@ -289,10 +294,3 @@
   - `test_chat_async_always_rejects_no_fix`: async path, all retries exhausted, no fix available.
   - `test_broke_character_hint_in_feedback`: BROKE_CHARACTER reason produces AI-vocabulary hint in retry message.
 - Fixed `tests/test_batch.py` `test_async_multi_chunk_preserves_order`: replaced timing-dependent `asyncio.sleep` delays with `asyncio.Event` synchronization to eliminate CI flakiness.
-
-
-### v3.21.22 - 16th May 2026
-
-- Added unit tests in `tests/test_memory.py`:
-  - `test_json_cache_max_size_evicts_oldest`: verifies `_MAX_CACHE` eviction evicts the oldest entry.
-  - `test_json_concurrent_saves`: verifies thread-safe concurrent saves on `JsonFileMemory`.
