@@ -4,6 +4,11 @@
 
 
 
+
+### v4.0.2 - 13th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
 ### v4.0.1 - 10th June 2026
 
 - Rotated changelog: archived 9 entries to `changelog/2026.md`.
@@ -289,15 +294,5 @@
 - Added unit tests in `tests/test_memory.py`:
   - `test_json_cache_max_size_evicts_oldest`: verifies `_MAX_CACHE` eviction evicts the oldest entry.
   - `test_json_concurrent_saves`: verifies thread-safe concurrent saves on `JsonFileMemory`.
-
-
-### v3.21.21 - 16th May 2026
-
-- Refactored `metrics.py`: removed backward-compat re-export shim; updated all callers to import directly from `agents7.eval.metrics`:
-  - `agents7_framework/tests/test_metrics.py`
-  - `agents7_framework/tests/test_eval_report.py`
-  - `agents7_framework/integration_tests/report_utils.py`
-  - `agents_catalog/tagger_agent/tests/test_tagger_agent.py`
-  - `agents7_framework/README.md`
 
 
