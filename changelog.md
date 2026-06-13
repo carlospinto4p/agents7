@@ -2,16 +2,15 @@
 ## Changelog - Agents7
 
 
-
-
-
 ### v4.0.2 - 13th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
 
+
 ### v4.0.1 - 10th June 2026
 
 - Rotated changelog: archived 9 entries to `changelog/2026.md`.
+
 
 ### v4.0.0 - 7th June 2026
 
@@ -148,6 +147,7 @@
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
 
+
 ### v3.21.41 - 6th June 2026
 
 - Cleaned up stale Streamlit references left by the Agent Builder's
@@ -162,13 +162,16 @@
 
 - Rotated changelog: archived 7 entries to `changelog/2026.md`.
 
+
 ### v3.21.39 - 4th June 2026
 
 - Synced `.claude/rules/committing.md` from the programme registry: step 6 now scopes `uv.lock` regeneration to code-related bumps only — non-code patch bumps (`.claude/` config, docs, changelog, rule syncs) skip `uv lock`.
 
+
 ### v3.21.38 - 3rd June 2026
 
 - Synced `.claude/rules/testing.md` from the programme registry: added the SQLite-backed fixtures pointer to the session-scoped template pattern (see the shared `testing-python` rule).
+
 
 ### v3.21.37 - 31st May 2026
 
@@ -200,7 +203,6 @@
 ### v3.21.33 - 17th May 2026
 
 - Rotated changelog: archived 84 old entries to `changelog/2026.md`.
-
 
 
 ### v3.21.32 - 17th May 2026
@@ -294,5 +296,3 @@
 - Added unit tests in `tests/test_memory.py`:
   - `test_json_cache_max_size_evicts_oldest`: verifies `_MAX_CACHE` eviction evicts the oldest entry.
   - `test_json_concurrent_saves`: verifies thread-safe concurrent saves on `JsonFileMemory`.
-
-
