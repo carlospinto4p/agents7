@@ -1150,6 +1150,29 @@ call_logger: mymodule.my_logger
 
 The `call_logger` value is a dotted import path to any callable accepting a `CallRecord`.
 
+**Analyzing a call log:**
+
+`summarize_call_log()` reads a JSONL file written by
+`JsonCallLogger` (or any iterable of `CallRecord` / dict / JSON
+line) and returns a `CallLogSummary` with overall stats plus
+per-agent and per-model breakdowns and error counts:
+
+```python
+from agents7.call_log import summarize_call_log
+
+summary = summarize_call_log("calls.jsonl")
+print(summary.format())
+
+# Programmatic access:
+summary.overall.success_rate   # fraction of calls that parsed
+summary.overall.tokens         # total completion tokens
+summary.by_agent["Extractor"]  # CallStats for one agent
+summary.by_model["ollama::qwen3"].avg_duration
+summary.errors                 # {error message: count}
+```
+
+Cost is not part of `CallRecord`, so it is not aggregated.
+
 ### Persona-Driven Chatter (Roleplay Agent)
 
 Give a `Chatter` a structured `Persona` for consistent character

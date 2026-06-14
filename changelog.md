@@ -2,6 +2,19 @@
 ## Changelog - Agents7
 
 
+### v4.2.0 - 14th June 2026
+
+- Added `call_log.py`:
+  - `summarize_call_log()`: read a JSONL call log (path or
+    iterable of `CallRecord` / dict / JSON line) into aggregate
+    statistics.
+  - `CallLogSummary`: overall stats plus per-agent / per-model
+    breakdowns and error counts; `format()` renders a text
+    report.
+  - `CallStats`: per-group counts with `success_rate` and
+    `avg_duration` properties.
+
+
 ### v4.1.4 - 14th June 2026
 
 - Updated `src/agents7/agents/config_loader.py`:
