@@ -141,16 +141,10 @@ class Pipeline:
         if response.model is None:
             return self._pipeline_result(executed_steps, False)
         if step_idx < len(self.steps) - 1:
-            try:
-                return step.mapper(response)
-            except Exception as e:
-                logger.error(
-                    "Pipeline mapper failed at step %d: %s",
-                    step_idx,
-                    e,
-                    exc_info=True,
-                )
+            mapped = self._call_mapper_safe(step, response, step_idx)
+            if mapped is None:
                 return self._pipeline_result(executed_steps, False)
+            return mapped
         return None
 
     @staticmethod
@@ -168,6 +162,43 @@ class Pipeline:
             ),
             success=success,
         )
+
+    @staticmethod
+    def _call_mapper_safe(
+        step: PipelineStep,
+        response: AgentResponse,
+        step_idx: int,
+        item_idx: int | None = None,
+    ) -> dict | None:
+        """Call a step's mapper, logging and swallowing errors.
+
+        :param step: The pipeline step whose mapper to invoke.
+        :param response: The agent response to map.
+        :param step_idx: Index of the step (for log context).
+        :param item_idx: Optional batch item index (for log
+            context).
+        :return: The mapped input dict, or None if the mapper
+            raised.
+        """
+        try:
+            return step.mapper(response)
+        except Exception as e:
+            if item_idx is None:
+                logger.error(
+                    "Pipeline mapper failed at step %d: %s",
+                    step_idx,
+                    e,
+                    exc_info=True,
+                )
+            else:
+                logger.error(
+                    "Pipeline mapper failed at step %d for item %d: %s",
+                    step_idx,
+                    item_idx,
+                    e,
+                    exc_info=True,
+                )
+            return None
 
     def _evaluate_batch_step(
         self,
@@ -191,17 +222,13 @@ class Pipeline:
                 failed[orig_idx] = None
                 continue
             if step_idx < len(self.steps) - 1:
-                try:
-                    next_active[orig_idx] = step.mapper(response)
-                except Exception as e:
-                    logger.error(
-                        "Pipeline mapper failed at step %d for item %d: %s",
-                        step_idx,
-                        orig_idx,
-                        e,
-                        exc_info=True,
-                    )
+                mapped = self._call_mapper_safe(
+                    step, response, step_idx, item_idx=orig_idx
+                )
+                if mapped is None:
                     failed[orig_idx] = None
+                else:
+                    next_active[orig_idx] = mapped
             else:
                 next_active[orig_idx] = {}
         return next_active
@@ -315,16 +342,10 @@ class Pipeline:
             response = step.agent.act(current_input, chat_kwargs=chat_kwargs)
             if response.model is None:
                 return AgentStreamResult.from_failed(response)
-            try:
-                current_input = step.mapper(response)
-            except Exception as e:
-                logger.error(
-                    "Pipeline mapper failed at step %d: %s",
-                    step_idx,
-                    e,
-                    exc_info=True,
-                )
+            mapped = self._call_mapper_safe(step, response, step_idx)
+            if mapped is None:
                 return AgentStreamResult.from_failed(response)
+            current_input = mapped
 
         last_step = self.steps[-1]
         if last_step.condition is not None and not last_step.condition(
@@ -365,16 +386,10 @@ class Pipeline:
             )
             if response.model is None:
                 return AgentAsyncStreamResult.from_failed(response)
-            try:
-                current_input = step.mapper(response)
-            except Exception as e:
-                logger.error(
-                    "Pipeline mapper failed at step %d: %s",
-                    step_idx,
-                    e,
-                    exc_info=True,
-                )
+            mapped = self._call_mapper_safe(step, response, step_idx)
+            if mapped is None:
                 return AgentAsyncStreamResult.from_failed(response)
+            current_input = mapped
 
         last_step = self.steps[-1]
         if last_step.condition is not None and not last_step.condition(

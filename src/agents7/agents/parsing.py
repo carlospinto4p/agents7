@@ -90,20 +90,25 @@ class ResponseParser:
         """Run the validator pipeline on a parsed model.
 
         Each validator receives the model and returns it
-        (possibly modified). If a validator raises, the
-        model is rejected (returns None) and remaining
-        validators are skipped.
+        (possibly modified). If a validator raises a
+        validation error (`ValueError` or pydantic
+        `ValidationError`), the model is rejected (returns
+        None) and remaining validators are skipped. Other
+        exception types (e.g. bugs in a validator) propagate
+        so they are not silently masked as rejections.
 
         :param model: The parsed model instance, or None.
         :return: The validated (possibly transformed) model,
             or None.
+        :raises Exception: Any non-validation error raised by
+            a validator propagates unchanged.
         """
         if model is None or not self.validators:
             return model
         for validator in self.validators:
             try:
                 model = validator(model)
-            except Exception as e:
+            except (ValueError, ValidationError) as e:
                 logger.error(
                     "Agent `%s`: validator `%s` failed: %s",
                     self.name,

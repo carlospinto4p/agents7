@@ -188,6 +188,16 @@ def test_run_validators_failure_returns_none():
     )
 
 
+def test_run_validators_unexpected_error_propagates():
+    """Non-validation errors (e.g. bugs) are not swallowed."""
+
+    def boom(m: BaseModel) -> BaseModel:
+        raise TypeError("unexpected")
+
+    with pytest.raises(TypeError, match="unexpected"):
+        make_parser(validators=[boom]).run_validators(Output(value="x"))
+
+
 def test_run_validators_chain():
     """Validators run in order; each output feeds into next."""
 

@@ -63,6 +63,30 @@ def cast_optional_fields(
             target[name] = caster(source[name])
 
 
+def _maybe_add_memory(source: dict, target: dict) -> None:
+    """Attach a memory backend to *target* if configured.
+
+    Reads the optional ``memory`` section from *source* and,
+    when present, builds the backend and stores it under
+    ``target["memory"]``. Shared by every Chatter-family
+    loader.
+
+    :param source: Fully resolved YAML config dict.
+    :param target: Result/config dict to populate in place.
+    """
+    memory_settings = source.get("memory")
+    if not memory_settings:
+        return
+    from agents7.agents.memory import MemoryConfig, create_memory
+
+    target["memory"] = create_memory(
+        MemoryConfig(
+            backend=memory_settings.get("backend", "json"),
+            path=memory_settings.get("path", ""),
+        )
+    )
+
+
 # Optional fields shared by every Chatter-based loader, keyed by
 # the caster applied to the raw YAML value.
 _CHATTER_OPTIONAL_FIELDS: dict[str, type] = {
@@ -429,17 +453,7 @@ def load_chatter_yaml_settings(file_path: str) -> dict:
     cast_optional_fields(config, result, _CHATTER_OPTIONAL_FIELDS)
     if end_condition_path := config.get("end_condition"):
         result["end_condition"] = import_from_path(end_condition_path)
-    if memory_settings := config.get("memory"):
-        from agents7.agents.memory import (
-            MemoryConfig,
-            create_memory,
-        )
-
-        memory_config = MemoryConfig(
-            backend=memory_settings.get("backend", "json"),
-            path=memory_settings.get("path", ""),
-        )
-        result["memory"] = create_memory(memory_config)
+    _maybe_add_memory(config, result)
 
     return result
 
@@ -563,10 +577,6 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
     :return: A `GuardedChatter` instance.
     """
     from agents7.agents.guarded import GuardedChatter
-    from agents7.agents.memory import (
-        MemoryConfig,
-        create_memory,
-    )
 
     raw, persona, extra_instructions = _load_base_chatter_config(
         file_path,
@@ -583,12 +593,7 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
         "guard": guard,
     }
     cast_optional_fields(raw, config, _GUARDED_OPTIONAL_FIELDS)
-    if memory_settings := raw.get("memory"):
-        memory_config = MemoryConfig(
-            backend=memory_settings.get("backend", "json"),
-            path=memory_settings.get("path", ""),
-        )
-        config["memory"] = create_memory(memory_config)
+    _maybe_add_memory(raw, config)
 
     return GuardedChatter(**config)
 
@@ -603,10 +608,6 @@ def load_guarded_scene_yaml_settings(file_path: str) -> Any:
     :return: A `GuardedSceneChatter` instance.
     """
     from agents7.agents.guarded_scene import GuardedSceneChatter
-    from agents7.agents.memory import (
-        MemoryConfig,
-        create_memory,
-    )
     from agents7.agents.personality import Scene
 
     raw, persona, extra_instructions = _load_base_chatter_config(
@@ -626,11 +627,6 @@ def load_guarded_scene_yaml_settings(file_path: str) -> Any:
         "guard": guard,
     }
     cast_optional_fields(raw, config, _GUARDED_OPTIONAL_FIELDS)
-    if memory_settings := raw.get("memory"):
-        memory_config = MemoryConfig(
-            backend=memory_settings.get("backend", "json"),
-            path=memory_settings.get("path", ""),
-        )
-        config["memory"] = create_memory(memory_config)
+    _maybe_add_memory(raw, config)
 
     return GuardedSceneChatter(**config)

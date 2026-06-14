@@ -2,6 +2,20 @@
 ## Changelog - Agents7
 
 
+### v4.1.2 - 14th June 2026
+
+- Refactored `src/agents7/agents/`:
+  - `config_loader.py`: extracted `_maybe_add_memory()`, removing the
+    duplicated memory-config block from the three Chatter-family
+    loaders.
+  - `pipeline.py`: extracted `Pipeline._call_mapper_safe()`, removing
+    the repeated mapper try/except from `_process_step_result`,
+    `_evaluate_batch_step`, `act_stream`, and `act_stream_async`.
+  - `parsing.py`: narrowed `ResponseParser.run_validators()` to catch
+    only `ValueError` / `ValidationError`; unexpected errors now
+    propagate instead of being masked as rejections.
+
+
 ### v4.1.1 - 14th June 2026
 
 - Refactored `config_loader.py`:
