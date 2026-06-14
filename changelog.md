@@ -2,6 +2,16 @@
 ## Changelog - Agents7
 
 
+### v4.1.0 - 14th June 2026
+
+- Updated `JsonCallLogger` (`call_log.py`):
+  - Holds a single append file handle (opened lazily on first
+    write, flushed per record) instead of reopening the file on
+    every call.
+  - Added `close()` and context-manager support (`__enter__` /
+    `__exit__`) to release the handle.
+
+
 ### v4.0.5 - 14th June 2026
 
 - Removed dead Docker scaffolding:

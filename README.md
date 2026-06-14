@@ -1115,6 +1115,17 @@ agent = Labeler(..., call_logger=logger)
 agent = Labeler(..., call_logger=lambda r: print(r.to_dict()))
 ```
 
+When logging to a file, `JsonCallLogger` holds a single append
+handle (opened lazily on first write, flushed per record) instead
+of reopening the file on every call. Call `close()` or use it as a
+context manager to release the handle:
+
+```python
+with JsonCallLogger("calls.jsonl") as logger:
+    agent = Labeler(..., call_logger=logger)
+    ...
+```
+
 Each `act()` / `act_async()` call emits one `CallRecord`:
 
 ```json

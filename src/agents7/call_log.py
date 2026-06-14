@@ -93,13 +93,41 @@ class JsonCallLogger:
             stream = sys.stdout
         self._path = Path(path) if path is not None else None
         self._stream = stream
+        self._fh: IO | None = None
+
+    def _writer(self) -> IO:
+        """Return the writable target, opening the file lazily.
+
+        For a file path, a single append handle is opened on
+        first write and reused across calls (avoiding an
+        open/close per record). The handle is created lazily so
+        a logger that never writes leaves no empty file.
+        """
+        if self._path is not None:
+            if self._fh is None:
+                self._fh = self._path.open("a", encoding="utf-8")
+            return self._fh
+        return self._stream
 
     def __call__(self, record: CallRecord) -> None:
         """Write a call record as a JSON line."""
         line = json.dumps(record.to_dict(), ensure_ascii=False)
-        if self._path is not None:
-            with self._path.open("a", encoding="utf-8") as f:
-                f.write(line + "\n")
-        elif self._stream is not None:
-            self._stream.write(line + "\n")
-            self._stream.flush()
+        writer = self._writer()
+        writer.write(line + "\n")
+        writer.flush()
+
+    def close(self) -> None:
+        """Close the persistent file handle, if one is open.
+
+        Safe to call multiple times. Does not close an
+        externally-supplied ``stream``.
+        """
+        if self._fh is not None and not self._fh.closed:
+            self._fh.close()
+        self._fh = None
+
+    def __enter__(self) -> "JsonCallLogger":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()

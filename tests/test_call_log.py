@@ -105,6 +105,53 @@ def test_json_logger_to_file(tmp_path):
     assert obj["success"] is True
 
 
+def test_json_logger_reuses_file_handle(tmp_path):
+    """Repeated calls reuse one persistent append handle."""
+    path = tmp_path / "calls.jsonl"
+    logger = JsonCallLogger(path=path)
+
+    record = CallRecord(
+        trace_id="abc",
+        agent_name="test",
+        agent_version=1,
+        model_id="m",
+        success=True,
+    )
+    logger(record)
+    fh_after_first = logger._fh
+    logger(record)
+
+    assert fh_after_first is logger._fh
+    assert len(path.read_text().strip().split("\n")) == 2
+
+
+def test_json_logger_lazy_file_creation(tmp_path):
+    """No file is created until the first record is written."""
+    path = tmp_path / "calls.jsonl"
+    JsonCallLogger(path=path)
+    assert not path.exists()
+
+
+def test_json_logger_close_and_context_manager(tmp_path):
+    """close() releases the handle; context manager closes it."""
+    path = tmp_path / "calls.jsonl"
+    record = CallRecord(
+        trace_id="abc",
+        agent_name="test",
+        agent_version=1,
+        model_id="m",
+        success=True,
+    )
+
+    with JsonCallLogger(path=path) as logger:
+        logger(record)
+        assert logger._fh is not None
+    assert logger._fh is None
+
+    # Idempotent: closing again does not raise.
+    logger.close()
+
+
 def test_json_logger_to_stream():
     """JsonCallLogger writes to a stream."""
     stream = StringIO()
