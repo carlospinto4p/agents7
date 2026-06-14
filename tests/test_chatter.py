@@ -192,11 +192,7 @@ def test_from_yaml_malformed_yaml(tmp_path):
 
 
 def test_from_yaml_empty_persona_dict_requires_full_name(tmp_path):
-    """An empty `persona:` mapping is rejected — full_name is required.
-
-    Currently surfaces as a raw `TypeError` from `Persona.from_dict`;
-    see backlog re: wrapping it in an `AgentConfigurationError`.
-    """
+    """An empty `persona:` mapping raises a clear config error."""
     yaml_content = (
         "name: PersonaBot\n"
         "version: 1\n"
@@ -208,7 +204,26 @@ def test_from_yaml_empty_persona_dict_requires_full_name(tmp_path):
     yaml_file = tmp_path / "persona.yml"
     yaml_file.write_text(yaml_content)
 
-    with pytest.raises(TypeError, match="full_name"):
+    with pytest.raises(AgentConfigurationError, match="persona.*full_name"):
+        Chatter.from_yaml(str(yaml_file))
+
+
+def test_from_yaml_unknown_persona_field_raises(tmp_path):
+    """An unknown persona field raises a clear config error."""
+    yaml_content = (
+        "name: PersonaBot\n"
+        "version: 1\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "persona:\n"
+        "    full_name: Old Thomas\n"
+        "    bogus_field: nope\n"
+    )
+    yaml_file = tmp_path / "persona.yml"
+    yaml_file.write_text(yaml_content)
+
+    with pytest.raises(AgentConfigurationError, match="persona"):
         Chatter.from_yaml(str(yaml_file))
 
 

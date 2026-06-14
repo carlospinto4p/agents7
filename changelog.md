@@ -2,6 +2,19 @@
 ## Changelog - Agents7
 
 
+### v4.1.4 - 14th June 2026
+
+- Updated `src/agents7/agents/config_loader.py`:
+  - Added `_build_persona()` and `_build_scene()`, wrapping
+    `Persona.from_dict` / `Scene.from_dict` so a malformed
+    `persona` / `scene` section (missing `full_name`, unknown
+    field, non-mapping value) raises `AgentConfigurationError`
+    naming the file instead of a raw `TypeError`. Applied across
+    all three Chatter-family construction sites.
+- Added tests in `tests/test_chatter.py` for the clearer errors
+  (empty persona dict, unknown persona field).
+
+
 ### v4.1.3 - 14th June 2026
 
 - Added tests:

@@ -3,7 +3,7 @@
 
 ### Found while working — 14th June 2026
 
-- [ ] An empty/incomplete `persona:` mapping in a Chatter YAML surfaces a raw `TypeError` (`full_name` missing) from `Persona.from_dict`, leaking out of `load_chatter_yaml_settings` (and `_load_base_chatter_config` for the guarded loaders). Wrap persona/scene construction to raise a friendly `AgentConfigurationError` instead. (MED, S)
+- [x] An empty/incomplete `persona:` mapping in a Chatter YAML surfaces a raw `TypeError` (`full_name` missing) from `Persona.from_dict`, leaking out of `load_chatter_yaml_settings` (and `_load_base_chatter_config` for the guarded loaders). Wrap persona/scene construction to raise a friendly `AgentConfigurationError` instead. (MED, S)
 
 
 ### Improvements — 29th March 2026

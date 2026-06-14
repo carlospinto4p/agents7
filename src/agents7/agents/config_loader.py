@@ -87,6 +87,54 @@ def _maybe_add_memory(source: dict, target: dict) -> None:
     )
 
 
+def _build_persona(data: Any, file_path: str) -> Any:
+    """Build a `Persona` from raw YAML data with a clear error.
+
+    Wraps `Persona.from_dict` so a malformed ``persona`` section
+    (e.g. missing the required ``full_name``, an unknown field, or
+    a non-mapping value) surfaces as an `AgentConfigurationError`
+    naming the file rather than a raw `TypeError`.
+
+    :param data: The raw ``persona`` value from the config.
+    :param file_path: Path to the YAML file (for error messages).
+    :return: A `Persona` instance.
+    :raises AgentConfigurationError: If the persona fields are
+        invalid.
+    """
+    from agents7.agents.persona import Persona
+
+    try:
+        return Persona.from_dict(dict(data))
+    except (TypeError, ValueError) as e:
+        raise AgentConfigurationError(
+            f"Invalid `persona` section in `{file_path}`: {e}"
+        ) from e
+
+
+def _build_scene(data: Any, file_path: str) -> Any:
+    """Build a `Scene` from raw YAML data with a clear error.
+
+    Wraps `Scene.from_dict` so a malformed ``scene`` section
+    (e.g. an unknown field or a non-mapping value) surfaces as an
+    `AgentConfigurationError` naming the file rather than a raw
+    `TypeError`.
+
+    :param data: The raw ``scene`` value from the config.
+    :param file_path: Path to the YAML file (for error messages).
+    :return: A `Scene` instance.
+    :raises AgentConfigurationError: If the scene fields are
+        invalid.
+    """
+    from agents7.agents.persona import Scene
+
+    try:
+        return Scene.from_dict(dict(data))
+    except (TypeError, ValueError) as e:
+        raise AgentConfigurationError(
+            f"Invalid `scene` section in `{file_path}`: {e}"
+        ) from e
+
+
 # Optional fields shared by every Chatter-based loader, keyed by
 # the caster applied to the raw YAML value.
 _CHATTER_OPTIONAL_FIELDS: dict[str, type] = {
@@ -441,12 +489,10 @@ def load_chatter_yaml_settings(file_path: str) -> dict:
     }
 
     if has_persona or has_scene:
-        from agents7.agents.persona import Persona, Scene
-
         if has_persona:
-            result["persona"] = Persona.from_dict(dict(config["persona"]))
+            result["persona"] = _build_persona(config["persona"], file_path)
         if has_scene:
-            result["scene"] = Scene.from_dict(dict(config["scene"]))
+            result["scene"] = _build_scene(config["scene"], file_path)
         if extra := config.get("extra_instructions"):
             result["extra_instructions"] = str(extra).strip()
 
@@ -502,14 +548,10 @@ def _load_base_chatter_config(
     :return: Tuple of (raw config dict, Persona instance,
         extra_instructions string).
     """
-    from agents7.agents.personality import Persona
-
     raw = _resolve_inheritance(file_path)
     raw.setdefault("system_prompt", "(auto-generated)")
     validate_chatter_yaml_config(raw, file_path)
-    persona = Persona.from_dict(
-        dict(raw.get("persona", {})),
-    )
+    persona = _build_persona(raw.get("persona", {}), file_path)
     extra_instructions = raw.get("extra_instructions", "")
     if extra_instructions:
         extra_instructions = str(extra_instructions).strip()
@@ -608,12 +650,11 @@ def load_guarded_scene_yaml_settings(file_path: str) -> Any:
     :return: A `GuardedSceneChatter` instance.
     """
     from agents7.agents.guarded_scene import GuardedSceneChatter
-    from agents7.agents.personality import Scene
 
     raw, persona, extra_instructions = _load_base_chatter_config(
         file_path,
     )
-    scene = Scene.from_dict(dict(raw.get("scene", {})))
+    scene = _build_scene(raw.get("scene", {}), file_path)
     guard = _build_guard(raw, persona, scene=scene)
 
     config: dict[str, Any] = {
