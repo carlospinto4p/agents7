@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v4.1.1 - 14th June 2026
+
+- Refactored `config_loader.py`:
+  - Extracted `_CHATTER_OPTIONAL_FIELDS` and
+    `_GUARDED_OPTIONAL_FIELDS` constants, removing the
+    duplicated optional-field maps across the chatter and the
+    two guarded loaders.
+
+
 ### v4.1.0 - 14th June 2026
 
 - Updated `JsonCallLogger` (`call_log.py`):

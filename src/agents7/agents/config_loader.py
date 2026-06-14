@@ -63,6 +63,29 @@ def cast_optional_fields(
             target[name] = caster(source[name])
 
 
+# Optional fields shared by every Chatter-based loader, keyed by
+# the caster applied to the raw YAML value.
+_CHATTER_OPTIONAL_FIELDS: dict[str, type] = {
+    "temperature": float,
+    "think": bool,
+    "max_history": int,
+    "max_turns": int,
+    "typo_rate": float,
+    "conversation_id": str,
+}
+
+# Guarded loaders accept the Chatter base fields plus the guard
+# tuning fields.
+_GUARDED_OPTIONAL_FIELDS: dict[str, type] = {
+    **_CHATTER_OPTIONAL_FIELDS,
+    "max_guard_retries": int,
+    "guard_context_turns": int,
+    "guard_buffer_stream": bool,
+    "guard_fail_open": bool,
+    "guard_fallback_response": str,
+}
+
+
 def _deep_merge(base: dict, override: dict) -> dict:
     """Recursively merge *override* into *base*.
 
@@ -403,18 +426,7 @@ def load_chatter_yaml_settings(file_path: str) -> dict:
         if extra := config.get("extra_instructions"):
             result["extra_instructions"] = str(extra).strip()
 
-    cast_optional_fields(
-        config,
-        result,
-        {
-            "temperature": float,
-            "think": bool,
-            "max_history": int,
-            "max_turns": int,
-            "typo_rate": float,
-            "conversation_id": str,
-        },
-    )
+    cast_optional_fields(config, result, _CHATTER_OPTIONAL_FIELDS)
     if end_condition_path := config.get("end_condition"):
         result["end_condition"] = import_from_path(end_condition_path)
     if memory_settings := config.get("memory"):
@@ -570,23 +582,7 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
         "extra_instructions": extra_instructions,
         "guard": guard,
     }
-    cast_optional_fields(
-        raw,
-        config,
-        {
-            "temperature": float,
-            "think": bool,
-            "max_history": int,
-            "max_turns": int,
-            "typo_rate": float,
-            "conversation_id": str,
-            "max_guard_retries": int,
-            "guard_context_turns": int,
-            "guard_buffer_stream": bool,
-            "guard_fail_open": bool,
-            "guard_fallback_response": str,
-        },
-    )
+    cast_optional_fields(raw, config, _GUARDED_OPTIONAL_FIELDS)
     if memory_settings := raw.get("memory"):
         memory_config = MemoryConfig(
             backend=memory_settings.get("backend", "json"),
@@ -629,23 +625,7 @@ def load_guarded_scene_yaml_settings(file_path: str) -> Any:
         "extra_instructions": extra_instructions,
         "guard": guard,
     }
-    cast_optional_fields(
-        raw,
-        config,
-        {
-            "temperature": float,
-            "think": bool,
-            "max_history": int,
-            "max_turns": int,
-            "typo_rate": float,
-            "conversation_id": str,
-            "max_guard_retries": int,
-            "guard_context_turns": int,
-            "guard_buffer_stream": bool,
-            "guard_fail_open": bool,
-            "guard_fallback_response": str,
-        },
-    )
+    cast_optional_fields(raw, config, _GUARDED_OPTIONAL_FIELDS)
     if memory_settings := raw.get("memory"):
         memory_config = MemoryConfig(
             backend=memory_settings.get("backend", "json"),
