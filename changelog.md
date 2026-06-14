@@ -2,6 +2,18 @@
 ## Changelog - Agents7
 
 
+### v4.1.3 - 14th June 2026
+
+- Added tests:
+  - `tests/test_context_guard.py`: `forbidden_terms_for_language`
+    case/whitespace normalization (mixed-case, surrounding
+    whitespace).
+  - `tests/test_chatter.py`: `Chatter.from_yaml` persona/scene edge
+    cases — empty persona dict rejected, persona with `full_name`
+    loads, `extra_instructions` stripping, scene-without-persona
+    raising.
+
+
 ### v4.1.2 - 14th June 2026
 
 - Refactored `src/agents7/agents/`:

@@ -207,6 +207,19 @@ def test_forbidden_terms_for_language_spanish_matches_default():
     assert forbidden_terms_for_language("Spanish") == _DEFAULT_FORBIDDEN_TERMS
 
 
+def test_forbidden_terms_for_language_normalizes_case_and_whitespace():
+    """Language key is normalized via `.strip().lower()`."""
+    from agents7.agents.context_guard import forbidden_terms_for_language
+
+    canonical = forbidden_terms_for_language("english")
+    assert forbidden_terms_for_language("ENGLISH") == canonical
+    assert forbidden_terms_for_language("EnGlIsH") == canonical
+    assert forbidden_terms_for_language("  english  ") == canonical
+    assert forbidden_terms_for_language("\tFrench\n") == (
+        forbidden_terms_for_language("french")
+    )
+
+
 def test_context_guard_custom_prompt():
     """Custom system_prompt is preserved, not overwritten."""
     guard = make_guard(system_prompt="Custom guard prompt.")

@@ -191,6 +191,85 @@ def test_from_yaml_malformed_yaml(tmp_path):
         Chatter.from_yaml(str(yaml_file))
 
 
+def test_from_yaml_empty_persona_dict_requires_full_name(tmp_path):
+    """An empty `persona:` mapping is rejected — full_name is required.
+
+    Currently surfaces as a raw `TypeError` from `Persona.from_dict`;
+    see backlog re: wrapping it in an `AgentConfigurationError`.
+    """
+    yaml_content = (
+        "name: PersonaBot\n"
+        "version: 1\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "persona: {}\n"
+    )
+    yaml_file = tmp_path / "persona.yml"
+    yaml_file.write_text(yaml_content)
+
+    with pytest.raises(TypeError, match="full_name"):
+        Chatter.from_yaml(str(yaml_file))
+
+
+def test_from_yaml_persona_with_full_name_loads(tmp_path):
+    """A persona with full_name auto-generates the system prompt."""
+    yaml_content = (
+        "name: PersonaBot\n"
+        "version: 1\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "persona:\n"
+        "    full_name: Old Thomas\n"
+    )
+    yaml_file = tmp_path / "persona.yml"
+    yaml_file.write_text(yaml_content)
+
+    agent = Chatter.from_yaml(str(yaml_file))
+    assert agent.persona is not None
+    assert agent.persona.full_name == "Old Thomas"
+    assert agent.scene is None
+    assert "Old Thomas" in agent.system_prompt
+
+
+def test_from_yaml_extra_instructions_stripped(tmp_path):
+    """Surrounding whitespace on extra_instructions is stripped."""
+    yaml_content = (
+        "name: PersonaBot\n"
+        "version: 1\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "persona:\n"
+        "    full_name: Old Thomas\n"
+        'extra_instructions: "  Speak in riddles.  "\n'
+    )
+    yaml_file = tmp_path / "extra.yml"
+    yaml_file.write_text(yaml_content)
+
+    agent = Chatter.from_yaml(str(yaml_file))
+    assert agent.extra_instructions == "Speak in riddles."
+
+
+def test_from_yaml_scene_without_persona_raises(tmp_path):
+    """A meaningful scene with no persona raises via YAML."""
+    yaml_content = (
+        "name: SceneBot\n"
+        "version: 1\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "scene:\n"
+        "    setting: A medieval tavern\n"
+    )
+    yaml_file = tmp_path / "scene.yml"
+    yaml_file.write_text(yaml_content)
+
+    with pytest.raises(AgentConfigurationError, match="scene.*requires"):
+        Chatter.from_yaml(str(yaml_file))
+
+
 # --- chat() ---
 
 
