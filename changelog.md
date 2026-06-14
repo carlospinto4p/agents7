@@ -2,6 +2,16 @@
 ## Changelog - Agents7
 
 
+### v4.0.5 - 14th June 2026
+
+- Removed dead Docker scaffolding:
+  - `docker-compose.yml`: orphaned `app` service built from a
+    Dockerfile that no longer exists (deleted in v3.19.0) and
+    targeting the old Streamlit port 8501. The live app now ships
+    from `agents7_ui/`.
+  - `.dockerignore`: only used by the removed compose build.
+
+
 ### v4.0.4 - 13th June 2026
 
 - Removed `benchmarks/output_qwen3_8b.txt`: a failed-run capture
