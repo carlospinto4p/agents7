@@ -2,6 +2,19 @@
 ## Changelog - Agents7
 
 
+### v4.3.0 - 21st June 2026
+
+- Added `agents7` CLI console script (`[project.scripts]`) with two subcommands, thin glue over the YAML loaders, `run_evaluation`, and `export_eval_report`:
+  - `agents7 run`: execute a YAML-configured agent against an inline-JSON or file input and print the structured output (`--full` for text, thinking, and metrics).
+  - `agents7 eval`: score an agent against a labeled golden set, print accuracy, and optionally write a Markdown report (`--report`).
+- Added `eval/data.py` (re-exported from `agents7.eval`):
+  - `build_agent()`: build a structured-output agent from a YAML config and `agent_type`.
+  - `load_eval_rows()`: load a golden set from `.jsonl`, `.json`, or `.csv`.
+  - `normalise_rows()`: normalise nested or flat rows to the canonical eval shape.
+  - `model_output_fields()`, `resolve_agent_class()`, `load_config_dict()`, `AGENT_TYPE_MAP`.
+- Updated `README.md`: documented the CLI and the reusable eval-data helpers.
+
+
 ### v4.2.0 - 14th June 2026
 
 - Added `call_log.py`:

@@ -297,6 +297,45 @@ Note: YAML `prompt_params` only supports static values (cast to strings). For ca
 
 **Config inheritance:** When `base_config` is specified, the base YAML is loaded first and the current file's keys override it. Nested dicts (e.g. `engine`) are merged recursively. Chains are supported (A inherits B inherits C) and circular references are detected.
 
+### Command-Line Interface
+
+Installing the package exposes an `agents7` console script with two
+subcommands — thin glue over the YAML loaders, `run_evaluation`, and
+`export_eval_report` — for running and scoring agents headlessly,
+without any UI.
+
+```bash
+# Run a YAML-configured agent against a single input (inline JSON):
+agents7 run --config config.yml --input '{"text": "I love this!"}'
+
+# …or from a file, printing the full response (text, thinking, metrics):
+agents7 run -c config.yml --input-file input.json --full
+
+# Evaluate against a labeled golden set and print accuracy:
+agents7 eval --config config.yml --data data/golden_set.jsonl
+
+# …and write a Markdown report with a confusion matrix:
+agents7 eval -c config.yml -d golden_set.csv --report report.md
+```
+
+The agent class is chosen from the config's `agent_type` field
+(`labeler`, `detector`, `classifier`, or `regressor`), overridable
+with `--agent-type`. Golden sets may be `.jsonl`, `.json`, or `.csv`,
+and rows may be nested (`{"input": {...}, "category": "..."}`) or flat
+(input and expected columns side by side); both are normalised
+automatically. Expected fields are derived from the golden set and the
+output model, or set explicitly with `--fields`.
+
+The underlying helpers are also importable for programmatic use:
+
+```python
+from agents7.eval import build_agent, load_eval_rows, normalise_rows
+
+agent = build_agent("config.yml", agent_type="classifier")
+rows = load_eval_rows("data/golden_set.jsonl")
+eval_rows, fields = normalise_rows(rows)
+```
+
 ### Retry / Resilience
 
 LLM transport errors (connection failures, server 5xx) can be retried automatically with exponential backoff. Client errors (4xx) are **not** retried. Parse failures can be retried separately via `max_parse_retries` (see below).
