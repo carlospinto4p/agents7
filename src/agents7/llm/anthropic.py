@@ -74,6 +74,7 @@ class AnthropicProvider(LLMProvider):
         max_tokens: int,
         think: bool,
         stream: bool = False,
+        tools: list[dict] | None = None,
     ) -> dict:
         """Build kwargs for the Anthropic messages call."""
         system_text = ""
@@ -108,7 +109,36 @@ class AnthropicProvider(LLMProvider):
                 "type": "enabled",
                 "budget_tokens": max(1024, effective_max // 2),
             }
+        if tools:
+            params["tools"] = self._convert_tools(tools)
         return params
+
+    @staticmethod
+    def _convert_tools(tools: list[dict]) -> list[dict]:
+        """Convert neutral tool schemas to Anthropic format.
+
+        The registry emits OpenAI-style
+        ``{"type": "function", "function": {"name",
+        "description", "parameters"}}`` dicts; Anthropic wants
+        ``{"name", "description", "input_schema"}``.
+
+        :param tools: Provider-neutral tool schemas.
+        :return: Tool schemas in Anthropic's wire format.
+        """
+        converted = []
+        for entry in tools:
+            fn = entry.get("function", entry)
+            converted.append(
+                {
+                    "name": fn["name"],
+                    "description": fn.get("description", ""),
+                    "input_schema": fn.get(
+                        "parameters",
+                        {"type": "object", "properties": {}},
+                    ),
+                }
+            )
+        return converted
 
     @staticmethod
     def _parse_response(
@@ -118,11 +148,20 @@ class AnthropicProvider(LLMProvider):
         """Parse a non-streaming Anthropic response."""
         content_text = ""
         thinking_text = ""
+        tool_calls: list[dict] = []
         for block in response.content:
             if block.type == "text":
                 content_text += block.text
             elif block.type == "thinking":
                 thinking_text += block.thinking
+            elif block.type == "tool_use":
+                tool_calls.append(
+                    {
+                        "name": block.name,
+                        "arguments": dict(block.input),
+                        "id": block.id,
+                    }
+                )
 
         usage = response.usage
         elapsed = time.monotonic() - start_time
@@ -131,6 +170,7 @@ class AnthropicProvider(LLMProvider):
             "response": content_text.strip(),
             "role": response.role,
             "thinking": (thinking_text.strip() if thinking_text else None),
+            "tool_calls": tool_calls,
             "metrics": {
                 "tokens": usage.output_tokens,
                 "prompt_tokens": usage.input_tokens,
@@ -156,6 +196,7 @@ class AnthropicProvider(LLMProvider):
             temperature,
             max_tokens,
             think,
+            tools=tools,
         )
         start = time.monotonic()
         response = self._client.messages.create(**params)
@@ -177,6 +218,7 @@ class AnthropicProvider(LLMProvider):
             temperature,
             max_tokens,
             think,
+            tools=tools,
         )
         start = time.monotonic()
         response = await self._async_client.messages.create(**params)
@@ -233,6 +275,56 @@ class AnthropicProvider(LLMProvider):
             "model_name": self.model_name,
             "model_id": self.model_id,
         }
+
+    # --- Tool calling ---
+
+    def supports_tools(self) -> bool:
+        """Anthropic/Claude supports tool calling."""
+        return True
+
+    def build_tool_turn_messages(
+        self,
+        assistant_text: str,
+        tool_calls: list[dict],
+        results: list[str],
+    ) -> list[dict]:
+        """Build Anthropic assistant + tool-result messages.
+
+        Emits an assistant message whose content blocks are the
+        optional text plus one ``tool_use`` block per call, then
+        a single user message carrying one ``tool_result`` block
+        per call. All results share one user message because the
+        Anthropic Messages API requires roles to alternate —
+        consecutive user messages are rejected. The
+        ``tool_result.tool_use_id`` is linked back to the
+        originating ``tool_use.id`` carried on each tool call
+        dict (parsed from the model's response).
+
+        See `LLMProvider.build_tool_turn_messages`.
+        """
+        content_blocks: list[dict] = []
+        if assistant_text:
+            content_blocks.append({"type": "text", "text": assistant_text})
+        for call in tool_calls:
+            content_blocks.append(
+                {
+                    "type": "tool_use",
+                    "id": call["id"],
+                    "name": call["name"],
+                    "input": call["arguments"],
+                }
+            )
+        assistant = {"role": "assistant", "content": content_blocks}
+        result_blocks = [
+            {
+                "type": "tool_result",
+                "tool_use_id": call["id"],
+                "content": result,
+            }
+            for call, result in zip(tool_calls, results)
+        ]
+        user = {"role": "user", "content": result_blocks}
+        return [assistant, user]
 
 
 # --- Stream adapters ---

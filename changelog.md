@@ -2,6 +2,20 @@
 ## Changelog - Agents7
 
 
+### v4.5.0 - 21st June 2026
+
+- Added tool calling to the Anthropic provider in `llm/anthropic.py`:
+  - `AnthropicProvider.supports_tools()`: now returns `True`.
+  - `AnthropicProvider.build_tool_turn_messages()`: emits the
+    `tool_use` / `tool_result` content blocks Claude expects,
+    linking each result to its call by `tool_use_id`.
+  - `_convert_tools()`: maps neutral OpenAI-style tool schemas to
+    Anthropic's `input_schema` format.
+  - `chat` / `chat_async` now forward `tools` and parse `tool_use`
+    blocks into `tool_calls`, so `ToolAgent` works on Claude models.
+- Updated `README.md`: tool calling now lists Ollama and Anthropic.
+
+
 ### v4.4.0 - 21st June 2026
 
 - Added tool / function calling (Ollama provider):

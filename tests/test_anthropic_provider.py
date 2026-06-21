@@ -222,6 +222,216 @@ def test_engine_anthropic_with_fallback():
     assert engine._fallback_provider.model_name == "claude-haiku-4-5-20251001"
 
 
+# --- Tool calling ---
+#
+# These exercise the Anthropic-specific wire format without a
+# real client: the tool methods never touch ``self._client``, so
+# we bypass ``__init__`` with ``object.__new__`` and the tests run
+# even when the optional ``anthropic`` package is absent.
+
+
+def _bare_provider():
+    """Build an AnthropicProvider without running ``__init__``."""
+    from agents7.llm.anthropic import AnthropicProvider
+
+    provider = object.__new__(AnthropicProvider)
+    provider.provider = "anthropic"
+    provider.model_name = "claude-test"
+    provider.model_id = "anthropic::claude-test"
+    return provider
+
+
+def _tool_use_block(name, input_, id_):
+    return SimpleNamespace(
+        type="tool_use",
+        name=name,
+        input=input_,
+        id=id_,
+    )
+
+
+def test_anthropic_supports_tools():
+    """Anthropic provider advertises tool support."""
+    assert _bare_provider().supports_tools() is True
+
+
+def test_convert_tools_openai_to_anthropic():
+    """OpenAI-style schema maps to Anthropic input_schema."""
+    from agents7.llm.anthropic import AnthropicProvider
+
+    neutral = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "description": "Get weather.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"city": {"type": "string"}},
+                },
+            },
+        }
+    ]
+    converted = AnthropicProvider._convert_tools(neutral)
+    assert converted == [
+        {
+            "name": "get_weather",
+            "description": "Get weather.",
+            "input_schema": {
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+            },
+        }
+    ]
+
+
+def test_convert_tools_flat_entry_and_defaults():
+    """A flat (unwrapped) entry and missing keys get defaults."""
+    from agents7.llm.anthropic import AnthropicProvider
+
+    converted = AnthropicProvider._convert_tools([{"name": "ping"}])
+    assert converted[0]["name"] == "ping"
+    assert converted[0]["description"] == ""
+    assert converted[0]["input_schema"] == {
+        "type": "object",
+        "properties": {},
+    }
+
+
+def test_build_params_includes_converted_tools():
+    """Tools passed to _build_params land as Anthropic schemas."""
+    provider = _bare_provider()
+    provider._default_max_tokens = 4096
+    tools = [
+        {
+            "type": "function",
+            "function": {"name": "add", "parameters": {"type": "object"}},
+        }
+    ]
+    params = provider._build_params(
+        [{"role": "user", "content": "Hi"}],
+        0.7,
+        -1,
+        False,
+        tools=tools,
+    )
+    assert params["tools"] == [
+        {
+            "name": "add",
+            "description": "",
+            "input_schema": {"type": "object"},
+        }
+    ]
+
+
+def test_build_params_no_tools_key_when_absent():
+    """No tools key when none provided."""
+    provider = _bare_provider()
+    provider._default_max_tokens = 4096
+    params = provider._build_params(
+        [{"role": "user", "content": "Hi"}],
+        0.7,
+        -1,
+        False,
+    )
+    assert "tools" not in params
+
+
+def test_parse_response_extracts_tool_use():
+    """tool_use blocks become {name, arguments, id} dicts."""
+    from agents7.llm.anthropic import AnthropicProvider
+
+    resp = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="text", text="Let me check."),
+            _tool_use_block("get_weather", {"city": "Paris"}, "toolu_1"),
+        ],
+        role="assistant",
+        usage=SimpleNamespace(input_tokens=10, output_tokens=5),
+    )
+    result = AnthropicProvider._parse_response(resp, time.monotonic())
+    assert result["response"] == "Let me check."
+    assert result["tool_calls"] == [
+        {
+            "name": "get_weather",
+            "arguments": {"city": "Paris"},
+            "id": "toolu_1",
+        }
+    ]
+
+
+def test_parse_response_no_tools_empty_list():
+    """A text-only response yields an empty tool_calls list."""
+    from agents7.llm.anthropic import AnthropicProvider
+
+    result = AnthropicProvider._parse_response(
+        _mock_response(text="Hi"),
+        time.monotonic(),
+    )
+    assert result["tool_calls"] == []
+
+
+def test_build_tool_turn_messages_shape():
+    """Single call: assistant tool_use + user tool_result linked by id."""
+    provider = _bare_provider()
+    calls = [{"name": "add", "arguments": {"a": 1, "b": 2}, "id": "toolu_x"}]
+    msgs = provider.build_tool_turn_messages("thinking...", calls, ["3"])
+
+    assert len(msgs) == 2
+    assistant, user = msgs
+    assert assistant["role"] == "assistant"
+    assert assistant["content"][0] == {
+        "type": "text",
+        "text": "thinking...",
+    }
+    assert assistant["content"][1] == {
+        "type": "tool_use",
+        "id": "toolu_x",
+        "name": "add",
+        "input": {"a": 1, "b": 2},
+    }
+    assert user["role"] == "user"
+    assert user["content"] == [
+        {
+            "type": "tool_result",
+            "tool_use_id": "toolu_x",
+            "content": "3",
+        }
+    ]
+
+
+def test_build_tool_turn_messages_no_text_block_when_empty():
+    """Empty assistant text omits the leading text block."""
+    provider = _bare_provider()
+    calls = [{"name": "add", "arguments": {"a": 1}, "id": "toolu_x"}]
+    msgs = provider.build_tool_turn_messages("", calls, ["1"])
+    assert all(b["type"] == "tool_use" for b in msgs[0]["content"])
+
+
+def test_build_tool_turn_messages_multi_call_single_user():
+    """Parallel calls share one user message; ids pair by index."""
+    provider = _bare_provider()
+    calls = [
+        {"name": "add", "arguments": {"a": 1}, "id": "toolu_a"},
+        {"name": "mul", "arguments": {"a": 2}, "id": "toolu_b"},
+    ]
+    msgs = provider.build_tool_turn_messages("", calls, ["1", "4"])
+
+    # Exactly two messages — one assistant, one user (roles must
+    # alternate; consecutive user messages would be rejected).
+    assert len(msgs) == 2
+    assert msgs[0]["role"] == "assistant"
+    assert len(msgs[0]["content"]) == 2
+    assert msgs[1]["role"] == "user"
+
+    results = msgs[1]["content"]
+    assert len(results) == 2
+    assert results[0]["tool_use_id"] == "toolu_a"
+    assert results[0]["content"] == "1"
+    assert results[1]["tool_use_id"] == "toolu_b"
+    assert results[1]["content"] == "4"
+
+
 # --- Stream adapter ---
 
 
