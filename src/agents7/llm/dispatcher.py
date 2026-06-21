@@ -74,6 +74,7 @@ class EngineDispatcher:
         self,
         method: str,
         temperature: float,
+        tools: list[dict] | None = None,
         **kwargs,
     ) -> tuple[str | None, object | None]:
         if self._cache is None or temperature != 0:
@@ -82,6 +83,7 @@ class EngineDispatcher:
             model_id=self._model_id,
             method=method,
             temperature=temperature,
+            tools=tools,
             **kwargs,
         )
         return key, self._cache.get(key)
@@ -117,6 +119,7 @@ class EngineDispatcher:
             max_tokens=common["max_tokens"],
             output_format=common["output_format"],
             think=common["think"],
+            tools=common.get("tools"),
         )
 
     # --- Cost injection ---

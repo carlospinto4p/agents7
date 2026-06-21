@@ -68,6 +68,7 @@ class _CacheKeyBuilder:
         max_tokens: int = -1,
         output_format: str | dict | None = None,
         think: bool = False,
+        tools: list[dict] | None = None,
     ) -> str:
         """Build a deterministic cache key from call
         parameters.
@@ -85,6 +86,8 @@ class _CacheKeyBuilder:
             "output_format": output_format,
             "think": think,
         }
+        if tools is not None:
+            payload["tools"] = tools
         raw = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(raw.encode()).hexdigest()
 

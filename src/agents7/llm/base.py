@@ -132,6 +132,7 @@ class LLMEngine:
         think: bool = False,
         seed: int | None = None,
         timeout: float | None = None,
+        tools: list[dict] | None = None,
     ) -> dict:
         """Generate a chat response.
 
@@ -141,6 +142,8 @@ class LLMEngine:
         :param timeout: Per-call timeout in seconds. Only
             enforced for async calls. ``None`` means no
             timeout.
+        :param tools: Optional list of tool definitions in
+            OpenAI/Anthropic function-calling format.
         """
         return self._dispatcher.execute(
             "chat",
@@ -153,6 +156,7 @@ class LLMEngine:
             think=think,
             seed=seed,
             timeout=timeout,
+            tools=tools,
         )
 
     async def chat_async(
@@ -164,6 +168,7 @@ class LLMEngine:
         think: bool = False,
         seed: int | None = None,
         timeout: float | None = None,
+        tools: list[dict] | None = None,
     ) -> dict:
         """Async version of `chat`.
 
@@ -172,6 +177,8 @@ class LLMEngine:
 
         :param timeout: Per-call timeout in seconds.
             Raises ``LLMException`` on expiry.
+        :param tools: Optional list of tool definitions in
+            OpenAI/Anthropic function-calling format.
         """
         return await self._dispatcher.execute_async(
             "chat",
@@ -184,6 +191,7 @@ class LLMEngine:
             think=think,
             seed=seed,
             timeout=timeout,
+            tools=tools,
         )
 
     def generate(
@@ -357,6 +365,24 @@ class LLMEngine:
     def supports_warmup(self) -> bool:
         """Whether this engine supports warm-up (Ollama only)."""
         return self.provider == "ollama"
+
+    def supports_tools(self) -> bool:
+        """Whether the underlying provider supports tool calling."""
+        return self.llm_provider.supports_tools()
+
+    def build_tool_turn_messages(
+        self,
+        assistant_text: str,
+        tool_calls: list[dict],
+        results: list[str],
+    ) -> list[dict]:
+        """Delegate to the provider's tool-turn message builder.
+
+        See `LLMProvider.build_tool_turn_messages`.
+        """
+        return self.llm_provider.build_tool_turn_messages(
+            assistant_text, tool_calls, results
+        )
 
     def get_model_info(self) -> dict:
         """
