@@ -2,13 +2,26 @@
 ## Changelog - Agents7
 
 
+### v4.4.0 - 21st June 2026
+
+- Added tool / function calling (Ollama provider):
+  - `agents7.tools`: `Tool`, `ToolRegistry`, `schema_from_callable`.
+  - `ToolAgent`: bounded call -> tool -> call loop with `act()` /
+    `act_async()` / `from_yaml()`.
+  - Added `tools=` to `LLMEngine.chat` / `chat_async` and the
+    `tool_calls` field to the normalized result dict.
+  - Added `LLMProvider.supports_tools()` and
+    `build_tool_turn_messages()`; wired for Ollama.
+  - Added `ToolSchemaError` and `ToolLoopError`.
+
+
 ### v4.3.1 - 21st June 2026
 
-- `.claude/rules/committing.md`: added a **Branching** section — the
-  default workflow commits directly to the default branch (`main`); do
-  not create a feature branch or worktree unless the user asks or a
-  skill requires isolation. Overrides the harness "branch first"
-  default per instruction priority.
+- `.claude/rules/committing.md`: added a short **Branching** pointer —
+  ordinary work commits directly to the default branch; no feature
+  branch or worktree unless the user asks or a skill requires
+  isolation. The full guidance lives in the global `git-branching.md`
+  rule so it loads in every repo with nothing to propagate.
 
 
 ### v4.3.0 - 21st June 2026

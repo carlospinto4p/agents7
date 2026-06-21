@@ -47,6 +47,7 @@ where deterministic logic is faster or more reliable.
   - [Scene Chatter](#scene-chatter-contextual-roleplay-agent)
   - [Testing Utilities](#testing-utilities)
   - [Simple Classifier](#simple-classifier)
+  - [Tool Calling](#tool-calling)
 - [Examples](#examples)
 - [Requirements](#requirements)
 - [Model Compatibility](#model-compatibility)
@@ -1370,6 +1371,40 @@ print(result.model.category)  # SPAM
 ```
 
 Auto-generates `StrEnum` and `ClassificationProperty` subclasses. Supports custom reasons, `not_applicable` toggle, `think` mode, and extra kwargs (`examples`, `prompt_params`).
+
+### Tool Calling
+
+A `ToolAgent` can call plain Python functions. Pass callables as
+`tools`; their JSON schema is derived from the type hints, and the
+agent runs a bounded loop, executing tools and feeding results back
+until the model produces a final answer.
+
+```python
+from agents7.agents import ToolAgent
+from agents7.llm import LLMEngine
+
+
+def get_weather(city: str) -> str:
+    """Return the current weather for a city."""
+    return f"It is 18 degrees and sunny in {city}."
+
+
+agent = ToolAgent(
+    name="weather-bot",
+    version=1,
+    engine=LLMEngine(provider="ollama", model_name="qwen3"),
+    system_prompt="Answer weather questions using the tool.",
+    tools=[get_weather],
+    max_iterations=5,
+)
+
+print(agent.act("What's the weather in Paris?").response)
+```
+
+Tool calling currently requires the Ollama provider. The agent
+raises `AgentConfigurationError` if the engine's provider does not
+support tools, and `ToolLoopError` if the loop exceeds
+`max_iterations`.
 
 ## Examples
 
