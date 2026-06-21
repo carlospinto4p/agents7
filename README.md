@@ -543,10 +543,11 @@ The `api_key` falls back to the `OPENAI_API_KEY` environment variable when omitt
 
 ### Anthropic/Claude Provider
 
-Native support for Claude models using the official `anthropic` SDK:
+Native support for Claude models using the official `anthropic` SDK.
+Install the optional `anthropic` extra:
 
 ```bash
-uv pip install anthropic
+uv pip install agents7[anthropic]
 ```
 
 ```python

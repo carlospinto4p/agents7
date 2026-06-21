@@ -2,6 +2,16 @@
 ## Changelog - Agents7
 
 
+### v4.5.1 - 21st June 2026
+
+- Added the `anthropic` optional-dependency extra in `pyproject.toml`:
+  - Install Claude support with `pip install agents7[anthropic]`.
+  - `uv sync --all-extras` now installs `anthropic`, so the
+    `AnthropicProvider` tests run instead of skipping.
+- Updated `README.md`: Anthropic install uses the `[anthropic]`
+  extra instead of a bare `anthropic` install.
+
+
 ### v4.5.0 - 21st June 2026
 
 - Added tool calling to the Anthropic provider in `llm/anthropic.py`:
