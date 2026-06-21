@@ -1,9 +1,34 @@
 """A callable wrapped as an LLM-invocable tool."""
 
+import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from pydantic import BaseModel
+
 from agents7.tools.schema import schema_from_callable
+
+
+def serialize_tool_result(value: object) -> str:
+    """Serialize a tool's return value for feeding back to the model.
+
+    Plain strings pass through unchanged. Structured returns are
+    JSON-encoded so the model receives valid JSON rather than a
+    Python ``repr``: Pydantic models via ``model_dump_json``, and
+    ``dict`` / ``list`` / ``tuple`` via ``json.dumps``. Anything
+    else falls back to ``str``.
+
+    :param value: The value returned by the wrapped callable.
+    :return: A string representation suitable for a tool-result
+        message.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, BaseModel):
+        return value.model_dump_json()
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, ensure_ascii=False, default=str)
+    return str(value)
 
 
 @dataclass(frozen=True)
@@ -36,9 +61,14 @@ class Tool:
             )
 
     def run(self, **kwargs) -> str:
-        """Invoke the wrapped function and stringify its return.
+        """Invoke the wrapped function and serialize its return.
+
+        Structured returns (`dict`, `list`, `tuple`, or a Pydantic
+        model) are JSON-encoded; plain strings pass through; any
+        other type falls back to ``str``. See
+        `serialize_tool_result`.
 
         :param kwargs: Arguments parsed from the model's tool call.
-        :return: The function's return value coerced to ``str``.
+        :return: The function's return value serialized to a string.
         """
-        return str(self.fn(**kwargs))
+        return serialize_tool_result(self.fn(**kwargs))

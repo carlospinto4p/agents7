@@ -2,6 +2,17 @@
 ## Changelog - Agents7
 
 
+### v4.7.0 - 21st June 2026
+
+- Updated `tools/`:
+  - `Tool.run()`: serializes structured returns (`dict`, `list`,
+    `tuple`, or a Pydantic model) to JSON before feeding them back
+    to the model; plain strings pass through, other types fall back
+    to `str`.
+  - Added `serialize_tool_result()`: the standalone serializer
+    backing `Tool.run()`, exported from `agents7.tools`.
+
+
 ### v4.6.0 - 21st June 2026
 
 - Wired tool calling for the OpenAI-compatible provider in `src/agents7/llm/openai_compat.py`:

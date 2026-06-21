@@ -1,10 +1,13 @@
 """Unit tests for agents7.tools Tool and ToolRegistry."""
 
+import json
+
 import pytest
+from pydantic import BaseModel
 
 from agents7.exceptions import ToolSchemaError
 from agents7.tools.registry import ToolRegistry
-from agents7.tools.tool import Tool
+from agents7.tools.tool import Tool, serialize_tool_result
 
 
 def add(a: int, b: int) -> int:
@@ -17,6 +20,18 @@ def boom(x: int) -> int:
     raise RuntimeError("kaboom")
 
 
+def lookup(city: str) -> dict:
+    """Return a structured weather record."""
+    return {"city": city, "temp_c": 21, "unit": "°C"}
+
+
+class Weather(BaseModel):
+    """A Pydantic tool return."""
+
+    city: str
+    temp_c: int
+
+
 def test_tool_defaults_from_callable():
     tool = Tool(add)
     assert tool.name == "add"
@@ -26,6 +41,28 @@ def test_tool_defaults_from_callable():
 
 def test_tool_run_coerces_to_str():
     assert Tool(add).run(a=2, b=3) == "5"
+
+
+def test_tool_run_serializes_dict_as_json():
+    out = Tool(lookup).run(city="Lisbon")
+    assert json.loads(out) == {
+        "city": "Lisbon",
+        "temp_c": 21,
+        "unit": "°C",
+    }
+
+
+def test_tool_run_serializes_pydantic_as_json():
+    out = Tool(lambda: Weather(city="Porto", temp_c=18)).run()
+    assert json.loads(out) == {"city": "Porto", "temp_c": 18}
+
+
+def test_serialize_tool_result_passthrough_and_fallback():
+    assert serialize_tool_result("hi") == "hi"
+    assert serialize_tool_result(5) == "5"
+    assert serialize_tool_result(None) == "None"
+    assert json.loads(serialize_tool_result([1, 2])) == [1, 2]
+    assert json.loads(serialize_tool_result((1, 2))) == [1, 2]
 
 
 def test_registry_schemas_shape():

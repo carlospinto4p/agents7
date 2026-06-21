@@ -2,7 +2,12 @@
 
 from agents7.tools.registry import ToolRegistry
 from agents7.tools.schema import schema_from_callable
-from agents7.tools.tool import Tool
+from agents7.tools.tool import Tool, serialize_tool_result
 
 
-__all__ = ["Tool", "ToolRegistry", "schema_from_callable"]
+__all__ = [
+    "Tool",
+    "ToolRegistry",
+    "schema_from_callable",
+    "serialize_tool_result",
+]

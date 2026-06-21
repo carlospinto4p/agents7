@@ -1407,6 +1407,17 @@ OpenAI-compatible providers. The agent raises
 `AgentConfigurationError` if the engine's provider does not support
 tools, and `ToolLoopError` if the loop exceeds `max_iterations`.
 
+Tools may return structured data, not just strings. A `dict`,
+`list`, or Pydantic model return is JSON-encoded before being fed
+back to the model (plain strings pass through unchanged), so a tool
+can hand back rich data:
+
+```python
+def get_weather(city: str) -> dict:
+    """Return the current weather for a city."""
+    return {"city": city, "temp_c": 18, "conditions": "sunny"}
+```
+
 ## Examples
 
 The `examples/` directory contains runnable scripts demonstrating each feature:
