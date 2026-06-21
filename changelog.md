@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v4.3.1 - 21st June 2026
+
+- `.claude/rules/committing.md`: added a **Branching** section — the
+  default workflow commits directly to the default branch (`main`); do
+  not create a feature branch or worktree unless the user asks or a
+  skill requires isolation. Overrides the harness "branch first"
+  default per instruction priority.
+
+
 ### v4.3.0 - 21st June 2026
 
 - Added `agents7` CLI console script (`[project.scripts]`) with two subcommands, thin glue over the YAML loaders, `run_evaluation`, and `export_eval_report`:
