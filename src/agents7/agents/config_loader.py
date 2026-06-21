@@ -640,6 +640,34 @@ def load_guarded_yaml_settings(file_path: str) -> Any:
     return GuardedChatter(**config)
 
 
+def load_tool_agent_yaml_settings(file_path: str) -> dict:
+    """Load `ToolAgent` settings from a YAML file.
+
+    Schema: the Chatter base keys (``name``, ``version``,
+    ``engine``, ``system_prompt``) plus an optional ``tools`` list
+    of import paths and optional ``max_iterations`` / ``temperature``.
+
+    :param file_path: Path to the YAML configuration file.
+    :return: A kwargs dict for `ToolAgent`.
+    """
+    config = _resolve_inheritance(file_path)
+    validate_chatter_yaml_config(config, file_path)
+    tools = [import_from_path(p) for p in config.get("tools", [])]
+    result = {
+        "name": config["name"],
+        "version": config["version"],
+        "engine": build_engine(config["engine"]),
+        "system_prompt": config["system_prompt"].strip(),
+        "tools": tools,
+    }
+    cast_optional_fields(
+        config,
+        result,
+        {"max_iterations": int, "temperature": float},
+    )
+    return result
+
+
 def load_guarded_scene_yaml_settings(file_path: str) -> Any:
     """Load a `GuardedSceneChatter` from a YAML file.
 

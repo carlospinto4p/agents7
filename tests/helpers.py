@@ -311,3 +311,100 @@ def make_response(
         model=model,
         metrics=mock_metrics(),
     )
+
+
+# --- Tool-agent test helpers ---
+
+
+from agents7.llm.base import LLMProvider  # noqa: E402
+
+
+class FakeToolProvider(LLMProvider):
+    """A scripted tool-capable provider for ToolAgent tests.
+
+    ``chat`` / ``chat_async`` pop pre-built response dicts in
+    order, so a test can script a tool-call turn followed by a
+    final answer with zero real LLM calls.
+    """
+
+    def __init__(self, responses: list[dict]):
+        super().__init__("ollama", "fake")
+        self._responses = list(responses)
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def build_tool_turn_messages(self, assistant_text, tool_calls, results):
+        return [
+            {
+                "role": "assistant",
+                "content": assistant_text,
+                "tool_calls": tool_calls,
+            },
+            *[
+                {"role": "tool", "content": r, "tool_name": c["name"]}
+                for c, r in zip(tool_calls, results)
+            ],
+        ]
+
+    def chat(
+        self,
+        messages,
+        temperature=0.7,
+        max_tokens=-1,
+        output_format=None,
+        think=False,
+        seed=None,
+        tools=None,
+    ):
+        return self._responses.pop(0)
+
+    async def chat_async(
+        self,
+        messages,
+        temperature=0.7,
+        max_tokens=-1,
+        output_format=None,
+        think=False,
+        seed=None,
+        tools=None,
+    ):
+        return self._responses.pop(0)
+
+    def chat_stream(self, *args, **kwargs):
+        raise NotImplementedError
+
+    async def chat_stream_async(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+def make_tool_engine(responses: list[dict]):
+    """Build an LLMEngine backed by a `FakeToolProvider`."""
+    engine = object.__new__(LLMEngine)
+    provider = FakeToolProvider(responses)
+    engine.provider = "ollama"
+    engine.model_name = "fake"
+    engine.model_id = "ollama::fake"
+    engine.retry_config = None
+    engine.cost_per_1m_tokens = None
+    engine.llm_provider = provider
+    engine._dispatcher = EngineDispatcher(
+        primary=provider,
+        fallback=None,
+        retry_config=None,
+        cache=None,
+        cost_per_1m_tokens=None,
+        model_id="ollama::fake",
+    )
+    return engine
+
+
+def tool_call_response(name: str, arguments: dict, text: str = "") -> dict:
+    """Build a chat result dict that requests one tool call."""
+    return {
+        "role": "assistant",
+        "response": text,
+        "thinking": None,
+        "tool_calls": [{"name": name, "arguments": arguments}],
+        "metrics": DUMMY_METRICS,
+    }

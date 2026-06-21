@@ -37,6 +37,7 @@ from agents7.agents.streaming import (
     AgentAsyncStreamResult,
     AgentStreamResult,
 )
+from agents7.agents.tool_agent import ToolAgent
 
 
 __all__ = [
@@ -69,5 +70,6 @@ __all__ = [
     "Regressor",
     "Scene",
     "SqliteMemory",
+    "ToolAgent",
     "create_memory",
 ]
