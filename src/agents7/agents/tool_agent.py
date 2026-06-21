@@ -128,3 +128,6 @@ class ToolAgent(BaseAgent):
         totals["tokens"] += metrics.get("tokens") or 0
         totals["prompt_tokens"] += metrics.get("prompt_tokens") or 0
         totals["total_duration"] += metrics.get("total_duration") or 0.0
+        cost = metrics.get("cost_cents")
+        if cost is not None:
+            totals["cost_cents"] = (totals.get("cost_cents") or 0.0) + cost

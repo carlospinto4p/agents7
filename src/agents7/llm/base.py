@@ -462,6 +462,10 @@ class LLMProvider(ABC):
              before generating the response.
          :param seed: Seed for random number generation.
              Default is None.
+         :param tools: Optional list of tool/function schemas
+             the model may call. ``None`` disables tool
+             calling. Only honored by providers where
+             `supports_tools()` is ``True``.
          :return: A dictionary containing the parsed
              response. Schema:
              - response: The generated text response.

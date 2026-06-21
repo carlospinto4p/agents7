@@ -60,3 +60,25 @@ def test_build_tool_turn_messages_shape():
     assert msgs[1]["role"] == "tool"
     assert msgs[1]["content"] == "3"
     assert msgs[1]["tool_name"] == "add"
+
+
+def test_build_tool_turn_messages_multi_call_pairing():
+    """zip pairing is correct by index for multiple tool calls."""
+    provider = OllamaProvider("qwen3")
+    calls = [
+        {"name": "add", "arguments": {"a": 1, "b": 2}},
+        {"name": "mul", "arguments": {"a": 2, "b": 3}},
+    ]
+    msgs = provider.build_tool_turn_messages("", calls, ["3", "6"])
+
+    # First message is the assistant turn carrying both tool_calls.
+    assert msgs[0]["role"] == "assistant"
+    assert len(msgs[0]["tool_calls"]) == 2
+
+    # Tool result messages follow in order: add→3, mul→6.
+    tool_msgs = [m for m in msgs if m["role"] == "tool"]
+    assert len(tool_msgs) == 2
+    assert tool_msgs[0]["tool_name"] == "add"
+    assert tool_msgs[0]["content"] == "3"
+    assert tool_msgs[1]["tool_name"] == "mul"
+    assert tool_msgs[1]["content"] == "6"
