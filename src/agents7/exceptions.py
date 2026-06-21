@@ -52,3 +52,12 @@ class GuardRejectionError(Agents7Exception):
 
 class GuardConfigurationError(AgentConfigurationError):
     """Raised when a ContextGuard is misconfigured."""
+
+
+class ToolSchemaError(Agents7Exception):
+    """Raised when a tool signature cannot be turned into a
+    JSON schema, or an unknown tool is requested."""
+
+
+class ToolLoopError(Agents7Exception):
+    """Raised when a ToolAgent exceeds its max_iterations."""
