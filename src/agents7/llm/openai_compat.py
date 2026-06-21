@@ -9,6 +9,7 @@ Requires the optional ``openai`` package::
     uv pip install openai
 """
 
+import json
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
@@ -73,8 +74,15 @@ class OpenAICompatProvider(LLMProvider):
         output_format: str | dict | None,
         seed: int | None,
         stream: bool = False,
+        tools: list[dict] | None = None,
     ) -> dict:
-        """Build kwargs for the OpenAI chat completions call."""
+        """Build kwargs for the OpenAI chat completions call.
+
+        :param tools: Optional tool schemas. The registry already
+            emits OpenAI's native ``{"type": "function",
+            "function": {...}}`` shape, so they pass through
+            unchanged.
+        """
         params: dict = {
             "model": model,
             "messages": messages,
@@ -85,6 +93,8 @@ class OpenAICompatProvider(LLMProvider):
             params["max_tokens"] = max_tokens
         if seed is not None:
             params["seed"] = seed
+        if tools:
+            params["tools"] = tools
         if isinstance(output_format, dict):
             params["response_format"] = {
                 "type": "json_schema",
@@ -100,8 +110,8 @@ class OpenAICompatProvider(LLMProvider):
             params["stream_options"] = {"include_usage": True}
         return params
 
-    @staticmethod
-    def _parse_response(response) -> dict:
+    @classmethod
+    def _parse_response(cls, response) -> dict:
         """Parse a non-streaming chat completion response."""
         choice = response.choices[0]
         content = choice.message.content or ""
@@ -113,12 +123,47 @@ class OpenAICompatProvider(LLMProvider):
             "response": content.strip(),
             "role": choice.message.role,
             "thinking": thinking.strip() if thinking else None,
+            "tool_calls": cls._parse_tool_calls(choice.message),
             "metrics": {
                 "tokens": usage.completion_tokens or 0,
                 "prompt_tokens": usage.prompt_tokens or 0,
                 "total_duration": 0.0,
             },
         }
+
+    @staticmethod
+    def _parse_tool_calls(message) -> list[dict]:
+        """Extract tool calls from a chat completion message.
+
+        OpenAI returns ``message.tool_calls`` as a list of
+        objects whose ``function.arguments`` is a JSON *string*;
+        it is decoded into a dict to match the provider-neutral
+        ``{"name", "arguments", "id"}`` shape consumed by
+        `ToolAgent`. A malformed or empty argument string yields
+        an empty dict rather than raising.
+
+        :param message: The ``choices[0].message`` object.
+        :return: A list of ``{"name", "arguments", "id"}`` dicts
+            (empty when the model requested no tools).
+        """
+        raw = getattr(message, "tool_calls", None) or []
+        calls: list[dict] = []
+        for call in raw:
+            fn = call.function
+            arguments = fn.arguments
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments) if arguments else {}
+                except json.JSONDecodeError:
+                    arguments = {}
+            calls.append(
+                {
+                    "name": fn.name,
+                    "arguments": arguments,
+                    "id": call.id,
+                }
+            )
+        return calls
 
     # --- Chat (sync / async) ---
 
@@ -140,6 +185,7 @@ class OpenAICompatProvider(LLMProvider):
             max_tokens,
             output_format,
             seed,
+            tools=tools,
         )
         response = self._client.chat.completions.create(**params)
         return self._parse_response(response)
@@ -162,6 +208,7 @@ class OpenAICompatProvider(LLMProvider):
             max_tokens,
             output_format,
             seed,
+            tools=tools,
         )
         response = await self._async_client.chat.completions.create(**params)
         return self._parse_response(response)
@@ -215,6 +262,55 @@ class OpenAICompatProvider(LLMProvider):
         )
         adapted = _adapt_stream_async(raw_stream)
         return AsyncStreamResult(adapted, "chat")
+
+    # --- Tool calling ---
+
+    def supports_tools(self) -> bool:
+        """OpenAI-compatible APIs support tool calling."""
+        return True
+
+    def build_tool_turn_messages(
+        self,
+        assistant_text: str,
+        tool_calls: list[dict],
+        results: list[str],
+    ) -> list[dict]:
+        """Build OpenAI assistant + tool-result messages.
+
+        Emits one assistant message carrying the optional text and
+        an OpenAI-format ``tool_calls`` array, then one
+        ``role: "tool"`` message per call linked back by
+        ``tool_call_id``. Each call's ``arguments`` dict is
+        re-serialised to the JSON string OpenAI expects on the
+        wire. ``content`` is ``None`` when the assistant produced
+        no text alongside the calls.
+
+        See `LLMProvider.build_tool_turn_messages`.
+        """
+        assistant = {
+            "role": "assistant",
+            "content": assistant_text or None,
+            "tool_calls": [
+                {
+                    "id": call["id"],
+                    "type": "function",
+                    "function": {
+                        "name": call["name"],
+                        "arguments": json.dumps(call["arguments"]),
+                    },
+                }
+                for call in tool_calls
+            ],
+        }
+        tool_msgs = [
+            {
+                "role": "tool",
+                "tool_call_id": call["id"],
+                "content": result,
+            }
+            for call, result in zip(tool_calls, results)
+        ]
+        return [assistant, *tool_msgs]
 
 
 # --- Stream adapters ---

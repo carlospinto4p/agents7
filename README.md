@@ -1402,11 +1402,10 @@ agent = ToolAgent(
 print(agent.act("What's the weather in Paris?").response)
 ```
 
-Tool calling is supported on the Ollama and Anthropic providers
-(the OpenAI-compatible provider accepts `tools` but does not yet
-emit tool calls). The agent raises `AgentConfigurationError` if the
-engine's provider does not support tools, and `ToolLoopError` if the
-loop exceeds `max_iterations`.
+Tool calling is supported on the Ollama, Anthropic, and
+OpenAI-compatible providers. The agent raises
+`AgentConfigurationError` if the engine's provider does not support
+tools, and `ToolLoopError` if the loop exceeds `max_iterations`.
 
 ## Examples
 

@@ -451,3 +451,163 @@ async def test_chat_stream_async_returns_async_stream_result(mock_openai):
         collected.append(text)
     assert "".join(collected) == "world"
     assert result.metrics["tokens"] == 7
+
+
+# --- Tool calling ---
+
+
+def _tool_call(name, arguments, id_):
+    return SimpleNamespace(
+        id=id_,
+        type="function",
+        function=SimpleNamespace(name=name, arguments=arguments),
+    )
+
+
+def _bare_provider():
+    """An OpenAICompatProvider without a real client (tool helpers
+    never touch the client)."""
+    with patch("agents7.llm.openai_compat._openai") as mock_openai:
+        mock_openai.OpenAI.return_value = MagicMock()
+        mock_openai.AsyncOpenAI.return_value = MagicMock()
+        from agents7.llm.openai_compat import OpenAICompatProvider
+
+        return OpenAICompatProvider("m")
+
+
+def test_openai_supports_tools():
+    """OpenAI-compat provider advertises tool support."""
+    assert _bare_provider().supports_tools() is True
+
+
+def test_build_params_passes_tools_through():
+    """Tools are forwarded unchanged (registry == OpenAI format)."""
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "description": "Get weather.",
+                "parameters": {"type": "object", "properties": {}},
+            },
+        }
+    ]
+    params = OpenAICompatProvider._build_params(
+        "m", [], 0, -1, None, None, tools=tools
+    )
+    assert params["tools"] == tools
+
+
+def test_build_params_no_tools_key_when_absent():
+    """No tools key when none provided."""
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    params = OpenAICompatProvider._build_params("m", [], 0, -1, None, None)
+    assert "tools" not in params
+
+
+def test_parse_tool_calls_decodes_json_arguments():
+    """function.arguments JSON string decodes to a dict."""
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    msg = SimpleNamespace(
+        content=None,
+        role="assistant",
+        tool_calls=[_tool_call("get_weather", '{"city": "Paris"}', "call_1")],
+    )
+    resp = SimpleNamespace(
+        choices=[SimpleNamespace(message=msg)], usage=_make_usage()
+    )
+    parsed = OpenAICompatProvider._parse_response(resp)
+    assert parsed["tool_calls"] == [
+        {
+            "name": "get_weather",
+            "arguments": {"city": "Paris"},
+            "id": "call_1",
+        }
+    ]
+    assert parsed["response"] == ""  # null content is null-safe
+
+
+def test_parse_tool_calls_malformed_arguments_empty_dict():
+    """Malformed argument strings degrade to an empty dict."""
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    msg = SimpleNamespace(
+        tool_calls=[_tool_call("ping", "not json", "call_x")],
+    )
+    calls = OpenAICompatProvider._parse_tool_calls(msg)
+    assert calls == [{"name": "ping", "arguments": {}, "id": "call_x"}]
+
+
+def test_parse_response_no_tools_empty_list():
+    """A text-only response yields an empty tool_calls list."""
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    parsed = OpenAICompatProvider._parse_response(_make_response("hi"))
+    assert parsed["tool_calls"] == []
+
+
+def test_build_tool_turn_messages_shape():
+    """Single call: assistant tool_calls + tool message by id."""
+    provider = _bare_provider()
+    calls = [{"name": "add", "arguments": {"a": 1, "b": 2}, "id": "call_x"}]
+    msgs = provider.build_tool_turn_messages("thinking...", calls, ["3"])
+
+    assert msgs[0]["role"] == "assistant"
+    assert msgs[0]["content"] == "thinking..."
+    tc = msgs[0]["tool_calls"][0]
+    assert tc == {
+        "id": "call_x",
+        "type": "function",
+        "function": {"name": "add", "arguments": '{"a": 1, "b": 2}'},
+    }
+    assert msgs[1] == {
+        "role": "tool",
+        "tool_call_id": "call_x",
+        "content": "3",
+    }
+
+
+def test_build_tool_turn_messages_content_none_when_empty():
+    """Empty assistant text becomes None, not an empty string."""
+    provider = _bare_provider()
+    calls = [{"name": "add", "arguments": {"a": 1}, "id": "call_x"}]
+    msgs = provider.build_tool_turn_messages("", calls, ["1"])
+    assert msgs[0]["content"] is None
+
+
+def test_build_tool_turn_messages_multi_call_pairing():
+    """zip pairing is correct by index for multiple tool calls."""
+    provider = _bare_provider()
+    calls = [
+        {"name": "add", "arguments": {"a": 1}, "id": "call_a"},
+        {"name": "mul", "arguments": {"a": 2}, "id": "call_b"},
+    ]
+    msgs = provider.build_tool_turn_messages("", calls, ["1", "4"])
+
+    assert len(msgs[0]["tool_calls"]) == 2
+    tool_msgs = [m for m in msgs if m["role"] == "tool"]
+    assert tool_msgs[0]["tool_call_id"] == "call_a"
+    assert tool_msgs[0]["content"] == "1"
+    assert tool_msgs[1]["tool_call_id"] == "call_b"
+    assert tool_msgs[1]["content"] == "4"
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_chat_forwards_tools_to_client(mock_openai):
+    """chat() passes the tools schema into the API call."""
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = _make_response("ok")
+    mock_openai.OpenAI.return_value = mock_client
+    mock_openai.AsyncOpenAI.return_value = MagicMock()
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    tools = [{"type": "function", "function": {"name": "f"}}]
+    p = OpenAICompatProvider("m")
+    p.chat([{"role": "user", "content": "hi"}], temperature=0, tools=tools)
+    _, kwargs = mock_client.chat.completions.create.call_args
+    assert kwargs["tools"] == tools

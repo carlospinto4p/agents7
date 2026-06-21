@@ -2,6 +2,16 @@
 ## Changelog - Agents7
 
 
+### v4.6.0 - 21st June 2026
+
+- Wired tool calling for the OpenAI-compatible provider in `src/agents7/llm/openai_compat.py`:
+  - `OpenAICompatProvider.supports_tools()`: now returns `True`.
+  - `OpenAICompatProvider.build_tool_turn_messages()`: emits the assistant `tool_calls` array plus one `role: "tool"` message per call, linked by `tool_call_id`.
+  - `_parse_tool_calls()`: decodes `function.arguments` JSON strings into dicts (malformed strings degrade to `{}`).
+  - `_build_params()`: forwards `tools` unchanged (the registry already emits OpenAI's native schema); `chat`/`chat_async` thread `tools` through.
+- `ToolAgent` now works on Ollama, Anthropic, and OpenAI-compatible providers.
+
+
 ### v4.5.1 - 21st June 2026
 
 - Added the `anthropic` optional-dependency extra in `pyproject.toml`:
