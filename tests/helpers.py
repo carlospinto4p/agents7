@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
 from agents7.llm import LLMEngine
+from agents7.llm.base import LLMProvider
 from agents7.llm.cache import CacheConfig, ResponseCache
 from agents7.llm.dispatcher import EngineDispatcher
 from agents7.models import AgentResponse
@@ -314,9 +315,6 @@ def make_response(
 
 
 # --- Tool-agent test helpers ---
-
-
-from agents7.llm.base import LLMProvider  # noqa: E402
 
 
 class FakeToolProvider(LLMProvider):

@@ -54,7 +54,7 @@ def test_metrics_accumulate_across_loop():
         ]
     )
     out = agent.act("add")
-    # DUMMY_METRICS.tokens == 10 per call, two calls.
+    # Two turns: tokens 10+10=20; prompt_tokens 5+5=10.
     assert out.metrics.tokens == 20
     assert out.metrics.prompt_tokens == 10
 
