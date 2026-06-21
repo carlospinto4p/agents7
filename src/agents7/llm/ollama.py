@@ -122,12 +122,15 @@ class OllamaProvider(LLMProvider):
         think: bool,
         output_format: str | dict | None,
         stream: bool = False,
+        tools: list[dict] | None = None,
     ) -> dict:
         """Build kwargs for an Ollama chat or generate call.
 
         :param primary_key: ``"messages"`` for chat,
             ``"prompt"`` for generate.
         :param primary_value: The messages list or prompt str.
+        :param tools: Optional list of tool schemas to pass
+            to the model.
         """
         kwargs = {
             "model": self.model_name,
@@ -138,6 +141,8 @@ class OllamaProvider(LLMProvider):
         }
         if stream:
             kwargs["stream"] = True
+        if tools is not None:
+            kwargs["tools"] = tools
         return kwargs
 
     def chat(
@@ -148,6 +153,7 @@ class OllamaProvider(LLMProvider):
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        tools: list[dict] | None = None,
     ) -> dict:
         """See `LLMProvider.chat` for documentation."""
         options = self._build_options(temperature, max_tokens, seed)
@@ -157,6 +163,7 @@ class OllamaProvider(LLMProvider):
             options=options,
             think=think,
             output_format=output_format,
+            tools=tools,
         )
         response = self._with_think_fallback(chat, think, kwargs)
         parsed = parse_ollama_chat_response(response)
@@ -175,6 +182,7 @@ class OllamaProvider(LLMProvider):
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        tools: list[dict] | None = None,
     ) -> dict:
         """See `LLMProvider.chat` for documentation."""
         options = self._build_options(temperature, max_tokens, seed)
@@ -184,6 +192,7 @@ class OllamaProvider(LLMProvider):
             options=options,
             think=think,
             output_format=output_format,
+            tools=tools,
         )
         response = await self._with_think_fallback_async(
             self._async_client.chat, think, kwargs
@@ -334,6 +343,61 @@ class OllamaProvider(LLMProvider):
         )
         return AsyncStreamResult(iterator, "generate")
 
+    def supports_tools(self) -> bool:
+        """Ollama supports tool calling."""
+        return True
+
+    def build_tool_turn_messages(
+        self,
+        assistant_text: str,
+        tool_calls: list[dict],
+        results: list[str],
+    ) -> list[dict]:
+        """Build Ollama assistant + tool-result messages.
+
+        See `LLMProvider.build_tool_turn_messages`.
+        """
+        assistant = {
+            "role": "assistant",
+            "content": assistant_text,
+            "tool_calls": [
+                {
+                    "function": {
+                        "name": call["name"],
+                        "arguments": call["arguments"],
+                    }
+                }
+                for call in tool_calls
+            ],
+        }
+        tool_msgs = [
+            {
+                "role": "tool",
+                "content": result,
+                "tool_name": call["name"],
+            }
+            for call, result in zip(tool_calls, results)
+        ]
+        return [assistant, *tool_msgs]
+
+
+def _parse_tool_calls(message) -> list[dict]:
+    """Extract tool calls from an Ollama message as plain dicts.
+
+    :param message: The ``message`` object from an Ollama chat
+        response.
+    :return: A list of ``{"name", "arguments"}`` dicts (empty if
+        the model requested no tools).
+    """
+    raw = getattr(message, "tool_calls", None) or []
+    return [
+        {
+            "name": call.function.name,
+            "arguments": dict(call.function.arguments),
+        }
+        for call in raw
+    ]
+
 
 def parse_ollama_chat_response(chat_response: ChatResponse) -> dict:
     """
@@ -343,17 +407,21 @@ def parse_ollama_chat_response(chat_response: ChatResponse) -> dict:
         - response: The generated text response.
         - role: The role of the message (e.g., "user", "assistant").
         - thinking: The thinking part of the response, if any.
+        - tool_calls: List of ``{"name", "arguments"}`` dicts (empty
+            if no tools were called).
         - metrics: A dictionary containing the following metrics:
             - tokens: The number of tokens in the response.
             - prompt_tokens: The number of tokens in the prompt.
-            - total_duration: The total duration of the response, in seconds.
+            - total_duration: The total duration of the response,
+                in seconds.
     """
     return {
-        "response": chat_response.message.content.strip(),
+        "response": (chat_response.message.content or "").strip(),
         "role": chat_response.message.role,
         "thinking": chat_response.message.thinking.strip()
         if chat_response.message.thinking
         else None,
+        "tool_calls": _parse_tool_calls(chat_response.message),
         "metrics": {
             "tokens": chat_response.eval_count,
             "prompt_tokens": chat_response.prompt_eval_count,

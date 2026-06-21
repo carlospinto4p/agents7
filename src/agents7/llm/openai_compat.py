@@ -130,6 +130,7 @@ class OpenAICompatProvider(LLMProvider):
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        tools: list[dict] | None = None,
     ) -> dict:
         """See `LLMProvider.chat` for documentation."""
         params = self._build_params(
@@ -151,6 +152,7 @@ class OpenAICompatProvider(LLMProvider):
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        tools: list[dict] | None = None,
     ) -> dict:
         """See `LLMProvider.chat` for documentation."""
         params = self._build_params(

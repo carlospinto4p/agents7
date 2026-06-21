@@ -394,6 +394,7 @@ class LLMProvider(ABC):
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        tools: list[dict] | None = None,
     ) -> dict:
         """
          Generate a chat response based on the provided
@@ -464,6 +465,7 @@ class LLMProvider(ABC):
         output_format: str | dict = None,
         think: bool = False,
         seed: int | None = None,
+        tools: list[dict] | None = None,
     ) -> dict:
         """Async version of `chat`.
 
@@ -627,3 +629,37 @@ class LLMProvider(ABC):
             "model_name": self.model_name,
             "model_id": f"{self.model_id}",
         }
+
+    def supports_tools(self) -> bool:
+        """Whether this provider supports tool/function calling.
+
+        :return: ``False`` by default; tool-capable providers
+            override to return ``True``.
+        """
+        return False
+
+    def build_tool_turn_messages(
+        self,
+        assistant_text: str,
+        tool_calls: list[dict],
+        results: list[str],
+    ) -> list[dict]:
+        """Build the messages appended after a tool round.
+
+        Returns the assistant tool-call message plus one
+        tool-result message per call, in this provider's wire
+        format. Overridden by tool-capable providers.
+
+        :param assistant_text: The assistant's text alongside
+            the tool calls (often empty).
+        :param tool_calls: The ``{"name", "arguments"}`` dicts
+            the model requested.
+        :param results: Stringified tool results, aligned by
+            index with *tool_calls*.
+        :return: A list of message dicts to extend the history.
+        :raises NotImplementedError: If the provider does not
+            support tools.
+        """
+        raise NotImplementedError(
+            f"Provider `{self.provider}` does not support tools."
+        )
