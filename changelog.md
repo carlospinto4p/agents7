@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.7.2 - 25th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
+
 ### v4.7.1 - 25th June 2026
 
 - Rotated changelog: archived 16 entries to `changelog/2026.md`.
@@ -340,8 +345,3 @@
 ### v3.21.40 - 4th June 2026
 
 - Rotated changelog: archived 7 entries to `changelog/2026.md`.
-
-
-### v3.21.39 - 4th June 2026
-
-- Synced `.claude/rules/committing.md` from the programme registry: step 6 now scopes `uv.lock` regeneration to code-related bumps only — non-code patch bumps (`.claude/` config, docs, changelog, rule syncs) skip `uv lock`.
