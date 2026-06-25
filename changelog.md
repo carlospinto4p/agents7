@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.7.1 - 25th June 2026
+
+- Rotated changelog: archived 16 entries to `changelog/2026.md`.
+
+
 ### v4.7.0 - 21st June 2026
 
 - Updated `tools/`:
@@ -340,126 +345,3 @@
 ### v3.21.39 - 4th June 2026
 
 - Synced `.claude/rules/committing.md` from the programme registry: step 6 now scopes `uv.lock` regeneration to code-related bumps only — non-code patch bumps (`.claude/` config, docs, changelog, rule syncs) skip `uv lock`.
-
-
-### v3.21.38 - 3rd June 2026
-
-- Synced `.claude/rules/testing.md` from the programme registry: added the SQLite-backed fixtures pointer to the session-scoped template pattern (see the shared `testing-python` rule).
-
-
-### v3.21.37 - 31st May 2026
-
-- Added `[build-system]` to `pyproject.toml`; `uv sync --all-extras` now handles the editable install automatically.
-
-
-### v3.21.36 - 17th May 2026
-
-- Added unit tests:
-  - `tests/test_batch.py`: 3 edge-case tests for `BatchProcessor._chunk_inputs()` (empty list, single item, `requests_per_prompt=1`).
-  - `tests/test_llm_engine.py`: 10 tests for `LLMEngine` initialization, provider lowercasing, fallback wiring, `supports_warmup()`, and `_create_provider()` for all three providers and the unknown-provider error path.
-
-
-### v3.21.35 - 17th May 2026
-
-- Added unit tests:
-  - `tests/test_cache.py`: edge-case tests for `ResponseCache.make_key()` — `messages=[]` vs `None`, `prompt=None` vs `""`, Unicode/special-character content.
-  - `tests/test_model_selection.py`: additional tests for `TestCase`, `CaseResult`, and `BenchmarkResult` — empty fields, nested input, `passed=False`, run number, immutability.
-  - `tests/test_pipeline.py`: edge-case tests for `Pipeline.act_in_batch()` — empty input, all-fail, mapper failure per item, all-items-skipped-by-condition.
-
-
-### v3.21.34 - 17th May 2026
-
-- Added unit tests:
-  - `tests/test_guarded_chatter.py`: parse failure on retry (sync + async), GuardedChatter as pipeline step, GuardedChatter memory persistence.
-  - `tests/test_config_loader.py`: `load_yaml_settings()` with `base_config` inheritance chain, `build_engine()` resolving `${VAR}` in `api_key`, error on unset env var.
-
-
-### v3.21.33 - 17th May 2026
-
-- Rotated changelog: archived 84 old entries to `changelog/2026.md`.
-
-
-### v3.21.32 - 17th May 2026
-
-- Added unit tests in `tests/test_chatter.py`:
-  - `test_from_yaml_invalid_memory_backend`: invalid backend raises `AgentConfigurationError`.
-  - `test_from_yaml_circular_inheritance`: circular `base_config` raises `AgentConfigurationError`.
-  - `test_from_yaml_malformed_yaml`: malformed YAML raises `yaml.YAMLError`.
-
-
-### v3.21.31 - 17th May 2026
-
-- Removed deprecated `src/agents7/export.py` re-export shim:
-  - Migrated all callers to `agents7.eval.export` directly.
-  - Updated `tests/test_export.py`, `integration_tests/report_utils.py`, `examples/features/02_export.py`, `README.md`, and `agents_catalog/tagger_agent/tests/test_tagger_agent.py`.
-
-
-### v3.21.30 - 17th May 2026
-
-- Added return type annotations to previously unannotated public/private methods:
-  - `llm/ollama.py`: `_with_think_fallback()` and `_with_think_fallback_async()` → `dict`
-  - `agents/labeler.py`: `_preprocess()` → `Any`
-  - `agents/utils.py`: `run_with_semaphore()` → `Any`
-  - `models/base.py`: `ClassificationProperty.validate_category_reason_link()` → `"ClassificationProperty"`
-
-
-### v3.21.29 - 17th May 2026
-
-- Perf: `llm/cache.py` `_CacheKeyBuilder.make_key()`: removed module-level `_FMT_CACHE` dict and pre-serialization of `output_format`; now passes all fields through a single `json.dumps(..., sort_keys=True)` call.
-
-
-### v3.21.28 - 17th May 2026
-
-- Added Table of Contents to `README.md` with links to all 34 sections and subsections.
-
-
-### v3.21.27 - 16th May 2026
-
-- Added unit tests:
-  - `tests/test_export_dataframe.py`: mixed primitive types (int/float/bool),
-    Optional field set to None within valid model, datetime field stringification.
-  - `tests/test_config_loader.py`: `parse_yaml_examples()` (absent, valid,
-    not-a-list, non-dict item, missing/extra keys), `cast_optional_fields()`
-    (present fields cast, absent fields skipped, source not mutated),
-    `load_yaml_settings()` edge cases (empty `prompt_params`, malformed examples).
-
-
-### v3.21.26 - 16th May 2026
-
-- Added unit tests (`agents7_framework/tests/`):
-  - `test_context_guard.py`: 3 tests for `persona_summary` injection — placeholder fully replaced, injection attempts embedded verbatim, self-referential `$persona_summary` not re-substituted.
-  - `test_guarded_scene.py`: 4 tests verifying all scene/persona fields in auto-generated system prompt (situation, time_period, goal, occupation).
-  - `test_utils.py`: 8 tests for `get_examples_str()` — happy path, empty list, non-list input, non-dict entry, missing keys, extra keys.
-  - `test_metrics.py`: 1 test for partial batch completion — rows with `model=None` are individually marked as errors without affecting passing rows.
-
-
-### v3.21.25 - 16th May 2026
-
-- Added tests in `agents7_framework/tests/`:
-  - `test_cache.py`: key-order invariance, non-serializable `output_format`, and distinct-payload collision tests for `_CacheKeyBuilder.make_key`.
-  - `test_retry.py`: `_is_retryable()` coverage for non-retryable status codes (400, 401, 403), generic 429, and plain exceptions.
-  - `test_dispatcher.py`: `_cache_store_callback` isolation tests (store, overwrite, key isolation).
-
-
-### v3.21.24 - 16th May 2026
-
-- Added unit tests in `tests/test_openai_compat.py`:
-  - `test_chat_sync_propagates_api_error`: error propagation from sync client.
-  - `test_chat_async_propagates_api_error`: error propagation from async client.
-  - `test_oai_chunk_empty_choices`: `_OAIChunk` with empty choices list.
-  - `test_oai_chunk_delta_with_reasoning`: `reasoning_content` in delta.
-  - `test_adapt_stream_sync_filters_empty_chunks`: empty-chunk filtering.
-  - `test_adapt_stream_sync_yields_usage_chunk`: usage-only chunk passthrough.
-  - `test_chat_stream_returns_stream_result`: `chat_stream()` integration.
-  - `test_chat_stream_async_returns_async_stream_result`: `chat_stream_async()` integration.
-
-
-### v3.21.23 - 16th May 2026
-
-- Added tests in `tests/test_guarded_chatter.py`:
-  - `test_guard_call_count_equals_initial_plus_retries`: guard called `max_guard_retries+1` times when always rejecting.
-  - `test_chat_zero_retries_uses_fix`: `max_guard_retries=0` skips retry loop and applies fix immediately.
-  - `test_chat_zero_retries_no_fix_uses_last`: `max_guard_retries=0` with no fix uses last response.
-  - `test_chat_async_always_rejects_no_fix`: async path, all retries exhausted, no fix available.
-  - `test_broke_character_hint_in_feedback`: BROKE_CHARACTER reason produces AI-vocabulary hint in retry message.
-- Fixed `tests/test_batch.py` `test_async_multi_chunk_preserves_order`: replaced timing-dependent `asyncio.sleep` delays with `asyncio.Event` synchronization to eliminate CI flakiness.
