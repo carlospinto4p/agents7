@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.7.3 - 28th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
+
 ### v4.7.2 - 25th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
@@ -340,8 +345,3 @@
     guide with a redirect stub pointing to `agents7_ui/`.
   - `src/agents7/eval/metrics.py` and `README.md`: reworded
     "usable without Streamlit" → "headless evaluation primitives".
-
-
-### v3.21.40 - 4th June 2026
-
-- Rotated changelog: archived 7 entries to `changelog/2026.md`.
