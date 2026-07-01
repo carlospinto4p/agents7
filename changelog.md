@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.7.4 - 1st July 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
+
 ### v4.7.3 - 28th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
@@ -335,13 +340,3 @@
 ### v3.21.42 - 7th June 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
-
-
-### v3.21.41 - 6th June 2026
-
-- Cleaned up stale Streamlit references left by the Agent Builder's
-  migration to the `agents7_ui` SvelteKit + FastAPI app:
-  - `docs/agent_builder.md`: replaced the 413-line Streamlit wizard
-    guide with a redirect stub pointing to `agents7_ui/`.
-  - `src/agents7/eval/metrics.py` and `README.md`: reworded
-    "usable without Streamlit" → "headless evaluation primitives".
