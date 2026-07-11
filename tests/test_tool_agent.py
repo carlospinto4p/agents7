@@ -9,7 +9,11 @@ from helpers import (
     tool_call_response,
 )
 
-from agents7.agents.tool_agent import ToolAgent
+from agents7.agents.tool_agent import (
+    ToolAgent,
+    ToolStepEvent,
+    ToolStepKind,
+)
 from agents7.exceptions import (
     AgentConfigurationError,
     ToolLoopError,
@@ -133,3 +137,92 @@ def test_unregistered_tool_raises_schema_error():
     agent = _agent([tool_call_response("nope", {})])
     with pytest.raises(ToolSchemaError):
         agent.act("use nope")
+
+
+# ── Streaming Tests ────────────────────────────────────────
+
+
+def test_stream_answer_only_yields_single_answer_event():
+    agent = _agent([chat_response_dict("4")])
+    stream = agent.act_stream("hi")
+    events = list(stream)
+    assert len(events) == 1
+    assert events[0].kind == ToolStepKind.ANSWER
+    assert events[0].kind == "answer"  # StrEnum compares to str
+    assert events[0].text == "4"
+    assert events[0].iteration == 0
+
+
+def test_stream_emits_call_result_then_answer():
+    agent = _agent(
+        [
+            tool_call_response("add", {"a": 1, "b": 2}),
+            chat_response_dict("The sum is 3"),
+        ]
+    )
+    events = list(agent.act_stream("add 1 and 2"))
+    kinds = [e.kind for e in events]
+    assert kinds == [
+        ToolStepKind.TOOL_CALL,
+        ToolStepKind.TOOL_RESULT,
+        ToolStepKind.ANSWER,
+    ]
+    call, result, answer = events
+    assert call.name == "add"
+    assert call.arguments == {"a": 1, "b": 2}
+    assert call.iteration == 0
+    assert result.name == "add"
+    assert result.result == "3"
+    assert result.iteration == 0
+    assert answer.text == "The sum is 3"
+    assert answer.iteration == 1
+
+
+def test_stream_agent_response_available_after_iteration():
+    agent = _agent(
+        [
+            tool_call_response("add", {"a": 1, "b": 2}),
+            chat_response_dict("3"),
+        ]
+    )
+    stream = agent.act_stream("add")
+    assert stream.agent_response is None
+    list(stream)
+    # Metrics accumulate across both turns (10+10 tokens).
+    assert stream.agent_response.response == "3"
+    assert stream.agent_response.metrics.tokens == 20
+    assert stream.agent_response.model is None
+
+
+def test_stream_max_iterations_raises():
+    responses = [
+        tool_call_response("add", {"a": 1, "b": 1}) for _ in range(5)
+    ]
+    agent = _agent(responses, max_iterations=2)
+    with pytest.raises(ToolLoopError, match="exceeded 2"):
+        list(agent.act_stream("loop forever"))
+
+
+async def test_act_stream_async_emits_events():
+    agent = _agent(
+        [
+            tool_call_response("add", {"a": 2, "b": 2}),
+            chat_response_dict("4"),
+        ]
+    )
+    stream = await agent.act_stream_async("add")
+    events = [event async for event in stream]
+    kinds = [e.kind for e in events]
+    assert kinds == [
+        ToolStepKind.TOOL_CALL,
+        ToolStepKind.TOOL_RESULT,
+        ToolStepKind.ANSWER,
+    ]
+    assert events[-1].text == "4"
+    assert stream.agent_response.response == "4"
+
+
+def test_tool_step_event_is_frozen():
+    event = ToolStepEvent(kind=ToolStepKind.ANSWER, iteration=0, text="x")
+    with pytest.raises(Exception):
+        event.text = "y"

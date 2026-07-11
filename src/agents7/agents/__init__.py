@@ -37,7 +37,13 @@ from agents7.agents.streaming import (
     AgentAsyncStreamResult,
     AgentStreamResult,
 )
-from agents7.agents.tool_agent import ToolAgent
+from agents7.agents.tool_agent import (
+    ToolAgent,
+    ToolAsyncStreamResult,
+    ToolStepEvent,
+    ToolStepKind,
+    ToolStreamResult,
+)
 
 
 __all__ = [
@@ -71,5 +77,9 @@ __all__ = [
     "Scene",
     "SqliteMemory",
     "ToolAgent",
+    "ToolAsyncStreamResult",
+    "ToolStepEvent",
+    "ToolStepKind",
+    "ToolStreamResult",
     "create_memory",
 ]

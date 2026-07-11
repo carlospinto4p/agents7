@@ -2,6 +2,18 @@
 ## Changelog - Agents7
 
 
+### v4.9.0 - 11th July 2026
+
+- Added step-event streaming to `ToolAgent` in `agents/tool_agent.py`:
+  - `act_stream()` and `act_stream_async()`: run the tool loop, yielding a `ToolStepEvent` per tool call, tool result, and final answer; expose the parsed `AgentResponse` via `agent_response` after iteration.
+  - `ToolStepEvent`: frozen event carrying `kind`, `iteration`, and per-kind fields (`name`, `arguments`, `result`, `text`, `thinking`).
+  - `ToolStepKind`: `StrEnum` of `TOOL_CALL`, `TOOL_RESULT`, `ANSWER`.
+  - `ToolStreamResult` / `ToolAsyncStreamResult`: sync/async iterables of events.
+- Exported the new symbols from `agents7.agents`.
+- Updated `README.md`: documented streaming the tool loop.
+- Added unit tests in `tests/test_tool_agent.py` for the streaming path.
+
+
 ### v4.8.2 - 11th July 2026
 
 - Updated `integration_tests/`:

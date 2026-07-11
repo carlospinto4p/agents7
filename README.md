@@ -1445,6 +1445,39 @@ def get_weather(city: str) -> dict:
     return {"city": city, "temp_c": 18, "conditions": "sunny"}
 ```
 
+#### Streaming the tool loop
+
+`act_stream()` / `act_stream_async()` run the same bounded loop but
+yield a `ToolStepEvent` for each step — every tool call, every tool
+result, and the final answer — so you can observe intermediate steps
+as they happen instead of waiting for the whole loop. The parsed
+`AgentResponse` is available via `stream.agent_response` after
+iteration.
+
+```python
+stream = agent.act_stream("What's the weather in Paris?")
+for event in stream:
+    if event.kind == "tool_call":
+        print(f"→ calling {event.name}({event.arguments})")
+    elif event.kind == "tool_result":
+        print(f"← {event.name} returned {event.result}")
+    elif event.kind == "answer":
+        print(f"answer: {event.text}")
+
+print(stream.agent_response.metrics)  # summed across all turns
+```
+
+`event.kind` is a `ToolStepKind` (a `StrEnum`), so comparing it to
+the plain strings above works as well as
+`event.kind == ToolStepKind.ANSWER`. Async iteration is identical
+with `async for` over `await agent.act_stream_async(...)`.
+
+The final answer is delivered as a single `ANSWER` event (whole
+text), not token-by-token — streaming raw tokens through a tool loop
+needs provider-specific streaming tool APIs, which this method
+deliberately avoids. `ToolLoopError` is still raised during
+iteration if the loop exceeds `max_iterations`.
+
 ## Examples
 
 The `examples/` directory contains runnable scripts demonstrating each feature:
