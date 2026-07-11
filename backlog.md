@@ -3,10 +3,12 @@
 
 ### Tool calling follow-ups — 21st June 2026 (v4.4.0 shipped Ollama-only v1)
 
-- [ ] Validate the Ollama tool-calling path end-to-end against a real model — `integration_tests/test_tool_agent.py` has only ever been SKIPPED (no Ollama on the dev box), so the full request → tool_calls → tool result → final answer round-trip is unvalidated against a live model; only the `FakeToolProvider` unit path has run. Run it against a tool-capable Ollama model and fix any wire-format drift. (MED, S)
-  - 2026-06-21: still blocked — `ollama` CLI is not installed and no server answers on `:11434` (conn refused), so the live run cannot be performed on this box. Static wire-format audit against the installed `ollama-python` types found **no drift**: the request `tools` schema (`{"type":"function","function":{name,description,parameters}}`), response parsing (`tool_calls[].function.name`/`.arguments`, null-safe `content`), and tool-result messages (`role:"tool"` + `tool_name`) all match `ollama._types.Tool` / `Message`. Only the live model round-trip remains to verify; run on a machine with a tool-capable Ollama model.
 - [ ] Streaming + tool calls — let `ToolAgent` stream intermediate steps/tokens during the loop. Out of v1 scope; each provider's streaming tool API is the hardest part. (LOW, L)
-- [x] Structured tool returns — `Tool`/`ToolRegistry` currently coerce every tool return to `str` before feeding it back to the model. Support structured/JSON returns (serialize dict/Pydantic returns) so tools can hand back rich data. (LOW, S)
+
+
+### Integration test timeouts — 11th July 2026
+
+- [ ] Thinking models exceed the 60s per-test timeout in `integration_tests/test_multi_model.py` — `qwen3:4b` and `gemma4:e4b` both fail on `pytest-timeout` (>60s) because a cold model load plus a full thinking pass overruns `conftest._PER_TEST_TIMEOUT`. Surfaced now that Ollama is installed on the box (the suite used to skip entirely). Options: raise the per-test timeout for thinking models (parametrize a longer timeout marker), warm the model before the timed call, or pass `think=False` for the connectivity smoke test. Weigh against the 300s session cap. (MED, S)
 
 
 ### Improvements — 29th March 2026

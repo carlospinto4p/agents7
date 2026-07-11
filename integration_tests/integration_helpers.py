@@ -1,8 +1,27 @@
 """Shared helpers for integration tests."""
 
-from __future__ import annotations
+import subprocess
 
 from report_utils import write_eval_report_from_responses
+
+
+def is_model_available(model_name: str) -> bool:
+    """Check if an Ollama model is available locally.
+
+    :param model_name: Model tag to look for (e.g.
+        ``"qwen2.5:3b"``).
+    :return: ``True`` if `ollama list` reports the model.
+    """
+    try:
+        result = subprocess.run(
+            ["ollama", "list"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return model_name in result.stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return False
 
 
 def run_single_case(

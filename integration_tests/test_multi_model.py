@@ -9,28 +9,12 @@ structure.
 Add new models here when a new config references one.
 """
 
-import subprocess
-
 import pytest
+from integration_helpers import is_model_available
 
 from agents7.agents import Detector
 from agents7.llm import LLMEngine
 from agents7.models.demo import Temperature
-
-
-def is_model_available(model_name: str) -> bool:
-    """Check if an Ollama model is available locally."""
-    try:
-        result = subprocess.run(
-            ["ollama", "list"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        return model_name in result.stdout
-    except (OSError, subprocess.TimeoutExpired):
-        return False
-
 
 # Every model referenced in examples/configs/*.yml.
 MODELS_TO_TEST = [

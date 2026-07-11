@@ -2,6 +2,14 @@
 ## Changelog - Agents7
 
 
+### v4.8.2 - 11th July 2026
+
+- Updated `integration_tests/`:
+  - `test_tool_agent.py`: switched the end-to-end ToolAgent test to `qwen2.5:3b` (fast, tool-capable, no thinking) and added a `skipif` guard so it skips when the model is absent. Validates the request → tool_calls → tool result → final answer round-trip against a live Ollama model — no wire-format drift found.
+  - `integration_helpers.py`: added `is_model_available()`, shared across the model-gated integration tests.
+  - `test_multi_model.py`: import `is_model_available` from `integration_helpers` instead of a local copy.
+
+
 ### v4.8.1 - 11th July 2026
 
 - Updated `.env.example`: documented every environment variable the framework reads — `OLLAMA_MODEL_NAME`, the new `OPENAI_COMPAT_*` trio, `OPENAI_API_KEY` / `OPENAI_BASE_URL`, `ANTHROPIC_API_KEY`, and `BATCH_MAX_CONCURRENT` (previously only `GITLAB_TOKEN`).
