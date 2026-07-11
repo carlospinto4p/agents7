@@ -1,5 +1,10 @@
 """Evaluation subpackage: metrics, export, and reporting."""
 
+from agents7.eval.ab_test import (
+    ABTestResult,
+    run_ab_test,
+    run_ab_test_async,
+)
 from agents7.eval.data import (
     AGENT_TYPE_MAP,
     build_agent,
@@ -26,6 +31,7 @@ from agents7.eval.metrics import (
 
 __all__ = [
     "AGENT_TYPE_MAP",
+    "ABTestResult",
     "EvalResult",
     "build_agent",
     "build_confusion_matrix",
@@ -40,6 +46,8 @@ __all__ = [
     "model_output_fields",
     "normalise_rows",
     "resolve_agent_class",
+    "run_ab_test",
+    "run_ab_test_async",
     "run_evaluation",
     "run_evaluation_async",
 ]

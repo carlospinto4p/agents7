@@ -1104,6 +1104,29 @@ print(f"Labels: {cm['labels']}")
 print(f"Matrix: {cm['matrix']}")
 ```
 
+**A/B testing:** Compare two agents on the same test cases and get side-by-side metrics. Deltas are reported as *A minus B*, so a positive `accuracy_delta` means agent A scored higher.
+
+```python
+from agents7.eval import run_ab_test  # run_ab_test_async also available
+
+result = run_ab_test(
+    agent_a,
+    agent_b,
+    eval_data,          # same rows as run_evaluation
+    ["category"],       # optional — inferred from the rows when omitted
+    label_a="qwen",
+    label_b="llama",
+)
+
+print(f"Winner: {result.winner}")               # "qwen", "llama", or "tie"
+print(f"Accuracy delta: {result.accuracy_delta:+.0%}")
+print(f"Per-field delta: {result.per_field_delta}")
+print(f"Avg time delta: {result.avg_time_delta:+.2f}s")
+print(f"Agreement: {result.agreement}")         # both_passed, a_only, ...
+```
+
+`ABTestResult` also carries the full `metrics_a` / `metrics_b` dicts and the per-case `results_a` / `results_b` lists for deeper inspection.
+
 **Evaluation reports:** Generate a formatted Markdown report from evaluation results:
 
 ```python

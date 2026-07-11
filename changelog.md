@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v4.10.0 - 11th July 2026
+
+- Added A/B testing harness in `agents7.eval`:
+  - `run_ab_test()`: run two agents on the same test cases and return comparative metrics.
+  - `run_ab_test_async()`: async variant.
+  - `ABTestResult`: dataclass with per-agent metrics, accuracy/per-field/timing deltas, pass-fail agreement counts, and the winner.
+- Updated `README.md`: documented the A/B testing API under Evaluation Metrics.
+
+
 ### v4.9.1 - 11th July 2026
 
 - Fixed `llm/ollama.py`:
