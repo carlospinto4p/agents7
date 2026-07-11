@@ -62,6 +62,34 @@ def test_build_tool_turn_messages_shape():
     assert msgs[1]["tool_name"] == "add"
 
 
+# ── Thinking flag propagation ──────────────────────────
+
+
+def test_think_kwargs_always_passes_flag():
+    """`think=False` must be sent, not omitted.
+
+    Omitting the key lets thinking models (qwen3, gemma3n)
+    think by default, which overruns structured-output calls
+    and drops fields. Regression for the integration-test
+    timeout on thinking models.
+    """
+    assert OllamaProvider._think_kwargs(True) == {"think": True}
+    assert OllamaProvider._think_kwargs(False) == {"think": False}
+
+
+def test_build_call_kwargs_includes_think_false():
+    """`_build_call_kwargs` forwards `think=False` to Ollama."""
+    provider = OllamaProvider("qwen3")
+    kwargs = provider._build_call_kwargs(
+        primary_key="messages",
+        primary_value=[{"role": "user", "content": "hi"}],
+        options={"temperature": 0},
+        think=False,
+        output_format=None,
+    )
+    assert kwargs["think"] is False
+
+
 def test_build_tool_turn_messages_multi_call_pairing():
     """zip pairing is correct by index for multiple tool calls."""
     provider = OllamaProvider("qwen3")

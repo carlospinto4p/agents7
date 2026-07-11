@@ -63,8 +63,17 @@ class OllamaProvider(LLMProvider):
 
     @staticmethod
     def _think_kwargs(think: bool) -> dict:
-        """Return `{'think': True}` when enabled, else empty."""
-        return {"think": True} if think else {}
+        """Return `{'think': think}`, always passing the flag.
+
+        Sending `think=False` explicitly disables Ollama's
+        default thinking on thinking-capable models (qwen3,
+        gemma3n, ...). Omitting the key lets those models think
+        by default, which slows structured-output calls and can
+        drop fields. Non-thinking models accept `think=False`
+        without error (only `think=True` raises "does not
+        support thinking", handled by `_with_think_fallback`).
+        """
+        return {"think": think}
 
     _THINKING_NOT_SUPPORTED_MSG = "does not support thinking"
 

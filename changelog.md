@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v4.9.1 - 11th July 2026
+
+- Fixed `llm/ollama.py`:
+  - `OllamaProvider._think_kwargs()` now always sends the `think` flag (both `True` and `False`) instead of omitting it when `False`. An explicit `think=False` now genuinely disables Ollama's default thinking on thinking-capable models (qwen3, gemma3n), which previously kept thinking and could overrun structured-output calls and drop fields. Non-thinking models accept `think=False` without error.
+- Added regression tests in `tests/test_tool_provider.py`:
+  - `test_think_kwargs_always_passes_flag()`
+  - `test_build_call_kwargs_includes_think_false()`
+
+
 ### v4.9.0 - 11th July 2026
 
 - Added step-event streaming to `ToolAgent` in `agents/tool_agent.py`:
