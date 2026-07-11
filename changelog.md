@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v4.8.0 - 11th July 2026
+
+- Added env-var configuration for the OpenAI-compatible provider (external providers like DeepSeek):
+  - `settings.py`: added `OpenAICompatSettings` reading `OPENAI_COMPAT_MODEL_NAME`, `OPENAI_COMPAT_BASE_URL`, and `OPENAI_COMPAT_API_KEY` from the environment at instantiation.
+  - `OpenAICompatProvider`: `model_name`, `base_url`, and `api_key` now fall back to `OpenAICompatSettings` when omitted; raises `ValueError` when no model is configured.
+  - `LLMEngine`: `model_name` is now optional and resolves from `OPENAI_COMPAT_MODEL_NAME` for the `openai_compat` provider.
+- Updated `README.md`: documented the `OPENAI_COMPAT_*` env vars and a DeepSeek end-to-end setup.
+
+
 ### v4.7.4 - 1st July 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.

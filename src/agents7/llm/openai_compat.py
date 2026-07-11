@@ -15,6 +15,7 @@ from typing import Any
 
 from agents7.llm.base import LLMProvider
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
+from agents7.settings import OpenAICompatSettings
 
 try:
     import openai as _openai
@@ -34,23 +35,45 @@ def _require_openai() -> None:
 class OpenAICompatProvider(LLMProvider):
     """LLM provider for OpenAI-compatible APIs.
 
+    Any argument left as ``None`` falls back to the matching
+    field of `OpenAICompatSettings` (i.e. the
+    ``OPENAI_COMPAT_MODEL_NAME`` / ``OPENAI_COMPAT_BASE_URL`` /
+    ``OPENAI_COMPAT_API_KEY`` environment variables), so an
+    external provider like DeepSeek can be configured purely
+    from the environment.
+
     Attributes:
-        model_name (str): Model identifier (e.g.
-            ``"gpt-4o"``, ``"deepseek-r1"``).
-        base_url (str | None): Custom API base URL.
-            ``None`` uses the default OpenAI endpoint.
-        api_key (str | None): API key. Falls back to the
-            ``OPENAI_API_KEY`` environment variable when
-            ``None``.
+        model_name (str | None): Model identifier (e.g.
+            ``"gpt-4o"``, ``"deepseek-chat"``). ``None`` reads
+            the ``OPENAI_COMPAT_MODEL_NAME`` env var.
+        base_url (str | None): Custom API base URL. ``None``
+            reads the ``OPENAI_COMPAT_BASE_URL`` env var, then
+            the OpenAI default endpoint.
+        api_key (str | None): API key. ``None`` reads the
+            ``OPENAI_COMPAT_API_KEY`` env var, then the
+            ``openai`` SDK's own ``OPENAI_API_KEY`` fallback.
+
+    :raises ValueError: If no model name is given, either
+        explicitly or via ``OPENAI_COMPAT_MODEL_NAME``.
     """
 
     def __init__(
         self,
-        model_name: str,
+        model_name: str | None = None,
         base_url: str | None = None,
         api_key: str | None = None,
     ):
         _require_openai()
+        settings = OpenAICompatSettings()
+        model_name = model_name or settings.model_name
+        if not model_name:
+            raise ValueError(
+                "No model configured for the OpenAI-compatible "
+                "provider. Pass `model_name` or set the "
+                "`OPENAI_COMPAT_MODEL_NAME` environment variable."
+            )
+        base_url = base_url if base_url is not None else settings.base_url
+        api_key = api_key if api_key is not None else settings.api_key
         super().__init__("openai_compat", model_name)
         self._base_url = base_url
         self._api_key = api_key

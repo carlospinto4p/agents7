@@ -15,7 +15,7 @@ resolution-markers = [
 
 [[package]]
 name = "agents7"
-version = "4.7.0"
+version = "4.8.0"
 source = { editable = "." }
 dependencies = [
     { name = "ollama" },

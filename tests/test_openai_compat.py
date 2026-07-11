@@ -87,6 +87,56 @@ def test_provider_creation(mock_openai):
     assert p._base_url == "http://x"
 
 
+# --- Env-var configuration (OPENAI_COMPAT_*) ---
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_provider_reads_env_vars(mock_openai, monkeypatch):
+    """Omitted args fall back to OPENAI_COMPAT_* env vars."""
+    mock_openai.OpenAI = MagicMock()
+    mock_openai.AsyncOpenAI = MagicMock()
+    monkeypatch.setenv("OPENAI_COMPAT_MODEL_NAME", "deepseek-chat")
+    monkeypatch.setenv("OPENAI_COMPAT_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("OPENAI_COMPAT_API_KEY", "sk-env")
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider()
+    assert p.model_name == "deepseek-chat"
+    assert p._base_url == "https://api.deepseek.com"
+    assert p._api_key == "sk-env"
+    mock_openai.OpenAI.assert_called_once_with(
+        base_url="https://api.deepseek.com",
+        api_key="sk-env",
+    )
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_provider_explicit_args_override_env(mock_openai, monkeypatch):
+    """Explicit args take precedence over the env vars."""
+    mock_openai.OpenAI = MagicMock()
+    mock_openai.AsyncOpenAI = MagicMock()
+    monkeypatch.setenv("OPENAI_COMPAT_MODEL_NAME", "deepseek-chat")
+    monkeypatch.setenv("OPENAI_COMPAT_BASE_URL", "https://api.deepseek.com")
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("gpt-4o", base_url="http://x", api_key="sk-x")
+    assert p.model_name == "gpt-4o"
+    assert p._base_url == "http://x"
+    assert p._api_key == "sk-x"
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_provider_no_model_raises(mock_openai, monkeypatch):
+    """No model (arg or env) raises a clear ValueError."""
+    mock_openai.OpenAI = MagicMock()
+    mock_openai.AsyncOpenAI = MagicMock()
+    monkeypatch.delenv("OPENAI_COMPAT_MODEL_NAME", raising=False)
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    with pytest.raises(ValueError, match="OPENAI_COMPAT_MODEL_NAME"):
+        OpenAICompatProvider()
+
+
 # --- _parse_response ---
 
 
@@ -298,6 +348,33 @@ def test_engine_creates_openai_compat_provider():
             api_key="sk-test",
         )
         assert engine.provider == "openai_compat"
+
+
+def test_engine_reads_model_from_env(monkeypatch):
+    """LLMEngine resolves the model from OPENAI_COMPAT_MODEL_NAME
+    when model_name is omitted for openai_compat."""
+    monkeypatch.setenv("OPENAI_COMPAT_MODEL_NAME", "deepseek-chat")
+    with patch("agents7.llm.openai_compat.OpenAICompatProvider") as mock_cls:
+        mock_cls.return_value = Mock()
+        from agents7.llm.base import LLMEngine
+
+        engine = LLMEngine("openai_compat")
+        assert engine.model_name == "deepseek-chat"
+        assert engine.model_id == "openai_compat::deepseek-chat"
+        mock_cls.assert_called_once_with(
+            "deepseek-chat",
+            base_url=None,
+            api_key=None,
+        )
+
+
+def test_engine_missing_model_raises(monkeypatch):
+    """LLMEngine with no model and no env var raises ValueError."""
+    monkeypatch.delenv("OPENAI_COMPAT_MODEL_NAME", raising=False)
+    from agents7.llm.base import LLMEngine
+
+    with pytest.raises(ValueError, match="model_name"):
+        LLMEngine("openai_compat")
 
 
 def test_engine_openai_compat_with_fallback():

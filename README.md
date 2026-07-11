@@ -539,7 +539,34 @@ engine:
     api_key: sk-...
 ```
 
-The `api_key` falls back to the `OPENAI_API_KEY` environment variable when omitted. All agent features (streaming, caching, retry, fallback, batch) work identically with the OpenAI-compatible provider.
+**Environment-variable configuration (external providers, e.g. DeepSeek):**
+
+To point the provider at an external OpenAI-compatible API without hardcoding the model, URL, or key, set these environment variables:
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `OPENAI_COMPAT_MODEL_NAME` | Model identifier | `deepseek-chat` |
+| `OPENAI_COMPAT_BASE_URL` | API base URL | `https://api.deepseek.com` |
+| `OPENAI_COMPAT_API_KEY` | API key | `sk-...` |
+
+Any constructor argument left unset falls back to the matching variable, so the engine can be built with just the provider name:
+
+```bash
+export OPENAI_COMPAT_MODEL_NAME=deepseek-chat
+export OPENAI_COMPAT_BASE_URL=https://api.deepseek.com
+export OPENAI_COMPAT_API_KEY=sk-...
+```
+
+```python
+from agents7.llm import LLMEngine
+
+# Model, base_url and api_key all come from the environment.
+engine = LLMEngine(provider="openai_compat")
+```
+
+The three variables are also exposed as an `OpenAICompatSettings` dataclass (`from agents7.settings import OpenAICompatSettings`), read at instantiation time.
+
+**Precedence** (per field): explicit argument → `OPENAI_COMPAT_*` variable → the `openai` SDK's own fallback (`OPENAI_API_KEY` / `OPENAI_BASE_URL`). A missing model raises `ValueError`. All agent features (streaming, caching, retry, fallback, batch) work identically with the OpenAI-compatible provider.
 
 ### Anthropic/Claude Provider
 

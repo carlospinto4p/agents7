@@ -4,6 +4,7 @@ from agents7.llm.cache import CacheConfig, ResponseCache, create_cache
 from agents7.llm.dispatcher import EngineDispatcher
 from agents7.llm.retry import RetryConfig
 from agents7.llm.streaming import AsyncStreamResult, StreamResult
+from agents7.settings import OpenAICompatSettings
 
 
 class LLMEngine:
@@ -18,7 +19,10 @@ class LLMEngine:
             ``"anthropic"`` (Claude via Anthropic API),
             and ``"openai_compat"`` (any OpenAI-compatible
             API).
-        model_name (str): The name of the model being used.
+        model_name (str | None): The name of the model being
+            used. For the ``openai_compat`` provider this may
+            be ``None`` to read the model from the
+            ``OPENAI_COMPAT_MODEL_NAME`` environment variable.
         retry_config (RetryConfig | None): Optional retry
             configuration.
         fallback_model (str | None): Optional fallback model
@@ -28,15 +32,17 @@ class LLMEngine:
             raised.
 
     Keyword Args (``openai_compat`` only):
-        base_url (str | None): Custom API base URL.
-        api_key (str | None): API key (falls back to
-            ``OPENAI_API_KEY`` env var).
+        base_url (str | None): Custom API base URL. Falls back
+            to the ``OPENAI_COMPAT_BASE_URL`` env var.
+        api_key (str | None): API key. Falls back to the
+            ``OPENAI_COMPAT_API_KEY`` env var, then the
+            ``openai`` SDK's own ``OPENAI_API_KEY``.
     """
 
     def __init__(
         self,
         provider: str,
-        model_name: str,
+        model_name: str | None = None,
         retry: RetryConfig | None = None,
         cache: CacheConfig | None = None,
         fallback_model: str | None = None,
@@ -44,6 +50,15 @@ class LLMEngine:
         **kwargs,
     ):
         provider = provider.lower()
+        if not model_name and provider == "openai_compat":
+            model_name = OpenAICompatSettings().model_name
+        if not model_name:
+            raise ValueError(
+                "`model_name` is required. For the "
+                "`openai_compat` provider you may instead set "
+                "the `OPENAI_COMPAT_MODEL_NAME` environment "
+                "variable."
+            )
         self.provider = provider
         self.model_name = model_name
         self.model_id: str = f"{provider}::{model_name}"

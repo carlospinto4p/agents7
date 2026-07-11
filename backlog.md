@@ -1,10 +1,6 @@
 
 # Backlog - Agents7
 
-### Provider configuration — 21st June 2026
-
-- [ ] External-provider env vars + docs — define the required env vars (API key, base URL, model) for using an external OpenAI-compatible provider like DeepSeek, wire them into provider config, and document setup end-to-end in the README. (MED, M)
-
 ### Tool calling follow-ups — 21st June 2026 (v4.4.0 shipped Ollama-only v1)
 
 - [ ] Validate the Ollama tool-calling path end-to-end against a real model — `integration_tests/test_tool_agent.py` has only ever been SKIPPED (no Ollama on the dev box), so the full request → tool_calls → tool result → final answer round-trip is unvalidated against a live model; only the `FakeToolProvider` unit path has run. Run it against a tool-capable Ollama model and fix any wire-format drift. (MED, S)
