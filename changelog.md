@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.8.1 - 11th July 2026
+
+- Updated `.env.example`: documented every environment variable the framework reads — `OLLAMA_MODEL_NAME`, the new `OPENAI_COMPAT_*` trio, `OPENAI_API_KEY` / `OPENAI_BASE_URL`, `ANTHROPIC_API_KEY`, and `BATCH_MAX_CONCURRENT` (previously only `GITLAB_TOKEN`).
+
+
 ### v4.8.0 - 11th July 2026
 
 - Added env-var configuration for the OpenAI-compatible provider (external providers like DeepSeek):
