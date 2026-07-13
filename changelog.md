@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.10.1 - 13th July 2026
+
+- Rotated changelog: archived 8 entries to `changelog/2026.md`.
+
+
 ### v4.10.0 - 11th July 2026
 
 - Added A/B testing harness in `agents7.eval`:
@@ -277,118 +282,3 @@
     API (`agents7.agents`).
 - Updated docs (`docs/chatter.md`, `docs/design.md`,
   `README.md`, `examples/`) to the persona/scene plugin idiom.
-
-
-### v3.26.0 - 7th June 2026
-
-- Updated `GuardedChatter` fix fallback: when retries are
-  exhausted and the guard supplied a `fix`, the chatter now
-  regenerates once using the fix as guidance (in full persona
-  voice) and guards the result, instead of returning the
-  guard's one-line fix verbatim. Falls back to the verbatim fix
-  if the regeneration is still rejected.
-  - Added `_regenerate_from_fix` / `_regenerate_from_fix_async`
-    and `_add_fix_guidance`.
-  - Adds one chatter call + guard check only on the
-    exhausted-retry path, and only when a `fix` exists.
-- Updated `docs/chatter.md`: documented the fix-guided
-  regeneration step.
-
-
-### v3.25.0 - 7th June 2026
-
-- Added language-aware forbidden vocabulary to the guard:
-  - `ContextGuard.forbidden_terms`: list injected into the
-    prompt (via a `$forbidden_terms` placeholder), defaulting
-    to the previous bilingual ES/EN list so the default prompt
-    is byte-identical.
-  - `forbidden_terms_for_language()` in `agents/context_guard.py`:
-    starter lists for Spanish, English, French, German,
-    Portuguese, Italian; unknown/empty falls back to the
-    default.
-  - YAML loaders derive `forbidden_terms` from
-    `persona.language` unless `guard.forbidden_terms` is set;
-    `ContextGuard.from_yaml` accepts the field.
-  - `GuardedChatter._add_feedback` now lists the guard's
-    `forbidden_terms` instead of a hardcoded Spanish set.
-- Updated `docs/chatter.md`: documented language-aware
-  forbidden vocabulary.
-
-
-### v3.24.1 - 7th June 2026
-
-- Updated `Chatter.__post_init__`: a non-empty `scene` with no
-  `persona` now raises `AgentConfigurationError` instead of
-  silently dropping the scene (the scene frames the persona's
-  role-play and is unusable on its own). An empty `scene`
-  without a persona is still allowed.
-- Updated `docs/chatter.md`: noted the scene-requires-persona
-  rule.
-
-
-### v3.24.0 - 7th June 2026
-
-- Added fail-closed guarding to `GuardedChatter` (and
-  `GuardedSceneChatter`):
-  - `guard_fail_open` (default `True`): when `False`, an
-    unparseable guard verdict no longer passes through —
-    the response is replaced with a fallback deflection.
-  - `guard_fallback_response`: the in-character deflection
-    used when fail-closed and the guard gives no verdict
-    (empty uses a generic default).
-  - `_is_accepted` now honours `guard_fail_open`; the
-    parse-failure `GuardEvent` reports `accepted` truthfully.
-  - YAML loaders accept both new fields.
-- Updated `docs/chatter.md`: documented fail-open vs
-  fail-closed guarding.
-
-
-### v3.23.0 - 7th June 2026
-
-- Added `guard_buffer_stream` field to `GuardedChatter` (and
-  `GuardedSceneChatter`): when `True`, streaming buffers the
-  full response, runs the guard, and yields only the guarded
-  text, so unvalidated content never reaches the caller.
-  Defaults to `False` (live streaming, guard runs after).
-  - `GuardedChatterStreamResult` / `GuardedChatterAsyncStreamResult`
-    override iteration to drain-then-guard in buffered mode.
-  - YAML loaders accept `guard_buffer_stream`.
-- Updated docs:
-  - `docs/chatter.md`: documented `guard_buffer_stream` and the
-    streaming guard trade-off.
-  - `README.md`: corrected the agent hierarchy diagram
-    (`GuardedChatter` extends `Chatter`, not `PersonalityChatter`).
-
-
-### v3.22.0 - 7th June 2026
-
-- Added `Scene.to_summary()` in `agents/persona.py`: renders a
-  compact scene summary (setting, situation, rules) for the guard
-  prompt.
-- Updated `GuardedSceneChatter`:
-  - Added `__post_init__` that folds the scene context into the
-    guard's `persona_summary`, so direct Python construction now
-    matches the YAML loader. Idempotent; an explicit
-    `persona_summary` overrides the persona description but the
-    scene context is still appended.
-- Updated `_derive_persona_summary` (`agents/config_loader.py`)
-  to reuse `Scene.to_summary()`.
-- Updated `docs/chatter.md`: scene-aware guarding now applies to
-  both construction paths.
-
-
-### v3.21.43 - 7th June 2026
-
-- Updated `docs/chatter.md`:
-  - Replaced the stale ASCII agent hierarchy with a Mermaid
-    `classDiagram` showing inheritance plus persona/scene/guard
-    composition.
-  - Corrected `GuardedChatter` to extend `Chatter` (not
-    `PersonalityChatter`).
-  - Added a `GuardedSceneChatter` section, including the
-    YAML-only scene enrichment of the guard's `persona_summary`.
-
-
-### v3.21.42 - 7th June 2026
-
-- Rotated changelog: archived 2 entries to `changelog/2026.md`.
