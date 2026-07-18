@@ -2,6 +2,31 @@
 ## Changelog - Agents7
 
 
+### v4.11.0 - 18th July 2026
+
+- Added `src/agents7/eval/suite.py` — the composed evaluation route:
+  - `run_eval_suite()`: loads and normalises a golden set, builds the
+    agent, scores every row, aggregates metrics, summarises the calls
+    made, and optionally writes a Markdown report — in one call.
+  - `EvalRun`: the run's full output (agent, model, fields, results,
+    metrics, call-log summary, report path) with a `format()` summary.
+  - `resolve_eval_fields()`: normalises rows and resolves the fields to
+    score, honouring an explicit override.
+- Updated `src/agents7/eval/export.py`: `export_eval_report()` accepts a
+  `call_log` summary and renders a "Call Log" section.
+- Updated `src/agents7/cli/__init__.py`:
+  - `agents7 eval` is now a thin wrapper over `run_eval_suite()`.
+  - Added `--call-log`: log every call made during the run and
+    summarise it in the output and the report.
+- Fixed `src/agents7/agents/batch.py`: batch runs never emitted call-log
+  records, so `call_logger` silently covered only `act()` /
+  `act_async()`. `BatchProcessor` now reports each chunk request via an
+  `on_call` hook — one record per LLM call, not per input row.
+- Updated `README.md`: added an "Evaluation Workflow" section
+  documenting the route end to end, and linked the CLI and call-logging
+  sections to it.
+
+
 ### v4.10.2 - 18th July 2026
 
 - Filled in `roadmap.md`, previously an empty scaffold stub:

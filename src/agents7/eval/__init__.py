@@ -28,11 +28,17 @@ from agents7.eval.metrics import (
     run_evaluation,
     run_evaluation_async,
 )
+from agents7.eval.suite import (
+    EvalRun,
+    resolve_eval_fields,
+    run_eval_suite,
+)
 
 __all__ = [
     "AGENT_TYPE_MAP",
     "ABTestResult",
     "EvalResult",
+    "EvalRun",
     "build_agent",
     "build_confusion_matrix",
     "compute_metrics",
@@ -46,8 +52,10 @@ __all__ = [
     "model_output_fields",
     "normalise_rows",
     "resolve_agent_class",
+    "resolve_eval_fields",
     "run_ab_test",
     "run_ab_test_async",
+    "run_eval_suite",
     "run_evaluation",
     "run_evaluation_async",
 ]

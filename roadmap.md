@@ -10,12 +10,10 @@ rationale lives in the docs or ADRs it cites.
 
 ## Current phase: measurement first
 
-1. **Compose the eval pieces into one workflow.** `agents7.eval`
-   (metrics, A/B, export, data loading), the `agents7 eval` CLI
-   subcommand, and `summarize_call_log` all exist but are separate
-   entry points rather than one path a user follows. Tie them into a
-   single documented route: eval data → run → metrics → report.
-   **Gate: no new eval primitive before the existing ones compose.**
+1. ~~**Compose the eval pieces into one workflow.**~~ Shipped in
+   v4.11.0 as `agents7.eval.run_eval_suite` — eval data → run →
+   metrics → call log → report in one documented call, backing both
+   the Python API and `agents7 eval`. Gate cleared.
 2. **Adopt it across the catalog.** Only `scripts/eval_agent.py` and
    `tagger_agent`'s tests consume `agents7.eval` today; every catalog
    agent should be evaluable the same way.

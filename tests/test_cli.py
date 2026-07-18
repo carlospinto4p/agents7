@@ -98,9 +98,17 @@ def golden_set(tmp_path):
 
 @pytest.fixture
 def patched_eval(monkeypatch, patched_agent):
-    """Patch the agent and config reader for eval tests."""
+    """Patch the composed route's agent and config reader.
+
+    `eval` delegates to `run_eval_suite`, so the patches land on
+    `agents7.eval.suite` rather than on the CLI module.
+    """
     monkeypatch.setattr(
-        "agents7.cli.load_config_dict",
+        "agents7.eval.suite.build_agent",
+        lambda config, agent_type=None: patched_agent,
+    )
+    monkeypatch.setattr(
+        "agents7.eval.suite.load_config_dict",
         lambda config: {"output_model": "helpers.DummyOutput"},
     )
     return patched_agent
@@ -145,6 +153,25 @@ def test_eval_explicit_fields_override(patched_eval, golden_set, capsys):
     )
     assert rc == 0
     assert "Fields:   value" in capsys.readouterr().out
+
+
+def test_eval_call_log(patched_eval, golden_set, capsys, tmp_path):
+    """`eval --call-log` writes a log and summarises it."""
+    log = tmp_path / "calls.jsonl"
+    rc = main(
+        [
+            "eval",
+            "-c",
+            "cfg.yml",
+            "-d",
+            str(golden_set),
+            "--call-log",
+            str(log),
+        ]
+    )
+    assert rc == 0
+    assert log.exists()
+    assert "Call log summary:" in capsys.readouterr().out
 
 
 def test_eval_empty_golden_set(patched_eval, tmp_path, capsys):

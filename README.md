@@ -39,6 +39,7 @@ where deterministic logic is faster or more reliable.
   - [Agent Introspection](#agent-introspection)
   - [Agent Cloning with Overrides](#agent-cloning-with-overrides)
   - [Batch Export](#batch-export)
+  - [Evaluation Workflow](#evaluation-workflow)
   - [Evaluation Metrics](#evaluation-metrics)
   - [Input Preprocessor](#input-preprocessor)
   - [Model Warm-Up](#model-warm-up)
@@ -301,9 +302,10 @@ Note: YAML `prompt_params` only supports static values (cast to strings). For ca
 ### Command-Line Interface
 
 Installing the package exposes an `agents7` console script with two
-subcommands — thin glue over the YAML loaders, `run_evaluation`, and
-`export_eval_report` — for running and scoring agents headlessly,
-without any UI.
+subcommands for running and scoring agents headlessly, without any UI.
+`run` is thin glue over the YAML loaders; `eval` is a thin wrapper over
+[`run_eval_suite`](#evaluation-workflow), the same composed route a
+Python caller uses.
 
 ```bash
 # Run a YAML-configured agent against a single input (inline JSON):
@@ -317,6 +319,10 @@ agents7 eval --config config.yml --data data/golden_set.jsonl
 
 # …and write a Markdown report with a confusion matrix:
 agents7 eval -c config.yml -d golden_set.csv --report report.md
+
+# …logging every call made, summarised in the output and the report:
+agents7 eval -c config.yml -d golden_set.csv -r report.md \
+    --call-log calls.jsonl
 ```
 
 The agent class is chosen from the config's `agent_type` field
@@ -327,7 +333,9 @@ and rows may be nested (`{"input": {...}, "category": "..."}`) or flat
 automatically. Expected fields are derived from the golden set and the
 output model, or set explicitly with `--fields`.
 
-The underlying helpers are also importable for programmatic use:
+The whole `eval` route is importable as one call — see
+[Evaluation Workflow](#evaluation-workflow) — and its individual steps
+stay public for finer control:
 
 ```python
 from agents7.eval import build_agent, load_eval_rows, normalise_rows
@@ -1066,6 +1074,41 @@ df = export_dataframe(responses)
 df = export_dataframe(responses, fields=["category", "reason"])
 ```
 
+### Evaluation Workflow
+
+`run_eval_suite()` is the composed route from a golden set to a report — one call that loads and normalises the eval data, builds the agent from its YAML config, scores every row, aggregates metrics, summarises the calls it made, and writes a Markdown report. Reach for this first; the primitives in the next section are for when you need finer control.
+
+```python
+from agents7.eval import run_eval_suite
+
+run = run_eval_suite(
+    "configs/sentiment.yml",       # the agent's YAML config
+    "data/golden_set_40.jsonl",    # .jsonl, .json, or .csv
+    report="reports/sentiment.md",         # optional Markdown report
+    call_log="reports/sentiment_calls.jsonl",  # optional call log
+)
+
+print(run.format())                # human-readable summary block
+print(run.metrics["accuracy"])     # 0.925
+print(run.call_log.overall.tokens) # completion tokens for the run
+```
+
+The returned `EvalRun` carries everything the run produced: `agent_name`, `model_id`, `data_path`, the scored `fields`, the per-row `results`, the aggregate `metrics`, the `call_log` summary (when requested), and `report_path`.
+
+**What the route resolves for you:**
+
+- **Expected fields** are derived from the golden set intersected with the config's `output_model` fields, so input columns are never mistaken for expected outputs. Pass `fields=[...]` to override.
+- **Row shape** — both nested rows (`{"input": {...}, "category": "..."}`) and flat rows (`{"text": "...", "category": "..."}`) are normalised automatically.
+- **The confusion matrix** defaults to `category` when that field is scored, otherwise the first scored field. Override with `confusion_field=`.
+- **The call log** is written by a `JsonCallLogger` attached to a clone of the agent (the agent you passed is never mutated), then summarised into the report's *Call Log* section — one record per real LLM call, so a batched run reports the number of requests, not the number of rows.
+
+The same route backs the CLI, so `agents7 eval` and a Python caller produce identical results:
+
+```bash
+agents7 eval -c configs/sentiment.yml -d data/golden_set_40.jsonl \
+    --report reports/sentiment.md --call-log reports/sentiment_calls.jsonl
+```
+
 ### Evaluation Metrics
 
 The `agents7.metrics` module provides headless evaluation primitives. Run an agent against labeled data and compute accuracy, per-field metrics, and confusion matrices.
@@ -1217,7 +1260,10 @@ with JsonCallLogger("calls.jsonl") as logger:
     ...
 ```
 
-Each `act()` / `act_async()` call emits one `CallRecord`:
+Each `act()` / `act_async()` call emits one `CallRecord`. Batch runs
+(`act_in_batch()` / `act_in_batch_async()`) emit one record per **LLM
+request** — that is, per chunk — not one per input item, so the log
+reflects the calls actually made.
 
 ```json
 {
@@ -1263,6 +1309,11 @@ summary.errors                 # {error message: count}
 ```
 
 Cost is not part of `CallRecord`, so it is not aggregated.
+
+During an evaluation you do not need to wire this up by hand — pass
+`call_log=` to [`run_eval_suite`](#evaluation-workflow) and the route
+attaches the logger, summarises the result, and folds it into the
+report's *Call Log* section.
 
 ### Persona-Driven Chatter (Roleplay Agent)
 

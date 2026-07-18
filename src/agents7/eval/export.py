@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from agents7.call_log import CallLogSummary
 from agents7.eval.metrics import _resolve_enum
 from agents7.models.base import AgentResponse
 
@@ -149,6 +150,7 @@ def export_eval_report(
     model_id: str | None = None,
     confusion_field: str | None = None,
     notes: list[str] | None = None,
+    call_log: CallLogSummary | None = None,
 ) -> None:
     """Write an evaluation report as a Markdown file.
 
@@ -164,6 +166,9 @@ def export_eval_report(
         ``agents7.eval.metrics.build_confusion_matrix``.
     :param notes: Optional list of note strings to include
         in a "Notes" section after the header.
+    :param call_log: Optional `CallLogSummary` from
+        ``summarize_call_log()``. When given, a "Call Log"
+        section with token and duration totals is included.
     """
     path = Path(path)
     lines: list[str] = []
@@ -222,6 +227,10 @@ def export_eval_report(
         lines.append(f"| Min | {timing['min_s']:.2f}s |")
         lines.append(f"| Max | {timing['max_s']:.2f}s |")
         lines.append("")
+
+    # --- Call log ---
+    if call_log is not None:
+        _append_call_log(lines, call_log)
 
     # --- Confusion matrix ---
     if confusion_field:
@@ -308,6 +317,43 @@ def export_benchmark_report(
         lines.append("")
 
     path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _append_call_log(
+    lines: list[str],
+    summary: CallLogSummary,
+) -> None:
+    """Append a call-log section to the report.
+
+    :param lines: Report lines to append to.
+    :param summary: Summary from ``summarize_call_log()``.
+    """
+    o = summary.overall
+    lines.append("## Call Log")
+    lines.append("")
+    lines.append("| Metric | Value |")
+    lines.append("|--------|-------|")
+    lines.append(f"| Calls | {o.calls} |")
+    lines.append(f"| Succeeded | {o.successes} ({o.success_rate:.1%}) |")
+    lines.append(f"| Failed | {o.failures} |")
+    lines.append(f"| Completion tokens | {o.tokens} |")
+    lines.append(f"| Prompt tokens | {o.prompt_tokens} |")
+    lines.append(f"| Total duration | {o.total_duration:.2f}s |")
+    lines.append(f"| Average duration | {o.avg_duration:.2f}s |")
+    lines.append("")
+
+    if summary.errors:
+        lines.append("### Errors")
+        lines.append("")
+        lines.append("| Count | Error |")
+        lines.append("|-------|-------|")
+        lines.extend(
+            f"| {count} | {msg} |"
+            for msg, count in sorted(
+                summary.errors.items(), key=lambda kv: -kv[1]
+            )
+        )
+        lines.append("")
 
 
 def _append_confusion_matrix(

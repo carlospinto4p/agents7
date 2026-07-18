@@ -7,11 +7,12 @@ Exposes the ``agents7`` console script with two subcommands:
   output.
 - ``agents7 eval`` — evaluate a YAML-configured agent against a
   labeled golden set, print metrics, and optionally write a
-  Markdown report.
+  Markdown report and a call log.
 
-Both are thin glue over the framework's YAML loaders,
-`run_evaluation`, and `export_eval_report`; they let you run and
-score agents headlessly without spinning up the UI.
+``run`` is thin glue over the framework's YAML loaders; ``eval``
+is a thin wrapper over `agents7.eval.run_eval_suite`, the same
+composed route a Python caller uses. Both let you run and score
+agents headlessly without spinning up the UI.
 """
 
 import argparse
@@ -20,15 +21,8 @@ import sys
 from pathlib import Path
 
 from agents7 import __version__
-from agents7.eval.data import (
-    build_agent,
-    load_config_dict,
-    load_eval_rows,
-    model_output_fields,
-    normalise_rows,
-)
-from agents7.eval.export import export_eval_report
-from agents7.eval.metrics import compute_metrics, run_evaluation
+from agents7.eval.data import build_agent
+from agents7.eval.suite import run_eval_suite
 from agents7.exceptions import Agents7Exception
 
 
@@ -103,6 +97,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help=(
             "Categorical field for the confusion matrix in the "
             "report (defaults to 'category' when present)."
+        ),
+    )
+    eval_p.add_argument(
+        "--call-log",
+        type=Path,
+        help=(
+            "Log every call made during the run as JSON lines to "
+            "this path, and summarise them in the output."
         ),
     )
     eval_p.add_argument(
@@ -189,103 +191,35 @@ def _cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
-def _resolve_expected_fields(
-    args: argparse.Namespace,
-    rows: list[dict],
-) -> tuple[list[dict], list[str]]:
-    """Normalise rows and resolve the expected fields to score.
-
-    An explicit ``--fields`` overrides the fields derived from
-    the golden set / output model.
-
-    :param args: Parsed CLI arguments.
-    :param rows: Raw golden-set rows.
-    :return: ``(eval_rows, expected_fields)``.
-    :raises ValueError: If no expected fields can be determined.
-    """
-    config = load_config_dict(args.config)
-    eval_rows, derived = normalise_rows(rows, model_output_fields(config))
-    if args.fields:
-        fields = [f.strip() for f in args.fields.split(",") if f.strip()]
-    else:
-        fields = derived
-    if not fields:
-        raise ValueError(
-            "Could not determine expected output fields — pass "
-            "--fields explicitly."
-        )
-    return eval_rows, fields
-
-
 def _cmd_eval(args: argparse.Namespace) -> int:
     """Execute the ``eval`` subcommand.
+
+    Thin wrapper over `run_eval_suite` — the composed route does
+    the loading, scoring, metrics, call-log summary, and report.
 
     :param args: Parsed CLI arguments.
     :return: Process exit code (0 on success).
     """
-    rows = load_eval_rows(args.data)
-    if not rows:
-        raise ValueError(f"Golden set is empty: {args.data}")
-
-    eval_rows, fields = _resolve_expected_fields(args, rows)
-    agent = build_agent(args.config, args.agent_type)
-
-    results = run_evaluation(agent, eval_rows, fields)
-    metrics = compute_metrics(results, fields)
-
-    if args.report is not None:
-        confusion = args.confusion_field or (
-            "category" if "category" in fields else fields[0]
-        )
-        export_eval_report(
-            results,
-            metrics,
-            args.report,
-            agent_name=agent.name,
-            model_id=agent.engine.model_id,
-            confusion_field=confusion,
-            notes=[
-                f"Eval set: `{Path(args.data).name}` "
-                f"({metrics['total']} rows)",
-                f"Accuracy: {metrics['accuracy']:.0%} "
-                f"({metrics['passed']}/{metrics['total']})",
-            ],
-        )
+    fields = (
+        [f.strip() for f in args.fields.split(",") if f.strip()]
+        if args.fields
+        else None
+    )
+    run = run_eval_suite(
+        args.config,
+        args.data,
+        agent_type=args.agent_type,
+        fields=fields,
+        report=args.report,
+        confusion_field=args.confusion_field,
+        call_log=args.call_log,
+    )
 
     if args.json:
-        print(json.dumps(metrics, indent=2, default=str))
+        print(json.dumps(run.metrics, indent=2, default=str))
     else:
-        _print_eval_summary(agent.name, args.data, fields, metrics)
-        if args.report is not None:
-            print(f"Report written to {args.report}")
+        print(run.format())
     return 0
-
-
-def _print_eval_summary(
-    agent_name: str,
-    data_path: Path,
-    fields: list[str],
-    metrics: dict,
-) -> None:
-    """Print a human-readable evaluation summary to stdout.
-
-    :param agent_name: Name of the evaluated agent.
-    :param data_path: Path to the golden set.
-    :param fields: Expected fields that were scored.
-    :param metrics: Metrics dict from `compute_metrics`.
-    """
-    print(f"Agent:    {agent_name}")
-    print(f"Data:     {Path(data_path).name}")
-    print(f"Fields:   {', '.join(fields)}")
-    print(
-        f"Accuracy: {metrics['accuracy']:.1%} "
-        f"({metrics['passed']}/{metrics['total']})"
-    )
-    per_field = metrics.get("per_field", {})
-    if per_field:
-        print("Per-field accuracy:")
-        for fname, acc in per_field.items():
-            print(f"  {fname}: {acc:.1%}")
 
 
 def main(argv: list[str] | None = None) -> int:

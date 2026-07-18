@@ -28,6 +28,16 @@ def _chat_response(value="ok"):
     }
 
 
+def _batch_chat_response(values):
+    """A chunk response wrapping one item per value."""
+    return {
+        "role": "assistant",
+        "response": json.dumps({"items": [{"value": v} for v in values]}),
+        "thinking": None,
+        "metrics": DUMMY_METRICS,
+    }
+
+
 def _bad_response():
     return {
         "role": "assistant",
@@ -239,6 +249,40 @@ async def test_act_async_emits_call_log(mock_chat):
     mock_logger.assert_called_once()
     record = mock_logger.call_args[0][0]
     assert record.success is True
+
+
+@patch.object(LLMEngine, "chat")
+def test_act_in_batch_emits_call_log(mock_chat):
+    """Batch runs emit one record per LLM call, not zero."""
+    mock_chat.return_value = _batch_chat_response(["a", "b"])
+    mock_logger = MagicMock()
+
+    agent = make_labeler(call_logger=mock_logger)
+    agent.act_in_batch([{"text": "one"}, {"text": "two"}], iter_func=None)
+
+    # One chunk -> one LLM call -> one record, even though the
+    # chunk expanded to two item responses.
+    mock_logger.assert_called_once()
+    record = mock_logger.call_args[0][0]
+    assert isinstance(record, CallRecord)
+    assert record.success is True
+    assert record.tokens == 10
+
+
+@patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_act_in_batch_async_emits_call_log(mock_chat):
+    """Async batch runs emit call records too."""
+    mock_chat.return_value = _batch_chat_response(["a", "b"])
+    mock_logger = MagicMock()
+
+    agent = make_labeler(call_logger=mock_logger)
+    await agent.act_in_batch_async(
+        [{"text": "one"}, {"text": "two"}], with_tqdm=False
+    )
+
+    mock_logger.assert_called_once()
+    assert mock_logger.call_args[0][0].success is True
 
 
 @patch.object(LLMEngine, "chat")

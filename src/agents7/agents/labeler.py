@@ -130,6 +130,7 @@ class Labeler(BaseAgent):
                 name=self.name,
                 preprocessor=self.preprocessor,
                 output_list_schema=self._output_list_schema,
+                on_call=self._emit_call_log,
             ),
         )
 

@@ -31,6 +31,10 @@ class BatchProcessor:
         input item before batching.
     :param output_list_schema: JSON schema dict for the
         list-wrapped output model.
+    :param on_call: Optional callable invoked with each
+        chunk-level `AgentResponse` — one per real LLM call,
+        not one per input item. Used to emit call-log records
+        for batch runs.
     """
 
     engine: LLMEngine
@@ -38,6 +42,7 @@ class BatchProcessor:
     name: str
     preprocessor: Callable | None
     output_list_schema: dict
+    on_call: Callable | None = None
 
     def act_in_batch(
         self,
@@ -133,7 +138,7 @@ class BatchProcessor:
     ) -> AgentResponse:
         params = self._chat_params(chunk, batch_prompt, chat_kwargs)
         response = self._parse_response(self.engine.chat(**params))
-        return AgentResponse(**response)
+        return self._emit(AgentResponse(**response))
 
     async def _request_async(
         self,
@@ -147,7 +152,17 @@ class BatchProcessor:
             await self.engine.chat_async(**params)
         )
         response["idx"] = _idx
-        return AgentResponse(**response)
+        return self._emit(AgentResponse(**response))
+
+    def _emit(self, response: AgentResponse) -> AgentResponse:
+        """Notify `on_call` about one completed chunk request.
+
+        :param response: The chunk-level response.
+        :return: The same response, for call chaining.
+        """
+        if self.on_call is not None:
+            self.on_call(response)
+        return response
 
     def _chat_params(
         self,
