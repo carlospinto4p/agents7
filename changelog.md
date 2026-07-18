@@ -2,6 +2,18 @@
 ## Changelog - Agents7
 
 
+### v4.12.3 - 18th July 2026
+
+- Fixed `eval/suite.py`:
+  - `run_eval_suite()` now summarises only the calls *that run*
+    made. `JsonCallLogger` appends, so reusing a `call_log` path
+    across runs made the summary report every earlier run's calls
+    as if they were the current one's.
+  - `_summarize_calls()` takes the run's in-memory records instead
+    of re-reading the log file. The file keeps its full append
+    history; only the summary is scoped to the run.
+
+
 ### v4.12.2 - 18th July 2026
 
 - Updated `CLAUDE.md`: corrected the catalog workflow, which pointed at

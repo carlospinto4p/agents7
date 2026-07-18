@@ -180,6 +180,29 @@ def test_run_eval_suite_call_log_is_summarized(
     assert run.call_log.overall.successes > 0
 
 
+def test_run_eval_suite_call_log_summary_excludes_earlier_runs(
+    patched_build, golden_set, tmp_path
+):
+    """A reused log path summarises this run only, not history.
+
+    ``JsonCallLogger`` appends, so re-reading the file would
+    report both runs' calls as if they were the second run's.
+    """
+    log = tmp_path / "calls.jsonl"
+    first = run_eval_suite(_CONFIG, golden_set, call_log=log)
+    second = run_eval_suite(_CONFIG, golden_set, call_log=log)
+
+    assert second.call_log is not None
+    assert second.call_log.overall.calls == first.call_log.overall.calls
+    # The file still holds both runs — only the summary is scoped.
+    lines = [
+        ln
+        for ln in log.read_text(encoding="utf-8").splitlines()
+        if ln.strip()
+    ]
+    assert len(lines) == first.call_log.overall.calls * 2
+
+
 def test_run_eval_suite_call_log_reaches_the_report(
     patched_build, golden_set, tmp_path
 ):

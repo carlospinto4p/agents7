@@ -32,6 +32,7 @@ from typing import Callable
 from agents7.agents.base import BaseAgent
 from agents7.call_log import (
     CallLogSummary,
+    CallRecord,
     JsonCallLogger,
     summarize_call_log,
 )
@@ -186,9 +187,17 @@ def run_eval_suite(
     agent = build_agent(config, agent_type)
 
     logger: JsonCallLogger | None = None
+    logged: list[CallRecord] = []
     if call_log is not None:
         logger = JsonCallLogger(call_log)
-        agent = agent.with_overrides(call_logger=logger)
+        write = logger
+
+        def _record(record: CallRecord) -> None:
+            """Persist a call and keep it for this run's summary."""
+            logged.append(record)
+            write(record)
+
+        agent = agent.with_overrides(call_logger=_record)
 
     try:
         results = run_evaluation(
@@ -199,7 +208,7 @@ def run_eval_suite(
             logger.close()
 
     metrics = compute_metrics(results, resolved_fields)
-    summary = _summarize_calls(call_log)
+    summary = _summarize_calls(call_log, logged)
 
     run = EvalRun(
         agent_name=agent.name,
@@ -220,21 +229,23 @@ def run_eval_suite(
 
 def _summarize_calls(
     call_log: str | Path | None,
+    logged: list[CallRecord],
 ) -> CallLogSummary | None:
-    """Summarize the call log written during a run.
+    """Summarize the calls *this run* made.
+
+    Summarizes the in-memory records rather than re-reading the
+    log file: ``JsonCallLogger`` appends, so a path reused across
+    runs holds earlier runs' records too and re-reading it would
+    report cumulative totals as if they were this run's.
 
     :param call_log: Path the run logged to, or None.
+    :param logged: Records captured during this run.
     :return: The summary, or None when no log was requested or
-        the run made no logged calls (the logger writes lazily,
-        so a run that failed before its first call leaves no
-        file).
+        the run made no logged calls.
     """
-    if call_log is None:
+    if call_log is None or not logged:
         return None
-    path = Path(call_log)
-    if not path.exists():
-        return None
-    return summarize_call_log(path)
+    return summarize_call_log(logged)
 
 
 def _write_report(
