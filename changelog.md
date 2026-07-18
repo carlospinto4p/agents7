@@ -2,6 +2,20 @@
 ## Changelog - Agents7
 
 
+### v4.12.2 - 18th July 2026
+
+- Updated `CLAUDE.md`: corrected the catalog workflow, which pointed at
+  an `agents_catalog/pyproject.toml` and `agents_catalog/changelog.md`
+  that do not exist:
+  - Stated that the catalog root is a container with no package and no
+    venv; each agent is its own versioned package.
+  - Fixed the test command to run through an agent's project, since the
+    catalog root has no venv to run from.
+  - Noted that catalog-root files (`scripts/`, `tests/`, `README.md`)
+    carry no version bump, and how to restore an agent's editable
+    install after `uv sync` drops it.
+
+
 ### v4.12.1 - 18th July 2026
 
 - Updated `roadmap.md`: marked phase 2 (adopt the composed eval route
