@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v4.12.0 - 18th July 2026
+
+- Updated `agents7/eval/suite.py`:
+  - `run_eval_suite()`: added the optional `notes` parameter, appending
+    caller-supplied note lines to the report after the standard eval-set
+    and accuracy notes. Lets an agent carry domain caveats into its
+    report without dropping down to `export_eval_report()`.
+
+
 ### v4.11.0 - 18th July 2026
 
 - Added `src/agents7/eval/suite.py` — the composed evaluation route:

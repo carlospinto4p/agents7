@@ -143,6 +143,7 @@ def run_eval_suite(
     report: str | Path | None = None,
     confusion_field: str | None = None,
     call_log: str | Path | None = None,
+    notes: list[str] | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> EvalRun:
     """Evaluate a YAML-configured agent against a golden set.
@@ -167,6 +168,9 @@ def run_eval_suite(
     :param call_log: When set, log every call made during the run
         as JSON lines to this path and attach the resulting
         `CallLogSummary` to the returned run.
+    :param notes: Optional extra note lines for the report, appended
+        after the standard eval-set and accuracy notes. Use them for
+        domain caveats a reader needs to interpret the numbers.
     :param progress_callback: Optional ``(current, total)``
         callable forwarded to `run_evaluation`.
     :return: The populated `EvalRun`.
@@ -208,7 +212,9 @@ def run_eval_suite(
     )
 
     if report is not None:
-        run.report_path = _write_report(run, agent, report, confusion_field)
+        run.report_path = _write_report(
+            run, agent, report, confusion_field, notes
+        )
     return run
 
 
@@ -236,6 +242,7 @@ def _write_report(
     agent: BaseAgent,
     report: str | Path,
     confusion_field: str | None,
+    notes: list[str] | None = None,
 ) -> Path:
     """Write the run's Markdown report.
 
@@ -244,6 +251,7 @@ def _write_report(
     :param report: Output path for the report.
     :param confusion_field: Explicit confusion-matrix field, or
         None to pick ``category`` when scored.
+    :param notes: Extra note lines appended after the standard ones.
     :return: The path the report was written to.
     """
     confusion = confusion_field or (
@@ -261,6 +269,7 @@ def _write_report(
             f"Eval set: `{run.data_path.name}` ({run.metrics['total']} rows)",
             f"Accuracy: {run.metrics['accuracy']:.0%} "
             f"({run.metrics['passed']}/{run.metrics['total']})",
+            *(notes or []),
         ],
     )
     return Path(report)

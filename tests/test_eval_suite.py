@@ -143,6 +143,24 @@ def test_run_eval_suite_writes_report(patched_build, golden_set, tmp_path):
     assert golden_set.name in text
 
 
+def test_run_eval_suite_extra_notes_reach_the_report(
+    patched_build, golden_set, tmp_path
+):
+    """Caller notes are appended after the standard ones."""
+    report = tmp_path / "report.md"
+    run_eval_suite(
+        _CONFIG,
+        golden_set,
+        report=report,
+        notes=["NOT_APPLICABLE is disabled on this model."],
+    )
+    text = report.read_text(encoding="utf-8")
+    assert "NOT_APPLICABLE is disabled on this model." in text
+    # The standard notes survive alongside the caller's.
+    assert golden_set.name in text
+    assert "Accuracy: 50%" in text
+
+
 def test_run_eval_suite_no_report_leaves_path_none(patched_build, golden_set):
     """Without a report request, no file and no path."""
     run = run_eval_suite(_CONFIG, golden_set)

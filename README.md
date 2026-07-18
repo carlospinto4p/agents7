@@ -1101,6 +1101,7 @@ The returned `EvalRun` carries everything the run produced: `agent_name`, `model
 - **Row shape** — both nested rows (`{"input": {...}, "category": "..."}`) and flat rows (`{"text": "...", "category": "..."}`) are normalised automatically.
 - **The confusion matrix** defaults to `category` when that field is scored, otherwise the first scored field. Override with `confusion_field=`.
 - **The call log** is written by a `JsonCallLogger` attached to a clone of the agent (the agent you passed is never mutated), then summarised into the report's *Call Log* section — one record per real LLM call, so a batched run reports the number of requests, not the number of rows.
+- **Report notes** always cover the eval set and the accuracy. Pass `notes=[...]` to append domain caveats a reader needs to interpret the numbers (e.g. a category the output model deliberately disables).
 
 The same route backs the CLI, so `agents7 eval` and a Python caller produce identical results:
 
