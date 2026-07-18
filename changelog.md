@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v4.12.1 - 18th July 2026
+
+- Updated `roadmap.md`: marked phase 2 (adopt the composed eval route
+  across the catalog) complete and restated its gate as a standing
+  invariant — no accuracy or latency claim without an eval run behind
+  it. Next up is phase 3, the catalog `ToolAgent` showcase.
+- Updated `backlog.md`: pruned the resolved eval-adoption item.
+
+
 ### v4.12.0 - 18th July 2026
 
 - Updated `agents7/eval/suite.py`:

@@ -14,11 +14,13 @@ rationale lives in the docs or ADRs it cites.
    v4.11.0 as `agents7.eval.run_eval_suite` — eval data → run →
    metrics → call log → report in one documented call, backing both
    the Python API and `agents7 eval`. Gate cleared.
-2. **Adopt it across the catalog.** Only `scripts/eval_agent.py` and
-   `tagger_agent`'s tests consume `agents7.eval` today; every catalog
-   agent should be evaluable the same way.
-   **Gate: no accuracy or latency claim in a changelog, README, or
-   refinement log without an eval run behind it.**
+2. ~~**Adopt it across the catalog.**~~ Both consumers now route
+   through `run_eval_suite` (catalog, tagger-agent v1.3.60): the
+   script owns only discovery, and all five evaluable agents score
+   identically. Gate cleared — but the standing invariant below
+   keeps it enforced.
+   **Standing gate: no accuracy or latency claim in a changelog,
+   README, or refinement log without an eval run behind it.**
 3. **Then resume feature work.** The catalog `ToolAgent` showcase
    (agents_catalog backlog) is the next consumer-facing item once
    measurement is in place — tool-calling v1 is shipped and validated
