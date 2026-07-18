@@ -1520,6 +1520,26 @@ def get_weather(city: str) -> dict:
     return {"city": city, "temp_c": 18, "conditions": "sunny"}
 ```
 
+Containers are encoded recursively, so returning a bare
+`list[Product]` of Pydantic models yields a JSON array of objects —
+no wrapper model is needed to avoid Python `repr` output.
+
+Arguments coming back from the model are validated against the same
+schema the tool advertised, using the Pydantic model the schema was
+derived from. Values in the wrong shape are coerced where possible
+(a `"3"` for an `int` parameter becomes `3`), and anything that
+cannot be coerced is reported to the model as a readable message
+rather than an opaque Python error:
+
+```
+Error: Invalid arguments for `get_weather`: city: Input should be a valid string
+```
+
+Small local models make both mistakes routinely, so this is what
+makes them usable for tool work. `Tool.validate_arguments()` exposes
+the same check directly. A `Tool` constructed with a hand-written
+`json_schema` for an untyped callable skips validation.
+
 #### Streaming the tool loop
 
 `act_stream()` / `act_stream_async()` run the same bounded loop but

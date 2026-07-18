@@ -59,5 +59,10 @@ class ToolSchemaError(Agents7Exception):
     JSON schema, or an unknown tool is requested."""
 
 
+class ToolArgumentError(Agents7Exception):
+    """Raised when a model's tool arguments fail validation
+    against the tool's own schema."""
+
+
 class ToolLoopError(Agents7Exception):
     """Raised when a ToolAgent exceeds its max_iterations."""

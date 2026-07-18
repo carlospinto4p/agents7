@@ -2,6 +2,25 @@
 ## Changelog - Agents7
 
 
+### v4.13.0 - 18th July 2026
+
+- Updated `tools/`:
+  - `Tool.validate_arguments()`: validates and coerces a model's tool
+    arguments through the same Pydantic model the tool's JSON schema
+    is derived from. Stringified numbers are coerced; anything
+    uncoercible raises `ToolArgumentError` with a readable message
+    instead of surfacing an opaque Python error.
+  - `Tool.run()`: validates arguments before invoking the callable.
+  - `Tool.args_model`: the derived args model, or `None` when the
+    tool was given a hand-written schema for an untyped callable.
+  - `serialize_tool_result()`: recurses into `dict` / `list` /
+    `tuple`, so a bare `list[Product]` of Pydantic models encodes as
+    a JSON array of objects rather than of Python `repr` strings.
+  - `args_model_from_callable()`: exposed as the shared source of
+    both the schema and the validator.
+- Added `ToolArgumentError` in `exceptions.py`.
+
+
 ### v4.12.3 - 18th July 2026
 
 - Fixed `eval/suite.py`:
