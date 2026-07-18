@@ -6,13 +6,17 @@ Provides headless evaluation primitives:
 """
 
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from pydantic import BaseModel
 
 from agents7.agents.labeler import Labeler
 from agents7.logs import logger
 from agents7.models.base import AgentResponse
+
+if TYPE_CHECKING:  # Imported for typing only — `trajectory` imports
+    # this module, so a runtime import would be circular.
+    from agents7.eval.trajectory import TrajectoryResult
 
 
 def _row_input(row: dict) -> dict:
@@ -38,6 +42,10 @@ class EvalResult:
         field_results: Per-field match results.
         response: The full `AgentResponse`, or None.
         error: Error message string, or None.
+        trajectory: For a tool agent, the matched
+            `TrajectoryResult` — the calls it made against the
+            calls its row expected. None for every other agent
+            type, which is scored on output fields instead.
     """
 
     input_data: dict
@@ -47,6 +55,7 @@ class EvalResult:
     field_results: dict[str, bool] = field(default_factory=dict)
     response: AgentResponse | None = None
     error: str | None = None
+    trajectory: "TrajectoryResult | None" = None
 
 
 def _build_eval_result(

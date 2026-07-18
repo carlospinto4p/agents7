@@ -172,6 +172,7 @@ def test_agent_type_map_covers_known_types():
         "detector",
         "classifier",
         "regressor",
+        "tool",
     }
 
 

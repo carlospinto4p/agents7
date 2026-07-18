@@ -228,6 +228,11 @@ def export_eval_report(
         lines.append(f"| Max | {timing['max_s']:.2f}s |")
         lines.append("")
 
+    # --- Trajectory (tool agents) ---
+    trajectory = metrics.get("trajectory")
+    if trajectory:
+        _append_trajectory(lines, trajectory)
+
     # --- Call log ---
     if call_log is not None:
         _append_call_log(lines, call_log)
@@ -248,8 +253,11 @@ def export_eval_report(
         lines.append(f"### Case {i + 1} — {icon}{duration}")
         lines.append("")
         lines.append(f"- **Input**: {r.input_data}")
-        lines.append(f"- **Expected**: {r.expected}")
-        lines.append(f"- **Actual**: {r.actual}")
+        if getattr(r, "trajectory", None) is not None:
+            _append_case_trajectory(lines, r)
+        else:
+            lines.append(f"- **Expected**: {r.expected}")
+            lines.append(f"- **Actual**: {r.actual}")
         if r.error:
             lines.append(f"- **Error**: {r.error}")
         lines.append("")
@@ -354,6 +362,61 @@ def _append_call_log(
             )
         )
         lines.append("")
+
+
+def _append_trajectory(lines: list[str], trajectory: dict) -> None:
+    """Append the trajectory section for a tool-agent run.
+
+    :param lines: Report lines to append to.
+    :param trajectory: The ``trajectory`` metrics dict.
+    """
+    expected = trajectory.get("expected_calls", 0)
+    matched = trajectory.get("matched_calls", 0)
+    rate = matched / expected if expected else 0.0
+
+    lines.append("## Trajectory")
+    lines.append("")
+    lines.append("| Metric | Value |")
+    lines.append("|--------|-------|")
+    lines.append(f"| Match mode | {trajectory.get('mode', '')} |")
+    lines.append(f"| Expected calls | {expected} |")
+    lines.append(f"| Matched calls | {matched} ({rate:.1%}) |")
+    lines.append(f"| Extra calls | {trajectory.get('extra_calls', 0)} |")
+    lines.append("")
+
+    per_tool = trajectory.get("per_tool", {})
+    if per_tool:
+        lines.append("### Per-Tool Recall")
+        lines.append("")
+        lines.append("| Tool | Matched | Expected | Recall |")
+        lines.append("|------|---------|----------|--------|")
+        for name, stats in per_tool.items():
+            want = stats["expected"]
+            got = stats["matched"]
+            recall = got / want if want else 0.0
+            lines.append(f"| {name} | {got} | {want} | {recall:.1%} |")
+        lines.append("")
+
+
+def _append_case_trajectory(lines: list[str], result) -> None:
+    """Append one case's trajectory detail.
+
+    :param lines: Report lines to append to.
+    :param result: An `EvalResult` carrying a `TrajectoryResult`.
+    """
+    t = result.trajectory
+    expected = " -> ".join(e.format() for e in t.expected) or "<none>"
+    actual = " -> ".join(c.format() for c in t.actual) or "<none>"
+    lines.append(f"- **Expected calls**: {expected}")
+    lines.append(f"- **Actual calls**: {actual}")
+    if t.missing:
+        lines.append(
+            "- **Missing**: " + ", ".join(e.format() for e in t.missing)
+        )
+    if t.extra:
+        lines.append("- **Extra**: " + ", ".join(c.format() for c in t.extra))
+    if result.response is not None:
+        lines.append(f"- **Answer**: {result.response.response}")
 
 
 def _append_confusion_matrix(

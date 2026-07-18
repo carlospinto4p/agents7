@@ -1,11 +1,12 @@
 """An agent that calls registered tools in a bounded loop."""
 
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
 from agents7.agents.base import Agent, BaseAgent
+from agents7.call_log import CallRecord, generate_trace_id
 from agents7.exceptions import AgentConfigurationError, ToolLoopError
 from agents7.models import AgentResponse
 from agents7.models.base import LLMMetrics
@@ -114,7 +115,7 @@ class ToolStreamResult(_ToolStreamBase):
                 temperature=agent.temperature,
                 tools=agent._registry.schemas(),
             )
-            agent._accumulate(totals, result["metrics"])
+            agent._record_turn(totals, result["metrics"])
             calls = result.get("tool_calls") or []
             if not calls:
                 self._agent_response = agent._final(result, totals)
@@ -157,7 +158,7 @@ class ToolAsyncStreamResult(_ToolStreamBase):
                 temperature=agent.temperature,
                 tools=agent._registry.schemas(),
             )
-            agent._accumulate(totals, result["metrics"])
+            agent._record_turn(totals, result["metrics"])
             calls = result.get("tool_calls") or []
             if not calls:
                 self._agent_response = agent._final(result, totals)
@@ -186,11 +187,15 @@ class ToolAgent(BaseAgent):
     :param max_iterations: Maximum model turns before raising
         `ToolLoopError`.
     :param temperature: Sampling temperature for each model turn.
+    :param call_logger: Optional callable receiving a `CallRecord`
+        per **model turn** — not per `act`, since one answer may
+        take several turns and the log measures real calls.
     """
 
     tools: list[Any] = field(default_factory=list, kw_only=True)
     max_iterations: int = field(default=5, kw_only=True)
     temperature: float = field(default=0.7, kw_only=True)
+    call_logger: Callable | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -230,7 +235,7 @@ class ToolAgent(BaseAgent):
                 temperature=self.temperature,
                 tools=self._registry.schemas(),
             )
-            self._accumulate(totals, result["metrics"])
+            self._record_turn(totals, result["metrics"])
             calls = result.get("tool_calls") or []
             if not calls:
                 return self._final(result, totals)
@@ -247,7 +252,7 @@ class ToolAgent(BaseAgent):
                 temperature=self.temperature,
                 tools=self._registry.schemas(),
             )
-            self._accumulate(totals, result["metrics"])
+            self._record_turn(totals, result["metrics"])
             calls = result.get("tool_calls") or []
             if not calls:
                 return self._final(result, totals)
@@ -356,6 +361,43 @@ class ToolAgent(BaseAgent):
         return ToolLoopError(
             f"ToolAgent `{self.name}` exceeded "
             f"{self.max_iterations} iterations."
+        )
+
+    def _record_turn(self, totals: dict, metrics: dict) -> None:
+        """Fold one model turn into *totals* and log it.
+
+        The single choke point every loop (sync, async, and both
+        streams) routes each model turn through, so accumulation
+        and call logging can never diverge between them.
+
+        :param totals: The running metric totals to fold into.
+        :param metrics: The turn's raw metrics from the engine.
+        """
+        self._accumulate(totals, metrics)
+        self._emit_call_log(metrics)
+
+    def _emit_call_log(self, metrics: dict) -> None:
+        """Emit a `CallRecord` for one model turn, if logging.
+
+        Only turns that returned are recorded — when the engine
+        raises, the exception propagates to the caller rather than
+        becoming a logged failure.
+
+        :param metrics: The turn's raw metrics from the engine.
+        """
+        if self.call_logger is None:
+            return
+        self.call_logger(
+            CallRecord(
+                trace_id=generate_trace_id(),
+                agent_name=self.name,
+                agent_version=self.version,
+                model_id=self.engine.model_id,
+                success=True,
+                tokens=metrics.get("tokens") or 0,
+                prompt_tokens=metrics.get("prompt_tokens") or 0,
+                total_duration=metrics.get("total_duration") or 0.0,
+            )
         )
 
     @staticmethod

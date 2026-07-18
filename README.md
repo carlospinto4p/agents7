@@ -326,8 +326,11 @@ agents7 eval -c config.yml -d golden_set.csv -r report.md \
 ```
 
 The agent class is chosen from the config's `agent_type` field
-(`labeler`, `detector`, `classifier`, or `regressor`), overridable
-with `--agent-type`. Golden sets may be `.jsonl`, `.json`, or `.csv`,
+(`labeler`, `detector`, `classifier`, `regressor`, or `tool`),
+overridable with `--agent-type`. A `tool` agent is scored on its
+**trajectory** rather than on output fields — see
+[Evaluating Tool Agents](#evaluating-tool-agents). Golden sets may be
+`.jsonl`, `.json`, or `.csv`,
 and rows may be nested (`{"input": {...}, "category": "..."}`) or flat
 (input and expected columns side by side); both are normalised
 automatically. Expected fields are derived from the golden set and the
@@ -1047,7 +1050,7 @@ variant = agent.with_overrides(
 )
 ```
 
-The original agent is unchanged (frozen dataclass). Works with all agent types (`Labeler`, `Detector`, `Classifier`, `Regressor`).
+The original agent is unchanged (frozen dataclass). Defined on `BaseAgent`, so it works with **every** agent type — the structured-output agents (`Labeler`, `Detector`, `Classifier`, `Regressor`), the chatters, and `ToolAgent`. Accepted keyword arguments are whatever fields the concrete class defines.
 
 ### Batch Export
 
@@ -1108,6 +1111,71 @@ The same route backs the CLI, so `agents7 eval` and a Python caller produce iden
 ```bash
 agents7 eval -c configs/sentiment.yml -d data/golden_set_40.jsonl \
     --report reports/sentiment.md --call-log reports/sentiment_calls.jsonl
+```
+
+### Evaluating Tool Agents
+
+A `ToolAgent` answers in free text, so there is no label to compare
+against — two correct answers to the same question rarely share a
+wording. What *is* checkable is the **trajectory** it took: which
+tools it called, in what order, and with what arguments. Set
+`agent_type: tool` and `run_eval_suite` routes the run through the
+trajectory scorer automatically; everything else — the call log, the
+metrics, the report — is unchanged.
+
+A golden-set row pairs an input with the calls the agent should make:
+
+```json
+{"input": "Can I order 3 blue mugs, and what is the total?",
+ "tools": [
+   {"name": "find_product"},
+   {"name": "check_stock", "arguments": {"sku": "MUG-01"}},
+   {"name": "order_total", "arguments": {"unit_price_cents": 1250,
+                                         "quantity": 3}}
+ ]}
+```
+
+```python
+run = run_eval_suite("config.yml", "eval_data.jsonl")
+
+print(run.metrics["accuracy"])                    # rows fully matched
+print(run.metrics["trajectory"]["extra_calls"])   # calls not expected
+print(run.metrics["trajectory"]["per_tool"])      # recall per tool
+```
+
+**Matching rules:**
+
+- **Order matters.** Expected calls must appear in the expected
+  relative order.
+- **`in_order` (the default)** treats the expected calls as an ordered
+  *subsequence*: extra calls are tolerated, but counted and reported.
+  **`exact`** additionally requires that no extra call was made. Set it
+  per run with `trajectory_mode=` / `--trajectory-mode`, or per agent
+  with a `trajectory_mode:` key in the config.
+- **Arguments match on the stated keys only** — pin the ones that
+  matter (`sku`, `quantity`) and leave the rest out rather than
+  spelling out every default. Omitting `arguments` scores the call on
+  its name alone, which is the right choice for an argument the model
+  legitimately phrases differently (a search `query`).
+- **A row may expect no calls at all** (`"tools": []`) — that is how
+  you assert an agent *doesn't* reach for a tool it doesn't need.
+
+Alongside the usual accuracy, the report gains a **Trajectory** section
+with per-tool recall, and each failing case names exactly which calls
+were missing and which were extra. The confusion matrix is omitted — a
+sequence of calls is not a label to cross-tabulate.
+
+The scoring primitives are public for finer control:
+
+```python
+from agents7.eval import (
+    ExpectedCall, ToolCall, collect_trajectory, match_trajectory,
+)
+
+calls, response = collect_trajectory(agent, "Any blue mugs?")
+result = match_trajectory([ExpectedCall("check_stock", {"sku": "MUG-01"})],
+                          calls)
+print(result.passed, result.missing, result.extra)
 ```
 
 ### Evaluation Metrics

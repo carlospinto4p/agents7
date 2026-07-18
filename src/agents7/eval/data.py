@@ -19,14 +19,17 @@ from pathlib import Path
 from agents7.agents.base import BaseAgent
 from agents7.agents.utils import import_from_path
 
-# agent_type -> dotted class path. Only structured-output agents
-# are evaluable this way (chatters have no golden set to score
-# against).
+# agent_type -> dotted class path. Every evaluable agent type,
+# scored one of two ways: the structured-output agents compare
+# output fields against a labeled row, while `tool` compares the
+# trajectory it took (see `agents7.eval.trajectory`). Chatters
+# stay absent — they have no golden set to score against.
 AGENT_TYPE_MAP: dict[str, str] = {
     "labeler": "agents7.agents.Labeler",
     "detector": "agents7.agents.Detector",
     "classifier": "agents7.agents.Classifier",
     "regressor": "agents7.agents.Regressor",
+    "tool": "agents7.agents.ToolAgent",
 }
 
 # Columns that annotate a golden-set row but are neither input
@@ -185,8 +188,9 @@ def resolve_agent_class(agent_type: str | None) -> type:
     """Resolve an ``agent_type`` string to an agent class.
 
     :param agent_type: One of ``labeler``, ``detector``,
-        ``classifier``, ``regressor`` (case-insensitive). When
-        ``None`` or empty, defaults to ``labeler``.
+        ``classifier``, ``regressor``, ``tool``
+        (case-insensitive). When ``None`` or empty, defaults to
+        ``labeler``.
     :return: The resolved agent class.
     :raises ValueError: If *agent_type* is not a known type.
     """
@@ -204,7 +208,7 @@ def build_agent(
     config_path: str | Path,
     agent_type: str | None = None,
 ) -> BaseAgent:
-    """Build a structured-output agent from a YAML config.
+    """Build an evaluable agent from a YAML config.
 
     Thin wrapper over the agent class's ``from_yaml``. When
     *agent_type* is not given, it is read from the config's

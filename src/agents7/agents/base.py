@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from string import Template
 from typing import Any, TypeVar
 
@@ -95,6 +95,23 @@ class BaseAgent(ABC):
             - idx: Optional index for tracking purposes.
         """
         raise NotImplementedError("Subclasses must implement this method.")
+
+    def with_overrides(self: Agent, **kwargs: Any) -> Agent:
+        """Create a copy of this agent with selected fields
+        replaced.
+
+        Useful for A/B testing, model comparison, or creating
+        agent variants without rebuilding from scratch.
+
+        Accepts any field defined on the concrete agent class. The
+        engine can be replaced by passing a new `LLMEngine`.
+
+        :param kwargs: Fields to override. For example:
+            ``agent.with_overrides(system_prompt="New prompt")``
+            ``agent.with_overrides(temperature=0.0)``
+        :return: A new agent instance with the overridden fields.
+        """
+        return replace(self, **kwargs)
 
     def _set_attr(self, name: str, value) -> None:
         """Mutate a field on a frozen dataclass instance."""

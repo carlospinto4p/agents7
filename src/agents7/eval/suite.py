@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Callable
 
 from agents7.agents.base import BaseAgent
+from agents7.agents.tool_agent import ToolAgent
 from agents7.call_log import (
     CallLogSummary,
     CallRecord,
@@ -48,6 +49,12 @@ from agents7.eval.metrics import (
     EvalResult,
     compute_metrics,
     run_evaluation,
+)
+from agents7.eval.trajectory import (
+    TRAJECTORY_FIELD,
+    TrajectoryMode,
+    compute_trajectory_metrics,
+    run_trajectory_evaluation,
 )
 
 
@@ -93,8 +100,10 @@ class EvalRun:
             f"({self.metrics.get('passed', 0)}/"
             f"{self.metrics.get('total', 0)})",
         ]
-        per_field = self.metrics.get("per_field", {})
-        if per_field:
+        trajectory = self.metrics.get("trajectory")
+        if trajectory:
+            lines.extend(self._trajectory_lines(trajectory))
+        elif per_field := self.metrics.get("per_field", {}):
             lines.append("Per-field accuracy:")
             lines.extend(
                 f"  {name}: {acc:.1%}" for name, acc in per_field.items()
@@ -106,6 +115,31 @@ class EvalRun:
             lines.append("")
             lines.append(f"Report written to {self.report_path}")
         return "\n".join(lines)
+
+    @staticmethod
+    def _trajectory_lines(trajectory: dict) -> list[str]:
+        """Render the trajectory block of a tool run's summary.
+
+        :param trajectory: The run's ``trajectory`` metrics.
+        :return: Summary lines covering the match mode, the
+            call-level totals, and per-tool recall.
+        """
+        expected = trajectory.get("expected_calls", 0)
+        matched = trajectory.get("matched_calls", 0)
+        rate = matched / expected if expected else 0.0
+        lines = [
+            f"Match:    {trajectory.get('mode', '')}",
+            f"Calls:    {matched}/{expected} expected calls made "
+            f"({rate:.1%}), {trajectory.get('extra_calls', 0)} extra",
+        ]
+        per_tool = trajectory.get("per_tool", {})
+        if per_tool:
+            lines.append("Per-tool recall:")
+            lines.extend(
+                f"  {name}: {stats['matched']}/{stats['expected']}"
+                for name, stats in per_tool.items()
+            )
+        return lines
 
 
 def resolve_eval_fields(
@@ -145,6 +179,7 @@ def run_eval_suite(
     confusion_field: str | None = None,
     call_log: str | Path | None = None,
     notes: list[str] | None = None,
+    trajectory_mode: str | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> EvalRun:
     """Evaluate a YAML-configured agent against a golden set.
@@ -154,6 +189,13 @@ def run_eval_suite(
     summarize the calls made, and optionally write a Markdown
     report.
 
+    A **tool agent** is scored on its *trajectory* rather than on
+    output fields: its rows carry a ``tools`` list of expected
+    calls, and the run reports whether it called the right tools,
+    in the right order, with the right arguments (see
+    `agents7.eval.trajectory`). Everything else about the route —
+    the call log, the metrics, the report — is identical.
+
     :param config: Path to the agent's YAML config file.
     :param data: Path to the golden set (``.jsonl``, ``.json``,
         or ``.csv``).
@@ -161,7 +203,8 @@ def run_eval_suite(
         the config's ``agent_type`` field.
     :param fields: Optional explicit expected-field names. When
         omitted, they are derived from the golden set and the
-        config's ``output_model``.
+        config's ``output_model``. Ignored for a tool agent, which
+        is always scored on its trajectory.
     :param report: When set, write a Markdown report to this path.
     :param confusion_field: Categorical field for the report's
         confusion matrix. Defaults to ``category`` when scored,
@@ -172,19 +215,29 @@ def run_eval_suite(
     :param notes: Optional extra note lines for the report, appended
         after the standard eval-set and accuracy notes. Use them for
         domain caveats a reader needs to interpret the numbers.
+    :param trajectory_mode: For a tool agent, ``in_order`` (extra
+        calls tolerated) or ``exact`` (they are not). Defaults to
+        the config's ``trajectory_mode``, then to ``in_order``.
     :param progress_callback: Optional ``(current, total)``
-        callable forwarded to `run_evaluation`.
+        callable forwarded to the run.
     :return: The populated `EvalRun`.
-    :raises ValueError: If the golden set is empty or the expected
-        fields cannot be determined.
+    :raises ValueError: If the golden set is empty, the expected
+        fields cannot be determined, or a tool agent's golden set
+        has no ``tools`` column.
     """
     data_path = Path(data)
     rows = load_eval_rows(data_path)
     if not rows:
         raise ValueError(f"Golden set is empty: {data_path}")
 
-    eval_rows, resolved_fields = resolve_eval_fields(config, rows, fields)
     agent = build_agent(config, agent_type)
+    is_tool = isinstance(agent, ToolAgent)
+
+    if is_tool:
+        eval_rows = _trajectory_rows(rows, data_path)
+        resolved_fields = [TRAJECTORY_FIELD]
+    else:
+        eval_rows, resolved_fields = resolve_eval_fields(config, rows, fields)
 
     logger: JsonCallLogger | None = None
     logged: list[CallRecord] = []
@@ -200,14 +253,24 @@ def run_eval_suite(
         agent = agent.with_overrides(call_logger=_record)
 
     try:
-        results = run_evaluation(
-            agent, eval_rows, resolved_fields, progress_callback
-        )
+        if is_tool:
+            results = run_trajectory_evaluation(
+                agent,
+                eval_rows,
+                _resolve_trajectory_mode(config, trajectory_mode),
+                progress_callback,
+            )
+        else:
+            results = run_evaluation(
+                agent, eval_rows, resolved_fields, progress_callback
+            )
     finally:
         if logger is not None:
             logger.close()
 
     metrics = compute_metrics(results, resolved_fields)
+    if is_tool:
+        metrics["trajectory"] = compute_trajectory_metrics(results)
     summary = _summarize_calls(call_log, logged)
 
     run = EvalRun(
@@ -225,6 +288,59 @@ def run_eval_suite(
             run, agent, report, confusion_field, notes
         )
     return run
+
+
+def _trajectory_rows(rows: list[dict], data_path: Path) -> list[dict]:
+    """Shape raw rows for a trajectory run.
+
+    Trajectory rows need no output-model reconciliation — the
+    input and the expected calls are both named explicitly — so
+    they skip `normalise_rows` and are only validated here.
+
+    :param rows: Raw rows from `load_eval_rows`.
+    :param data_path: The golden set's path, for error messages.
+    :return: Rows carrying ``input`` and ``tools``.
+    :raises ValueError: If no row declares a ``tools`` column.
+    """
+    if not any(TRAJECTORY_FIELD in row for row in rows):
+        raise ValueError(
+            f"`{data_path.name}` has no `{TRAJECTORY_FIELD}` column — a "
+            "tool agent is scored on the calls it makes, so each row "
+            "needs the trajectory it is expected to take."
+        )
+    return [
+        {
+            "input": row.get("input", ""),
+            TRAJECTORY_FIELD: row.get(TRAJECTORY_FIELD, []),
+        }
+        for row in rows
+    ]
+
+
+def _resolve_trajectory_mode(
+    config: str | Path,
+    override: str | None,
+) -> TrajectoryMode:
+    """Resolve the trajectory match mode for a run.
+
+    Precedence: an explicit *override*, then the config's
+    ``trajectory_mode``, then `TrajectoryMode.IN_ORDER`.
+
+    :param config: Path to the agent's YAML config.
+    :param override: Explicit mode passed by the caller.
+    :return: The resolved mode.
+    :raises ValueError: If the resolved mode is not a known mode.
+    """
+    raw = override or load_config_dict(config).get("trajectory_mode")
+    if not raw:
+        return TrajectoryMode.IN_ORDER
+    try:
+        return TrajectoryMode(str(raw).lower())
+    except ValueError as exc:
+        modes = ", ".join(m.value for m in TrajectoryMode)
+        raise ValueError(
+            f"Unknown trajectory_mode '{raw}' — must be one of: {modes}"
+        ) from exc
 
 
 def _summarize_calls(
@@ -265,9 +381,14 @@ def _write_report(
     :param notes: Extra note lines appended after the standard ones.
     :return: The path the report was written to.
     """
-    confusion = confusion_field or (
-        "category" if "category" in run.fields else run.fields[0]
-    )
+    if run.metrics.get("trajectory"):
+        # A trajectory is a sequence of calls, not a label — there
+        # is no categorical field to cross-tabulate.
+        confusion = None
+    else:
+        confusion = confusion_field or (
+            "category" if "category" in run.fields else run.fields[0]
+        )
     export_eval_report(
         run.results,
         run.metrics,

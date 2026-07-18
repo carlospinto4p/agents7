@@ -2,6 +2,48 @@
 ## Changelog - Agents7
 
 
+### v4.14.0 - 18th July 2026
+
+- Added `src/agents7/eval/trajectory.py`: trajectory scoring for
+  tool-calling agents, which answer in free text and so cannot be
+  scored label-against-label:
+  - `TrajectoryMode`: `in_order` (extra calls tolerated, counted and
+    reported) or `exact` (they are not).
+  - `ExpectedCall` / `ToolCall`: one expected and one actual call.
+    Arguments match on the stated keys only, so a row pins what
+    matters instead of every default.
+  - `TrajectoryResult`: the matched outcome, exposing `missing` and
+    `extra`.
+  - `parse_expected_calls()`: parse a golden set's `tools` cell, from
+    dicts, bare tool names, or a JSON string (a CSV cell).
+  - `match_trajectory()`: match an actual trajectory against the
+    expected one, in order.
+  - `collect_trajectory()`: run an agent once, recording its calls.
+  - `run_trajectory_evaluation()`: score every row of a golden set.
+  - `compute_trajectory_metrics()`: call-level totals and per-tool
+    recall.
+- Updated `src/agents7/eval/`:
+  - `data.py`: added `tool` to `AGENT_TYPE_MAP`, making tool agents
+    evaluable.
+  - `suite.py`: `run_eval_suite()` routes a `ToolAgent` through the
+    trajectory scorer, added the `trajectory_mode` parameter (falling
+    back to the config's `trajectory_mode`), and omitted the confusion
+    matrix for trajectory runs.
+  - `metrics.py`: `EvalResult` carries an optional `trajectory`.
+  - `export.py`: reports gained a Trajectory section with per-tool
+    recall, and per-case detail naming the missing and extra calls.
+- Updated `src/agents7/agents/`:
+  - `base.py`: moved `with_overrides()` up from `Labeler`, so every
+    agent type can be cloned with fields replaced.
+  - `tool_agent.py`: added the `call_logger` field, emitting a
+    `CallRecord` per model turn through a single choke point shared by
+    the blocking, async, and streaming loops.
+- Updated `src/agents7/cli/__init__.py`: added `--trajectory-mode` to
+  `agents7 eval`.
+- Added `tests/test_eval_trajectory.py`: 37 tests.
+- Updated `tests/test_eval_suite.py`: 7 tests for the tool route.
+
+
 ### v4.13.0 - 18th July 2026
 
 - Updated `tools/`:

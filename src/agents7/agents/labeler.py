@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from pydantic import BaseModel, create_model
@@ -262,27 +262,6 @@ class Labeler(BaseAgent):
                 vals = ", ".join(members.keys())
                 lines.append(f"  {field_name}: {vals}")
         return "\n".join(lines)
-
-    def with_overrides(self, **kwargs) -> "Labeler":
-        """Create a copy of this agent with selected fields
-        replaced.
-
-        Useful for A/B testing, model comparison, or creating
-        agent variants without rebuilding from scratch.
-
-        Accepts any field defined on `Labeler` or its
-        subclass. The engine can be replaced by passing a new
-        `LLMEngine`, or just the model name can be swapped by
-        passing ``engine`` with a new engine instance.
-
-        :param kwargs: Fields to override. For example:
-            ``agent.with_overrides(system_prompt="New prompt")``
-            ``agent.with_overrides(think=True)``
-            ``agent.with_overrides(max_parse_retries=2)``
-        :return: A new agent instance with the overridden
-            fields.
-        """
-        return replace(self, **kwargs)
 
     def act(
         self, input_data: dict | list[dict], chat_kwargs: dict = None

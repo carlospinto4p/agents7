@@ -21,10 +21,17 @@ rationale lives in the docs or ADRs it cites.
    keeps it enforced.
    **Standing gate: no accuracy or latency claim in a changelog,
    README, or refinement log without an eval run behind it.**
-3. **Then resume feature work.** The catalog `ToolAgent` showcase
-   (agents_catalog backlog) is the next consumer-facing item once
-   measurement is in place — tool-calling v1 is shipped and validated
-   end-to-end across all three providers (v4.4.0–v4.9.0).
+3. ~~**Then resume feature work.**~~ The catalog `ToolAgent` showcase
+   shipped (store_assistant v0.1.0), and v4.14.0 closed the measurement
+   gap it exposed: tool agents are scored on their **trajectory**
+   (which tools, in what order, with what arguments) rather than on a
+   label, so the standing gate above now covers every agent type the
+   framework builds. Gate cleared.
+4. **Next: run the tool eval for real.** `store_assistant` has a
+   12-row trajectory set but no executed run behind it — the
+   README's per-model observations are still single anecdotes.
+   **Gate: no accuracy claim about a model's tool-calling until
+   `eval_agent.py store_assistant` has been run against it.**
 
 ## Standing invariants (apply to every session)
 

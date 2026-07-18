@@ -23,6 +23,7 @@ from pathlib import Path
 from agents7 import __version__
 from agents7.eval.data import build_agent
 from agents7.eval.suite import run_eval_suite
+from agents7.eval.trajectory import TrajectoryMode
 from agents7.exceptions import Agents7Exception
 
 
@@ -108,6 +109,15 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     eval_p.add_argument(
+        "--trajectory-mode",
+        choices=[m.value for m in TrajectoryMode],
+        help=(
+            "For a tool agent, how strictly to match the tool "
+            "calls: in_order tolerates extra calls, exact does "
+            "not. Defaults to the config's trajectory_mode."
+        ),
+    )
+    eval_p.add_argument(
         "--json",
         action="store_true",
         help="Print the metrics as JSON instead of a summary.",
@@ -135,7 +145,8 @@ def _add_common_agent_args(parser: argparse.ArgumentParser) -> None:
         "--agent-type",
         help=(
             "Agent type (labeler, detector, classifier, "
-            "regressor). Defaults to the config's agent_type."
+            "regressor, tool). Defaults to the config's "
+            "agent_type."
         ),
     )
 
@@ -213,6 +224,7 @@ def _cmd_eval(args: argparse.Namespace) -> int:
         report=args.report,
         confusion_field=args.confusion_field,
         call_log=args.call_log,
+        trajectory_mode=args.trajectory_mode,
     )
 
     if args.json:

@@ -5,7 +5,9 @@ import json
 import pytest
 
 from agents7.agents.classifier import Classifier
+from agents7.agents.tool_agent import ToolAgent
 from agents7.eval.suite import EvalRun, resolve_eval_fields, run_eval_suite
+from agents7.llm import LLMEngine
 from agents7.models.demo import (
     Sentiment,
     SentimentCategory,
@@ -265,3 +267,115 @@ def test_eval_run_format_mentions_report_path(
     report = tmp_path / "report.md"
     text = run_eval_suite(_CONFIG, golden_set, report=report).format()
     assert f"Report written to {report}" in text
+
+
+# ── Tool agents: the trajectory route ──────────────────────────
+
+
+@pytest.fixture
+def tool_agent(monkeypatch):
+    """A tool agent that calls `echo` once, then answers."""
+    from tests.test_eval_trajectory import (
+        ScriptedProvider,
+        answer_turn,
+        echo,
+        tool_turn,
+    )
+
+    provider = ScriptedProvider(
+        [tool_turn([("echo", {"value": "hi"})]), answer_turn("Done.")]
+    )
+    engine = LLMEngine(provider="ollama", model_name="scripted")
+    monkeypatch.setattr(engine, "llm_provider", provider)
+    return ToolAgent(
+        name="ScriptedTool",
+        version=1,
+        engine=engine,
+        system_prompt="You help.",
+        tools=[echo],
+    )
+
+
+@pytest.fixture
+def patched_tool_build(monkeypatch, tool_agent):
+    """Make `run_eval_suite` build the scripted tool agent."""
+    monkeypatch.setattr(
+        "agents7.eval.suite.build_agent",
+        lambda config, agent_type=None: tool_agent,
+    )
+    return tool_agent
+
+
+@pytest.fixture
+def trajectory_set(tmp_path):
+    """A one-row golden set expecting a single `echo` call."""
+    path = tmp_path / "trajectory_1.jsonl"
+    path.write_text(
+        json.dumps({"input": "go", "tools": [{"name": "echo"}]}) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_tool_agent_is_scored_on_its_trajectory(
+    patched_tool_build, trajectory_set
+):
+    """A tool agent routes through the trajectory scorer."""
+    run = run_eval_suite(_CONFIG, trajectory_set)
+    assert run.fields == ["tools"]
+    assert run.metrics["accuracy"] == 1.0
+    assert run.metrics["trajectory"]["matched_calls"] == 1
+
+
+def test_tool_run_reports_the_match_mode(patched_tool_build, trajectory_set):
+    """The mode used is carried on the metrics and the summary."""
+    run = run_eval_suite(_CONFIG, trajectory_set)
+    assert run.metrics["trajectory"]["mode"] == "in_order"
+    assert "Match:    in_order" in run.format()
+
+
+def test_exact_mode_is_honoured(patched_tool_build, trajectory_set):
+    """An explicit mode overrides the default."""
+    run = run_eval_suite(_CONFIG, trajectory_set, trajectory_mode="exact")
+    assert run.metrics["trajectory"]["mode"] == "exact"
+
+
+def test_unknown_trajectory_mode_raises(patched_tool_build, trajectory_set):
+    """A typo'd mode is rejected rather than silently ignored."""
+    with pytest.raises(ValueError, match="Unknown trajectory_mode"):
+        run_eval_suite(_CONFIG, trajectory_set, trajectory_mode="loose")
+
+
+def test_tool_golden_set_without_tools_column_raises(
+    patched_tool_build, tmp_path
+):
+    """A tool agent needs the trajectory each row expects."""
+    path = tmp_path / "no_tools.jsonl"
+    path.write_text(
+        json.dumps({"input": "go", "category": "X"}) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="no `tools` column"):
+        run_eval_suite(_CONFIG, path)
+
+
+def test_tool_report_has_trajectory_not_confusion(
+    patched_tool_build, trajectory_set, tmp_path
+):
+    """The report swaps the confusion matrix for a trajectory."""
+    report = tmp_path / "tool_report.md"
+    run_eval_suite(_CONFIG, trajectory_set, report=report)
+    text = report.read_text(encoding="utf-8")
+    assert "## Trajectory" in text
+    assert "Per-Tool Recall" in text
+    assert "Confusion Matrix" not in text
+
+
+def test_tool_run_logs_calls_per_model_turn(
+    patched_tool_build, trajectory_set, tmp_path
+):
+    """The call log works for tool agents: two turns, two records."""
+    log = tmp_path / "calls.jsonl"
+    run = run_eval_suite(_CONFIG, trajectory_set, call_log=log)
+    assert run.call_log is not None
+    assert run.call_log.overall.calls == 2
