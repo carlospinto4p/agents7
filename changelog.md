@@ -2,6 +2,19 @@
 ## Changelog - Agents7
 
 
+### v4.10.2 - 18th July 2026
+
+- Filled in `roadmap.md`, previously an empty scaffold stub:
+  - Current phase "measurement first": compose the `agents7.eval` /
+    CLI / call-log pieces into one workflow, then adopt it across the
+    catalog, then resume feature work.
+  - Standing invariants: agents are frozen configs not autonomous
+    loops, rule-based pipelines before LLMs, provider-agnostic by
+    default, measure before claiming.
+  - Refuted directions: LLM classifiers where the signal space is
+    enumerable, and thinking left enabled for structured output.
+
+
 ### v4.10.1 - 13th July 2026
 
 - Rotated changelog: archived 8 entries to `changelog/2026.md`.
