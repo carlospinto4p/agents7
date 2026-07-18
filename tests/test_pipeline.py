@@ -656,6 +656,33 @@ def test_yaml_with_agent_type(tmp_path):
     assert len(pipeline.steps) == 1
 
 
+def test_relative_agent_paths_resolve_against_config(tmp_path, monkeypatch):
+    """Relative `agent:` paths resolve against the config dir."""
+    agents_dir = tmp_path / "agents"
+    agents_dir.mkdir()
+    agent_yaml = agents_dir / "agent.yml"
+    agent_yaml.write_text(
+        "name: TestAgent\n"
+        "version: 1\n"
+        "engine:\n"
+        "    provider: ollama\n"
+        "    model: qwen3\n"
+        "system_prompt: Test.\n"
+        "output_model: agents7.models.demo.PersonInfo\n"
+    )
+
+    pipelines_dir = tmp_path / "pipelines"
+    pipelines_dir.mkdir()
+    pipeline_yaml = pipelines_dir / "pipeline.yml"
+    pipeline_yaml.write_text("steps:\n  - agent: ../agents/agent.yml\n")
+
+    # A CWD from which the step path does not resolve.
+    monkeypatch.chdir(tmp_path)
+
+    pipeline = Pipeline.from_yaml(str(pipeline_yaml))
+    assert len(pipeline.steps) == 1
+
+
 def test_missing_steps_raises(tmp_path):
     """YAML without steps raises PipelineConfigurationError."""
     pipeline_yaml = tmp_path / "pipeline.yml"

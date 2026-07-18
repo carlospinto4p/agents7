@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -546,13 +547,18 @@ class Pipeline:
     def from_yaml(cls, file_path: str) -> "Pipeline":
         """
         Create a Pipeline from a YAML configuration file.
+        Relative ``agent:`` paths are resolved against the
+        directory holding this pipeline file, not the process
+        working directory, so a pipeline config loads the same
+        way from anywhere. Absolute paths are used as given.
+
         :param file_path: Path to the YAML file. Schema:
             ```yaml
             steps:
-              - agent: path/to/agent_config.yml
+              - agent: ../agent_config.yml           # config-relative
                 agent_type: agents7.agents.Classifier  # optional
                 mapper: mymodule.my_mapper             # optional
-              - agent: path/to/agent2.yml
+              - agent: ../agent2.yml
             ```
         :return: A Pipeline instance.
         """
@@ -580,7 +586,8 @@ class Pipeline:
             else:
                 agent_cls = Labeler
 
-            agent = agent_cls.from_yaml(step_config["agent"])
+            agent_path = Path(file_path).parent / step_config["agent"]
+            agent = agent_cls.from_yaml(str(agent_path))
 
             # Resolve mapper
             mapper_path = step_config.get("mapper")

@@ -2,6 +2,17 @@
 ## Changelog - Agents7
 
 
+### v4.14.1 - 18th July 2026
+
+- Fixed `src/agents7/agents/pipeline.py`:
+  - `Pipeline.from_yaml()`: resolve relative step `agent:` paths
+    against the pipeline config's own directory instead of the
+    process working directory, so a pipeline loads the same way
+    from any CWD. Absolute paths are unchanged.
+- Updated `examples/configs/demo_pipeline.yml`: step paths are now
+  written relative to the config file.
+
+
 ### v4.14.0 - 18th July 2026
 
 - Added `src/agents7/eval/trajectory.py`: trajectory scoring for
