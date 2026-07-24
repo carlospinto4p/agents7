@@ -2,6 +2,16 @@
 ## Changelog - Agents7
 
 
+### v4.14.3 - 24th July 2026
+
+- `CLAUDE.md`: replaced the superseded **Core Rules** periodic-review
+  trigger with the backlog-depth rule — when `/backlog` shows fewer
+  than 5 open items, propose `/scan`, `/improvements`, and `/prune`.
+  The old "Every 6-7 versions" cadence also named `/refactor` and
+  `/optimize`, neither of which is a real skill. Pushed from the
+  programme registry via `sync-config --types section`.
+
+
 ### v4.14.2 - 19th July 2026
 
 - Rotated changelog: archived 10 entries to `changelog/2026.md`.
