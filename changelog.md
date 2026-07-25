@@ -2,6 +2,16 @@
 ## Changelog - Agents7
 
 
+### v4.14.5 - 25th July 2026
+
+- `.claude/rules/committing.md`: clarified step 6 — a non-code patch
+  bump's `uv.lock` self-referential version drift is expected and
+  harmless, not something to chase. Promoted from another project's locally
+  accepted wording (`RULE_SKIP_PROJECTS["committing"]`), closing a gap
+  where the canonical text lacked that framing and repeatedly got
+  rediscovered as apparent drift during fleet-wide sweeps.
+
+
 ### v4.14.4 - 25th July 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
