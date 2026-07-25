@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.14.4 - 25th July 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v4.14.3 - 24th July 2026
 
 - `CLAUDE.md`: replaced the superseded **Core Rules** periodic-review
@@ -326,29 +331,3 @@
   - `normalise_rows()`: normalise nested or flat rows to the canonical eval shape.
   - `model_output_fields()`, `resolve_agent_class()`, `load_config_dict()`, `AGENT_TYPE_MAP`.
 - Updated `README.md`: documented the CLI and the reusable eval-data helpers.
-
-
-### v4.2.0 - 14th June 2026
-
-- Added `call_log.py`:
-  - `summarize_call_log()`: read a JSONL call log (path or
-    iterable of `CallRecord` / dict / JSON line) into aggregate
-    statistics.
-  - `CallLogSummary`: overall stats plus per-agent / per-model
-    breakdowns and error counts; `format()` renders a text
-    report.
-  - `CallStats`: per-group counts with `success_rate` and
-    `avg_duration` properties.
-
-
-### v4.1.4 - 14th June 2026
-
-- Updated `src/agents7/agents/config_loader.py`:
-  - Added `_build_persona()` and `_build_scene()`, wrapping
-    `Persona.from_dict` / `Scene.from_dict` so a malformed
-    `persona` / `scene` section (missing `full_name`, unknown
-    field, non-mapping value) raises `AgentConfigurationError`
-    naming the file instead of a raw `TypeError`. Applied across
-    all three Chatter-family construction sites.
-- Added tests in `tests/test_chatter.py` for the clearer errors
-  (empty persona dict, unknown persona field).
