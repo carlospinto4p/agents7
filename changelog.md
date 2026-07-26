@@ -2,6 +2,14 @@
 ## Changelog - Agents7
 
 
+### v4.14.6 - 26th July 2026
+
+- Redeployed the hardened `scripts/changelog-add.sh`: guards against
+  the CWD-relative wrong-repo footgun (comparing the target
+  changelog's version against the wrong repo's manifest when invoked
+  from outside its own directory).
+
+
 ### v4.14.5 - 25th July 2026
 
 - `.claude/rules/committing.md`: clarified step 6 — a non-code patch
