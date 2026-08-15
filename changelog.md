@@ -2,6 +2,18 @@
 ## Changelog - Agents7
 
 
+### v4.14.8 - 15th August 2026
+
+- Fixed `.pre-commit-config.yaml`: `ruff-fix`/`ruff-format` entries now
+  use `uv run ruff ...` (was bare `ruff`, which fails with `Executable
+  'ruff' not found` under `language: system`) and dropped the trailing
+  `.` from `ruff format .` (was formatting the whole tree instead of
+  the staged files). This file is inert — `agents7_framework` shares
+  its `.git` with the `agents7` monorepo root, so only the root's own
+  `.pre-commit-config.yaml` actually runs — fixed for hygiene/accuracy
+  while sweeping other repositories for the same defect.
+
+
 ### v4.14.7 - 28th July 2026
 
 - Rotated changelog: archived 3 entries to `changelog/2026.md`.
