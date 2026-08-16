@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v4.14.9 - 16th August 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v4.14.8 - 15th August 2026
 
 - Fixed `.pre-commit-config.yaml`: `ruff-fix`/`ruff-format` entries now
@@ -307,27 +312,3 @@
   - `_parse_tool_calls()`: decodes `function.arguments` JSON strings into dicts (malformed strings degrade to `{}`).
   - `_build_params()`: forwards `tools` unchanged (the registry already emits OpenAI's native schema); `chat`/`chat_async` thread `tools` through.
 - `ToolAgent` now works on Ollama, Anthropic, and OpenAI-compatible providers.
-
-
-### v4.5.1 - 21st June 2026
-
-- Added the `anthropic` optional-dependency extra in `pyproject.toml`:
-  - Install Claude support with `pip install agents7[anthropic]`.
-  - `uv sync --all-extras` now installs `anthropic`, so the
-    `AnthropicProvider` tests run instead of skipping.
-- Updated `README.md`: Anthropic install uses the `[anthropic]`
-  extra instead of a bare `anthropic` install.
-
-
-### v4.5.0 - 21st June 2026
-
-- Added tool calling to the Anthropic provider in `llm/anthropic.py`:
-  - `AnthropicProvider.supports_tools()`: now returns `True`.
-  - `AnthropicProvider.build_tool_turn_messages()`: emits the
-    `tool_use` / `tool_result` content blocks Claude expects,
-    linking each result to its call by `tool_use_id`.
-  - `_convert_tools()`: maps neutral OpenAI-style tool schemas to
-    Anthropic's `input_schema` format.
-  - `chat` / `chat_async` now forward `tools` and parse `tool_use`
-    blocks into `tool_calls`, so `ToolAgent` works on Claude models.
-- Updated `README.md`: tool calling now lists Ollama and Anthropic.
