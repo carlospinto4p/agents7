@@ -2,6 +2,14 @@
 ## Changelog - Agents7
 
 
+### v4.14.10 - 23rd August 2026
+
+- `.gitlab-ci.yml`: publish job now uploads to `${CI_PROJECT_ID}`
+  instead of the hardcoded shared `cpinto` registry project
+  (42232103) — own-registry publish direction, programme
+  backlog 2026-08-22.
+
+
 ### v4.14.9 - 16th August 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
