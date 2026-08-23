@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import json
 import re
 from enum import Enum, StrEnum
 from typing import Any
@@ -85,6 +86,24 @@ def extract_enum_members(
     return enum_members(enum_cls)
 
 
+def format_example_value(value: object) -> str:
+    """
+    Render one example's input or output for the system prompt.
+
+    Structured values are serialized as JSON so they match the JSON
+    the model is asked to produce. Python's `repr` would emit
+    `{'name': None}`, which is not valid JSON and measurably degrades
+    few-shot adherence for structured-output agents. Scalars are
+    rendered as-is.
+
+    :param value: The example's input or output value.
+    :return: The value rendered as a prompt-ready string.
+    """
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, default=str)
+    return str(value)
+
+
 def get_examples_str(examples: list[dict]) -> str:
     """
     Convert examples to a string format for inclusion in the system prompt.
@@ -108,7 +127,8 @@ def get_examples_str(examples: list[dict]) -> str:
                 "contain `input` and `output` keys"
             )
         parts.append(
-            f"- Input: {example['input']}\n- Output: {example['output']}"
+            f"- Input: {format_example_value(example['input'])}\n"
+            f"- Output: {format_example_value(example['output'])}"
         )
     return "\n\n".join(parts)
 

@@ -297,6 +297,8 @@ system_examples:
 
 Note: YAML `prompt_params` only supports static values (cast to strings). For callable values, use Python code instantiation.
 
+Note: structured `system_examples` inputs and outputs are rendered into the prompt as JSON, matching the JSON the model is asked to produce. Scalar values are rendered as-is.
+
 **Config inheritance:** When `base_config` is specified, the base YAML is loaded first and the current file's keys override it. Nested dicts (e.g. `engine`) are merged recursively. Chains are supported (A inherits B inherits C) and circular references are detected.
 
 ### Command-Line Interface

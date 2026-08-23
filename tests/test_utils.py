@@ -5,6 +5,7 @@ model_class_to_string().
 """
 
 import asyncio
+from datetime import date
 from enum import StrEnum
 
 import pytest
@@ -12,6 +13,7 @@ from pydantic import BaseModel, Field
 
 
 from agents7.agents.utils import (
+    format_example_value,
     get_examples_str,
     import_from_path,
     model_class_to_string,
@@ -233,3 +235,46 @@ def test_get_examples_str_extra_key_raises():
     """Example with extra key beyond 'input'/'output' raises error."""
     with pytest.raises(AgentConfigurationError, match="input.*output"):
         get_examples_str([{"input": "x", "output": "y", "extra": "z"}])
+
+
+def test_get_examples_str_dict_output_is_json():
+    """Dict outputs render as JSON, never as a Python repr."""
+    result = get_examples_str(
+        [{"input": "x", "output": {"name": None, "age": 35}}]
+    )
+    assert '- Output: {"name": null, "age": 35}' in result
+    assert "None" not in result
+    assert "'name'" not in result
+
+
+def test_get_examples_str_dict_input_is_json():
+    """Dict inputs render as JSON too."""
+    result = get_examples_str([{"input": {"text": "hi"}, "output": "label"}])
+    assert '- Input: {"text": "hi"}' in result
+
+
+def test_get_examples_str_list_output_is_json():
+    """List outputs render as JSON."""
+    result = get_examples_str([{"input": "x", "output": [1, None]}])
+    assert "- Output: [1, null]" in result
+
+
+def test_get_examples_str_scalar_output_unchanged():
+    """Scalar outputs are rendered as-is, without JSON quoting."""
+    result = get_examples_str([{"input": "x", "output": "TOO_COLD"}])
+    assert "- Output: TOO_COLD" in result
+
+
+# ── format_example_value ──────────────────────────────────────────
+
+
+def test_format_example_value_nested_dict():
+    """Nested structures serialize as JSON."""
+    value = {"a": {"b": [None, True]}}
+    assert format_example_value(value) == '{"a": {"b": [null, true]}}'
+
+
+def test_format_example_value_non_serializable_falls_back_to_str():
+    """Values JSON cannot encode fall back to their string form."""
+    result = format_example_value({"when": date(2026, 2, 1)})
+    assert result == '{"when": "2026-02-01"}'

@@ -2,6 +2,22 @@
 ## Changelog - Agents7
 
 
+### v4.15.3 - 23rd August 2026
+
+- Fixed `src/agents7/agents/utils.py`:
+  - `get_examples_str()`: render structured `system_examples` inputs
+    and outputs as JSON instead of Python `repr`. Examples were
+    reaching the prompt as `{'name': None}`, which is not valid JSON
+    and measurably degraded few-shot adherence — `CompanyPersonExtractor`
+    ignored its own null-output example and extracted a name for a
+    person outside the configured company.
+  - Added `format_example_value()`: renders one example value, JSON for
+    dicts and lists, unchanged for scalars.
+- Added unit tests in `tests/test_utils.py`: 6 tests covering JSON
+  rendering of dict, list and nested example values, scalar
+  pass-through, and the non-serializable fallback.
+
+
 ### v4.15.2 - 23rd August 2026
 
 - Updated `agents7.tools.demo`: module docstring now says what it
