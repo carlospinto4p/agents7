@@ -2,6 +2,22 @@
 ## Changelog - Agents7
 
 
+### v4.15.0 - 23rd August 2026
+
+- Added `agents7.tools.demo`:
+  - `find_product()`, `check_stock()`, `order_total()`: the demo
+    store's tools, moved from the `store_assistant` catalog
+    package so a `tool`-type sample can resolve `tools` to a
+    dotted path the framework ships, the same way a
+    structured-output sample resolves `output_model` to
+    `agents7.models.demo`.
+  - `Product`, `ProductSearch`, `StockLevel`, `OrderTotal`: the
+    tools' structured return models.
+- Added `tests/test_tools_demo.py`: 18 tests covering the moved
+  tools' business logic (catalog matching, stock lookup, order
+  costing).
+
+
 ### v4.14.10 - 23rd August 2026
 
 - `.gitlab-ci.yml`: publish job now uploads to `${CI_PROJECT_ID}`
