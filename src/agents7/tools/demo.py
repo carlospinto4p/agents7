@@ -1,5 +1,11 @@
 """Demo tools for a tiny in-memory store, used by config-based samples.
 
+Used to demonstrate `ToolAgent`'s tool-calling round-trip: the three
+functions below cooperate as the tools of one `ToolAgent`, called in
+sequence to answer a customer question (find a product, check its
+stock, cost an order) rather than recalling facts from the model's
+weights.
+
 Mirrors `agents7.models.demo`: a sample resolves its `tools` (and,
 for structured-output agents, its `output_model`) to a dotted path a
 `config.yml`-only sample can reference without owning a package of

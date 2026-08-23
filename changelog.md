@@ -2,6 +2,14 @@
 ## Changelog - Agents7
 
 
+### v4.15.2 - 23rd August 2026
+
+- Updated `agents7.tools.demo`: module docstring now says what it
+  demonstrates (`ToolAgent`'s tool-calling round-trip), matching
+  the "used to demonstrate" convention already on every model in
+  `agents7.models.demo`.
+
+
 ### v4.15.1 - 23rd August 2026
 
 - Updated `agents7.models.demo`: `Temperature` and `Sentiment`
