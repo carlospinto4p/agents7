@@ -45,6 +45,8 @@ class Temperature(Property[float]):
     Temperature property for detecting temperature-related content.
     Extracts a numeric temperature value (in Celsius) and classifies
     the reason based on predefined categories.
+    Used to demonstrate the Regressor's numeric-value-plus-reason
+    output shape.
     """
 
     reason: TemperaturePropertyReason
@@ -82,6 +84,8 @@ class Sentiment(ClassificationProperty):
     """
     Sentiment classification property for text analysis.
     Classifies text into sentiment categories with justification.
+    Used to demonstrate the Classifier's category-plus-reason
+    output shape.
 
     NOT_APPLICABLE is disabled because the NEUTRAL category
     already covers texts with no clear sentiment.

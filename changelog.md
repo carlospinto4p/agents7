@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v4.15.1 - 23rd August 2026
+
+- Updated `agents7.models.demo`: `Temperature` and `Sentiment`
+  docstrings now say what they demonstrate (`Regressor`'s
+  numeric-value-plus-reason shape, `Classifier`'s
+  category-plus-reason shape), matching `PersonInfo` and
+  `PersonBio`, which already did.
+
+
 ### v4.15.0 - 23rd August 2026
 
 - Added `agents7.tools.demo`:
