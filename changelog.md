@@ -2,6 +2,13 @@
 ## Changelog - Agents7
 
 
+### v9.25.8 - 7th November 2026
+
+- `docs/repository-split.md`: the owner agreed the design and answered
+  its four open questions; they are now decisions, followed by the
+  order of work.
+
+
 ### v9.25.7 - 7th November 2026
 
 - Added `docs/repository-split.md`: the proposed design for splitting
