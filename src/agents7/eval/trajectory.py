@@ -12,7 +12,8 @@ expected to make::
     {"input": "Can I order 3 blue mugs?",
      "tools": [
         {"name": "find_product", "arguments": {"query": "blue mug"}},
-        {"name": "order_total", "arguments": {"quantity": 3}}
+        {"name": "order_total", "arguments": {"quantity": 3},
+         "defaults": {"express": false}}
      ]}
 
 Matching semantics:
@@ -23,9 +24,34 @@ Matching semantics:
   *subsequence*: extra calls the agent made are tolerated, but
   counted and reported. **`exact`** additionally requires that no
   extra call was made.
+- **An empty ``tools`` list means no call at all**, and is scored
+  under ``exact`` whatever mode the run is in — a row that expects
+  nothing is asserting the agent must not reach for a tool, and
+  under ``in_order`` it would otherwise have nothing to miss and so
+  pass unconditionally.
 - **Arguments match on the stated keys only.** A row pins the
   arguments it cares about; unstated keys are ignored, and omitting
   ``arguments`` scores the call on its name alone.
+- **``defaults`` pins an argument as absent, or equal to a value.**
+  An optional argument left out of ``arguments`` can be invented by
+  the model and still match, while pinning it under ``arguments``
+  fails a model that correctly omits it. ``defaults`` covers both:
+  ``{"defaults": {"express": false}}`` accepts an omitted
+  ``express`` and rejects ``express=true``.
+- **A call the tool rejected satisfies no expectation.** A row
+  naming ``find_product`` is asserting the agent looked the product
+  up, and a call whose arguments the tool threw out did not do
+  that. Such a call is reported as an extra one and marked
+  ``[failed]``, so the row says the tool was reached for and never
+  ran rather than passing on the attempt. Pinning the arguments is
+  not an alternative: a row leaves an argument unpinned precisely
+  when its wording is the model's to choose, and that is the case
+  where a malformed value can still slip through.
+- **``allow_failure`` is for a row that tests the error path.**
+  ``{"name": "check_stock", "arguments": {"sku": "NOPE-99"},
+  "allow_failure": true}`` is a row where the tool is *meant* to
+  raise and the agent is meant to relay it, so the call counts as
+  made whether it returned or not.
 
 Values are compared with the same case-insensitive rule the
 field scorer uses, so a golden set loaded from CSV (all strings)
@@ -33,7 +59,7 @@ scores the same as one loaded from JSONL.
 """
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Callable
 
@@ -65,18 +91,33 @@ class ToolCall:
 
     :param name: The tool's name.
     :param arguments: The arguments it was called with.
+    :param result: The text the tool returned, or None when the
+        call was built without running one.
+    :param error: The failure message when the tool rejected the
+        arguments or raised, else None.
     """
 
     name: str
     arguments: dict = field(default_factory=dict)
+    result: str | None = None
+    error: str | None = None
+
+    @property
+    def failed(self) -> bool:
+        """Whether the tool rejected this call or raised on it."""
+        return self.error is not None
 
     def format(self) -> str:
         """Render the call as ``name(k=v, ...)``.
 
+        A call the tool rejected is marked ``[failed]``, so a
+        report line says why an expectation went unsatisfied.
+
         :return: A compact single-line rendering.
         """
         args = ", ".join(f"{k}={v!r}" for k, v in self.arguments.items())
-        return f"{self.name}({args})"
+        suffix = " [failed]" if self.failed else ""
+        return f"{self.name}({args}){suffix}"
 
 
 @dataclass(frozen=True)
@@ -84,41 +125,69 @@ class ExpectedCall:
     """A tool call a golden-set row expects.
 
     :param name: The tool name that must be called.
-    :param arguments: Arguments that must match. Only these keys
-        are compared; ``None`` or empty scores the call on its
-        name alone.
+    :param arguments: Arguments that must be present and match.
+        Only these keys are compared; ``None`` or empty scores the
+        call on its name alone.
+    :param defaults: Arguments that must be *absent, or equal to
+        this*. Use it for an optional argument the agent should
+        leave alone unless asked: pinning it under *arguments*
+        would fail a model that correctly omits it, while leaving
+        it out altogether lets a model invent it and still match.
+    :param allow_failure: Whether a call the tool rejected still
+        satisfies this expectation. False by default, so a row
+        cannot pass on a call that never returned; set it on a row
+        that deliberately exercises the error path, where the tool
+        is meant to raise and the agent is meant to relay it.
     """
 
     name: str
     arguments: dict | None = None
+    defaults: dict | None = None
+    allow_failure: bool = False
 
     def matches(self, call: ToolCall) -> bool:
         """Return whether *call* satisfies this expectation.
 
         :param call: An actual tool call.
-        :return: True when the name matches and every stated
-            argument matches.
+        :return: True when the call ran, the name matches, every
+            stated argument matches, and every stated default is
+            absent or equal. A call the tool rejected satisfies
+            nothing — the agent reached for the tool but never got
+            an answer out of it — unless *allow_failure* says the
+            row is testing that very path.
         """
+        if call.failed and not self.allow_failure:
+            return False
         if not _compare_field(call.name, self.name):
             return False
-        if not self.arguments:
-            return True
-        return all(
+        if self.arguments and not all(
             key in call.arguments
             and _compare_field(call.arguments[key], value)
             for key, value in self.arguments.items()
+        ):
+            return False
+        return all(
+            key not in call.arguments
+            or _compare_field(call.arguments[key], value)
+            for key, value in (self.defaults or {}).items()
         )
 
     def format(self) -> str:
         """Render the expectation as ``name(k=v, ...)``.
 
+        Pinned arguments render as ``k=v``; defaults render as
+        ``k?=v``, the ``?`` reading as "absent, or this". A row
+        that tolerates a rejected call is marked ``[may fail]``.
+
         :return: A compact single-line rendering, with ``(…)`` when
-            no arguments are pinned.
+            nothing is pinned.
         """
-        if not self.arguments:
-            return f"{self.name}(…)"
-        args = ", ".join(f"{k}={v!r}" for k, v in self.arguments.items())
-        return f"{self.name}({args})"
+        parts = [f"{k}={v!r}" for k, v in (self.arguments or {}).items()]
+        parts += [f"{k}?={v!r}" for k, v in (self.defaults or {}).items()]
+        suffix = " [may fail]" if self.allow_failure else ""
+        if not parts:
+            return f"{self.name}(…){suffix}"
+        return f"{self.name}({', '.join(parts)}){suffix}"
 
 
 @dataclass
@@ -132,7 +201,8 @@ class TrajectoryResult:
             that satisfied it, or None when unmatched.
         mode: The mode the match was scored under.
         passed: True when every expected call matched and, under
-            `TrajectoryMode.EXACT`, no extra call was made.
+            `TrajectoryMode.EXACT` or an empty *expected*, no extra
+            call was made.
     """
 
     expected: list[ExpectedCall]
@@ -160,9 +230,13 @@ class TrajectoryResult:
         """Render a one-line ``expected -> actual`` summary.
 
         :return: A compact summary naming the called tools in
-            order, with any missing or extra calls flagged.
+            order, with rejected calls marked and any missing or
+            extra calls flagged.
         """
-        actual = " -> ".join(c.name for c in self.actual) or "<none>"
+        names = (
+            f"{c.name} (failed)" if c.failed else c.name for c in self.actual
+        )
+        actual = " -> ".join(names) or "<none>"
         parts = [f"called: {actual}"]
         if self.missing:
             parts.append(
@@ -215,6 +289,8 @@ def parse_expected_calls(raw: object) -> list[ExpectedCall]:
             ExpectedCall(
                 name=str(entry["name"]),
                 arguments=entry.get("arguments") or None,
+                defaults=entry.get("defaults") or None,
+                allow_failure=bool(entry.get("allow_failure")),
             )
         )
     return calls
@@ -235,7 +311,9 @@ def match_trajectory(
     :param expected: The expected calls, in order.
     :param actual: The calls the agent made, in order.
     :param mode: `TrajectoryMode.IN_ORDER` tolerates extra calls;
-        `TrajectoryMode.EXACT` does not.
+        `TrajectoryMode.EXACT` does not. An empty *expected* is
+        scored under `TrajectoryMode.EXACT` in either mode, so a row
+        expecting no calls fails when the agent made one.
     :return: The populated `TrajectoryResult`.
     """
     matched: list[int | None] = []
@@ -252,7 +330,12 @@ def match_trajectory(
 
     complete = all(idx is not None for idx in matched)
     no_extras = len(actual) == len(expected)
-    passed = complete and (mode != TrajectoryMode.EXACT or no_extras)
+    # A row expecting no calls is asserting exactly that. With
+    # nothing to miss, `in_order`'s subsequence semantics degenerate
+    # to "anything passes", so an empty expectation is scored under
+    # `exact` whatever mode the run is in.
+    strict = mode == TrajectoryMode.EXACT or not expected
+    passed = complete and (not strict or no_extras)
 
     return TrajectoryResult(
         expected=expected,
@@ -274,23 +357,34 @@ def collect_trajectory(
 
     :param agent: The tool agent to run.
     :param user_input: The user message to answer.
-    :return: ``(calls, response)`` — the calls made in order, and
-        the final `AgentResponse`. The response is None when the
-        loop raised before answering, in which case the calls made
-        up to that point are still returned.
+    :return: ``(calls, response)`` — the calls made in order, each
+        carrying the outcome its tool returned, and the final
+        `AgentResponse`. The response is None when the loop raised
+        before answering, in which case the calls made up to that
+        point are still returned.
     :raises Exception: Whatever the agent's loop raises (e.g.
         `ToolLoopError`) is propagated after the calls are
         recorded on the stream.
     """
     stream = agent.act_stream(user_input)
     calls: list[ToolCall] = []
+    # The agent emits one result event per call event, in the same
+    # order, so a queue of the calls still waiting for a result
+    # pairs them — across iterations as well as within one.
+    awaiting: list[int] = []
     for event in stream:
         if event.kind == ToolStepKind.TOOL_CALL:
+            awaiting.append(len(calls))
             calls.append(
                 ToolCall(
                     name=event.name or "",
                     arguments=dict(event.arguments or {}),
                 )
+            )
+        elif event.kind == ToolStepKind.TOOL_RESULT and awaiting:
+            index = awaiting.pop(0)
+            calls[index] = replace(
+                calls[index], result=event.result, error=event.error
             )
     return calls, stream.agent_response
 
@@ -398,16 +492,19 @@ def compute_trajectory_metrics(results: list[EvalResult]) -> dict:
 
     :param results: Results from `run_trajectory_evaluation`.
     :return: Dict with ``mode``, ``expected_calls``,
-        ``matched_calls``, ``extra_calls``, and ``per_tool``
-        (tool name → ``{"expected": n, "matched": n}``).
+        ``matched_calls``, ``extra_calls``, ``failed_calls`` (every
+        call the tool rejected, whether or not a row expecting a
+        failure matched it), and ``per_tool`` (tool name →
+        ``{"expected": n, "matched": n}``).
     """
     scored = [r for r in results if r.trajectory is not None]
     per_tool: dict[str, dict[str, int]] = {}
-    expected_calls = matched_calls = extra_calls = 0
+    expected_calls = matched_calls = extra_calls = failed_calls = 0
 
     for result in scored:
         trajectory = result.trajectory
         extra_calls += len(trajectory.extra)
+        failed_calls += sum(1 for c in trajectory.actual if c.failed)
         for exp, idx in zip(trajectory.expected, trajectory.matched):
             stats = per_tool.setdefault(
                 exp.name, {"expected": 0, "matched": 0}
@@ -424,5 +521,6 @@ def compute_trajectory_metrics(results: list[EvalResult]) -> dict:
         "expected_calls": expected_calls,
         "matched_calls": matched_calls,
         "extra_calls": extra_calls,
+        "failed_calls": failed_calls,
         "per_tool": dict(sorted(per_tool.items())),
     }

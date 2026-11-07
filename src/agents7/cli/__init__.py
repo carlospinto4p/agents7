@@ -124,6 +124,63 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     eval_p.set_defaults(func=_cmd_eval)
 
+    review_p = subparsers.add_parser(
+        "chat-review",
+        help=(
+            "Render a chat agent's read as an HTML page from saved "
+            "recordings. Makes no LLM calls."
+        ),
+    )
+    review_p.add_argument(
+        "spec",
+        type=Path,
+        help="The read's YAML spec: which recordings, and the notes.",
+    )
+    review_p.add_argument(
+        "-o",
+        "--out",
+        type=Path,
+        required=True,
+        help="Where to write the page.",
+    )
+    review_p.add_argument(
+        "--history",
+        type=Path,
+        help=(
+            "Append this read's figures to a history file, so the "
+            "next read's comparison column fills itself."
+        ),
+    )
+    review_p.add_argument(
+        "--read-id",
+        help="Name for the history entry. Defaults to the spec's name.",
+    )
+    review_p.set_defaults(func=_cmd_chat_review)
+
+    feedback_p = subparsers.add_parser(
+        "chat-feedback",
+        help=(
+            "Turn a feedback file into the rule changes, the eval "
+            "rows and the operator's report. Makes no LLM calls."
+        ),
+    )
+    feedback_p.add_argument(
+        "spec",
+        type=Path,
+        help="The feedback YAML: corrections and the rules they became.",
+    )
+    feedback_p.add_argument(
+        "--report",
+        type=Path,
+        help="Write the Markdown report here.",
+    )
+    feedback_p.add_argument(
+        "--rows",
+        type=Path,
+        help="Write the machine-readable eval rows here, as JSONL.",
+    )
+    feedback_p.set_defaults(func=_cmd_chat_feedback)
+
     return parser
 
 
@@ -231,6 +288,59 @@ def _cmd_eval(args: argparse.Namespace) -> int:
         print(json.dumps(run.metrics, indent=2, default=str))
     else:
         print(run.format())
+    return 0
+
+
+def _cmd_chat_review(args: argparse.Namespace) -> int:
+    """Render a read's page from its spec.
+
+    :param args: Parsed arguments.
+    :return: Process exit code.
+    """
+    from agents7.eval.chat_review import write_review
+
+    path = write_review(
+        args.spec,
+        args.out,
+        history=args.history,
+        read_id=args.read_id,
+    )
+    print(f"Wrote {path}")
+    if args.history:
+        print(f"Recorded this read's figures in {args.history}")
+    return 0
+
+
+def _cmd_chat_feedback(args: argparse.Namespace) -> int:
+    """Derive the outputs of a feedback file.
+
+    With neither `--report` nor `--rows` it prints the report, so
+    the plain invocation still shows something useful.
+
+    :param args: Parsed arguments.
+    :return: Process exit code.
+    """
+    from agents7.eval.chat_feedback import (
+        load_feedback,
+        render_feedback,
+        write_eval_rows,
+        write_feedback_report,
+    )
+
+    feedback = load_feedback(args.spec)
+    if not args.report and not args.rows:
+        print(render_feedback(feedback), end="")
+        return 0
+    if args.report:
+        print(f"Wrote {write_feedback_report(feedback, args.report)}")
+    if args.rows:
+        path = write_eval_rows(feedback, args.rows)
+        print(f"Wrote {len(feedback.eval_rows())} eval rows to {path}")
+    outstanding = sum(
+        len(change.outstanding) for change in feedback.rule_changes()
+    )
+    if outstanding:
+        print(f"{outstanding} rule(s) not shipped yet.")
     return 0
 
 

@@ -183,6 +183,77 @@ def test_eval_empty_golden_set(patched_eval, tmp_path, capsys):
     assert "empty" in capsys.readouterr().err
 
 
+# ── chat-feedback ──────────────────────────────────────────────
+
+
+@pytest.fixture
+def feedback_file(tmp_path):
+    """A feedback file with one shipped rule and one outstanding."""
+    path = tmp_path / "feedback.yml"
+    path.write_text(
+        "read_id: r\n"
+        "agent: demo\n"
+        "agent_version: '1.0.0'\n"
+        "entries:\n"
+        "  - conversation: warm\n"
+        "    turn: 1\n"
+        "    verdict: wrong\n"
+        "    he_said: mucho mejor\n"
+        "    should_say: mas entretenido\n"
+        "    why: overstates it\n"
+        "    rule: no overstating\n"
+        "    lands_in: david.yml\n"
+        "  - conversation: warm\n"
+        "    turn: 2\n"
+        "    verdict: wrong\n"
+        "    why: swearing\n"
+        "    rule: no swearing\n"
+        "    lands_in: david.yml\n"
+        "    shipped: v0.1.5\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_chat_feedback_prints_the_report_by_default(feedback_file, capsys):
+    assert main(["chat-feedback", str(feedback_file)]) == 0
+    out = capsys.readouterr().out
+    assert "# Feedback — demo v1.0.0" in out
+    assert "no overstating" in out
+
+
+def test_chat_feedback_writes_the_report(feedback_file, tmp_path, capsys):
+    target = tmp_path / "out" / "report.md"
+    main(["chat-feedback", str(feedback_file), "--report", str(target)])
+    assert "no overstating" in target.read_text(encoding="utf-8")
+    assert "Wrote" in capsys.readouterr().out
+
+
+def test_chat_feedback_writes_eval_rows(feedback_file, tmp_path, capsys):
+    target = tmp_path / "rows.jsonl"
+    main(["chat-feedback", str(feedback_file), "--rows", str(target)])
+    rows = [
+        json.loads(line)
+        for line in target.read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(rows) == 1
+    assert rows[0]["target"] == "mas entretenido"
+
+
+def test_chat_feedback_counts_what_has_not_shipped(
+    feedback_file, tmp_path, capsys
+):
+    main(
+        [
+            "chat-feedback",
+            str(feedback_file),
+            "--rows",
+            str(tmp_path / "rows.jsonl"),
+        ]
+    )
+    assert "1 rule(s) not shipped yet." in capsys.readouterr().out
+
+
 # ── parser ─────────────────────────────────────────────────────
 
 

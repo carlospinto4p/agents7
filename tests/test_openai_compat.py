@@ -52,6 +52,38 @@ def _make_response(content="hello", reasoning=None):
     )
 
 
+@pytest.fixture
+def mock_openai_timed():
+    """Patch the SDK with clients whose calls take real time.
+
+    The duration is measured with a monotonic clock, so a mock
+    that returns instantly can round to zero and make a timing
+    assertion flaky. Sleeping briefly makes the elapsed time
+    unambiguously positive.
+    """
+    import time as _time
+
+    def _slow(*_args, **_kwargs):
+        _time.sleep(0.01)
+        return _make_response("ok")
+
+    async def _slow_async(*_args, **_kwargs):
+        _time.sleep(0.01)
+        return _make_response("ok")
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = MagicMock(side_effect=_slow)
+    mock_async_client = MagicMock()
+    mock_async_client.chat.completions.create = AsyncMock(
+        side_effect=_slow_async
+    )
+
+    with patch("agents7.llm.openai_compat._openai") as mock_sdk:
+        mock_sdk.OpenAI.return_value = mock_client
+        mock_sdk.AsyncOpenAI.return_value = mock_async_client
+        yield mock_client, mock_async_client
+
+
 def _make_delta(content="hi", role="assistant", reasoning=None):
     delta = SimpleNamespace(content=content, role=role)
     if reasoning is not None:
@@ -107,6 +139,7 @@ def test_provider_reads_env_vars(mock_openai, monkeypatch):
     mock_openai.OpenAI.assert_called_once_with(
         base_url="https://api.deepseek.com",
         api_key="sk-env",
+        max_retries=0,
     )
 
 
@@ -151,6 +184,56 @@ def test_parse_response_basic():
     assert parsed["thinking"] is None
     assert parsed["metrics"]["tokens"] == 20
     assert parsed["metrics"]["prompt_tokens"] == 10
+
+
+def test_parse_response_records_the_elapsed_time():
+    """The caller's measured duration reaches metrics."""
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    resp = _make_response(content="result")
+    parsed = OpenAICompatProvider._parse_response(resp, 1.25)
+    assert parsed["metrics"]["total_duration"] == 1.25
+
+
+def test_parse_response_duration_defaults_to_zero():
+    """An untimed caller still gets a valid metrics dict."""
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    parsed = OpenAICompatProvider._parse_response(_make_response("x"))
+    assert parsed["metrics"]["total_duration"] == 0.0
+
+
+def test_chat_times_the_request(mock_openai_timed):
+    """chat() measures the call rather than reporting zero.
+
+    The OpenAI-compatible API returns no server-side duration,
+    so an unmeasured call silently reported 0.0 and made the
+    chatter/guard split impossible to show.
+    """
+    mock_client, _ = mock_openai_timed
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    result = p.chat([{"role": "user", "content": "t"}], temperature=0)
+    assert result["metrics"]["total_duration"] > 0
+    mock_client.chat.completions.create.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_chat_async_times_the_request(mock_openai_timed):
+    """chat_async() measures the call the same way."""
+    _, mock_async_client = mock_openai_timed
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    result = await p.chat_async(
+        [{"role": "user", "content": "t"}],
+        temperature=0,
+    )
+    assert result["metrics"]["total_duration"] > 0
+    mock_async_client.chat.completions.create.assert_awaited_once()
 
 
 def test_parse_response_with_reasoning():
@@ -346,6 +429,7 @@ def test_engine_creates_openai_compat_provider():
             "gpt-4o",
             base_url="http://localhost:8000/v1",
             api_key="sk-test",
+            timeout=None,
         )
         assert engine.provider == "openai_compat"
 
@@ -365,6 +449,7 @@ def test_engine_reads_model_from_env(monkeypatch):
             "deepseek-chat",
             base_url=None,
             api_key=None,
+            timeout=None,
         )
 
 
@@ -688,3 +773,157 @@ def test_chat_forwards_tools_to_client(mock_openai):
     p.chat([{"role": "user", "content": "hi"}], temperature=0, tools=tools)
     _, kwargs = mock_client.chat.completions.create.call_args
     assert kwargs["tools"] == tools
+
+
+# --- json_schema rejection fallback ---
+
+
+class _Rejected(Exception):
+    """Stand-in for `openai.BadRequestError` under a mocked module."""
+
+
+_SCHEMA = {"type": "object", "properties": {"value": {"type": "boolean"}}}
+
+
+def _reject_then(response, message):
+    """A create() that raises once, then returns *response*."""
+    calls = []
+
+    def create(**params):
+        calls.append(params)
+        if len(calls) == 1:
+            raise _Rejected(message)
+        return response
+
+    return create, calls
+
+
+def _wire(mock_openai, create=None, async_create=None):
+    """Point the mocked SDK at real clients and a real error class."""
+    sync_client, async_client = MagicMock(), MagicMock()
+    if create is not None:
+        sync_client.chat.completions.create = create
+    if async_create is not None:
+        async_client.chat.completions.create = async_create
+    mock_openai.OpenAI.return_value = sync_client
+    mock_openai.AsyncOpenAI.return_value = async_client
+    mock_openai.BadRequestError = _Rejected
+    return sync_client, async_client
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_schema_rejection_is_matched_narrowly(mock_openai):
+    """Only a 400 about the response format may trigger a downgrade."""
+    _wire(mock_openai)
+    from agents7.llm.openai_compat import OpenAICompatProvider as P
+
+    # DeepSeek's actual wording.
+    assert P._is_schema_rejection(
+        _Rejected("This response_format type is unavailable now")
+    )
+    # The same complaint spelled with a space.
+    assert P._is_schema_rejection(_Rejected("bad response format"))
+    # An unrelated 400 must keep propagating.
+    assert not P._is_schema_rejection(_Rejected("model not found"))
+    # And so must anything that is not a bad-request error at all.
+    assert not P._is_schema_rejection(ValueError("response_format"))
+
+    # It runs inside an `except`, so it must not raise when the SDK
+    # is absent or stubbed and `BadRequestError` is not a class.
+    mock_openai.BadRequestError = object()
+    assert not P._is_schema_rejection(_Rejected("response_format"))
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_chat_retries_without_the_schema_when_rejected(mock_openai):
+    """A provider that refuses json_schema still gets an answer."""
+    create, calls = _reject_then(
+        _make_response("ok"), "This response_format type is unavailable now"
+    )
+    _wire(mock_openai, create=create)
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    result = p.chat([{"role": "user", "content": "x"}], output_format=_SCHEMA)
+
+    assert result["response"] == "ok"
+    assert len(calls) == 2
+    assert calls[0]["response_format"]["type"] == "json_schema"
+    # The retry still demands JSON — the parser validates the shape.
+    assert calls[1]["response_format"] == {"type": "json_object"}
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_the_rejected_request_is_paid_for_only_once(mock_openai):
+    """After the first refusal, later calls skip the schema."""
+    create, calls = _reject_then(
+        _make_response("ok"), "This response_format type is unavailable now"
+    )
+    _wire(mock_openai, create=create)
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    p.chat([{"role": "user", "content": "x"}], output_format=_SCHEMA)
+    p.chat([{"role": "user", "content": "y"}], output_format=_SCHEMA)
+
+    # Two rejected+retried calls would be four; one is three.
+    assert len(calls) == 3
+    assert calls[2]["response_format"] == {"type": "json_object"}
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_an_unrelated_bad_request_still_raises(mock_openai):
+    """Downgrading on every 400 would hide real configuration bugs."""
+    create, calls = _reject_then(_make_response("ok"), "model not found")
+    _wire(mock_openai, create=create)
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    with pytest.raises(_Rejected, match="model not found"):
+        p.chat([{"role": "user", "content": "x"}], output_format=_SCHEMA)
+    assert len(calls) == 1
+
+
+@patch("agents7.llm.openai_compat._openai")
+def test_a_request_with_no_schema_has_nothing_to_downgrade(mock_openai):
+    """The retry exists to drop a schema; with none, the error stands."""
+    create, calls = _reject_then(
+        _make_response("ok"), "This response_format type is unavailable now"
+    )
+    _wire(mock_openai, create=create)
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    with pytest.raises(_Rejected):
+        p.chat([{"role": "user", "content": "x"}], output_format="json")
+    assert len(calls) == 1
+
+
+@patch("agents7.llm.openai_compat._openai")
+@pytest.mark.asyncio
+async def test_chat_async_retries_without_the_schema(mock_openai):
+    """The async path degrades the same way the sync one does."""
+    calls = []
+
+    async def create(**params):
+        calls.append(params)
+        if len(calls) == 1:
+            raise _Rejected("This response_format type is unavailable now")
+        return _make_response("async_ok")
+
+    _wire(mock_openai, async_create=create)
+
+    from agents7.llm.openai_compat import OpenAICompatProvider
+
+    p = OpenAICompatProvider("m")
+    result = await p.chat_async(
+        [{"role": "user", "content": "x"}], output_format=_SCHEMA
+    )
+
+    assert result["response"] == "async_ok"
+    assert len(calls) == 2
+    assert calls[1]["response_format"] == {"type": "json_object"}

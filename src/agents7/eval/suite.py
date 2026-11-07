@@ -35,6 +35,7 @@ from agents7.call_log import (
     CallLogSummary,
     CallRecord,
     JsonCallLogger,
+    generate_trace_id,
     summarize_call_log,
 )
 from agents7.eval.data import (
@@ -48,6 +49,8 @@ from agents7.eval.export import export_eval_report
 from agents7.eval.metrics import (
     EvalResult,
     compute_metrics,
+    compute_per_category,
+    resolve_category_field,
     run_evaluation,
 )
 from agents7.eval.trajectory import (
@@ -69,8 +72,9 @@ class EvalRun:
         fields: Expected output fields that were compared.
         results: Per-row `EvalResult` list.
         metrics: Aggregate metrics from `compute_metrics`.
-        call_log: Summary of the calls the run made, when a
-            *call_log* path was requested. None otherwise.
+        call_log: Summary of the calls the run made. None only
+            when the agent made no LLM calls at all — a
+            rule-based agent has nothing to summarize.
         report_path: Path of the written Markdown report, when a
             *report* was requested. None otherwise.
     """
@@ -130,7 +134,8 @@ class EvalRun:
         lines = [
             f"Match:    {trajectory.get('mode', '')}",
             f"Calls:    {matched}/{expected} expected calls made "
-            f"({rate:.1%}), {trajectory.get('extra_calls', 0)} extra",
+            f"({rate:.1%}), {trajectory.get('extra_calls', 0)} extra, "
+            f"{trajectory.get('failed_calls', 0)} rejected",
         ]
         per_tool = trajectory.get("per_tool", {})
         if per_tool:
@@ -209,9 +214,11 @@ def run_eval_suite(
     :param confusion_field: Categorical field for the report's
         confusion matrix. Defaults to ``category`` when scored,
         otherwise the first scored field.
-    :param call_log: When set, log every call made during the run
-        as JSON lines to this path and attach the resulting
-        `CallLogSummary` to the returned run.
+    :param call_log: When set, also write every call made during
+        the run as JSON lines to this path. The run's
+        `CallLogSummary` is attached either way — a caller does
+        not have to write a file to get the run's tokens,
+        duration and cost.
     :param notes: Optional extra note lines for the report, appended
         after the standard eval-set and accuracy notes. Use them for
         domain caveats a reader needs to interpret the numbers.
@@ -239,18 +246,36 @@ def run_eval_suite(
     else:
         eval_rows, resolved_fields = resolve_eval_fields(config, rows, fields)
 
+    # Every run collects its own calls, whether or not a *call_log*
+    # path was asked for: the tokens, duration and cost of a run are
+    # measurements it produces, and a caller that wants them should
+    # not have to write a file to see them. The path only decides
+    # whether they are also persisted.
     logger: JsonCallLogger | None = None
     logged: list[CallRecord] = []
     if call_log is not None:
         logger = JsonCallLogger(call_log)
-        write = logger
+    write = logger
+    # A config may declare its own sink (`call_log:` or
+    # `call_logger:`). Chain it rather than replace it — collecting
+    # for the summary must not silence a log the config asked for.
+    configured = getattr(agent, "call_logger", None)
 
-        def _record(record: CallRecord) -> None:
-            """Persist a call and keep it for this run's summary."""
-            logged.append(record)
+    def _record(record: CallRecord) -> None:
+        """Keep a call for this run's summary, and pass it on."""
+        logged.append(record)
+        if write is not None:
             write(record)
+        if configured is not None:
+            configured(record)
 
-        agent = agent.with_overrides(call_logger=_record)
+    # One eval run is one run: every row's calls share an id
+    # so a log holding several runs can be split back into
+    # them. A ToolAgent takes the same field.
+    agent = agent.with_overrides(
+        call_logger=_record,
+        run_id=getattr(agent, "run_id", None) or generate_trace_id(),
+    )
 
     try:
         if is_tool:
@@ -270,8 +295,24 @@ def run_eval_suite(
 
     metrics = compute_metrics(results, resolved_fields)
     if is_tool:
+        # A trajectory is a sequence of calls, not a label, so
+        # there is nothing to break it down by.
         metrics["trajectory"] = compute_trajectory_metrics(results)
-    summary = _summarize_calls(call_log, logged)
+        metrics["per_category"] = {}
+    else:
+        category_field = resolve_category_field(resolved_fields)
+        metrics["per_category"] = (
+            compute_per_category(results, category_field)
+            if category_field
+            else {}
+        )
+    # Summarize the in-memory records rather than re-reading the
+    # log file: ``JsonCallLogger`` appends, so a path reused across
+    # runs holds earlier runs' records too and re-reading it would
+    # report cumulative totals as if they were this run's. An agent
+    # that makes no LLM calls at all (a rule-based one) logs
+    # nothing, and gets no summary.
+    summary = summarize_call_log(logged) if logged else None
 
     run = EvalRun(
         agent_name=agent.name,
@@ -343,27 +384,6 @@ def _resolve_trajectory_mode(
         ) from exc
 
 
-def _summarize_calls(
-    call_log: str | Path | None,
-    logged: list[CallRecord],
-) -> CallLogSummary | None:
-    """Summarize the calls *this run* made.
-
-    Summarizes the in-memory records rather than re-reading the
-    log file: ``JsonCallLogger`` appends, so a path reused across
-    runs holds earlier runs' records too and re-reading it would
-    report cumulative totals as if they were this run's.
-
-    :param call_log: Path the run logged to, or None.
-    :param logged: Records captured during this run.
-    :return: The summary, or None when no log was requested or
-        the run made no logged calls.
-    """
-    if call_log is None or not logged:
-        return None
-    return summarize_call_log(logged)
-
-
 def _write_report(
     run: EvalRun,
     agent: BaseAgent,
@@ -386,9 +406,7 @@ def _write_report(
         # is no categorical field to cross-tabulate.
         confusion = None
     else:
-        confusion = confusion_field or (
-            "category" if "category" in run.fields else run.fields[0]
-        )
+        confusion = confusion_field or resolve_category_field(run.fields)
     export_eval_report(
         run.results,
         run.metrics,

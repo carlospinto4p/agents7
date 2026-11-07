@@ -1,4 +1,6 @@
+import json
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Any, Callable
 
 from pydantic import BaseModel, create_model
@@ -8,7 +10,7 @@ from agents7.agents.base import BaseAgent
 from agents7.agents.batch import BatchProcessor
 from agents7.agents.config_loader import load_yaml_settings
 from agents7.agents.parsing import ResponseParser
-from agents7.agents.retry import ParseRetryHandler
+from agents7.agents.retry import CallAttempt, ParseRetryHandler
 from agents7.agents.streaming import (
     AgentAsyncStreamResult,
     AgentStreamResult,
@@ -17,10 +19,11 @@ from agents7.agents.utils import (
     get_examples_str,
     model_class_to_string,
 )
-from agents7.call_log import CallRecord, generate_trace_id
+from agents7.call_log import CallRecord, generate_trace_id, now
 from agents7.exceptions import AgentConfigurationError, ParseError
 from agents7.logs import logger
 from agents7.models import AgentResponse
+from agents7.models.base import LLMMetrics
 from agents7.settings import BatchSettings
 
 
@@ -55,12 +58,22 @@ class Labeler(BaseAgent):
             (no retries). Only applies to ``act()`` and
             ``act_async()``; batch methods do not retry.
         call_logger (Callable[[CallRecord], None], optional):
-            Callable invoked after each ``act()`` /
-            ``act_async()`` call with a `CallRecord`
-            containing trace ID, agent name, model, tokens,
-            duration, and success/failure. Defaults to None
-            (no logging). Use `JsonCallLogger` for JSON
-            output.
+            Callable invoked with a `CallRecord` for every LLM
+            call made, containing trace ID, agent name, model,
+            tokens, duration, cost, and success/failure. One
+            call is the ordinary case; an ``act()`` or
+            ``act_async()`` that needed parse retries emits one
+            record per attempt, all sharing the answer's trace
+            ID, so the log counts the calls that were made. A
+            streamed call emits its record once the caller
+            finishes iterating, since that is when the outcome
+            is known. Defaults to None (no logging). Use
+            `JsonCallLogger` for JSON output.
+        run_id (str, optional): Name of the run these calls
+            belong to, written to every `CallRecord` so a log
+            can be grouped by run as well as by turn — an eval
+            sweep, a benchmark, a batch job. Defaults to None,
+            meaning the caller named no run.
         preprocessor (Callable, optional): Callable that
             transforms input data before it is sent to the
             LLM. Receives the raw input (dict or list) and
@@ -76,6 +89,7 @@ class Labeler(BaseAgent):
     think: bool = field(default=False, kw_only=True)
     max_parse_retries: int = field(default=0, kw_only=True)
     call_logger: Callable | None = field(default=None, kw_only=True)
+    run_id: str | None = field(default=None, kw_only=True)
     preprocessor: Callable | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
@@ -301,13 +315,14 @@ class Labeler(BaseAgent):
                 **chat_kwargs,
             )
         )
+        attempts = [self._first_attempt(response, messages)]
         try:
             parsed = self._parser.parse(response["response"])
         except ParseError as err:
             parsed = self._retry_handler.retry_sync(
-                err, messages, chat_kwargs
+                err, messages, chat_kwargs, attempts
             )
-        return self._finalize_response(response, parsed)
+        return self._finalize_response(response, parsed, attempts=attempts)
 
     async def act_async(
         self,
@@ -332,13 +347,16 @@ class Labeler(BaseAgent):
                 **chat_kwargs,
             )
         )
+        attempts = [self._first_attempt(response, messages)]
         try:
             parsed = self._parser.parse(response["response"])
         except ParseError as err:
             parsed = await self._retry_handler.retry_async(
-                err, messages, chat_kwargs
+                err, messages, chat_kwargs, attempts
             )
-        return self._finalize_response(response, parsed, idx=_idx)
+        return self._finalize_response(
+            response, parsed, idx=_idx, attempts=attempts
+        )
 
     def act_stream(
         self,
@@ -351,6 +369,12 @@ class Labeler(BaseAgent):
         when iterated. After iteration, access the parsed
         `AgentResponse` via `stream.agent_response`.
 
+        A `CallRecord` is emitted once iteration completes, not
+        when this method returns — the outcome is not known
+        until the streamed text has been parsed. A caller that
+        abandons the stream without iterating it records
+        nothing.
+
         :param input_data: The input data to be processed.
         :param chat_kwargs: See `act()` for details.
         :return: An `AgentStreamResult` yielding text chunks.
@@ -362,7 +386,11 @@ class Labeler(BaseAgent):
             output_format=self._output_schema,
             **chat_kwargs,
         )
-        return AgentStreamResult(stream, self._parser)
+        return AgentStreamResult(
+            stream,
+            self._parser,
+            on_complete=partial(self._emit_call_log, messages=messages),
+        )
 
     async def act_stream_async(
         self,
@@ -376,6 +404,9 @@ class Labeler(BaseAgent):
         the parsed `AgentResponse` via
         `stream.agent_response`.
 
+        As in `act_stream`, the `CallRecord` is emitted once
+        iteration completes.
+
         :param input_data: The input data to be processed.
         :param chat_kwargs: See `act()` for details.
         :return: An `AgentAsyncStreamResult` yielding text
@@ -388,7 +419,11 @@ class Labeler(BaseAgent):
             output_format=self._output_schema,
             **chat_kwargs,
         )
-        return AgentAsyncStreamResult(stream, self._parser)
+        return AgentAsyncStreamResult(
+            stream,
+            self._parser,
+            on_complete=partial(self._emit_call_log, messages=messages),
+        )
 
     def act_in_batch(
         self,
@@ -468,11 +503,31 @@ class Labeler(BaseAgent):
             },
         ]
 
+    @staticmethod
+    def _first_attempt(
+        response: dict,
+        messages: list[dict[str, str]],
+    ) -> CallAttempt:
+        """Wrap the answer's first LLM call as a `CallAttempt`.
+
+        Any parse retries append their own behind it, so the
+        list is every call the answer took, in order.
+
+        :param response: Raw chat response (role-stripped).
+        :param messages: The messages that call sent.
+        :return: The first attempt.
+        """
+        return CallAttempt(
+            metrics=LLMMetrics(**response["metrics"]),
+            messages=messages,
+        )
+
     def _finalize_response(
         self,
         response: dict,
         parsed: "BaseModel | None",
         idx: int = 0,
+        attempts: "list[CallAttempt] | None" = None,
     ) -> AgentResponse:
         """Validate, wrap, and log a parsed LLM response.
 
@@ -480,38 +535,145 @@ class Labeler(BaseAgent):
         :param parsed: Parsed model from the response, or
             None if parsing failed.
         :param idx: Optional index for batch tracking.
+        :param attempts: Every LLM call the answer took, in
+            order — the first, then one per parse retry. Their
+            metrics add up into the response, because a parse
+            retry is a whole extra call and reporting only the
+            first understated exactly the answers that cost
+            most; and each becomes its own call-log row, so the
+            log counts the calls that were actually made.
         :return: Fully built AgentResponse.
         """
         response["model"] = self._parser.run_validators(parsed)
         response["idx"] = idx
+        attempts = attempts or []
+        if len(attempts) > 1:
+            response["metrics"] = LLMMetrics.sum(
+                [attempt.metrics for attempt in attempts]
+            )
         agent_response = AgentResponse(**response)
-        self._emit_call_log(agent_response)
+        self._log_attempts(
+            attempts, answered=agent_response.model is not None
+        )
         return agent_response
+
+    def _log_attempts(
+        self,
+        attempts: list[CallAttempt],
+        *,
+        answered: bool,
+    ) -> None:
+        """Emit one `CallRecord` per LLM call the answer took.
+
+        A parse retry is a whole extra call to the provider, so
+        it gets its own row. Folding them all into one made
+        `CallStats.calls` report a single call where three were
+        made, and divided three calls' seconds by one to get a
+        per-model average duration.
+
+        Every call but the last failed to parse, since the retry
+        loop stops at the first that does — so only the last one
+        can carry the answer's outcome, and the earlier ones are
+        failures whatever became of it.
+
+        :param attempts: The calls, in the order they were made.
+        :param answered: Whether the answer ended with a usable
+            model. False when the last retry still would not
+            parse, and also when a validator rejected what did.
+        """
+        if self.call_logger is None:
+            return
+        trace_id = generate_trace_id()
+        last = len(attempts) - 1
+        for i, attempt in enumerate(attempts):
+            succeeded = answered and i == last
+            self._log_call(
+                attempt.metrics,
+                trace_id=trace_id,
+                success=succeeded,
+                messages=None if succeeded else attempt.messages,
+            )
 
     def _emit_call_log(
         self,
         response: AgentResponse,
         error: str | None = None,
+        messages: list[dict[str, str]] | None = None,
     ) -> None:
-        """Emit a `CallRecord` to the call logger if set.
+        """Emit one `CallRecord` for a single-call response.
+
+        The batch and streaming paths, neither of which retries
+        a failed parse, so their response is one LLM call and
+        one row. `act` and `act_async` go through
+        `_log_attempts` instead, since they can be more.
 
         :param response: The agent response.
         :param error: Optional error message.
+        :param messages: The messages sent to the engine, kept
+            on the record when parsing failed.
+        """
+        failed = response.model is None
+        self._log_call(
+            response.metrics,
+            trace_id=generate_trace_id(),
+            success=not failed,
+            error=error,
+            messages=messages if failed else None,
+        )
+
+    def _log_call(
+        self,
+        metrics: LLMMetrics,
+        *,
+        trace_id: str,
+        success: bool,
+        error: str | None = None,
+        messages: list[dict[str, str]] | None = None,
+    ) -> None:
+        """Write one call's record to the call logger, if set.
+
+        The prompt is recorded only when the call failed — see
+        `CallRecord.prompt` for why a successful call carries
+        none. A caller that passes no `messages` records none
+        either way.
+
+        :param metrics: That call's own metrics, never a total
+            over several calls.
+        :param trace_id: Shared by every call of one answer, so
+            a consumer can group them.
+        :param success: Whether this call produced the answer.
+        :param error: Optional error message.
+        :param messages: The messages this call sent, kept on
+            the record when it failed.
         """
         if self.call_logger is None:
             return
-        record = CallRecord(
-            trace_id=generate_trace_id(),
-            agent_name=self.name,
-            agent_version=self.version,
-            model_id=self.engine.model_id,
-            success=response.model is not None,
-            tokens=response.metrics.tokens,
-            prompt_tokens=response.metrics.prompt_tokens,
-            total_duration=response.metrics.total_duration,
-            error=error,
+        self.call_logger(
+            CallRecord(
+                trace_id=trace_id,
+                run_id=self.run_id,
+                recorded_at=now(),
+                agent_name=self.name,
+                agent_version=self.version,
+                model_id=self.engine.model_id,
+                success=success,
+                tokens=metrics.tokens,
+                prompt_tokens=metrics.prompt_tokens,
+                cached_prompt_tokens=metrics.cached_prompt_tokens,
+                total_duration=metrics.total_duration,
+                cost_cents=metrics.cost_cents,
+                cached=metrics.cached,
+                model=metrics.model,
+                retries=metrics.retries,
+                retry_duration=metrics.retry_duration,
+                error=error,
+                prompt=(
+                    json.dumps(messages, ensure_ascii=False)
+                    if messages is not None
+                    else None
+                ),
+            )
         )
-        self.call_logger(record)
 
     @staticmethod
     def _strip_role(response: dict) -> dict:

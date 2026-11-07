@@ -9,7 +9,7 @@ while staying in character within the scene.
 
 from dataclasses import dataclass, field, replace
 
-from agents7.agents.context_guard import _PLACEHOLDER
+from agents7.agents.context_guard import _PLACEHOLDER, ContextGuard
 from agents7.agents.guarded import GuardedChatter
 from agents7.agents.persona import Scene
 
@@ -34,6 +34,10 @@ class GuardedSceneChatter(GuardedChatter):
     construction — so the guard always sees the scene context
     its prompt refers to.
 
+    A scene that names a `context_params` value is checked against
+    the value the agent has when the reply is written, not the one
+    it had when it was built — see `current_guard`.
+
     :param scene: The scenario definition.
     """
 
@@ -45,17 +49,61 @@ class GuardedSceneChatter(GuardedChatter):
         # loader already folds scene into the derived summary;
         # this makes direct Python construction match (and is
         # idempotent — the substring check skips re-adding it).
-        scene_summary = self.scene.to_summary()
-        if scene_summary and scene_summary not in self.guard.persona_summary:
-            enriched = f"{self.guard.persona_summary}\n{scene_summary}"
+        #
+        # The guard is its own agent and has no persona, so it
+        # cannot resolve `$character` itself. A scene written to
+        # be character-agnostic would otherwise reach it with the
+        # placeholder still in the text, and the guard would be
+        # judging replies against a character called `$character`.
+        #
+        # Only the names the config fixes are filled here. A
+        # `context_params` or `prompt_variants` name stays a
+        # placeholder and `current_guard` fills it per reply:
+        # filled here, the guard kept the defaults for good, and
+        # rejected a reply for using the nickname `set_context`
+        # had supplied.
+        scene_summary = self._fixed(self.scene.to_summary())
+        summary = self._fixed(self.guard.persona_summary)
+        if scene_summary and scene_summary not in summary:
+            summary = f"{summary}\n{scene_summary}"
+        if summary != self.guard.persona_summary:
             self._set_attr(
                 "guard",
                 replace(
                     self.guard,
-                    persona_summary=enriched,
+                    persona_summary=summary,
                     system_prompt=_PLACEHOLDER,
                 ),
             )
+
+    def _fixed(self, text: str) -> str:
+        """Fill only the placeholders the config fixes."""
+        return self._substitute(text, with_variants=False, with_context=False)
+
+    def current_guard(self) -> ContextGuard:
+        """The guard, judging by the context the agent has now.
+
+        `guard` keeps every `context_params` and `prompt_variants`
+        name as a placeholder, so it is the same for every
+        conversation. This fills them with what the agent's own
+        prompt carries at this moment, so the two cannot disagree
+        about the time of day or about a nickname.
+
+        :return: `guard` when it names no such value, otherwise a
+            guard built for the current ones.
+        """
+        summary = self.substitute(self.guard.persona_summary)
+        if summary == self.guard.persona_summary:
+            return self.guard
+        resolved = getattr(self, "_resolved_guard", None)
+        if resolved is None or resolved.persona_summary != summary:
+            resolved = replace(
+                self.guard,
+                persona_summary=summary,
+                system_prompt=_PLACEHOLDER,
+            )
+            self._set_attr("_resolved_guard", resolved)
+        return resolved
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "GuardedSceneChatter":

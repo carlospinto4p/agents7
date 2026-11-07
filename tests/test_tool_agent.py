@@ -173,9 +173,28 @@ def test_stream_emits_call_result_then_answer():
     assert call.iteration == 0
     assert result.name == "add"
     assert result.result == "3"
+    assert result.error is None
     assert result.iteration == 0
     assert answer.text == "The sum is 3"
     assert answer.iteration == 1
+
+
+def test_stream_result_event_carries_the_failure():
+    """A rejected call is flagged, not just described in text.
+
+    `result` holds the `"Error: ..."` string fed back to the
+    model; `error` is what says the call failed, since a tool may
+    legitimately return text starting with `Error:`.
+    """
+    agent = _agent(
+        [
+            tool_call_response("add", {"a": {"type": "string"}, "b": 1}),
+            chat_response_dict("I could not work that out."),
+        ]
+    )
+    _, result, _ = list(agent.act_stream("add"))
+    assert result.result.startswith("Error: Invalid arguments")
+    assert "Invalid arguments" in result.error
 
 
 def test_stream_agent_response_available_after_iteration():

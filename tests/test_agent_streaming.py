@@ -32,7 +32,14 @@ def _make_chunk(content: str, *, done: bool = True) -> Mock:
     chunk.done = done
     chunk.eval_count = 10
     chunk.prompt_eval_count = 5
+    # Ollama chunks carry no cached count, and a bare `Mock` would
+    # invent one rather than be absent — which is not what the
+    # provider does.
+    chunk.cached_prompt_tokens = None
     chunk.total_duration = 1_000_000_000
+    # Same hazard as the line above: a real Ollama chunk names the
+    # model as a string, and a bare `Mock` hands back a `Mock`.
+    chunk.model = "qwen3"
     return chunk
 
 

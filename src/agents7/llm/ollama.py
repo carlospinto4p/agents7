@@ -21,10 +21,9 @@ from collections.abc import Callable
 from ollama import (
     AsyncClient,
     ChatResponse,
+    Client,
     GenerateResponse,
     ResponseError,
-    chat,
-    generate,
 )
 
 from agents7.llm.base import LLMProvider
@@ -36,9 +35,31 @@ class OllamaProvider(LLMProvider):
     Ollama LLM provider for generating text using the Ollama API.
     """
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, timeout: float | None = None):
+        """
+        :param model_name: Name of the Ollama model to call.
+        :param timeout: Seconds a single HTTP request may take
+            before it is abandoned, or ``None`` for no limit.
+            Applies to sync, async and streaming calls alike.
+        """
         super().__init__("ollama", model_name)
-        self._async_client = AsyncClient()
+        client_kwargs = {} if timeout is None else {"timeout": timeout}
+        # Instance clients rather than ollama's module-level
+        # `chat` / `generate`, which build a client per call and
+        # so cannot carry a timeout.
+        self._client = Client(**client_kwargs)
+        self._async_client_kwargs = client_kwargs
+        self._async_client = AsyncClient(**client_kwargs)
+
+    async def aclose(self) -> None:
+        """Close the async client's connections and start a fresh one.
+
+        See `LLMProvider.aclose`. `AsyncClient` exposes no close of
+        its own, so this closes the `httpx.AsyncClient` it wraps.
+        """
+        closing = self._async_client
+        self._async_client = AsyncClient(**self._async_client_kwargs)
+        await closing._client.aclose()
 
     @staticmethod
     def _build_options(
@@ -174,11 +195,11 @@ class OllamaProvider(LLMProvider):
             output_format=output_format,
             tools=tools,
         )
-        response = self._with_think_fallback(chat, think, kwargs)
+        response = self._with_think_fallback(self._client.chat, think, kwargs)
         parsed = parse_ollama_chat_response(response)
 
         if self._needs_format_fallback(parsed, output_format):
-            response = chat(**{**kwargs, "format": None})
+            response = self._client.chat(**{**kwargs, "format": None})
             parsed = parse_ollama_chat_response(response)
 
         return parsed
@@ -234,7 +255,9 @@ class OllamaProvider(LLMProvider):
             think=think,
             output_format=output_format,
         )
-        response = self._with_think_fallback(generate, think, kwargs)
+        response = self._with_think_fallback(
+            self._client.generate, think, kwargs
+        )
         return parse_ollama_response(response)
 
     async def generate_async(
@@ -279,8 +302,8 @@ class OllamaProvider(LLMProvider):
             output_format=output_format,
             stream=True,
         )
-        iterator = self._with_think_fallback(chat, think, kwargs)
-        return StreamResult(iterator, "chat")
+        iterator = self._with_think_fallback(self._client.chat, think, kwargs)
+        return StreamResult(iterator, "chat", provider="ollama")
 
     async def chat_stream_async(
         self,
@@ -304,7 +327,7 @@ class OllamaProvider(LLMProvider):
         iterator = await self._with_think_fallback_async(
             self._async_client.chat, think, kwargs
         )
-        return AsyncStreamResult(iterator, "chat")
+        return AsyncStreamResult(iterator, "chat", provider="ollama")
 
     def generate_stream(
         self,
@@ -325,8 +348,10 @@ class OllamaProvider(LLMProvider):
             output_format=output_format,
             stream=True,
         )
-        iterator = self._with_think_fallback(generate, think, kwargs)
-        return StreamResult(iterator, "generate")
+        iterator = self._with_think_fallback(
+            self._client.generate, think, kwargs
+        )
+        return StreamResult(iterator, "generate", provider="ollama")
 
     async def generate_stream_async(
         self,
@@ -350,7 +375,7 @@ class OllamaProvider(LLMProvider):
         iterator = await self._with_think_fallback_async(
             self._async_client.generate, think, kwargs
         )
-        return AsyncStreamResult(iterator, "generate")
+        return AsyncStreamResult(iterator, "generate", provider="ollama")
 
     def supports_tools(self) -> bool:
         """Ollama supports tool calling."""
@@ -408,6 +433,22 @@ def _parse_tool_calls(message) -> list[dict]:
     ]
 
 
+def _model_id(response) -> str | None:
+    """Name the model Ollama says answered, as ``ollama::name``.
+
+    Read from the reply rather than from the provider's own
+    `model_name`, so the figure describes the call that happened.
+    On an engine with a `fallback_model` those two differ exactly
+    when it matters — the fallback answered — and reporting the
+    configured name would hide it.
+
+    :param response: An Ollama chat or generate response.
+    :return: ``ollama::<model>``, or ``None`` if it named none.
+    """
+    model = getattr(response, "model", None)
+    return f"ollama::{model}" if model else None
+
+
 def parse_ollama_chat_response(chat_response: ChatResponse) -> dict:
     """
     Parse the response from the Ollama API.
@@ -434,7 +475,14 @@ def parse_ollama_chat_response(chat_response: ChatResponse) -> dict:
         "metrics": {
             "tokens": chat_response.eval_count,
             "prompt_tokens": chat_response.prompt_eval_count,
+            # Stated, not left to a default. Ollama runs locally and
+            # bills nothing, so it never discounts a repeated prompt —
+            # but "measured as zero" and "never measured" have to look
+            # different, and relying on the model's default is how a
+            # metric goes missing without anything failing.
+            "cached_prompt_tokens": 0,
             "total_duration": chat_response.total_duration / 10**9,
+            "model": _model_id(chat_response),
         },
     }
 
@@ -467,6 +515,9 @@ def parse_ollama_response(response: GenerateResponse) -> dict:
         "metrics": {
             "tokens": response.eval_count,
             "prompt_tokens": response.prompt_eval_count,
+            # See `parse_ollama_chat_response` — stated, not defaulted.
+            "cached_prompt_tokens": 0,
             "total_duration": response.total_duration / 10**9,
+            "model": _model_id(response),
         },
     }

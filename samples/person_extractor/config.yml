@@ -1,0 +1,45 @@
+name: PersonExtractor
+version: 2
+agent_type: labeler
+description: >
+    Extracts structured details (name, age, occupation, location)
+    about people mentioned in free text, leaving unknown fields null.
+demonstrates:
+    class: Labeler
+    feature: entity extraction
+engine:
+    provider: ollama
+    model: qwen2.5:3b
+system_prompt: |
+  Extract information about people from the given text.
+
+  ## Rules
+
+  1. Extract only information that is explicitly stated or clearly implied.
+  2. If a field cannot be determined from the text, leave it as null.
+  3. For age, extract the numeric value only.
+  4. For occupation, use a concise job title.
+  5. For location, extract city, country, or region as mentioned.
+output_model: agents7.models.demo.PersonInfo
+system_examples:
+    - input:
+        text: "John is a 35-year-old software engineer living in Berlin."
+      output:
+        name: John
+        age: 35
+        occupation: software engineer
+        location: Berlin
+    - input:
+        text: "The CEO, Maria, recently moved to Tokyo."
+      output:
+        name: Maria
+        age: null
+        occupation: CEO
+        location: Tokyo
+    - input:
+        text: "Yesterday I saw a movie about robots."
+      output:
+        name: null
+        age: null
+        occupation: null
+        location: null

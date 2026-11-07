@@ -123,6 +123,62 @@ def test_multiple_retries_accumulate_messages(mock_chat):
     assert len(retry_messages) == 4
 
 
+# --- Retries are paid for, so they are reported ---
+
+
+@patch.object(LLMEngine, "chat")
+def test_parse_retries_are_added_to_the_response_metrics(mock_chat):
+    """A parse retry is a whole extra LLM call, with its own bill.
+
+    Unlike a transport retry, which raises before the provider
+    reports anything, this one succeeds — it just produces text
+    that will not parse. Its metrics were discarded, so an agent
+    that needed two retries reported one call's tokens and cost
+    while having paid for three.
+    """
+    mock_chat.side_effect = [
+        _bad_response(),
+        _bad_response(),
+        _chat_response("finally"),
+    ]
+    agent = make_labeler(max_parse_retries=2)
+
+    result = agent.act({"text": "hello"})
+
+    assert mock_chat.call_count == 3
+    assert result.metrics.tokens == 3 * DUMMY_METRICS["tokens"]
+    assert result.metrics.prompt_tokens == 3 * DUMMY_METRICS["prompt_tokens"]
+    assert result.metrics.total_duration == pytest.approx(
+        3 * DUMMY_METRICS["total_duration"]
+    )
+
+
+@patch.object(LLMEngine, "chat")
+def test_a_call_that_parsed_reports_only_itself(mock_chat):
+    """No retry, nothing to add — the common case is unchanged."""
+    mock_chat.return_value = _chat_response("fine")
+    agent = make_labeler(max_parse_retries=2)
+
+    result = agent.act({"text": "hello"})
+
+    assert result.metrics.tokens == DUMMY_METRICS["tokens"]
+
+
+@patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_async_parse_retries_are_added_too(mock_chat):
+    """The async path bills the same as the sync one."""
+    mock_chat.side_effect = [
+        _bad_response(),
+        _chat_response("fixed"),
+    ]
+    agent = make_labeler(max_parse_retries=1)
+
+    result = await agent.act_async({"text": "hello"})
+
+    assert result.metrics.tokens == 2 * DUMMY_METRICS["tokens"]
+
+
 # --- Async retry ---
 
 

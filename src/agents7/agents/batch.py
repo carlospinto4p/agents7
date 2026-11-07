@@ -34,7 +34,9 @@ class BatchProcessor:
     :param on_call: Optional callable invoked with each
         chunk-level `AgentResponse` — one per real LLM call,
         not one per input item. Used to emit call-log records
-        for batch runs.
+        for batch runs. Called as
+        ``on_call(response, messages=messages)``, so the
+        chunk's prompt reaches the record when it failed.
     """
 
     engine: LLMEngine
@@ -138,7 +140,7 @@ class BatchProcessor:
     ) -> AgentResponse:
         params = self._chat_params(chunk, batch_prompt, chat_kwargs)
         response = self._parse_response(self.engine.chat(**params))
-        return self._emit(AgentResponse(**response))
+        return self._emit(AgentResponse(**response), params["messages"])
 
     async def _request_async(
         self,
@@ -152,16 +154,22 @@ class BatchProcessor:
             await self.engine.chat_async(**params)
         )
         response["idx"] = _idx
-        return self._emit(AgentResponse(**response))
+        return self._emit(AgentResponse(**response), params["messages"])
 
-    def _emit(self, response: AgentResponse) -> AgentResponse:
+    def _emit(
+        self,
+        response: AgentResponse,
+        messages: list[dict[str, str]],
+    ) -> AgentResponse:
         """Notify `on_call` about one completed chunk request.
 
         :param response: The chunk-level response.
+        :param messages: The messages this chunk sent, passed on
+            so a failed chunk's record can carry its prompt.
         :return: The same response, for call chaining.
         """
         if self.on_call is not None:
-            self.on_call(response)
+            self.on_call(response, messages=messages)
         return response
 
     def _chat_params(

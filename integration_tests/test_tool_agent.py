@@ -7,7 +7,7 @@ the integration suite's per-test timeout.
 """
 
 import pytest
-from integration_helpers import is_model_available
+from integration_helpers import is_model_available, warm_model
 
 from agents7.agents.tool_agent import ToolAgent
 from agents7.llm import LLMEngine
@@ -18,6 +18,12 @@ pytestmark = pytest.mark.skipif(
     not is_model_available(_MODEL),
     reason=f"{_MODEL} not available",
 )
+
+
+@pytest.fixture(autouse=True)
+def _loaded() -> None:
+    """Load the model before the timed test body."""
+    warm_model(_MODEL)
 
 
 def get_weather(city: str) -> str:

@@ -119,7 +119,8 @@ async def test_async_single_chunk_flattening(mock_chat):
 @patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
 @pytest.mark.asyncio
 async def test_async_multi_chunk_preserves_order(mock_chat):
-    """5 items, requests_per_prompt=2 → correct order even when chunks complete out of order."""
+    """5 items, requests_per_prompt=2 → order preserved even when
+    chunks complete out of order."""
     # chunk_info[i] = (marker, items) for chunk i
     chunk_info = [
         ("{'x': 0}", [{"value": "a"}, {"value": "b"}]),

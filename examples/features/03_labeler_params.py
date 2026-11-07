@@ -23,7 +23,7 @@ def example_from_yaml():
     test_texts = [
         "Sarah, 28, just joined Acme Corp as a data scientist in London.",
         "Dr. Chen has been practicing medicine in Singapore.",
-        "David, 45, is a senior engineer at Acme Corp in Madrid.",
+        "Javier, 45, is a senior engineer at Acme Corp in Madrid.",
         "I bought groceries at the store.",
     ]
 

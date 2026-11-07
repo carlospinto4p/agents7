@@ -12,6 +12,8 @@ Pass `persona` and/or `scene` directly to `GuardedChatter`
 as composition plugins inherited from `Chatter`.
 """
 
+import json
+import time
 from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
@@ -26,7 +28,7 @@ from agents7.agents.context_guard import (
     GuardVerdict,
 )
 from agents7.logs import logger
-from agents7.models import ChatResponse, LLMMetrics
+from agents7.models import AgentResponse, ChatResponse, LLMMetrics
 
 # Generic, AI-vocabulary-free deflection used when the guard
 # output is unparseable and ``guard_fail_open`` is False. Keep
@@ -50,8 +52,17 @@ class GuardEvent:
         from the guard's ``fix`` field rather than the
         chatter.
     :param duration: Guard LLM call duration in seconds.
+        The same number as ``metrics.total_duration``, kept
+        because it predates ``metrics``.
     :param parse_failed: ``True`` when the guard LLM
         returned unparseable output.
+    :param metrics: The guard call's own `LLMMetrics` — tokens,
+        duration and, when the guard's engine declares
+        ``pricing``, ``cost_cents``. A guarded reply costs two
+        LLM calls and this is the second one, so a caller adding
+        up what a turn cost needs this as well as the
+        `ChatResponse`'s metrics. ``None`` only when a
+        `GuardEvent` was built without it.
     """
 
     attempt: int
@@ -62,6 +73,7 @@ class GuardEvent:
     used_fix: bool = False
     duration: float = 0.0
     parse_failed: bool = False
+    metrics: LLMMetrics | None = None
 
 
 # --- Guarded stream wrappers ---
@@ -97,7 +109,7 @@ class GuardedChatterStreamResult(_ChatterStreamBase):
         if not self._chatter.guard_buffer_stream:
             yield from super().__iter__()
             return
-        for _ in self._stream:
+        for _ in self._chunks():
             pass
         self._finalize()
         if self._chat_response is not None:
@@ -105,16 +117,19 @@ class GuardedChatterStreamResult(_ChatterStreamBase):
 
     def _finalize(self) -> None:
         text = self._stream.response
+        parts = [LLMMetrics(**self._stream.metrics)]
+        self._chatter._log_call(parts[0])
         text = self._chatter._guard_and_fix(
+            self._messages,
             self._user_message,
             text,
+            parts,
         )
         self._chat_response = ChatResponse(
-            response=text,
+            response=self._chatter._append_assistant(text),
             thinking=self._stream.thinking,
-            metrics=LLMMetrics(**self._stream.metrics),
+            metrics=self._chatter._sum_metrics(parts),
         )
-        self._chatter._append_assistant(text)
 
 
 class GuardedChatterAsyncStreamResult(
@@ -133,7 +148,7 @@ class GuardedChatterAsyncStreamResult(
             async for chunk in super()._async_iterate():
                 yield chunk
             return
-        async for _ in self._stream:
+        async for _ in self._achunks():
             pass
         await self._finalize_async()
         if self._chat_response is not None:
@@ -141,16 +156,19 @@ class GuardedChatterAsyncStreamResult(
 
     async def _finalize_async(self) -> None:
         text = self._stream.response
+        parts = [LLMMetrics(**self._stream.metrics)]
+        self._chatter._log_call(parts[0])
         text = await self._chatter._guard_and_fix_async(
+            self._messages,
             self._user_message,
             text,
+            parts,
         )
         self._chat_response = ChatResponse(
-            response=text,
+            response=self._chatter._append_assistant(text),
             thinking=self._stream.thinking,
-            metrics=LLMMetrics(**self._stream.metrics),
+            metrics=self._chatter._sum_metrics(parts),
         )
-        self._chatter._append_assistant(text)
 
 
 # --- GuardedChatter ---
@@ -224,111 +242,10 @@ class GuardedChatter(Chatter):
         kw_only=True,
     )
 
-    # --- Public API overrides ---
-
-    def chat(self, message: str) -> ChatResponse:
-        """Send a message and guard the response.
-
-        :param message: The user's message.
-        :return: The guarded ChatResponse.
-        :raises ChatEndedError: If the conversation ended.
-        """
-        self._check_ended()
-        self._append_user(message)
-        messages = self._build_messages()
-
-        text, response = self._generate(messages)
-        text = self._guard_and_fix(message, text)
-        text = self._maybe_typo(text)
-        self._append_assistant(text)
-
-        return ChatResponse(
-            response=text,
-            thinking=response.get("thinking"),
-            metrics=LLMMetrics(**response["metrics"]),
-        )
-
-    async def chat_async(
-        self,
-        message: str,
-    ) -> ChatResponse:
-        """Async version of `chat`.
-
-        :param message: The user's message.
-        :return: The guarded ChatResponse.
-        :raises ChatEndedError: If the conversation ended.
-        """
-        self._check_ended()
-        self._append_user(message)
-        messages = self._build_messages()
-
-        text, response = await self._generate_async(
-            messages,
-        )
-        text = await self._guard_and_fix_async(
-            message,
-            text,
-        )
-        text = self._maybe_typo(text)
-        self._append_assistant(text)
-
-        return ChatResponse(
-            response=text,
-            thinking=response.get("thinking"),
-            metrics=LLMMetrics(**response["metrics"]),
-        )
-
-    def chat_stream(
-        self,
-        message: str,
-    ) -> GuardedChatterStreamResult:
-        """Stream a chat response with post-stream guard.
-
-        Text chunks are yielded normally during iteration.
-        After the stream completes the guard evaluates the
-        full response.  If rejected,
-        ``chat_response.response`` contains the corrected
-        text (which may differ from the streamed chunks).
-
-        :param message: The user's message.
-        :return: A GuardedChatterStreamResult.
-        :raises ChatEndedError: If the conversation ended.
-        """
-        self._check_ended()
-        self._append_user(message)
-        messages = self._build_messages()
-
-        logger.debug(f"GuardedChatter `{self.name}`: streaming chat turn")
-        stream = self.engine.chat_stream(
-            messages=messages,
-            temperature=self.temperature,
-            think=self.think,
-        )
-        return GuardedChatterStreamResult(stream, self, message)
-
-    async def chat_stream_async(
-        self,
-        message: str,
-    ) -> GuardedChatterAsyncStreamResult:
-        """Async version of `chat_stream`.
-
-        :param message: The user's message.
-        :return: A GuardedChatterAsyncStreamResult.
-        :raises ChatEndedError: If the conversation ended.
-        """
-        self._check_ended()
-        self._append_user(message)
-        messages = self._build_messages()
-
-        logger.debug(
-            f"GuardedChatter `{self.name}`: async streaming chat turn"
-        )
-        stream = await self.engine.chat_stream_async(
-            messages=messages,
-            temperature=self.temperature,
-            think=self.think,
-        )
-        return GuardedChatterAsyncStreamResult(stream, self, message)
+    # Guarded wrappers, so every streaming call inherited from
+    # `Chatter` — the opening one included — runs the guard.
+    _stream_result_class = GuardedChatterStreamResult
+    _async_stream_result_class = GuardedChatterAsyncStreamResult
 
     @classmethod
     def from_yaml(
@@ -380,7 +297,71 @@ class GuardedChatter(Chatter):
         ]
         return "\n".join(lines)
 
+    def current_guard(self) -> ContextGuard:
+        """The guard as it runs on the next reply.
+
+        `guard` itself, here. A subclass whose guard depends on
+        something that changes between conversations — a scene that
+        names a `context_params` value — returns one built for the
+        values the agent has now. Call this, not `guard`, to run
+        the guard by hand.
+
+        :return: The guard to check a reply with.
+        """
+        return self.guard
+
     # --- Private helpers ---
+
+    def _respond(
+        self,
+        messages: list[dict[str, str]],
+        user_message: str,
+    ) -> ChatResponse:
+        """Generate a reply and guard it before storing it.
+
+        Overriding this one hook guards every non-streaming
+        call `Chatter` offers, including `open_chat`, where
+        *user_message* is empty because nobody has written yet.
+
+        :param messages: The full message list for the engine.
+        :param user_message: What prompted the reply, or ``""``
+            for an opening turn.
+        :return: The guarded ChatResponse.
+        """
+        self._new_turn()
+        text, response = self._generate(messages)
+        parts = [LLMMetrics(**response["metrics"])]
+        self._log_call(parts[0])
+        text = self._guard_and_fix(messages, user_message, text, parts)
+        text = self._append_assistant(self._maybe_typo(text))
+        return ChatResponse(
+            response=text,
+            thinking=response.get("thinking"),
+            metrics=self._sum_metrics(parts),
+        )
+
+    async def _respond_async(
+        self,
+        messages: list[dict[str, str]],
+        user_message: str,
+    ) -> ChatResponse:
+        """Async version of `_respond`."""
+        self._new_turn()
+        text, response = await self._generate_async(messages)
+        parts = [LLMMetrics(**response["metrics"])]
+        self._log_call(parts[0])
+        text = await self._guard_and_fix_async(
+            messages,
+            user_message,
+            text,
+            parts,
+        )
+        text = self._append_assistant(self._maybe_typo(text))
+        return ChatResponse(
+            response=text,
+            thinking=response.get("thinking"),
+            metrics=self._sum_metrics(parts),
+        )
 
     def _generate(
         self,
@@ -388,11 +369,16 @@ class GuardedChatter(Chatter):
     ) -> tuple[str, dict[str, Any]]:
         """Call the LLM and return (text, raw_response)."""
         logger.debug(f"GuardedChatter `{self.name}`: generating response")
-        response = self.engine.chat(
-            messages=messages,
-            temperature=self.temperature,
-            think=self.think,
-        )
+        started = time.perf_counter()
+        try:
+            response = self.engine.chat(
+                messages=messages,
+                temperature=self.temperature,
+                think=self.think,
+            )
+        except Exception as error:
+            self._log_failed_call(error, messages, started)
+            raise
         response.pop("role", None)
         return response["response"], response
 
@@ -404,11 +390,16 @@ class GuardedChatter(Chatter):
         logger.debug(
             f"GuardedChatter `{self.name}`: async generating response"
         )
-        response = await self.engine.chat_async(
-            messages=messages,
-            temperature=self.temperature,
-            think=self.think,
-        )
+        started = time.perf_counter()
+        try:
+            response = await self.engine.chat_async(
+                messages=messages,
+                temperature=self.temperature,
+                think=self.think,
+            )
+        except Exception as error:
+            self._log_failed_call(error, messages, started)
+            raise
         response.pop("role", None)
         return response["response"], response
 
@@ -416,55 +407,139 @@ class GuardedChatter(Chatter):
         self,
         user_message: str,
         assistant_response: str,
-    ) -> tuple[GuardVerdict | None, float]:
+    ) -> tuple[GuardVerdict | None, LLMMetrics]:
         """Run the guard on a response.
 
-        :return: ``(verdict, duration)`` where verdict is
-            ``None`` when the guard failed to parse.
+        :return: ``(verdict, metrics)`` where verdict is
+            ``None`` when the guard failed to parse. The metrics
+            are the guard call's own, so its tokens and cost are
+            not lost — a guarded reply is two LLM calls and this
+            is the second.
         """
         guard_input = self._build_guard_input(
             user_message,
             assistant_response,
         )
-        result = self.guard.act(guard_input)
-        dur = result.metrics.total_duration
+        started = time.perf_counter()
+        try:
+            result = self.current_guard().act(guard_input)
+        except Exception as error:
+            self._log_failed_guard_call(error, guard_input, started)
+            raise
         if result.model is None:
             logger.warning(
                 f"GuardedChatter `{self.name}`: "
                 f"guard parse failed, passing through"
             )
-        return result.model, dur
+        self._log_guard_call(guard_input, result)
+        return result.model, result.metrics
 
     async def _guard_check_async(
         self,
         user_message: str,
         assistant_response: str,
-    ) -> tuple[GuardVerdict | None, float]:
+    ) -> tuple[GuardVerdict | None, LLMMetrics]:
         """Async version of `_guard_check`."""
         guard_input = self._build_guard_input(
             user_message,
             assistant_response,
         )
-        result = await self.guard.act_async(guard_input)
-        dur = result.metrics.total_duration
+        started = time.perf_counter()
+        try:
+            result = await self.current_guard().act_async(guard_input)
+        except Exception as error:
+            self._log_failed_guard_call(error, guard_input, started)
+            raise
         if result.model is None:
             logger.warning(
                 f"GuardedChatter `{self.name}`: "
                 f"guard parse failed, passing through"
             )
-        return result.model, dur
+        self._log_guard_call(guard_input, result)
+        return result.model, result.metrics
+
+    def _log_failed_guard_call(
+        self,
+        error: BaseException,
+        guard_input: dict[str, Any],
+        started: float,
+    ) -> None:
+        """Emit a failed `CallRecord` for a guard call that raised.
+
+        Recorded under the guard's own name, version and model,
+        for the same reason `_log_guard_call` is: the reply the
+        guard was checking had already succeeded and is already
+        logged, and it was the guard's call that failed.
+
+        :param error: What the guard call raised.
+        :param guard_input: What was sent to the guard.
+        :param started: `time.perf_counter` when the call began.
+        """
+        self._log_failed_call(
+            error,
+            guard_input,
+            started,
+            name=self.guard.name,
+            version=self.guard.version,
+            model_id=self.guard.engine.model_id,
+        )
+
+    def _log_guard_call(
+        self,
+        guard_input: dict[str, Any],
+        result: AgentResponse,
+    ) -> None:
+        """Emit a `CallRecord` for one guard call.
+
+        The guard is a second LLM call on top of the reply,
+        frequently on a different model and a different price
+        — on one agent it is 46% of what a turn costs. It gets
+        its own record, carrying the guard's name, version and
+        model, rather than being folded into the reply's: one
+        record cannot honestly report two models, and the
+        per-model breakdown in `summarize_call_log` would read
+        the guard's tokens as the chatter's.
+
+        The record shares the turn's trace id, so the calls a
+        single reply made can be grouped back together.
+
+        :param guard_input: What was sent to the guard, kept
+            on the record when the guard failed to parse.
+        :param result: The guard's response. A ``None`` model
+            means unparseable output — a failed call.
+        """
+        failed = result.model is None
+        self._log_call(
+            result.metrics,
+            name=self.guard.name,
+            version=self.guard.version,
+            model_id=self.guard.engine.model_id,
+            success=not failed,
+            prompt=(
+                json.dumps(guard_input, ensure_ascii=False)
+                if failed
+                else None
+            ),
+        )
 
     def _emit(
         self,
         attempt: int,
         verdict: GuardVerdict | None,
         text: str,
-        duration: float = 0.0,
+        metrics: LLMMetrics | None = None,
         used_fix: bool = False,
     ) -> None:
-        """Emit a `GuardEvent` via the callback."""
+        """Emit a `GuardEvent` via the callback.
+
+        :param metrics: The guard call's metrics, or ``None``
+            where no guard call was made — using the guard's own
+            ``fix`` verbatim costs nothing extra, so that event
+            carries no metrics and a zero duration.
+        """
         if self.guard_callback is None:
             return
+        duration = metrics.total_duration if metrics else 0.0
         if verdict is None:
             self.guard_callback(
                 GuardEvent(
@@ -474,6 +549,7 @@ class GuardedChatter(Chatter):
                     response_text=text,
                     duration=duration,
                     parse_failed=True,
+                    metrics=metrics,
                 )
             )
             return
@@ -486,6 +562,7 @@ class GuardedChatter(Chatter):
                 fix=verdict.fix,
                 used_fix=used_fix,
                 duration=duration,
+                metrics=metrics,
             )
         )
 
@@ -508,13 +585,13 @@ class GuardedChatter(Chatter):
         attempt: int,
         verdict: GuardVerdict | None,
         text: str,
-        duration: float,
+        metrics: LLMMetrics | None,
     ) -> str | None:
         """Emit a guard event and return *text* if accepted.
 
         :return: The accepted text, or ``None`` if rejected.
         """
-        self._emit(attempt, verdict, text, duration=duration)
+        self._emit(attempt, verdict, text, metrics=metrics)
         if self._is_accepted(verdict):
             return text
         return None
@@ -534,7 +611,7 @@ class GuardedChatter(Chatter):
                 self.max_guard_retries + 1,
                 verdict,
                 verdict.fix,
-                duration=0.0,
+                metrics=None,
                 used_fix=True,
             )
             return verdict.fix
@@ -572,6 +649,7 @@ class GuardedChatter(Chatter):
         verdict: GuardVerdict,
         check_fn: Callable,
         generate_fn: Callable,
+        extra: list[LLMMetrics] | None = None,
     ) -> str | None:
         """Regenerate once using the guard's fix as guidance.
 
@@ -579,17 +657,19 @@ class GuardedChatter(Chatter):
         rewrite in its own voice using the guard's suggested
         correction, then guards the result.
 
+        :param extra: As in `_run_guard_retry`.
         :return: The accepted regenerated text, or ``None`` to
             fall back to the verbatim fix.
         """
         guided = self._add_fix_guidance(messages, text, verdict)
-        new_text, _ = generate_fn(guided)
-        new_verdict, dur = check_fn(user_message, new_text)
+        new_text, response = generate_fn(guided)
+        self._collect(extra, response)
+        new_verdict, gm = check_fn(user_message, new_text)
         return self._try_accept(
             self.max_guard_retries + 1,
             new_verdict,
             new_text,
-            dur,
+            gm,
         )
 
     async def _regenerate_from_fix_async(
@@ -600,16 +680,18 @@ class GuardedChatter(Chatter):
         verdict: GuardVerdict,
         check_fn: Callable,
         generate_fn: Callable,
+        extra: list[LLMMetrics] | None = None,
     ) -> str | None:
         """Async version of `_regenerate_from_fix`."""
         guided = self._add_fix_guidance(messages, text, verdict)
-        new_text, _ = await generate_fn(guided)
-        new_verdict, dur = await check_fn(user_message, new_text)
+        new_text, response = await generate_fn(guided)
+        self._collect(extra, response)
+        new_verdict, gm = await check_fn(user_message, new_text)
         return self._try_accept(
             self.max_guard_retries + 1,
             new_verdict,
             new_text,
-            dur,
+            gm,
         )
 
     def _fail_closed_text(self, text: str) -> str:
@@ -625,10 +707,51 @@ class GuardedChatter(Chatter):
         )
         return self.guard_fallback_response or _DEFAULT_FALLBACK
 
+    def _collect(
+        self,
+        extra: list[LLMMetrics] | None,
+        response: dict[str, Any],
+    ) -> None:
+        """Account for one extra chatter call this turn made.
+
+        Every regeneration after a guard rejection runs through
+        here, so this is where a retried turn's tokens are added
+        to the reply's totals and where its own `CallRecord` is
+        emitted. A turn rejected twice is four LLM calls and the
+        log now shows all four.
+
+        :param extra: Collects the metrics for the response
+            returned to the caller. ``None`` discards them.
+        :param response: The retry's raw engine response.
+        """
+        metrics = response.get("metrics")
+        if not metrics:
+            return
+        parsed = LLMMetrics(**metrics)
+        if extra is not None:
+            extra.append(parsed)
+        self._log_call(parsed)
+
+    @staticmethod
+    def _sum_metrics(parts: list[LLMMetrics]) -> LLMMetrics:
+        """Add up every chatter call made for one turn.
+
+        Delegates to `LLMMetrics.sum`, which is the framework's
+        one aggregator — this method summed field by field until
+        that existed, and a field added to the declaration had to
+        be remembered here as well as in three other places.
+
+        :param parts: One or more calls' metrics, first first.
+        :return: Their total.
+        """
+        return LLMMetrics.sum(parts)
+
     def _guard_and_fix(
         self,
+        messages: list[dict[str, str]],
         user_message: str,
         text: str,
+        extra: list[LLMMetrics] | None = None,
     ) -> str:
         """Guard a response; retry or fix if rejected.
 
@@ -636,48 +759,70 @@ class GuardedChatter(Chatter):
         response passes through if ``guard_fail_open`` is True,
         otherwise it is replaced with the fallback response.
 
+        :param messages: The list this turn was generated from,
+            reused for any regeneration. See `_run_guard_retry`.
+        :param extra: As in `_run_guard_retry`.
         :return: The accepted (or fixed) response text.
         """
         return self._run_guard_retry(
+            messages,
             user_message,
             text,
             self._guard_check,
             self._generate,
+            extra,
         )
 
     async def _guard_and_fix_async(
         self,
+        messages: list[dict[str, str]],
         user_message: str,
         text: str,
+        extra: list[LLMMetrics] | None = None,
     ) -> str:
         """Async version of `_guard_and_fix`."""
         return await self._run_guard_retry_async(
+            messages,
             user_message,
             text,
             self._guard_check_async,
             self._generate_async,
+            extra,
         )
 
     def _run_guard_retry(
         self,
+        messages: list[dict[str, str]],
         user_message: str,
         text: str,
         check_fn: Callable,
         generate_fn: Callable,
+        extra: list[LLMMetrics] | None = None,
     ) -> str:
         """Sync guard-and-retry loop.
 
+        :param messages: The list the rejected reply was
+            generated from. Reused rather than rebuilt: an
+            opening turn's messages carry the stage direction
+            and `opening_instructions`, and a rebuild drops
+            both, so the regeneration would be asked for a
+            reply to nothing.
         :param check_fn: Sync guard check callable.
         :param generate_fn: Sync generate callable.
+        :param extra: Collects the metrics of every *extra*
+            chatter call this loop makes — one per retry, plus
+            one for a fix-guided regeneration. The first call
+            was made by the caller and is not in here. Pass a
+            list to have a rejected turn's real token and cost
+            totals accounted for; pass ``None`` to discard them.
         :return: The accepted (or fixed) response text.
         """
-        verdict, dur = check_fn(user_message, text)
-        result = self._try_accept(0, verdict, text, dur)
+        verdict, gm = check_fn(user_message, text)
+        result = self._try_accept(0, verdict, text, gm)
         if result is not None:
             return result
         if verdict is None:
             return self._fail_closed_text(text)
-        messages = self._build_messages()
         for i in range(self.max_guard_retries):
             logger.debug(
                 f"GuardedChatter `{self.name}`: "
@@ -686,9 +831,10 @@ class GuardedChatter(Chatter):
                 f"(reason: {verdict.reason.name})"
             )
             messages = self._add_feedback(messages, text, verdict)
-            text, _ = generate_fn(messages)
-            verdict, dur = check_fn(user_message, text)
-            result = self._try_accept(i + 1, verdict, text, dur)
+            text, response = generate_fn(messages)
+            self._collect(extra, response)
+            verdict, gm = check_fn(user_message, text)
+            result = self._try_accept(i + 1, verdict, text, gm)
             if result is not None:
                 return result
             if verdict is None:
@@ -701,6 +847,7 @@ class GuardedChatter(Chatter):
                 verdict,
                 check_fn,
                 generate_fn,
+                extra,
             )
             if regenerated is not None:
                 return regenerated
@@ -708,24 +855,27 @@ class GuardedChatter(Chatter):
 
     async def _run_guard_retry_async(
         self,
+        messages: list[dict[str, str]],
         user_message: str,
         text: str,
         check_fn: Callable,
         generate_fn: Callable,
+        extra: list[LLMMetrics] | None = None,
     ) -> str:
         """Async guard-and-retry loop.
 
+        :param messages: As in `_run_guard_retry`.
         :param check_fn: Async guard check callable.
         :param generate_fn: Async generate callable.
+        :param extra: As in `_run_guard_retry`.
         :return: The accepted (or fixed) response text.
         """
-        verdict, dur = await check_fn(user_message, text)
-        result = self._try_accept(0, verdict, text, dur)
+        verdict, gm = await check_fn(user_message, text)
+        result = self._try_accept(0, verdict, text, gm)
         if result is not None:
             return result
         if verdict is None:
             return self._fail_closed_text(text)
-        messages = self._build_messages()
         for i in range(self.max_guard_retries):
             logger.debug(
                 f"GuardedChatter `{self.name}`: "
@@ -734,9 +884,10 @@ class GuardedChatter(Chatter):
                 f"(reason: {verdict.reason.name})"
             )
             messages = self._add_feedback(messages, text, verdict)
-            text, _ = await generate_fn(messages)
-            verdict, dur = await check_fn(user_message, text)
-            result = self._try_accept(i + 1, verdict, text, dur)
+            text, response = await generate_fn(messages)
+            self._collect(extra, response)
+            verdict, gm = await check_fn(user_message, text)
+            result = self._try_accept(i + 1, verdict, text, gm)
             if result is not None:
                 return result
             if verdict is None:
@@ -749,6 +900,7 @@ class GuardedChatter(Chatter):
                 verdict,
                 check_fn,
                 generate_fn,
+                extra,
             )
             if regenerated is not None:
                 return regenerated

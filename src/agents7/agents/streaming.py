@@ -7,7 +7,7 @@ iteration. After iteration completes, the full
 property.
 """
 
-from typing import AsyncIterator, Iterator
+from typing import AsyncIterator, Callable, Iterator
 
 from agents7.agents.parsing import ResponseParser
 from agents7.exceptions import ParseError
@@ -18,16 +18,23 @@ from agents7.models.base import AgentResponse, LLMMetrics
 class _AgentStreamBase:
     """Shared state and logic for agent stream wrappers."""
 
-    __slots__ = ("_stream", "_parser", "_agent_response")
+    __slots__ = (
+        "_stream",
+        "_parser",
+        "_agent_response",
+        "_on_complete",
+    )
 
     def __init__(
         self,
         stream: StreamResult | AsyncStreamResult | None,
         parser: ResponseParser | None,
+        on_complete: Callable[[AgentResponse], None] | None = None,
     ) -> None:
         self._stream = stream
         self._parser = parser
         self._agent_response: AgentResponse | None = None
+        self._on_complete = on_complete
 
     @property
     def agent_response(self) -> AgentResponse | None:
@@ -36,7 +43,16 @@ class _AgentStreamBase:
 
     def _finalize(self) -> None:
         """Parse the accumulated response into an
-        `AgentResponse`."""
+        `AgentResponse`, then fire `on_complete`.
+
+        `on_complete` is how a streamed call reaches the call
+        log. It has to fire from here rather than from
+        `act_stream`, because whether the call succeeded is only
+        known once the caller has finished iterating and the
+        accumulated text has been parsed. A caller that never
+        iterates therefore records nothing — there is no
+        outcome yet to record.
+        """
         try:
             parsed = self._parser.parse(self._stream.response)
         except ParseError:
@@ -47,6 +63,8 @@ class _AgentStreamBase:
             thinking=self._stream.thinking,
             metrics=LLMMetrics(**self._stream.metrics),
         )
+        if self._on_complete is not None:
+            self._on_complete(self._agent_response)
 
     @classmethod
     def from_failed(
@@ -64,6 +82,9 @@ class _AgentStreamBase:
         obj = cls.__new__(cls)
         obj._stream = None
         obj._parser = None
+        # The step that failed logged its own call through
+        # `act()`; emitting again here would double-count it.
+        obj._on_complete = None
         failed = response or AgentResponse(
             response="",
             model=None,
@@ -98,8 +119,9 @@ class AgentStreamResult(_AgentStreamBase):
         self,
         stream: StreamResult,
         parser: ResponseParser,
+        on_complete: Callable[[AgentResponse], None] | None = None,
     ) -> None:
-        super().__init__(stream, parser)
+        super().__init__(stream, parser, on_complete)
 
     def __iter__(self) -> Iterator[str]:
         if self._stream is None:
@@ -129,8 +151,9 @@ class AgentAsyncStreamResult(_AgentStreamBase):
         self,
         stream: AsyncStreamResult,
         parser: ResponseParser,
+        on_complete: Callable[[AgentResponse], None] | None = None,
     ) -> None:
-        super().__init__(stream, parser)
+        super().__init__(stream, parser, on_complete)
 
     def __aiter__(self) -> AsyncIterator[str]:
         if self._stream is None:

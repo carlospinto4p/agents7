@@ -5,12 +5,26 @@ from agents7.agents.chatter import (
     ChatterStreamResult,
 )
 from agents7.agents.classifier import Classifier
+from agents7.agents.config_loader import resolve_config
+from agents7.agents.context import (
+    ContextParam,
+    spanish_time_of_day,
+    spanish_weekday,
+    time_of_day,
+)
 from agents7.agents.context_guard import (
     ContextGuard,
     GuardReason,
     GuardVerdict,
 )
 from agents7.agents.detector import Detector
+from agents7.agents.facts import (
+    CharacterFact,
+    ExtractedFacts,
+    FactExtractor,
+    FactStore,
+    JsonFileFactStore,
+)
 from agents7.agents.guarded import (
     GuardEvent,
     GuardedChatter,
@@ -54,9 +68,14 @@ __all__ = [
     "Chatter",
     "ChatterAsyncStreamResult",
     "ChatterStreamResult",
+    "CharacterFact",
     "Classifier",
     "ContextGuard",
+    "ContextParam",
     "Detector",
+    "ExtractedFacts",
+    "FactExtractor",
+    "FactStore",
     "GuardEvent",
     "GuardReason",
     "GuardVerdict",
@@ -64,6 +83,7 @@ __all__ = [
     "GuardedChatterAsyncStreamResult",
     "GuardedChatterStreamResult",
     "GuardedSceneChatter",
+    "JsonFileFactStore",
     "JsonFileMemory",
     "Labeler",
     "Persona",
@@ -82,4 +102,8 @@ __all__ = [
     "ToolStepKind",
     "ToolStreamResult",
     "create_memory",
+    "resolve_config",
+    "spanish_time_of_day",
+    "spanish_weekday",
+    "time_of_day",
 ]

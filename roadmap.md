@@ -15,7 +15,7 @@ rationale lives in the docs or ADRs it cites.
    metrics → call log → report in one documented call, backing both
    the Python API and `agents7 eval`. Gate cleared.
 2. ~~**Adopt it across the catalog.**~~ Both consumers now route
-   through `run_eval_suite` (catalog, tagger-agent v1.3.60): the
+   through `run_eval_suite` (the catalog and a classifier): the
    script owns only discovery, and all five evaluable agents score
    identically. Gate cleared — but the standing invariant below
    keeps it enforced.
@@ -27,11 +27,33 @@ rationale lives in the docs or ADRs it cites.
    (which tools, in what order, with what arguments) rather than on a
    label, so the standing gate above now covers every agent type the
    framework builds. Gate cleared.
-4. **Next: run the tool eval for real.** `store_assistant` has a
-   12-row trajectory set but no executed run behind it — the
-   README's per-model observations are still single anecdotes.
-   **Gate: no accuracy claim about a model's tool-calling until
-   `eval_agent.py store_assistant` has been run against it.**
+4. ~~**Run the tool eval for real.**~~ Run 3rd September 2026
+   against four Ollama models; `eval_agent.py` gained `--model`
+   and `--trajectory-mode` to make it repeatable, and the
+   sample's README now carries the measured table instead of
+   anecdotes (one refuted: `qwen3:8b` scores 12/12). Gate
+   cleared — the standing invariant below keeps it enforced.
+5. ~~**Make a passing trajectory row mean what it says.**~~ Both
+   rows that passed while the agent misbehaved are closed. An
+   empty `tools` list is scored under `exact` in either mode, so
+   a row asserting "no tool" can fail (v4.38.2); and
+   `ExpectedCall.defaults` pins an argument as absent-or-equal,
+   so an invented optional argument fails without failing a
+   model that correctly omits it (v4.39.0). `store_assistant`
+   was rescored under both. Gate cleared.
+6. ~~**A row still passes on a call the tool rejected.**~~
+   Closed in v5.0.0. `ToolRegistry.execute` returns a
+   `ToolOutcome` carrying the failure as its own field,
+   `collect_trajectory` pairs it onto each `ToolCall`, and a
+   rejected call satisfies no expectation — with
+   `ExpectedCall.allow_failure` for the one row that tests the
+   error path. `store_assistant` was rescored on four models
+   under the corrected rule. Gate cleared.
+7. **Next: resume feature work.** No item of its own — the three
+   instances of "a row passes while the agent did the wrong
+   thing" are all closed, so the trajectory scorer is no longer
+   what limits a claim. The standing gate in step 2 still
+   applies to every claim made.
 
 ## Standing invariants (apply to every session)
 
@@ -50,7 +72,7 @@ rationale lives in the docs or ADRs it cites.
 ## What NOT to do (recent refuted directions)
 
 - **Don't use an LLM classifier when the signal space is enumerable.**
-  `tagger_agent` began as an LLM-based classifier and became a pure
+  One classifier agent began LLM-based and became a pure
   rule-based pipeline: ~1000x faster at the same accuracy
   (`docs/design.md`).
 - **Don't leave thinking enabled for structured output.** Thinking

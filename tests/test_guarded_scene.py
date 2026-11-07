@@ -8,6 +8,7 @@ from agents7.agents.context_guard import (
     GuardReason,
     GuardVerdict,
 )
+from agents7.agents.context import ContextParam
 from agents7.agents.guarded_scene import GuardedSceneChatter
 from agents7.agents.personality import Persona, Scene
 from agents7.llm import LLMEngine
@@ -155,6 +156,39 @@ def test_derive_persona_summary_includes_scene_context():
     summary = _derive_persona_summary(PERSONA, SCENE)
     assert "medieval tavern" in summary.lower()
     assert "No knowledge of anything modern" in summary
+
+
+def test_scene_summary_includes_goal():
+    """The guard must know what the character is there to do.
+
+    Without the goal the guard can judge the move the scene exists
+    for as off-topic, even at the moment the scene rules allow it.
+    """
+    assert "Goal: Close the tavern and get everyone out." in (
+        SCENE.to_summary()
+    )
+
+
+def test_derive_persona_summary_includes_scene_goal():
+    """The YAML loader's guard summary carries the goal."""
+    from agents7.agents.config_loader import _derive_persona_summary
+
+    summary = _derive_persona_summary(PERSONA, SCENE)
+    assert "Close the tavern and get everyone out." in summary
+
+
+def test_guard_summary_includes_scene_goal():
+    """A guard built in Python sees the goal too."""
+    agent = make_guarded_scene()
+    assert "Close the tavern and get everyone out." in (
+        agent.guard.persona_summary
+    )
+
+
+def test_scene_summary_without_goal_has_no_goal_key():
+    """A scene with no goal adds no empty Goal line."""
+    scene = Scene(setting="A medieval tavern at night")
+    assert "Goal:" not in scene.to_summary()
 
 
 def test_derive_persona_summary_without_scene_has_no_scene_keys():
@@ -347,6 +381,74 @@ def test_python_construction_scene_enrichment_idempotent():
     # guard — the scene block must not be appended twice.
     agent2 = make_guarded_scene(guard=agent.guard)
     assert agent2.guard.persona_summary.count("Setting: A medieval") == 1
+
+
+# --- The guard and per-conversation context ---
+
+NICK_SCENE = Scene(
+    setting="An online chat",
+    rules=["Your nickname is $mi_nick."],
+)
+NICK_PARAM = ContextParam(name="mi_nick", default="Anon")
+
+
+def test_the_guard_judges_by_the_supplied_context():
+    """The guard must not keep the default once a value is supplied.
+
+    The regression: the scene was resolved into the guard when the
+    agent was built, so the guard believed the default nickname
+    for good and the agent's own prompt believed the supplied one.
+    """
+    agent = make_guarded_scene(scene=NICK_SCENE, context_params=(NICK_PARAM,))
+    assert "Your nickname is Anon." in agent.current_guard().system_prompt
+
+    agent.set_context(mi_nick="tejados")
+
+    prompt = agent.current_guard().system_prompt
+    assert "Your nickname is tejados." in prompt
+    assert "Anon" not in prompt
+
+
+@patch.object(ContextGuard, "act", autospec=True)
+@patch.object(LLMEngine, "chat")
+def test_a_reply_is_checked_by_the_guard_for_the_current_context(
+    mock_chat, mock_guard
+):
+    mock_chat.return_value = chat_response_dict("hola")
+    mock_guard.return_value = _verdict_response(True, "IN_CHARACTER")
+    agent = make_guarded_scene(scene=NICK_SCENE, context_params=(NICK_PARAM,))
+    agent.set_context(mi_nick="tejados")
+
+    agent.chat("hi")
+
+    guard_that_ran = mock_guard.call_args[0][0]
+    assert "Your nickname is tejados." in guard_that_ran.system_prompt
+
+
+def test_the_stored_guard_is_the_same_for_every_conversation():
+    """So its identity does not move with a nickname or the clock."""
+    agent = make_guarded_scene(scene=NICK_SCENE, context_params=(NICK_PARAM,))
+    before = agent.guard.system_prompt_identity
+
+    agent.set_context(mi_nick="tejados")
+
+    assert agent.guard.system_prompt_identity == before
+    assert "$mi_nick" in agent.guard.persona_summary
+
+
+def test_a_copy_of_an_agent_with_context_keeps_one_scene_block():
+    agent = make_guarded_scene(scene=NICK_SCENE, context_params=(NICK_PARAM,))
+    agent.set_context(mi_nick="tejados")
+
+    copy = agent.with_overrides(temperature=0.1)
+
+    assert copy.guard.persona_summary.count("Setting: An online") == 1
+    assert "Your nickname is tejados." in copy.current_guard().system_prompt
+
+
+def test_a_scene_without_context_runs_the_stored_guard():
+    agent = make_guarded_scene()
+    assert agent.current_guard() is agent.guard
 
 
 def test_from_yaml_persona_summary_no_scene_omits_scene_keys(tmp_path):

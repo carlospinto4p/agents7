@@ -17,8 +17,12 @@ classDiagram
     Chatter <|-- GuardedChatter
     GuardedChatter <|-- GuardedSceneChatter
 
+    Labeler <|-- FactExtractor
+
     Chatter o-- "0..1" Persona : persona
     Chatter o-- "0..1" Scene : scene
+    Chatter o-- "0..1" FactStore : facts
+    Chatter o-- "0..1" FactExtractor : fact_extractor
     GuardedChatter *-- "1" ContextGuard : guard
     ContextGuard ..> GuardVerdict : returns
 
@@ -43,6 +47,13 @@ classDiagram
       value : bool
       reason : GuardReason
       fix : str
+    }
+    class FactStore {
+      keyed by character_id
+      +load() / +add()
+    }
+    class FactExtractor {
+      +extract() list~str~
     }
 ```
 
@@ -119,14 +130,21 @@ model has full conversational context.
 | `engine` | `LLMEngine` | required | LLM engine |
 | `system_prompt` | `str` | required | Personality / system prompt |
 | `prompt_params` | `dict` | `None` | `$variable` substitutions in `system_prompt` |
+| `context_params` | `tuple` | `None` | `$variable` values supplied per conversation |
 | `temperature` | `float` | `0.7` | Sampling temperature |
 | `think` | `bool` | `False` | Enable thinking mode |
 | `max_history` | `int \| None` | `50` | Max message pairs to keep (`None` = unlimited) |
 | `memory` | `MemoryBackend` | `None` | Persistent storage backend |
 | `conversation_id` | `str` | `"default"` | Conversation key in the memory backend |
+| `facts` | `FactStore` | `None` | Character facts folded into every prompt |
+| `character_id` | `str` | the `name` | Character key in the fact store |
+| `fact_extractor` | `FactExtractor` | `None` | Reads new facts off a transcript |
 | `max_turns` | `int \| None` | `None` | Auto-end after N turns (`None` = unlimited) |
 | `end_condition` | `Callable` | `None` | Custom end check `(history) -> bool` |
 | `typo_rate` | `float` | `0.0` | Probability of random typos per word (0.0–1.0) |
+| `can_open` | `bool` | `False` | Whether the agent may speak first |
+| `opening_prompt` | `str` | `""` | Instruction asking for that first turn |
+| `opening_instructions` | `str` | `""` | How the character opens; in the prompt on that turn only |
 
 ### Methods
 
@@ -139,11 +157,22 @@ model has full conversational context.
 | `chat_stream(message)` | `ChatterStreamResult` | Streaming (yields text chunks) |
 | `chat_stream_async(message)` | `ChatterAsyncStreamResult` | Async streaming |
 
+**Opening the conversation** (needs `can_open=True`):
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `open_chat()` | `ChatResponse` | Write the first turn, with nothing to answer |
+| `open_chat_async()` | `ChatResponse` | Async version |
+| `open_chat_stream()` | `ChatterStreamResult` | Streaming |
+| `open_chat_stream_async()` | `ChatterAsyncStreamResult` | Async streaming |
+
 **Lifecycle:**
 
 | Method | Description |
 |--------|-------------|
 | `reset()` | Clear history (and memory backend if set) |
+| `remember()` / `remember_async()` | Record what this chat revealed |
+| `forget()` | Erase every fact for this character |
 | `warm_up()` / `warm_up_async()` | Pre-load model in provider |
 | `describe()` | Human-readable summary |
 | `from_yaml(path)` | Create from YAML config |
@@ -153,6 +182,7 @@ model has full conversational context.
 | Property | Type | Description |
 |----------|------|-------------|
 | `history` | `list[dict]` | Copy of message history (excludes system prompt) |
+| `character_facts` | `list` | Recorded facts, folded into every prompt |
 | `turns` | `int` | Number of completed user+assistant pairs |
 | `ended` | `bool` | Whether conversation has ended |
 
@@ -203,6 +233,70 @@ chatter = Chatter(
 )
 ```
 
+### Opening the conversation
+
+Every `chat` call answers something. `open_chat` is the call that
+does not: it asks the model for a first message and stores only
+the reply, so the transcript starts with the agent. It is meant
+for a character whose persona says how it greets a stranger.
+
+```python
+chatter = Chatter(
+    ...,
+    can_open=True,
+)
+
+chatter.open_chat()          # the agent writes first
+chatter.chat("Hola, ¿qué tal?")   # then the usual back and forth
+```
+
+`can_open` defaults to `False`, and `open_chat` raises
+`AgentConfigurationError` when it is not set — an agent with no
+opening lines written into its persona should not be improvising
+one. `GuardedChatter` guards the opening turn like any other,
+with an empty user message, since nobody has written yet.
+
+Per-conversation context applies to the opening turn like any
+other — call `set_context` first and the resolved system prompt
+already holds it. This matters more here than anywhere else: the
+opening line is written before the other person has given
+anything away, so whatever is known about them up front (a
+nickname, the time of day) is all the agent has to go on.
+
+```python
+chatter.set_context(nick="lector42")
+chatter.open_chat()   # greets knowing who it is writing to
+```
+
+The instruction that asks for the first message goes to the model
+as a user message and is never appended to history. It is in
+English by default; `opening_prompt` replaces it, which is what a
+persona writing in another language needs:
+
+```yaml
+can_open: true
+opening_prompt: "[Escribe el primer mensaje de esta conversación.]"
+```
+
+Guidance on *how* the character opens — its written opening lines,
+their length, their register — goes in `opening_instructions`,
+which joins the system prompt on the opening turn and on no other:
+
+```yaml
+opening_instructions: |
+    Cuando le toca abrir a él, siempre muy corto: una línea y para.
+
+    David: ¡Buenas! ¿Qué tal?
+    David: Hola, ¿tienes un minuto?
+```
+
+Left in `extra_instructions` those lines are in front of the model
+on every turn, and a bank of opening lines the model can read on
+every turn is a bank it can copy on every turn: a character who
+has already said goodbye greets the same person again from the
+top. A rejected opening turn on `GuardedChatter` regenerates from
+the same messages, so the retry still knows it is opening.
+
 ### Typo simulation
 
 The `typo_rate` field introduces random human-like typos into
@@ -216,6 +310,94 @@ chatter = Chatter(
     typo_rate=0.03,  # ~3% of words get a typo
 )
 ```
+
+
+## Per-conversation context
+
+`prompt_params` holds values the config fixes once. A
+`ContextParam` declares a value that changes from one
+conversation to the next — the nickname of the person on the
+other side — or from one message to the next — the time of day.
+
+Each declared name is substituted into the system prompt as
+`$name`, exactly like a `prompt_param`. The difference is where
+the value comes from, resolved in this order:
+
+1. What the caller passed to `set_context()`.
+2. The declared `callable`, run again before every message.
+3. The declared `default`.
+
+A declared name therefore never reaches the model as the
+literal `$name`. An *undeclared* `$placeholder` is still left
+untouched, as before.
+
+### Declaring them (YAML)
+
+```yaml
+system_prompt: >
+    Hablas con $nick. Es $moment.
+
+context_params:
+    nick:
+        default: "alguien"
+        description: The other person's nickname
+    moment:
+        callable: agents7.agents.context.spanish_time_of_day
+        default: ""
+```
+
+An entry written as a bare scalar is read as its default —
+`nick: "alguien"` is shorthand for `nick: {default: "alguien"}`.
+
+The `callable` is a dotted path to a zero-argument function
+returning a string, imported when the config loads. A path that
+cannot be imported raises `AgentConfigurationError` at load
+time rather than failing mid-conversation, and a function that
+raises *at call time* logs a warning and falls back to the
+`default`.
+
+Three clock helpers ship with the framework:
+`agents7.agents.context.time_of_day` (`morning`, `afternoon`,
+`evening`, `night`), `spanish_time_of_day` (`por la mañana`,
+`por la tarde`, `por la noche`, `de madrugada`) and
+`spanish_weekday` (`lunes` to `domingo`).
+
+### Declaring them (Python)
+
+```python
+from agents7.agents import ContextParam, spanish_time_of_day
+
+chatter = Chatter(
+    name="david",
+    version=1,
+    engine=engine,
+    system_prompt="Hablas con $nick. Es $moment.",
+    context_params=(
+        ContextParam(name="nick", default="alguien"),
+        ContextParam(name="moment", resolver=spanish_time_of_day),
+    ),
+)
+```
+
+### Supplying the values
+
+```python
+chatter.set_context(nick="lector42")
+chatter.chat("hola")
+# System prompt: "Hablas con lector42. Es por la noche."
+```
+
+`set_context()` returns the agent, so it chains onto
+`from_yaml()`. Call it before the first message; values persist
+for the life of the instance and can be added to by calling it
+again. A keyword that matches no declared `ContextParam` raises
+`PromptParameterError` — a typo'd name is a value the agent
+would silently never see otherwise. Read back what was supplied
+with the `context_values` property.
+
+A name cannot appear in both `prompt_params` and
+`context_params`; that raises `PromptParameterError` when the
+agent is built.
 
 
 ## Persistent memory
@@ -268,6 +450,147 @@ bob   = Chatter(..., memory=memory, conversation_id="bob")
 ```
 
 Each conversation has its own independent history.
+
+
+## Character facts
+
+Persistent memory above stores the **transcript**, keyed by
+`conversation_id`. That keeps a conversation going across
+sessions, but it does nothing for the next conversation: the
+character starts again from its frozen config, and anything it
+improvised about itself is gone.
+
+A **fact store** keys what the character said to the
+**character**. Recorded facts are appended to the system prompt
+on every turn, in every conversation that uses the same
+`character_id`.
+
+| Stored | Keyed by | Lives in | Read back |
+|--------|----------|----------|-----------|
+| Transcript | `conversation_id` | `MemoryBackend` | As the message history |
+| Facts | `character_id` | `FactStore` | As a system-prompt section |
+
+### Writing facts
+
+`remember()` runs the `FactExtractor` over the finished
+transcript, then writes what it found. It makes an LLM call, so
+call it when a conversation is over — never inside a chat turn:
+
+```python
+from agents7.agents import Chatter, FactExtractor, JsonFileFactStore
+
+store = JsonFileFactStore("facts/")
+
+david = Chatter(
+    ...,
+    facts=store,
+    character_id="david",
+    fact_extractor=FactExtractor(
+        name="david-facts", version=1, engine=engine
+    ),
+)
+
+david.chat("¿Cuál es tu película favorita?")
+david.remember()
+# [CharacterFact(text='Su película favorita es El secreto de sus
+#                ojos', source_conversation='default')]
+```
+
+The extractor records something only when the **character**
+said it about **itself**, in an `assistant` turn, and it is
+durable, and it is not already recorded. It leaves out what the
+other person said, and passing states — mood, weather, what the
+character is doing right now.
+
+### Which language facts are stored in
+
+**The character's own.** David speaks Spanish, so his facts are
+stored in Spanish:
+
+```json
+{"text": "Su película favorita es El secreto de sus ojos"}
+```
+
+The value comes from `persona.language`, the same field that
+already makes the character always answer in it, and
+`Chatter.remember()` passes it to the extractor on every call. A
+character declaring `Spanish` gets Spanish facts even when the
+other person writes in English.
+
+Storing them in the character's language keeps the system prompt
+in one language throughout — the facts read as things that
+character would say, rather than as English notes about him
+sitting inside a Spanish prompt. The alternative, one canonical
+language across the whole store, was tried and dropped for that
+reason.
+
+Proper nouns are kept exactly as the character wrote them —
+names of people, places, films, songs, teams, brands. The
+example above keeps *El secreto de sus ojos* as written, not
+translated, because the point is what he said.
+
+With no persona, or a persona that declares no language, the
+extractor is told nothing and follows the language of the
+transcript. To override it for one call, pass the `language`
+argument to `FactExtractor.extract()` directly.
+
+Facts are de-duplicated on write, ignoring case, spacing and a
+trailing full stop, so re-running `remember()` over the same
+conversation writes nothing.
+
+To write a fact without an LLM call — including to correct one
+the extractor got wrong:
+
+```python
+store.add("david", ["Su película favorita es El secreto de sus ojos"])
+```
+
+### Storage
+
+One JSON file per character, meant to be opened and
+hand-corrected:
+
+```
+facts/
+    david.json
+    marta.json
+```
+
+```json
+[
+  {
+    "text": "Su película favorita es El secreto de sus ojos",
+    "source_conversation": "chat-7"
+  }
+]
+```
+
+`source_conversation` records which conversation produced the
+fact, or is empty for one added by hand.
+
+### Erasing
+
+`forget()` clears every fact for the character. `reset()` clears
+the conversation and leaves the facts alone — that is the whole
+point of the split.
+
+### Usage (YAML)
+
+Works on `Chatter`, `GuardedChatter`, and
+`GuardedSceneChatter`. `character_id` defaults to the agent's
+`name`; the extractor reuses the agent's engine unless the
+section names another one:
+
+```yaml
+character_facts:
+    path: facts/
+    character_id: david
+    extractor:
+        engine:
+            provider: ollama
+            model: gemma3
+        think: false
+```
 
 
 ## Personas
@@ -471,6 +794,90 @@ scene:
 ```
 
 Load with `Chatter.from_yaml("thomas.yml")`.
+
+
+## Character and chat goal in separate files
+
+The persona and the scene are two independent axes: who the
+character is, and what it is doing there. Written into one file
+they become one thing — renaming the character means editing a
+file full of scene rules, and reusing the character in another
+conversation means copying its whole scenario along with it.
+
+`character` and `chat_goal` each name a YAML file, resolved
+relative to the config that names them, and folded in before
+anything else reads the config:
+
+```yaml
+# thomas.yml — the deployment
+character: characters/thomas.yml
+chat_goal: goals/closing_time.yml
+name: thomas
+version: 1
+engine:
+    provider: ollama
+    model: qwen2.5:3b
+```
+
+```yaml
+# characters/thomas.yml
+persona:
+    full_name: Old Thomas
+    occupation: tavern keeper
+extra_instructions: |
+    Speaks in short, gruff sentences.
+```
+
+```yaml
+# goals/closing_time.yml
+scene:
+    setting: A medieval tavern at night
+    situation: The tavern is about to close.
+    rules:
+        - Suspicious of strangers.
+    goal: Close the tavern and get everyone out.
+extra_instructions: |
+    $character: we're closing, friend.
+```
+
+### The rules
+
+- **A `character` file may not declare `scene`, and a `chat_goal`
+  file may not declare `persona`.** Either raises
+  `AgentConfigurationError`. Without that check a split config
+  grows back into one file with nothing failing, and the swap the
+  split existed for stops working.
+- **A fragment is one level deep.** Neither may declare
+  `base_config`, `character`, or `chat_goal` of its own.
+  `base_config` on the agent config still works and resolves
+  first.
+- **`extra_instructions` and `opening_instructions` accumulate**
+  in a fixed order: character, then chat goal, then the agent
+  config's own. Both axes have guidance to give about how the
+  agent writes, so neither replaces the other.
+- **Every other key is a deep merge**, with the agent config
+  winning — so a deployment can pin a temperature or an engine
+  the fragments left open.
+- **`$character` resolves to the persona's `full_name`.** A
+  chat-goal file uses it wherever it would otherwise have to name
+  the character, most of all as the speaker label on a worked
+  example. It resolves in the standing prompt, in
+  `opening_instructions`, in `opening_prompt`, and in the scene
+  summary the guard is given.
+
+### Reading a config without building the agent
+
+```python
+from agents7.agents import resolve_config
+
+config = resolve_config("thomas.yml")
+config["persona"]["full_name"]   # "Old Thomas"
+config["scene"]["goal"]          # "Close the tavern and get everyone out."
+```
+
+Nothing is imported and no engine is built. Use it for a
+config-contract test or a listing that needs to read a config
+rather than run it.
 
 
 ## GuardedChatter

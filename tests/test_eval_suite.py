@@ -218,15 +218,65 @@ def test_run_eval_suite_call_log_reaches_the_report(
     )
     text = report.read_text(encoding="utf-8")
     assert "## Call Log" in text
+    # The report mirrors the measurement surface: a run on an
+    # unpriced engine says so rather than showing 0.0000c.
+    assert "| Cost | unpriced |" in text
     assert "| Completion tokens |" in text
 
 
-def test_run_eval_suite_without_call_log_has_no_summary(
+def test_run_eval_suite_breaks_accuracy_down_by_category(
     patched_build, golden_set
 ):
-    """No call log requested means no summary attached."""
+    """A field-scored run carries its per-category breakdown.
+
+    The mock always answers POSITIVE, so the POSITIVE row passes
+    and the NEGATIVE one does not.
+    """
     run = run_eval_suite(_CONFIG, golden_set)
-    assert run.call_log is None
+
+    assert run.metrics["per_category"] == {
+        "POSITIVE": {"total": 1, "passed": 1, "accuracy": 1.0},
+        "NEGATIVE": {"total": 1, "passed": 0, "accuracy": 0.0},
+    }
+
+
+def test_run_eval_suite_summarizes_calls_without_a_path(
+    patched_build, golden_set, tmp_path
+):
+    """A run reports its calls whether or not a file was asked for.
+
+    The tokens, duration and cost of a run are measurements it
+    produces; requiring a caller to write a JSON-lines file to see
+    them made an in-process caller (the UI's eval endpoint) choose
+    between a temp file and no cost figure at all.
+    """
+    run = run_eval_suite(_CONFIG, golden_set)
+
+    assert run.call_log is not None
+    assert run.call_log.overall.calls == 1
+    # Nothing was persisted — the path is what writes a file, and
+    # the only file here is the golden set the fixture wrote.
+    assert list(tmp_path.iterdir()) == [golden_set]
+
+
+def test_run_eval_suite_keeps_a_configured_call_logger(
+    patched_build, golden_set, monkeypatch
+):
+    """Collecting for the summary does not silence the agent's sink.
+
+    A config may declare its own `call_log:`/`call_logger:`; the
+    run chains onto it rather than replacing it.
+    """
+    seen = []
+    agent = patched_build.with_overrides(call_logger=seen.append)
+    monkeypatch.setattr(
+        "agents7.eval.suite.build_agent", lambda *a, **k: agent
+    )
+
+    run = run_eval_suite(_CONFIG, golden_set)
+
+    assert len(seen) == 1
+    assert run.call_log.overall.calls == 1
 
 
 def test_run_eval_suite_does_not_mutate_the_built_agent(

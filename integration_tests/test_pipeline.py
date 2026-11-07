@@ -4,12 +4,16 @@ from agents7.agents.pipeline import Pipeline, PipelineResponse
 from agents7.models.demo import PersonBio, PersonInfo
 
 from data import PIPELINE_DATA
+from integration_helpers import warm_model
 
 
 @pytest.fixture
 def person_bio_pipeline():
     """Fixture to create a person-to-bio pipeline."""
-    return Pipeline.from_yaml("examples/configs/demo_pipeline.yml")
+    pipeline = Pipeline.from_yaml("examples/configs/demo_pipeline.yml")
+    for step in pipeline.steps:
+        warm_model(step.agent.engine.model_name)
+    return pipeline
 
 
 # --- Structure ---

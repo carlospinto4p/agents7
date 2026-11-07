@@ -1,0 +1,18 @@
+name: PersonToBio
+version: 3
+agent_type: pipeline
+description: >
+    Two-step pipeline that extracts person details from free text and
+    then writes a short biography from the extracted fields.
+demonstrates:
+    class: Pipeline
+    feature: chaining agents
+output_model: agents7.models.demo.PersonBio
+system_examples:
+    - input:
+        text: "Our keynote speaker John is an experienced engineer, 35 years old, who has been living and working in Berlin for several years now."
+      output:
+        bio: "John is a 35-year-old engineer based in Berlin."
+steps:
+    - agent: ../person_extractor/config.yml
+    - agent: ../bio_generator/config.yml

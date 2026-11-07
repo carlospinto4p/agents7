@@ -5,6 +5,7 @@ when iterated. After iteration completes, the full response, thinking,
 role, and metrics are available as attributes.
 """
 
+import time
 from typing import Any, AsyncIterator, Callable, Iterator
 
 
@@ -16,17 +17,32 @@ class _StreamBase:
         iterator,
         extractor: str,
         _on_complete: Callable[[dict], None] | None,
+        provider: str | None = None,
     ) -> None:
         self._iterator = iterator
         self._extractor = extractor
+        # Prefixes the model name the final chunk reports, so a
+        # streamed call names its model the same way a plain one
+        # does. `None` where the caller did not say, and the name
+        # is then reported unqualified rather than mislabelled.
+        self._provider = provider
         self._response_parts: list[str] = []
         self._thinking_parts: list[str] = []
         self._role: str | None = None
         self._metrics: dict = {}
         self._done = False
         self._on_complete = _on_complete
+        # Runs on the finished metrics dict before anything reads or
+        # caches it, so a streamed call can be priced the way a plain
+        # one is. Set by the dispatcher; `None` leaves metrics as the
+        # provider reported them.
+        self._on_metrics: Callable[[dict], None] | None = None
         self._response_cache: str = ""
         self._thinking_cache: str | None = None
+        # A streamed call is timed here because only Ollama reports a
+        # duration of its own; the OpenAI-compatible providers report
+        # none and used to leave a hard 0 in the metrics.
+        self._started = time.monotonic()
 
     @property
     def response(self) -> str:
@@ -74,18 +90,47 @@ class _StreamBase:
         return content, thinking
 
     def _read_final(self, chunk: Any) -> None:
-        """Read metrics from the final chunk."""
+        """Read metrics from the final chunk.
+
+        Carries the same fields a non-streamed call reports, so a
+        caller does not have to know which path produced them.
+        `cost_cents` is added afterwards by the dispatcher, once
+        these token counts exist to price.
+        """
         if getattr(chunk, "done", False):
             eval_count = getattr(chunk, "eval_count", None)
             prompt_eval_count = getattr(chunk, "prompt_eval_count", None)
+            cached = getattr(chunk, "cached_prompt_tokens", None)
             total_duration = getattr(chunk, "total_duration", None)
             self._metrics = {
                 "tokens": eval_count or 0,
                 "prompt_tokens": prompt_eval_count or 0,
+                "cached_prompt_tokens": cached or 0,
+                # Ollama reports server-side nanoseconds; everything
+                # else reports nothing, so fall back to the wall clock
+                # measured around the stream rather than to a zero.
                 "total_duration": (
-                    total_duration / 10**9 if total_duration else 0
+                    total_duration / 10**9
+                    if total_duration
+                    else time.monotonic() - self._started
                 ),
+                # Every SDK echoes the model on its chunks, so a
+                # streamed call can name what answered it just as
+                # a plain one does. Left unqualified by a provider
+                # prefix only when the chunk names nothing.
+                "model": self._model_from(chunk),
             }
+
+    def _model_from(self, chunk: Any) -> str | None:
+        """Name the model a stream's final chunk reports.
+
+        :param chunk: The chunk that carried ``done``.
+        :return: ``<provider>::<model>``, or ``None``.
+        """
+        model = getattr(chunk, "model", None)
+        if not model:
+            return None
+        return f"{self._provider}::{model}" if self._provider else model
 
     def _as_dict(self) -> dict:
         """Serialize accumulated state for caching."""
@@ -117,6 +162,10 @@ class _StreamBase:
         thinking = "".join(self._thinking_parts)
         self._thinking_cache = thinking if thinking else None
         self._done = True
+        # Before `_as_dict`, so a cached stream stores the same
+        # metrics a live one reports.
+        if self._on_metrics is not None and self._metrics:
+            self._on_metrics(self._metrics)
         if self._on_complete is not None:
             self._on_complete(self._as_dict())
 
@@ -155,8 +204,9 @@ class StreamResult(_StreamBase):
         iterator: Iterator,
         extractor: str,
         _on_complete: (Callable[[dict], None] | None) = None,
+        provider: str | None = None,
     ):
-        self._init_state(iterator, extractor, _on_complete)
+        self._init_state(iterator, extractor, _on_complete, provider)
 
     def __iter__(self) -> Iterator[str]:
         if self._done:
@@ -195,8 +245,9 @@ class AsyncStreamResult(_StreamBase):
         iterator: AsyncIterator,
         extractor: str,
         _on_complete: (Callable[[dict], None] | None) = None,
+        provider: str | None = None,
     ):
-        self._init_state(iterator, extractor, _on_complete)
+        self._init_state(iterator, extractor, _on_complete, provider)
 
     def __aiter__(self) -> AsyncIterator[str]:
         if self._done:

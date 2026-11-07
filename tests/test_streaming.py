@@ -330,3 +330,105 @@ def test_extract_chat_message_missing_content():
     collected = list(stream)
     assert collected == []
     assert stream.response == ""
+
+
+# --- Metrics parity with a non-streamed call ---
+
+
+def test_metrics_carry_cached_prompt_tokens():
+    """A streamed call reports the cached count like a plain one.
+
+    It reported nothing, so a streamed turn priced every prompt
+    token at the fresh rate — about 20x the real figure for an
+    agent that resends a long system prompt every turn.
+    """
+    chunks = [
+        chat_chunk(content="x"),
+        chat_chunk(
+            done=True,
+            eval_count=9,
+            prompt_eval_count=6239,
+            cached_prompt_tokens=6144,
+            total_duration=1_000_000_000,
+        ),
+    ]
+    stream = StreamResult(iter(chunks), "chat")
+    list(stream)
+
+    assert stream.metrics["cached_prompt_tokens"] == 6144
+
+
+def test_metrics_default_cached_prompt_tokens_to_zero():
+    """A provider that does not cache prompts reports none."""
+    chunks = [
+        chat_chunk(content="x"),
+        chat_chunk(
+            done=True, eval_count=9, prompt_eval_count=5, total_duration=1
+        ),
+    ]
+    stream = StreamResult(iter(chunks), "chat")
+    list(stream)
+
+    assert stream.metrics["cached_prompt_tokens"] == 0
+
+
+def test_duration_falls_back_to_the_wall_clock():
+    """A provider reporting no duration is timed here instead.
+
+    Only Ollama sends a server-side duration. The
+    OpenAI-compatible path sent a hard 0, which is
+    indistinguishable from a call that took no time — and that is
+    what shipped.
+    """
+    chunks = [
+        chat_chunk(content="x"),
+        chat_chunk(
+            done=True,
+            eval_count=9,
+            prompt_eval_count=5,
+            total_duration=None,
+        ),
+    ]
+    stream = StreamResult(iter(chunks), "chat")
+    list(stream)
+
+    assert stream.metrics["total_duration"] > 0
+
+
+def test_server_reported_duration_wins():
+    """Ollama's own nanoseconds are still preferred."""
+    chunks = [
+        chat_chunk(content="x"),
+        chat_chunk(
+            done=True,
+            eval_count=9,
+            prompt_eval_count=5,
+            total_duration=3_500_000_000,
+        ),
+    ]
+    stream = StreamResult(iter(chunks), "chat")
+    list(stream)
+
+    assert stream.metrics["total_duration"] == 3.5
+
+
+def test_on_metrics_runs_before_the_completion_callback():
+    """Cost is injected before the stream is cached or read.
+
+    A streamed response skipped cost injection entirely, so
+    `cost_cents` was `None` however the engine was priced —
+    and streaming is the path a chat UI uses.
+    """
+    seen = {}
+
+    def price(metrics):
+        metrics["cost_cents"] = 1.25
+
+    stream = StreamResult(iter([chat_chunk(done=True, eval_count=1)]), "chat")
+    stream._on_metrics = price
+    stream._on_complete = lambda payload: seen.update(payload)
+    list(stream)
+
+    assert stream.metrics["cost_cents"] == 1.25
+    # The cached copy carries it too, or a cache hit would lose it.
+    assert seen["metrics"]["cost_cents"] == 1.25

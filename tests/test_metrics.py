@@ -16,6 +16,8 @@ from agents7.eval.metrics import (
     _fallback_sequential,
     build_confusion_matrix,
     compute_metrics,
+    compute_per_category,
+    resolve_category_field,
     run_evaluation,
     run_evaluation_async,
 )
@@ -507,3 +509,148 @@ def test_run_evaluation_partial_batch_model_none(mock_batch):
     assert results[0].error is None
     assert results[1].passed is False
     assert results[1].error == "Model parsing failed"
+
+
+# --- resolve_category_field / compute_per_category ---
+
+
+def test_resolve_category_field_prefers_category():
+    """`category` wins even when it is not the first field."""
+    assert resolve_category_field(["reason", "category"]) == "category"
+
+
+def test_resolve_category_field_falls_back_to_first():
+    assert resolve_category_field(["reason", "tone"]) == "reason"
+
+
+def test_resolve_category_field_none_when_nothing_scored():
+    assert resolve_category_field([]) is None
+
+
+def _cat_result(expected, passed):
+    """An `EvalResult` expecting *expected*, passing or not."""
+    return EvalResult(
+        input_data={"text": "x"},
+        expected={"category": expected},
+        passed=passed,
+    )
+
+
+def test_per_category_groups_by_expected_value():
+    """Rows are bucketed by the label they should have had."""
+    results = [
+        _cat_result("MALE", True),
+        _cat_result("MALE", False),
+        _cat_result("FEMALE", True),
+    ]
+
+    per_category = compute_per_category(results, "category")
+
+    assert per_category == {
+        "MALE": {"total": 2, "passed": 1, "accuracy": 0.5},
+        "FEMALE": {"total": 1, "passed": 1, "accuracy": 1.0},
+    }
+
+
+def test_per_category_skips_rows_without_the_field():
+    """A row that pins no expectation joins no bucket."""
+    results = [
+        _cat_result("MALE", True),
+        EvalResult(input_data={}, expected={}, passed=True),
+    ]
+
+    per_category = compute_per_category(results, "category")
+
+    assert list(per_category) == ["MALE"]
+    assert per_category["MALE"]["total"] == 1
+
+
+def test_per_category_counts_an_errored_row_as_failed():
+    """A row the agent could not answer is still one of its label.
+
+    Dropping it would quietly raise the bucket's accuracy by
+    shrinking its denominator.
+    """
+    errored = _cat_result("MALE", False)
+    errored.error = "Connection refused"
+
+    per_category = compute_per_category([errored], "category")
+
+    assert per_category["MALE"] == {
+        "total": 1,
+        "passed": 0,
+        "accuracy": 0.0,
+    }
+
+
+# --- _compute_timing ---
+
+
+def _timed_result(metrics, passed=True):
+    """An `EvalResult` whose response carries *metrics*."""
+    result = EvalResult(input_data={}, expected={}, passed=passed)
+    result.response = AgentResponse(
+        response="{}", model=None, metrics=metrics
+    )
+    return result
+
+
+def test_timing_counts_a_batched_call_once():
+    """Rows answered by one call do not multiply its seconds.
+
+    `BatchProcessor` hands every row of a chunk the same metrics
+    object, so summing per row reported a nine-row batch that took
+    36s as 328s.
+    """
+    shared = LLMMetrics(tokens=90, prompt_tokens=800, total_duration=36.0)
+    results = [_timed_result(shared) for _ in range(9)]
+
+    timing = compute_metrics(results, [])["timing"]
+
+    assert timing["total_s"] == 36.0
+    assert timing["avg_s"] == 36.0
+    assert timing["max_s"] == 36.0
+    # One entry per row, so the report can annotate each of them.
+    assert timing["per_case"] == [36.0] * 9
+
+
+def test_timing_sums_distinct_calls():
+    """Two real calls are two calls, and their seconds add up."""
+    first = LLMMetrics(tokens=1, prompt_tokens=1, total_duration=2.0)
+    second = LLMMetrics(tokens=1, prompt_tokens=1, total_duration=4.0)
+    results = [_timed_result(first), _timed_result(second)]
+
+    timing = compute_metrics(results, [])["timing"]
+
+    assert timing["total_s"] == 6.0
+    assert timing["avg_s"] == 3.0
+    assert timing["min_s"] == 2.0
+    assert timing["max_s"] == 4.0
+
+
+def test_timing_two_calls_of_equal_length_are_two_calls():
+    """Dedup is by identity, not by the number happening to match."""
+    results = [
+        _timed_result(
+            LLMMetrics(tokens=1, prompt_tokens=1, total_duration=2.0)
+        )
+        for _ in range(2)
+    ]
+
+    assert compute_metrics(results, [])["timing"]["total_s"] == 4.0
+
+
+def test_timing_ignores_a_row_that_never_returned():
+    """An errored row has no duration, and does not drag min to 0."""
+    ok = _timed_result(
+        LLMMetrics(tokens=1, prompt_tokens=1, total_duration=3.0)
+    )
+    failed = EvalResult(input_data={}, expected={}, passed=False)
+    failed.error = "Connection refused"
+
+    timing = compute_metrics([ok, failed], [])["timing"]
+
+    assert timing["total_s"] == 3.0
+    assert timing["min_s"] == 3.0
+    # The list stays aligned with the results it describes.
+    assert timing["per_case"] == [3.0, 0.0]

@@ -10,7 +10,7 @@ Add new models here when a new config references one.
 """
 
 import pytest
-from integration_helpers import is_model_available
+from integration_helpers import is_model_available, warm_model
 
 from agents7.agents import Detector
 from agents7.llm import LLMEngine
@@ -61,7 +61,14 @@ MODELS_TO_TEST = [
 ]
 
 
+@pytest.fixture
+def loaded(model_name: str) -> None:
+    """Load the model under test before the timed test body."""
+    warm_model(model_name)
+
+
 @pytest.mark.parametrize("model_name", MODELS_TO_TEST)
+@pytest.mark.usefixtures("loaded")
 def test_model_connectivity(model_name: str) -> None:
     """Single-call smoke test per model.
 

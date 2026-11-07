@@ -77,7 +77,7 @@ def test_set_attr_modifies_in_place():
 
 
 def test_resolved_prompt_value_containing_dollar():
-    """A value that itself contains $ does not trigger further substitution."""
+    """A value containing $ triggers no further substitution."""
     agent = make_labeler(
         system_prompt="Price: $price",
         prompt_params={"price": "$100"},

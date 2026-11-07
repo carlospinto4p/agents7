@@ -32,6 +32,11 @@ def boom(x: int) -> int:
     raise RuntimeError("kaboom")
 
 
+def apologise() -> str:
+    """Return text that begins with `Error:` without failing."""
+    return "Error: no such product in the catalogue"
+
+
 def lookup(city: str) -> dict:
     """Return a structured weather record."""
     return {"city": city, "temp_c": 21, "unit": "°C"}
@@ -124,7 +129,9 @@ def test_tool_with_explicit_schema_skips_validation():
 
 def test_registry_execute_bad_arguments_returned_as_string():
     out = ToolRegistry([add]).execute("add", {"a": "x", "b": 1})
-    assert out.startswith("Error: Invalid arguments for `add`")
+    assert out.output.startswith("Error: Invalid arguments for `add`")
+    assert out.failed
+    assert "Invalid arguments" in out.error
 
 
 def test_registry_schemas_shape():
@@ -136,13 +143,29 @@ def test_registry_schemas_shape():
 
 
 def test_registry_execute_happy():
-    assert ToolRegistry([add]).execute("add", {"a": 4, "b": 1}) == "5"
+    out = ToolRegistry([add]).execute("add", {"a": 4, "b": 1})
+    assert out.output == "5"
+    assert not out.failed
+    assert out.error is None
 
 
 def test_registry_execute_tool_error_returned_as_string():
     out = ToolRegistry([boom]).execute("boom", {"x": 1})
-    assert out.startswith("Error:")
-    assert "kaboom" in out
+    assert out.output.startswith("Error:")
+    assert "kaboom" in out.output
+    assert out.failed
+    assert out.error == "kaboom"
+
+
+def test_registry_execute_does_not_read_failure_off_the_text():
+    """A tool may return text starting with `Error:` and succeed.
+
+    The outcome carries failure as its own field precisely so a
+    result like this is not mistaken for a rejected call.
+    """
+    out = ToolRegistry([apologise]).execute("apologise", {})
+    assert out.output == "Error: no such product in the catalogue"
+    assert not out.failed
 
 
 def test_registry_execute_unknown_tool_raises():

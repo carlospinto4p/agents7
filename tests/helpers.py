@@ -115,14 +115,24 @@ def make_agent(
 # --- Engine factory helpers ---
 
 
-def make_engine(cache: CacheConfig | None = None):
-    """Create an LLMEngine with a mocked provider."""
+def make_engine(
+    cache: CacheConfig | None = None,
+    model_name: str = "test-model",
+):
+    """Create an LLMEngine with a mocked provider.
+
+    :param cache: Optional response-cache config.
+    :param model_name: Model name, so a test that needs two
+        distinguishable engines — a chatter and its guard, say
+        — can tell their records apart.
+    """
     engine = object.__new__(LLMEngine)
     engine.provider = "ollama"
-    engine.model_name = "test-model"
-    engine.model_id = "ollama::test-model"
+    engine.model_name = model_name
+    engine.model_id = f"ollama::{model_name}"
     engine.retry_config = None
     engine.cost_per_1m_tokens = None
+    engine.pricing = None
     provider = Mock()
     engine.llm_provider = provider
     engine._dispatcher = EngineDispatcher(
@@ -130,8 +140,8 @@ def make_engine(cache: CacheConfig | None = None):
         fallback=None,
         retry_config=None,
         cache=ResponseCache(cache) if cache is not None else None,
-        cost_per_1m_tokens=None,
-        model_id="ollama::test-model",
+        pricing=None,
+        model_id=engine.model_id,
     )
     return engine
 
@@ -146,7 +156,9 @@ def chat_chunk(
     done: bool = False,
     eval_count: int | None = None,
     prompt_eval_count: int | None = None,
+    cached_prompt_tokens: int | None = None,
     total_duration: int | None = None,
+    model: str | None = "qwen3",
 ) -> SimpleNamespace:
     """Build a mock ollama chat streaming chunk."""
     msg = SimpleNamespace(
@@ -159,7 +171,9 @@ def chat_chunk(
         done=done,
         eval_count=eval_count,
         prompt_eval_count=prompt_eval_count,
+        cached_prompt_tokens=cached_prompt_tokens,
         total_duration=total_duration,
+        model=model,
     )
 
 
@@ -249,6 +263,25 @@ def make_chatter(**kwargs):
     }
     defaults.update(kwargs)
     return Chatter(**defaults)
+
+
+def make_guarded_chatter(guard=None, **kwargs):
+    """Create a `GuardedChatter` with test defaults.
+
+    Same defaults as `make_chatter`, plus a `make_guard` guard, so
+    a test can compare a guarded agent against a plain one whose
+    resolved system prompt is identical.
+    """
+    from agents7.agents.guarded import GuardedChatter
+
+    defaults = {
+        "name": "test-chatter",
+        "version": 1,
+        "engine": ENGINE,
+        "system_prompt": "You are a helpful assistant.",
+    }
+    defaults.update(kwargs)
+    return GuardedChatter(guard=guard or make_guard(), **defaults)
 
 
 def make_guard(**kwargs):
@@ -385,13 +418,14 @@ def make_tool_engine(responses: list[dict]):
     engine.model_id = "ollama::fake"
     engine.retry_config = None
     engine.cost_per_1m_tokens = None
+    engine.pricing = None
     engine.llm_provider = provider
     engine._dispatcher = EngineDispatcher(
         primary=provider,
         fallback=None,
         retry_config=None,
         cache=None,
-        cost_per_1m_tokens=None,
+        pricing=None,
         model_id="ollama::fake",
     )
     return engine

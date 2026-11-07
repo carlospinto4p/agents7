@@ -366,6 +366,71 @@ def test_history_accumulates(mock_chat):
     assert agent.history[3]["content"] == "Reply"
 
 
+# --- Empty lines between messages ---
+
+
+@pytest.mark.parametrize(
+    ("generated", "stored"),
+    [
+        ("Uno.\n\nDos.", "Uno.\nDos."),
+        ("\nUno.\n  \n\nDos.\n", "Uno.\nDos."),
+        ("Uno.\nDos.", "Uno.\nDos."),
+        ("Uno.", "Uno."),
+    ],
+)
+@patch.object(LLMEngine, "chat")
+def test_chat_drops_empty_lines(mock_chat, generated, stored):
+    """An empty line would reach a chat client as an empty message."""
+    mock_chat.return_value = chat_response_dict(generated)
+    agent = make_chatter()
+
+    resp = agent.chat("Hola")
+
+    assert (resp.response, agent.history[-1]["content"]) == (stored, stored)
+
+
+@pytest.mark.asyncio
+@patch.object(LLMEngine, "chat_async", new_callable=AsyncMock)
+async def test_chat_async_drops_empty_lines(mock_chat):
+    """The async path stores and returns the same cleaned reply."""
+    mock_chat.return_value = chat_response_dict("Uno.\n\nDos.")
+    agent = make_chatter()
+
+    resp = await agent.chat_async("Hola")
+
+    assert (resp.response, agent.history[-1]["content"]) == (
+        "Uno.\nDos.",
+        "Uno.\nDos.",
+    )
+
+
+@patch.object(LLMEngine, "chat_stream")
+def test_chat_stream_drops_empty_lines_once_finished(mock_stream):
+    """Chunks stream as generated; the finished reply is cleaned."""
+    from agents7.llm.streaming import StreamResult
+
+    chunks = [
+        chat_chunk(content="Uno.\n\n"),
+        chat_chunk(content="Dos."),
+        chat_chunk(
+            done=True,
+            eval_count=10,
+            prompt_eval_count=5,
+            total_duration=100_000_000,
+        ),
+    ]
+    mock_stream.return_value = StreamResult(iter(chunks), "chat")
+    agent = make_chatter()
+
+    result = agent.chat_stream("Hola")
+    list(result)
+
+    assert (
+        result.chat_response.response,
+        agent.history[-1]["content"],
+    ) == ("Uno.\nDos.", "Uno.\nDos.")
+
+
 @patch.object(LLMEngine, "chat")
 def test_history_multi_turn_messages(mock_chat):
     """Engine receives full history on subsequent turns."""
@@ -622,6 +687,85 @@ def test_prompt_params_substituted(mock_chat):
     assert messages[0]["content"] == "You are Alice, a teacher."
 
 
+# --- $character ---
+
+
+def test_character_placeholder_resolves_to_the_persona_name():
+    """`$character` is the persona's own name, always.
+
+    It is what lets a `chat_goal` file write a worked example
+    without asserting who is in it, so the same goal reads
+    correctly under any character.
+    """
+    agent = make_chatter(
+        persona=Persona(full_name="David"),
+        extra_instructions="$character: buenas",
+    )
+    assert "David: buenas" in agent.resolved_system_prompt
+
+
+def test_character_placeholder_needs_no_declaration():
+    """A persona agent gets it without asking."""
+    agent = make_chatter(persona=Persona(full_name="David"))
+    assert agent.prompt_params["character"] == "David"
+
+
+def test_character_placeholder_swaps_with_the_persona():
+    """The point of it: rename the character, nothing else."""
+    goal = "$character: buenas"
+    david = make_chatter(
+        persona=Persona(full_name="David"),
+        extra_instructions=goal,
+    )
+    marta = make_chatter(
+        persona=Persona(full_name="Marta"),
+        extra_instructions=goal,
+    )
+    assert "David: buenas" in david.resolved_system_prompt
+    assert "Marta: buenas" in marta.resolved_system_prompt
+
+
+def test_an_explicit_character_param_wins():
+    """A config that sets it meant to set it."""
+    agent = make_chatter(
+        persona=Persona(full_name="David"),
+        prompt_params={"character": "Davo"},
+        extra_instructions="$character: buenas",
+    )
+    assert "Davo: buenas" in agent.resolved_system_prompt
+
+
+def test_no_persona_declares_no_character_param():
+    """An agent with no character has no name to substitute."""
+    agent = make_chatter(system_prompt="Plain $character.")
+    assert agent.prompt_params is None
+    assert agent.resolved_system_prompt == "Plain $character."
+
+
+@patch.object(LLMEngine, "chat")
+def test_the_opening_block_resolves_the_placeholder(mock_chat):
+    """The opening guidance joins the prompt per call.
+
+    It is appended after `resolved_system_prompt` rather than
+    being part of it, so it needs the substitution applied
+    separately — a placeholder that worked in one block and not
+    the other would be worse than none.
+    """
+    mock_chat.return_value = chat_response_dict("buenas")
+    agent = make_chatter(
+        persona=Persona(full_name="David"),
+        can_open=True,
+        opening_instructions="$character: toc toc",
+        opening_prompt="[Abre tú, $character.]",
+    )
+
+    agent.open_chat()
+
+    messages = mock_chat.call_args.kwargs["messages"]
+    assert "David: toc toc" in messages[0]["content"]
+    assert messages[-1]["content"] == "[Abre tú, David.]"
+
+
 # --- describe() ---
 
 
@@ -723,7 +867,8 @@ def test_max_history_zero_engine_sees_only_system(mock_chat):
 
 @patch.object(LLMEngine, "chat")
 def test_conversation_id_isolation_in_memory(mock_chat, tmp_path):
-    """Two Chatters with different conversation_ids have separate histories."""
+    """Two Chatters with different conversation_ids keep separate
+    histories."""
     from agents7.agents.memory import MemoryConfig, create_memory
 
     mock_chat.return_value = chat_response_dict("R")

@@ -1,6 +1,6 @@
 [project]
 name = "agents7"
-version = "4.15.3"
+version = "9.25.5"
 description = "LLM Agents Management."
 authors = [{ name = "Carlos Pinto", email = "carlospinto4p@gmail.com" }]
 readme = "README.md"
@@ -32,13 +32,10 @@ anthropic = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-pythonpath = ["tests", "integration_tests"]
+pythonpath = ["tests", "integration_tests", "benchmarks"]
 filterwarnings = [
     "ignore:agents7\\.export is deprecated:DeprecationWarning",
 ]
-
-[tool.ruff]
-line-length = 78
 
 [build-system]
 requires = ["hatchling"]

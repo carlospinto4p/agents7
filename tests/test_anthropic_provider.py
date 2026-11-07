@@ -43,16 +43,26 @@ def _mock_response(
 
 
 def test_provider_requires_anthropic_package():
-    """Raises ImportError when anthropic not installed."""
-    with patch.dict("sys.modules", {"anthropic": None}):
-        with pytest.raises(ImportError, match="anthropic"):
-            from importlib import reload
+    """Raises ImportError when anthropic not installed.
 
-            import agents7.llm.anthropic as mod
+    The module is reloaded to simulate the missing package, and
+    reloaded again afterwards — without the restore it stays
+    stubbed for the rest of the session, and every later test
+    that builds a real provider fails with an import error it did
+    nothing to cause.
+    """
+    from importlib import reload
 
-            reload(mod)
-            mod._anthropic = None
-            mod._require_anthropic()
+    import agents7.llm.anthropic as mod
+
+    try:
+        with patch.dict("sys.modules", {"anthropic": None}):
+            with pytest.raises(ImportError, match="anthropic"):
+                reload(mod)
+                mod._anthropic = None
+                mod._require_anthropic()
+    finally:
+        reload(mod)
 
 
 # --- _build_params ---

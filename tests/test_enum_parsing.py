@@ -189,7 +189,8 @@ def test_parse_direct_path_succeeds(multi_parser):
 
 
 def test_parse_raises_when_fallback_also_fails(multi_parser):
-    """parse() raises ParseError when both direct and fallback validation fail."""
+    """parse() raises ParseError when direct and fallback validation
+    both fail."""
     raw = json.dumps({"color": "INVALID", "size": "ALSO_INVALID"})
     with pytest.raises(ParseError):
         multi_parser.parse(raw)

@@ -1,0 +1,45 @@
+name: DemoTemperatureDetector
+version: 1
+agent_type: regressor
+description: >
+    Reads text and estimates the temperature in °C it refers to,
+    inferring from contextual cues when no explicit value is stated.
+demonstrates:
+    class: Regressor
+engine:
+    provider: ollama
+    model: qwen2.5:3b
+system_prompt: |
+  Analyze the input text and detect the temperature it refers to, expressed in degrees Celsius.
+
+  ## Rules
+
+  1. If an exact temperature is explicitly stated, return that value.
+  2. Infer temperature from context - consider what the situation implies:
+    - TOO_COLD (≤10 °C): cold weather, freezing conditions, heating needed
+    - COMFORTABLE (11-29 °C): pleasant weather, balanced temperature, neither extreme
+    - TOO_HOT (≥30 °C): hot weather, cooling needed, excessive heat
+  3. Consider indirect indicators: appliances (heaters, AC), clothing choices, physical reactions, seasonal/location cues.
+  4. Only use NOT_APPLICABLE when the text has no connection to temperature whatsoever.
+output_model: agents7.models.demo.Temperature
+system_examples:
+    - input: Water could get frozen here.
+      output:
+        value: -10
+        reason: TOO_COLD
+    - input: The weather feels perfect for a walk.
+      output:
+        value: 20
+        reason: COMFORTABLE
+    - input: It's 25 degrees and sunny, perfect for the park.
+      output:
+        value: 25
+        reason: COMFORTABLE
+    - input: We're in the desert at noon.
+      output:
+        value: 35
+        reason: TOO_HOT
+    - input: She bought a new car.
+      output:
+        value: null
+        reason: NOT_APPLICABLE

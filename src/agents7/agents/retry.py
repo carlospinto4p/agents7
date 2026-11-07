@@ -6,6 +6,30 @@ from agents7.agents.parsing import ResponseParser
 from agents7.exceptions import ParseError
 from agents7.llm.base import LLMEngine
 from agents7.logs import logger
+from agents7.models.base import LLMMetrics
+
+
+@dataclass(frozen=True)
+class CallAttempt:
+    """One LLM call made in the course of answering once.
+
+    An answer is usually a single call. It is more whenever a
+    parse retry fires, and each retry is a whole extra call to
+    the provider with its own tokens, its own price, and its own
+    messages — so each is kept separately rather than folded
+    into the first call's figures.
+
+    Attributes:
+        metrics (LLMMetrics): That call's own metrics.
+        messages (list[dict[str, str]]): The messages it sent. A
+            retry's are not the first call's: the parse error is
+            appended to them so the model can correct itself, and
+            reproducing a failed retry by hand needs the messages
+            it actually saw.
+    """
+
+    metrics: LLMMetrics
+    messages: list[dict[str, str]]
 
 
 @dataclass(frozen=True)
@@ -34,12 +58,16 @@ class ParseRetryHandler:
         error: ParseError,
         messages: list[dict[str, str]],
         chat_kwargs: dict,
+        attempts: "list[CallAttempt] | None" = None,
     ) -> "BaseModel | None":
         """Retry a failed parse synchronously.
 
         :param error: The ParseError from the first attempt.
         :param messages: Original messages sent to the LLM.
         :param chat_kwargs: Sanitized chat kwargs.
+        :param attempts: Collects one `CallAttempt` per retry
+            call, so the caller can report what the retries cost
+            and log each as its own call. ``None`` discards them.
         :return: Parsed model on success, None if all retries
             fail.
         """
@@ -53,6 +81,7 @@ class ParseRetryHandler:
             raw = self.engine.chat(
                 **self._chat_kwargs(retry_messages, chat_kwargs)
             )
+            self._collect(attempts, raw, retry_messages)
             parsed, last_error = self._try_parse(raw)
             if parsed is not None:
                 return parsed
@@ -63,12 +92,14 @@ class ParseRetryHandler:
         error: ParseError,
         messages: list[dict[str, str]],
         chat_kwargs: dict,
+        attempts: "list[CallAttempt] | None" = None,
     ) -> "BaseModel | None":
         """Retry a failed parse asynchronously.
 
         :param error: The ParseError from the first attempt.
         :param messages: Original messages sent to the LLM.
         :param chat_kwargs: Sanitized chat kwargs.
+        :param attempts: As in `retry_sync`.
         :return: Parsed model on success, None if all retries
             fail.
         """
@@ -82,10 +113,45 @@ class ParseRetryHandler:
             raw = await self.engine.chat_async(
                 **self._chat_kwargs(retry_messages, chat_kwargs)
             )
+            self._collect(attempts, raw, retry_messages)
             parsed, last_error = self._try_parse(raw)
             if parsed is not None:
                 return parsed
         return None
+
+    @staticmethod
+    def _collect(
+        attempts: "list[CallAttempt] | None",
+        raw_response: dict,
+        messages: list[dict[str, str]],
+    ) -> None:
+        """Keep one retry call's metrics and messages.
+
+        A parse retry is a whole extra LLM call, with its own
+        tokens and its own price — unlike a transport retry,
+        which raises before the provider reports anything. These
+        were discarded, so an agent that needed two retries
+        reported one call's cost while having paid for three.
+
+        The messages come along because the caller writes a
+        separate call-log row per attempt, and a row for a call
+        that failed carries what that call sent.
+
+        :param attempts: Where to keep them, or ``None`` to
+            discard.
+        :param raw_response: The retry call's engine response.
+        :param messages: The messages this retry sent. Copied,
+            since the caller keeps appending to the list.
+        """
+        if attempts is None:
+            return
+        if metrics := raw_response.get("metrics"):
+            attempts.append(
+                CallAttempt(
+                    metrics=LLMMetrics(**metrics),
+                    messages=list(messages),
+                )
+            )
 
     def _log_retry(self, attempt: int, error: ParseError) -> None:
         logger.warning(

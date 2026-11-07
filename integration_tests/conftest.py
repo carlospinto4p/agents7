@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from integration_helpers import warm_model, warmup_seconds
 
 from agents7.agents import Classifier, Detector, Regressor
 
@@ -35,13 +36,14 @@ _SESSION_TIMEOUT = 300  # 5 minutes total
 
 def pytest_collection_modifyitems(items):
     """Skip all integration tests when Ollama is unavailable.
-    Add a 60-second timeout to every test."""
+    Add a 60-second timeout to every test body. Fixture setup is
+    left out of it, so loading a model there does not count."""
     if not _OLLAMA_AVAILABLE:
         skip = pytest.mark.skip(reason="Ollama is not available")
         for item in items:
             item.add_marker(skip)
         return
-    timeout_marker = pytest.mark.timeout(_PER_TEST_TIMEOUT)
+    timeout_marker = pytest.mark.timeout(_PER_TEST_TIMEOUT, func_only=True)
     for item in items:
         item.add_marker(timeout_marker)
 
@@ -52,10 +54,11 @@ def pytest_sessionstart(session):
 
 
 def pytest_runtest_setup(item):
-    """Fail fast if the session has exceeded 5 minutes."""
+    """Fail fast if the session has exceeded 5 minutes, not
+    counting the time spent loading models."""
     import time
 
-    elapsed = time.monotonic() - item.session._start_time
+    elapsed = time.monotonic() - item.session._start_time - warmup_seconds()
     if elapsed > _SESSION_TIMEOUT:
         pytest.fail(
             f"Session timeout: {elapsed:.0f}s exceeded "
@@ -82,25 +85,31 @@ def _chdir_to_project_root():
 @pytest.fixture(scope="module")
 def temperature_detector():
     """Create a temperature detector instance (shared per module)."""
-    return Detector.from_yaml(
+    agent = Detector.from_yaml(
         "examples/configs/demo_temperature_detector.yml"
     )
+    warm_model(agent.engine.model_name)
+    return agent
 
 
 @pytest.fixture(scope="module")
 def sentiment_classifier():
     """Create a sentiment classifier instance (shared per module)."""
-    return Classifier.from_yaml(
+    agent = Classifier.from_yaml(
         "examples/configs/demo_sentiment_classifier.yml"
     )
+    warm_model(agent.engine.model_name)
+    return agent
 
 
 @pytest.fixture(scope="module")
 def temperature_regressor():
     """Create a temperature regressor instance (shared per module)."""
-    return Regressor.from_yaml(
+    agent = Regressor.from_yaml(
         "examples/configs/demo_temperature_detector.yml"
     )
+    warm_model(agent.engine.model_name)
+    return agent
 
 
 @pytest.fixture(scope="session")

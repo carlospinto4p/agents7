@@ -2,370 +2,440 @@
 ## Changelog - Agents7
 
 
-### v4.15.3 - 23rd August 2026
+### v9.25.5 - 7th November 2026
 
-- Fixed `src/agents7/agents/utils.py`:
-  - `get_examples_str()`: render structured `system_examples` inputs
-    and outputs as JSON instead of Python `repr`. Examples were
-    reaching the prompt as `{'name': None}`, which is not valid JSON
-    and measurably degraded few-shot adherence — `CompanyPersonExtractor`
-    ignored its own null-output example and extracted a name for a
-    person outside the configured company.
-  - Added `format_example_value()`: renders one example value, JSON for
-    dicts and lists, unchanged for scalars.
-- Added unit tests in `tests/test_utils.py`: 6 tests covering JSON
-  rendering of dict, list and nested example values, scalar
-  pass-through, and the non-serializable fallback.
+- `README.md`: the core dependencies no longer list `cpinto`, removed
+  from `pyproject.toml` long ago.
+- `changelog/2026.md`: four entries reworded.
 
 
-### v4.15.2 - 23rd August 2026
+### v9.25.4 - 7th November 2026
 
-- Updated `agents7.tools.demo`: module docstring now says what it
-  demonstrates (`ToolAgent`'s tool-calling round-trip), matching
-  the "used to demonstrate" convention already on every model in
-  `agents7.models.demo`.
-
-
-### v4.15.1 - 23rd August 2026
-
-- Updated `agents7.models.demo`: `Temperature` and `Sentiment`
-  docstrings now say what they demonstrate (`Regressor`'s
-  numeric-value-plus-reason shape, `Classifier`'s
-  category-plus-reason shape), matching `PersonInfo` and
-  `PersonBio`, which already did.
+- Prepared the repository for its public copy on GitHub:
+  - `agents/context_guard.py`: the guard prompt's example of joking
+    back at a bot accusation now says "Soy un bot con gato y todo"; its
+    test checks for it.
+  - `pyproject.toml`: the author's email is `carlospinto4p@gmail.com`.
+  - `README.md`: installation is from the GitHub repository, since the
+    package is not on PyPI.
+  - Added a root `README.md` and an MIT `LICENSE`; the samples link to
+    the framework folder instead of the GitLab project.
 
 
-### v4.15.0 - 23rd August 2026
+### v9.25.3 - 7th November 2026
 
-- Added `agents7.tools.demo`:
-  - `find_product()`, `check_stock()`, `order_total()`: the demo
-    store's tools, moved from the `store_assistant` catalog
-    package so a `tool`-type sample can resolve `tools` to a
-    dotted path the framework ships, the same way a
-    structured-output sample resolves `output_model` to
-    `agents7.models.demo`.
-  - `Product`, `ProductSearch`, `StockLevel`, `OrderTotal`: the
-    tools' structured return models.
-- Added `tests/test_tools_demo.py`: 18 tests covering the moved
-  tools' business logic (catalog matching, stock lookup, order
-  costing).
-
-
-### v4.14.10 - 23rd August 2026
-
-- `.gitlab-ci.yml`: publish job now uploads to `${CI_PROJECT_ID}`
-  instead of the hardcoded shared `cpinto` registry project
-  (42232103) — own-registry publish direction, programme
-  backlog 2026-08-22.
+- Reworded examples, docs and tests ahead of publishing this
+  repository:
+  - `README.md`, `docs/chatter.md`, `docs/design.md`, `roadmap.md`,
+    `examples/`: the character examples use the sample persona David
+    García López.
+  - `src/agents7/`: docstrings and comments only; no code changed.
+  - `tests/`: fixtures and assertions use David and neutral made-up
+    names; the same behaviour is tested.
+  - Deleted seven recorded benchmark outputs (`output_guard_*.txt`).
+  - `changelog.md`, `changelog/2026.md`, `.claude/rules/`: the same
+    rewording; versions, dates and order are unchanged.
 
 
-### v4.14.9 - 16th August 2026
+### v9.25.2 - 7th November 2026
+
+- The agent catalog moved out of this repository, with its history.
+  The generic samples moved from the catalog's `examples/` to
+  `samples/` at the repository root:
+  - Moved `tests/test_example_golden_sets.py` to
+    `tests/test_sample_golden_sets.py`, now walking `samples/`.
+  - Removed the catalog-only refinement rule, skill and command,
+    which moved with the catalog.
+  - `CLAUDE.md`: the Catalog section became a Samples section that
+    points at the new repository.
+  - `chat-agent-validation.md`, `measurement-needs-history.md`:
+    dropped the catalog paths from their triggers.
+- Fixed `.pre-commit-scripts/check_changelog_headers.sh`: it read a
+  changelog deleted whole as destroyed headers, which blocked the
+  move above. It now leaves deleted files out (`--diff-filter=d`).
+
+
+### v9.25.1 - 7th October 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
 
 
-### v4.14.8 - 15th August 2026
-
-- Fixed `.pre-commit-config.yaml`: `ruff-fix`/`ruff-format` entries now
-  use `uv run ruff ...` (was bare `ruff`, which fails with `Executable
-  'ruff' not found` under `language: system`) and dropped the trailing
-  `.` from `ruff format .` (was formatting the whole tree instead of
-  the staged files). This file is inert — `agents7_framework` shares
-  its `.git` with the `agents7` monorepo root, so only the root's own
-  `.pre-commit-config.yaml` actually runs — fixed for hygiene/accuracy
-  while sweeping other repositories for the same defect.
+### v9.25.0 - 4th October 2026
 
+- Updated `eval.chat_review.read_payload`: each row of a
+  conversation's `context` names its `group` (`run`, `context`,
+  `memory` or `variants`), and the `Knew already` row carries its
+  facts one by one as `items`. `label` and `value` are unchanged, so
+  the generated page renders as before.
 
-### v4.14.7 - 28th July 2026
-
-- Rotated changelog: archived 3 entries to `changelog/2026.md`.
-
-
-### v4.14.6 - 26th July 2026
-
-- Redeployed the hardened `scripts/changelog-add.sh`: guards against
-  the CWD-relative wrong-repo footgun (comparing the target
-  changelog's version against the wrong repo's manifest when invoked
-  from outside its own directory).
-
-
-### v4.14.5 - 25th July 2026
-
-- `.claude/rules/committing.md`: clarified step 6 — a non-code patch
-  bump's `uv.lock` self-referential version drift is expected and
-  harmless, not something to chase. Promoted from another project's locally
-  accepted wording (`RULE_SKIP_PROJECTS["committing"]`), closing a gap
-  where the canonical text lacked that framing and repeatedly got
-  rediscovered as apparent drift during fleet-wide sweeps.
-
-
-### v4.14.4 - 25th July 2026
-
-- Rotated changelog: archived 2 entries to `changelog/2026.md`.
-
-
-### v4.14.3 - 24th July 2026
-
-- `CLAUDE.md`: replaced the superseded **Core Rules** periodic-review
-  trigger with the backlog-depth rule — when `/backlog` shows fewer
-  than 5 open items, propose `/scan`, `/improvements`, and `/prune`.
-  The old "Every 6-7 versions" cadence also named `/refactor` and
-  `/optimize`, neither of which is a real skill. Pushed from the
-  programme registry via `sync-config --types section`.
-
-
-### v4.14.2 - 19th July 2026
-
-- Rotated changelog: archived 10 entries to `changelog/2026.md`.
-
-
-### v4.14.1 - 18th July 2026
-
-- Fixed `src/agents7/agents/pipeline.py`:
-  - `Pipeline.from_yaml()`: resolve relative step `agent:` paths
-    against the pipeline config's own directory instead of the
-    process working directory, so a pipeline loads the same way
-    from any CWD. Absolute paths are unchanged.
-- Updated `examples/configs/demo_pipeline.yml`: step paths are now
-  written relative to the config file.
-
-
-### v4.14.0 - 18th July 2026
-
-- Added `src/agents7/eval/trajectory.py`: trajectory scoring for
-  tool-calling agents, which answer in free text and so cannot be
-  scored label-against-label:
-  - `TrajectoryMode`: `in_order` (extra calls tolerated, counted and
-    reported) or `exact` (they are not).
-  - `ExpectedCall` / `ToolCall`: one expected and one actual call.
-    Arguments match on the stated keys only, so a row pins what
-    matters instead of every default.
-  - `TrajectoryResult`: the matched outcome, exposing `missing` and
-    `extra`.
-  - `parse_expected_calls()`: parse a golden set's `tools` cell, from
-    dicts, bare tool names, or a JSON string (a CSV cell).
-  - `match_trajectory()`: match an actual trajectory against the
-    expected one, in order.
-  - `collect_trajectory()`: run an agent once, recording its calls.
-  - `run_trajectory_evaluation()`: score every row of a golden set.
-  - `compute_trajectory_metrics()`: call-level totals and per-tool
-    recall.
-- Updated `src/agents7/eval/`:
-  - `data.py`: added `tool` to `AGENT_TYPE_MAP`, making tool agents
-    evaluable.
-  - `suite.py`: `run_eval_suite()` routes a `ToolAgent` through the
-    trajectory scorer, added the `trajectory_mode` parameter (falling
-    back to the config's `trajectory_mode`), and omitted the confusion
-    matrix for trajectory runs.
-  - `metrics.py`: `EvalResult` carries an optional `trajectory`.
-  - `export.py`: reports gained a Trajectory section with per-tool
-    recall, and per-case detail naming the missing and extra calls.
-- Updated `src/agents7/agents/`:
-  - `base.py`: moved `with_overrides()` up from `Labeler`, so every
-    agent type can be cloned with fields replaced.
-  - `tool_agent.py`: added the `call_logger` field, emitting a
-    `CallRecord` per model turn through a single choke point shared by
-    the blocking, async, and streaming loops.
-- Updated `src/agents7/cli/__init__.py`: added `--trajectory-mode` to
-  `agents7 eval`.
-- Added `tests/test_eval_trajectory.py`: 37 tests.
-- Updated `tests/test_eval_suite.py`: 7 tests for the tool route.
-
-
-### v4.13.0 - 18th July 2026
-
-- Updated `tools/`:
-  - `Tool.validate_arguments()`: validates and coerces a model's tool
-    arguments through the same Pydantic model the tool's JSON schema
-    is derived from. Stringified numbers are coerced; anything
-    uncoercible raises `ToolArgumentError` with a readable message
-    instead of surfacing an opaque Python error.
-  - `Tool.run()`: validates arguments before invoking the callable.
-  - `Tool.args_model`: the derived args model, or `None` when the
-    tool was given a hand-written schema for an untyped callable.
-  - `serialize_tool_result()`: recurses into `dict` / `list` /
-    `tuple`, so a bare `list[Product]` of Pydantic models encodes as
-    a JSON array of objects rather than of Python `repr` strings.
-  - `args_model_from_callable()`: exposed as the shared source of
-    both the schema and the validator.
-- Added `ToolArgumentError` in `exceptions.py`.
-
-
-### v4.12.3 - 18th July 2026
-
-- Fixed `eval/suite.py`:
-  - `run_eval_suite()` now summarises only the calls *that run*
-    made. `JsonCallLogger` appends, so reusing a `call_log` path
-    across runs made the summary report every earlier run's calls
-    as if they were the current one's.
-  - `_summarize_calls()` takes the run's in-memory records instead
-    of re-reading the log file. The file keeps its full append
-    history; only the summary is scoped to the run.
-
-
-### v4.12.2 - 18th July 2026
-
-- Updated `CLAUDE.md`: corrected the catalog workflow, which pointed at
-  an `agents_catalog/pyproject.toml` and `agents_catalog/changelog.md`
-  that do not exist:
-  - Stated that the catalog root is a container with no package and no
-    venv; each agent is its own versioned package.
-  - Fixed the test command to run through an agent's project, since the
-    catalog root has no venv to run from.
-  - Noted that catalog-root files (`scripts/`, `tests/`, `README.md`)
-    carry no version bump, and how to restore an agent's editable
-    install after `uv sync` drops it.
-
 
-### v4.12.1 - 18th July 2026
+### v9.24.1 - 4th October 2026
 
-- Updated `roadmap.md`: marked phase 2 (adopt the composed eval route
-  across the catalog) complete and restated its gate as a standing
-  invariant — no accuracy or latency claim without an eval run behind
-  it. Next up is phase 3, the catalog `ToolAgent` showcase.
-- Updated `backlog.md`: pruned the resolved eval-adoption item.
+- Rotated changelog: archived 7 entries to `changelog/2026.md`.
 
 
-### v4.12.0 - 18th July 2026
+### v9.24.0 - 2nd October 2026
 
-- Updated `agents7/eval/suite.py`:
-  - `run_eval_suite()`: added the optional `notes` parameter, appending
-    caller-supplied note lines to the report after the standard eval-set
-    and accuracy notes. Lets an agent carry domain caveats into its
-    report without dropping down to `export_eval_report()`.
+- Added `agents.context.spanish_weekday()`: the day of the week in
+  Spanish from the local clock, for a `context_params` `callable`.
+  Exported from `agents7.agents`.
 
 
-### v4.11.0 - 18th July 2026
+### v9.23.1 - 2nd October 2026
 
-- Added `src/agents7/eval/suite.py` — the composed evaluation route:
-  - `run_eval_suite()`: loads and normalises a golden set, builds the
-    agent, scores every row, aggregates metrics, summarises the calls
-    made, and optionally writes a Markdown report — in one call.
-  - `EvalRun`: the run's full output (agent, model, fields, results,
-    metrics, call-log summary, report path) with a `format()` summary.
-  - `resolve_eval_fields()`: normalises rows and resolves the fields to
-    score, honouring an explicit override.
-- Updated `src/agents7/eval/export.py`: `export_eval_report()` accepts a
-  `call_log` summary and renders a "Call Log" section.
-- Updated `src/agents7/cli/__init__.py`:
-  - `agents7 eval` is now a thin wrapper over `run_eval_suite()`.
-  - Added `--call-log`: log every call made during the run and
-    summarise it in the output and the report.
-- Fixed `src/agents7/agents/batch.py`: batch runs never emitted call-log
-  records, so `call_logger` silently covered only `act()` /
-  `act_async()`. `BatchProcessor` now reports each chunk request via an
-  `on_call` hook — one record per LLM call, not per input row.
-- Updated `README.md`: added an "Evaluation Workflow" section
-  documenting the route end to end, and linked the CLI and call-logging
-  sections to it.
+- Fixed values supplied through `set_context` not reaching a guarded
+  conversation. Found when a read ran every conversation on the
+  default nicknames:
+  - `BaseAgent.with_overrides`: the copy keeps the supplied context.
+    A bare `dataclasses.replace` still drops it.
+  - `eval.chat_review.ConversationRecorder`: copies the agent with
+    `with_overrides`, so the agent that talks is the one the caller
+    configured.
+  - `GuardedSceneChatter`: the scene was resolved into the guard when
+    the agent was built, so the guard judged every reply against the
+    defaults. `guard` now keeps `context_params` and
+    `prompt_variants` names as placeholders, and
+    `GuardedChatter.current_guard()` fills them per reply.
+- A guarded style-history key for an agent whose scene names a context
+  param moves once: the guard's identity no longer carries the time
+  of day the agent was built at.
+- Added 9 tests in `tests/test_context_params.py`,
+  `tests/test_chat_review.py` and `tests/test_guarded_scene.py`.
+- Updated `README.md`: copying an agent that has context, and
+  `current_guard()`.
 
 
-### v4.10.2 - 18th July 2026
+### v9.23.0 - 2nd October 2026
 
-- Filled in `roadmap.md`, previously an empty scaffold stub:
-  - Current phase "measurement first": compose the `agents7.eval` /
-    CLI / call-log pieces into one workflow, then adopt it across the
-    catalog, then resume feature work.
-  - Standing invariants: agents are frozen configs not autonomous
-    loops, rule-based pipelines before LLMs, provider-agnostic by
-    default, measure before claiming.
-  - Refuted directions: LLM classifiers where the signal space is
-    enumerable, and thinking left enabled for structured output.
-
-
-### v4.10.1 - 13th July 2026
-
-- Rotated changelog: archived 8 entries to `changelog/2026.md`.
-
-
-### v4.10.0 - 11th July 2026
-
-- Added A/B testing harness in `agents7.eval`:
-  - `run_ab_test()`: run two agents on the same test cases and return comparative metrics.
-  - `run_ab_test_async()`: async variant.
-  - `ABTestResult`: dataclass with per-agent metrics, accuracy/per-field/timing deltas, pass-fail agreement counts, and the winner.
-- Updated `README.md`: documented the A/B testing API under Evaluation Metrics.
-
-
-### v4.9.1 - 11th July 2026
-
-- Fixed `llm/ollama.py`:
-  - `OllamaProvider._think_kwargs()` now always sends the `think` flag (both `True` and `False`) instead of omitting it when `False`. An explicit `think=False` now genuinely disables Ollama's default thinking on thinking-capable models (qwen3, gemma3n), which previously kept thinking and could overrun structured-output calls and drop fields. Non-thinking models accept `think=False` without error.
-- Added regression tests in `tests/test_tool_provider.py`:
-  - `test_think_kwargs_always_passes_flag()`
-  - `test_build_call_kwargs_includes_think_false()`
-
-
-### v4.9.0 - 11th July 2026
-
-- Added step-event streaming to `ToolAgent` in `agents/tool_agent.py`:
-  - `act_stream()` and `act_stream_async()`: run the tool loop, yielding a `ToolStepEvent` per tool call, tool result, and final answer; expose the parsed `AgentResponse` via `agent_response` after iteration.
-  - `ToolStepEvent`: frozen event carrying `kind`, `iteration`, and per-kind fields (`name`, `arguments`, `result`, `text`, `thinking`).
-  - `ToolStepKind`: `StrEnum` of `TOOL_CALL`, `TOOL_RESULT`, `ANSWER`.
-  - `ToolStreamResult` / `ToolAsyncStreamResult`: sync/async iterables of events.
-- Exported the new symbols from `agents7.agents`.
-- Updated `README.md`: documented streaming the tool loop.
-- Added unit tests in `tests/test_tool_agent.py` for the streaming path.
-
-
-### v4.8.2 - 11th July 2026
-
-- Updated `integration_tests/`:
-  - `test_tool_agent.py`: switched the end-to-end ToolAgent test to `qwen2.5:3b` (fast, tool-capable, no thinking) and added a `skipif` guard so it skips when the model is absent. Validates the request → tool_calls → tool result → final answer round-trip against a live Ollama model — no wire-format drift found.
-  - `integration_helpers.py`: added `is_model_available()`, shared across the model-gated integration tests.
-  - `test_multi_model.py`: import `is_model_available` from `integration_helpers` instead of a local copy.
-
-
-### v4.8.1 - 11th July 2026
-
-- Updated `.env.example`: documented every environment variable the framework reads — `OLLAMA_MODEL_NAME`, the new `OPENAI_COMPAT_*` trio, `OPENAI_API_KEY` / `OPENAI_BASE_URL`, `ANTHROPIC_API_KEY`, and `BATCH_MAX_CONCURRENT` (previously only `GITLAB_TOKEN`).
-
-
-### v4.8.0 - 11th July 2026
-
-- Added env-var configuration for the OpenAI-compatible provider (external providers like DeepSeek):
-  - `settings.py`: added `OpenAICompatSettings` reading `OPENAI_COMPAT_MODEL_NAME`, `OPENAI_COMPAT_BASE_URL`, and `OPENAI_COMPAT_API_KEY` from the environment at instantiation.
-  - `OpenAICompatProvider`: `model_name`, `base_url`, and `api_key` now fall back to `OpenAICompatSettings` when omitted; raises `ValueError` when no model is configured.
-  - `LLMEngine`: `model_name` is now optional and resolves from `OPENAI_COMPAT_MODEL_NAME` for the `openai_compat` provider.
-- Updated `README.md`: documented the `OPENAI_COMPAT_*` env vars and a DeepSeek end-to-end setup.
-
-
-### v4.7.4 - 1st July 2026
-
-- Rotated changelog: archived 1 entries to `changelog/2026.md`.
-
-
-### v4.7.3 - 28th June 2026
-
-- Rotated changelog: archived 1 entries to `changelog/2026.md`.
-
-
-### v4.7.2 - 25th June 2026
-
-- Rotated changelog: archived 1 entries to `changelog/2026.md`.
-
-
-### v4.7.1 - 25th June 2026
-
-- Rotated changelog: archived 16 entries to `changelog/2026.md`.
-
-
-### v4.7.0 - 21st June 2026
-
-- Updated `tools/`:
-  - `Tool.run()`: serializes structured returns (`dict`, `list`,
-    `tuple`, or a Pydantic model) to JSON before feeding them back
-    to the model; plain strings pass through, other types fall back
-    to `str`.
-  - Added `serialize_tool_result()`: the standalone serializer
-    backing `Tool.run()`, exported from `agents7.tools`.
-
-
-### v4.6.0 - 21st June 2026
-
-- Wired tool calling for the OpenAI-compatible provider in `src/agents7/llm/openai_compat.py`:
-  - `OpenAICompatProvider.supports_tools()`: now returns `True`.
-  - `OpenAICompatProvider.build_tool_turn_messages()`: emits the assistant `tool_calls` array plus one `role: "tool"` message per call, linked by `tool_call_id`.
-  - `_parse_tool_calls()`: decodes `function.arguments` JSON strings into dicts (malformed strings degrade to `{}`).
-  - `_build_params()`: forwards `tools` unchanged (the registry already emits OpenAI's native schema); `chat`/`chat_async` thread `tools` through.
-- `ToolAgent` now works on Ollama, Anthropic, and OpenAI-compatible providers.
+- Added `when_prompt_matches` to `eval.style.forbidden_pattern`: the
+  rule applies only to replies whose prompt matches the given
+  regular expression, and is not applicable elsewhere.
+
+
+### v9.22.0 - 2nd October 2026
+
+- Added script context in `eval.style`:
+  - `ConversationScript.context`: values handed to `set_context`
+    before the script's first turn, in both runners.
+  - `scripts[].context` in YAML, read by `load_style_contract`.
+  - `style_history`: a script's context is part of the run's
+    fingerprint and configuration key; a script without one hashes
+    as before.
+- Added 7 tests in `tests/test_style_contract.py` and
+  `tests/test_style_history.py`.
+
+
+### v9.21.1 - 2nd October 2026
+
+- Fixed the integration suite timing out on a cold Ollama:
+  - `integration_helpers.warm_model()`: loads a model once per
+    session; every fixture that builds an agent calls it.
+  - `conftest.py`: the 60s per-test timeout covers the test body
+    only, so a model load in setup is not counted.
+  - `conftest.py`: the 300s session limit no longer counts time
+    spent loading models.
+
+
+### v9.21.0 - 2nd October 2026
+
+- Added derived context params in `agents.context`:
+  - `ContextParam.derived_from`: names another declared param; the
+    resolver is then called with that param's current value.
+  - `context_params.<name>.from` in YAML, read by
+    `parse_context_params`.
+  - `BaseAgent.resolved_context` computes a derived param after its
+    source, so supplying the source is enough.
+- Added `tests/test_context_params.py`: 13 tests for derived params.
+- Updated `README.md`: derived values under Per-Conversation Context.
+
+
+### v9.20.2 - 22nd September 2026
+
+- Rotated changelog: archived 14 entries to `changelog/2026.md`.
+
+
+### v9.20.1 - 20th September 2026
+
+- Updated `agents.facts` `_EXTRACTOR_PROMPT`: a fact now keeps the
+  character's own tense and the words that place it in time. A
+  character who said "la de mi piso en Bilbao, hace años" was
+  recorded as "Tiene un piso en Bilbao" — the "hace años"
+  dropped and a flat it had lived in became one it has. A fact
+  store is replayed into every later prompt, so a wrong tense
+  compounds.
+
+
+### v9.20.0 - 20th September 2026
+
+- Updated `eval.chat_review.ConversationRecorder`: when
+  `agent_version` is not given it now reads the installed
+  distribution the agent's `name` resolves to, and raises
+  `AgentConfigurationError` when none answers to that name.
+  It previously fell back to the agent's own `version`, which
+  for a config-loaded agent is the config *schema* version, so
+  a recording made without the argument was filed under `1`.
+  A recording's version is what tells two reads apart, so it
+  is never guessed.
+
+
+### v9.19.0 - 20th September 2026
+
+- Added `eval.chat_review.read_payload()`: a whole read as plain
+  data — its text, verdicts, measures, comparison rows and
+  conversations, plus the note kinds and stamps a renderer needs to
+  label them. JSON-serialisable throughout.
+  - `render_review` writes a self-contained page and is still the
+    answer when a read is something to publish. A UI that lets
+    somebody *click a turn* cannot use that page: it has to build
+    the transcript itself, and the moment it does, the template
+    exists twice and the two drift. Four reads came out with four
+    designs before the generator existed.
+  - So the data is the contract. `render_review` builds its
+    conversations from the same function this does, and a test
+    asserts both show the same ones. What is deliberately not
+    shared is the visual template, which is each renderer's own
+    business.
+- Added tests in `tests/test_chat_review.py`: four on
+  `read_payload`, including that it is JSON-serialisable and that it
+  agrees with the generated page.
+
+
+### v9.18.0 - 20th September 2026
+
+- Added `eval/chat_feedback.py`, the standardised format for the
+  operator's corrections to a chat agent. A style contract says a
+  rule stopped holding and a read says whether the agent is good
+  company; neither produces the correction of a line and the rule it
+  becomes, which is what actually improves the agent. That has been
+  written by hand in two shapes — a rewrite and a rule — and both
+  said of themselves that they were not machine-readable.
+  - `FeedbackEntry`: one correction, carrying a rewrite, a rule, or
+    both. `turn` is optional, so a note about a whole conversation
+    is expressible; a verdict of `right` marks a line worth
+    imitating rather than the absence of criticism; `he_said` sits
+    beside the rewrite so it cannot drift from what it corrected;
+    `shipped` is empty until the rule lands.
+  - `Feedback.rule_changes()`: the rules grouped by the config file
+    they land in, unassigned last, with the unshipped separable.
+  - `Feedback.eval_rows()`: corrected turns as machine-readable
+    targets, and lines marked right as targets in their own right.
+  - `render_feedback()` and `write_feedback_report()`: the
+    operator's report, grouped by rules to change, corrected lines,
+    and what is worth imitating.
+  - `merge_entries()`: replaces every entry on a touched turn and
+    leaves other turns alone, so an editor can write a file back
+    without losing what was there.
+  - `load_feedback`, `save_feedback`, `write_eval_rows`.
+- Added the `chat-feedback` CLI command: derives all three outputs
+  from one file, prints the report when given neither `--report` nor
+  `--rows`, and reports how many rules have not shipped.
+- Added tests:
+  - `tests/test_chat_feedback.py`: 39 covering the entry's
+    validation, grouping, eval rows, round trip, merging and the
+    report.
+  - `tests/test_cli.py`: 4 on `chat-feedback`.
+- Updated `README.md`: a "Feedback on a Chat Agent" section, and the
+  three-instruments framing in "Scoring a Chat Agent's Style".
+
+
+### v9.17.0 - 20th September 2026
+
+- Added `Agent.resolved_context`: what the declared `context_params`
+  resolve to right now, which is the mapping `_substitute` already
+  built and threw away. A `callable` resolver runs inside
+  substitution, so nothing afterwards could say which time of day,
+  nickname or hint a finished conversation ran with — and at
+  temperature a re-run is a different conversation. `_substitute`
+  now reads the same property, so the two cannot drift.
+- Added to `eval.chat_review`:
+  - `Recording.context`: what the agent's context params resolved to
+    when the conversation opened. Captured once, because a resolver
+    returns a fresh value on every read.
+  - `Recording.facts`: the character facts the store held at the
+    start. A reply can be shaped by an earlier conversation and a
+    transcript does not show it.
+  - A context block above every transcript, carrying the date and
+    time, the agent and its version, the models that answered, each
+    context param, the facts it already knew and the prompt variants
+    it drew. It stays visible in Read mode: it is context for the
+    chat, the way a messenger names who you are talking to, not part
+    of the review apparatus the toggle strips.
+  - A recording made before this version has no `context` key. It
+    loads with an empty one and the page says `not recorded`, which
+    is not the same as a conversation that ran with no context.
+- Added tests:
+  - `tests/test_context_params.py`: four on `resolved_context`,
+    including that it is what the prompt is actually built from.
+  - `tests/test_chat_review.py`: six on capturing, round-tripping and
+    rendering the context, and on an older recording still loading.
+
+
+### v9.16.1 - 20th September 2026
+
+- Removed `.pre-commit-config.yaml`: the monorepo root config is the only
+  one, and this one was a trap. `pre-commit install` run from this
+  directory — the only one holding a venv with pre-commit — resolved it and
+  wrote `--config=agents7_framework/.pre-commit-config.yaml` into the hook,
+  silencing four of the root's six guards, `check-changelog-headers` and
+  `check-version-changelog` among them. Its own two `uv run ruff` hooks
+  could not run either: pre-commit works from the repo root, which has no
+  `pyproject.toml` for `uv run` to resolve.
+
+
+### v9.16.0 - 19th September 2026
+
+- Updated `agents/context.py`:
+  - `ContextParam.identity`: the declaration — name, default and where a resolver comes from — as it enters a run's fingerprint.
+- Updated `agents/base.py`:
+  - `system_prompt_identity`: leaves `context_params` as placeholders and declares them after the prompt, the way it already handled `prompt_variants`. It resolved them before, so a `callable` reading the clock put the time of day in the hash and split one configuration's style history into a band per part of the day, and a nickname passed to `set_context` counted as a different agent.
+  - `_substitute`: takes `with_context`, to leave those names unfilled when building the identity.
+- Added tests in `tests/test_context_params.py`:
+  - Six covering run identity, including that two runs hashed at different hours share a fingerprint.
+- Updated `README.md`: what a context param contributes to the identity, and why.
+
+
+### v9.15.2 - 21st September 2026
+
+- Rotated changelog: archived 6 entries to `changelog/2026.md`.
+
+
+### v9.15.1 - 17th September 2026
+
+- Updated `agents/base.py`: `_set_attr` says it is only for fields read at call time. A `Detector` builds what it sends into `_prompt` in `__post_init__`, so replacing a built guard's `system_prompt` this way changes nothing — use `with_overrides`.
+
+
+### v9.15.0 - 17th September 2026
+
+- Updated `agents/context_guard.py`: the default guard prompt accepts a cut-off the scene rules call for — when a rule says the character declines or ends the conversation, a short reply that keeps declining is in character, even a bare goodbye, even ignoring what the user asked, even repeating an earlier goodbye. The v9.14.0 rule on goodbyes nobody asked for was reading those refusals as goodbyes, while deleting that rule would have let an early goodbye through.
+  - Changes the guard prompt of every guarded scene agent, so guarded style histories start a fresh baseline; unguarded ones, that agent's gate included, are unaffected.
+- Added `test_context_guard_prompt_accepts_a_cut_off_the_scene_calls_for` in `tests/test_context_guard.py`.
+
+
+### v9.14.0 - 17th September 2026
+
+- Updated `agents/context_guard.py`: the default guard prompt rejects a goodbye the character starts before a scene rule allows it, as `OFF_TOPIC`, however dry the user's answers. Staying in the conversation, offering to leave or leaving the next move to the user is not a goodbye, and once the user says they are leaving the rule no longer applies.
+  - Without the closing sentence about the user leaving, the guard also rejected the character's replies to the user's own goodbye.
+- Added `test_context_guard_prompt_rejects_a_goodbye_nobody_asked_for` in `tests/test_context_guard.py`.
+
+
+### v9.13.0 - 16th September 2026
+
+- Updated `eval/style.py`:
+  - `StyleReport.variants`: the `prompt_variants` texts each scored run was shown, by run label.
+  - `run_style_contract()` and `run_style_contract_async()` fill it from each fresh agent.
+- Updated `eval/style_history.py`:
+  - `StyleRunRecord.run_variants`: the same, persisted once per run; empty on older records.
+  - `StyleRunRecord.by_variant()`: adds up one rule's score per text shown.
+- Added tests:
+  - `tests/test_style_contract.py`: 4 tests.
+  - `tests/test_style_history.py`: 6 tests.
+- Updated `README.md`: *Prompt Variants* section.
+
+
+### v9.12.0 - 16th September 2026
+
+- `agents/`:
+  - Added `prompt_variants` in `base.py`: alternative texts for a `$variable`, one drawn per agent, because a model shown several alternatives answers with the first:
+    - `BaseAgent.draw_variants()`: draws again, repeatably with a seed.
+    - `BaseAgent.variant_values`: what was drawn.
+    - `BaseAgent.system_prompt_identity`: the prompt with every alternative listed instead of the draw.
+  - Updated `chatter.py`: `Chatter.reset()` draws again without a memory backend; with one, the draw is seeded by `conversation_id` so a rebuilt agent keeps it.
+  - Updated `config_loader.py`: every loader reads a `prompt_variants` section, via `parse_prompt_variants()`.
+- Updated `eval/`:
+  - `style_history.py`: fingerprints hash `system_prompt_identity`, so runs that drew differently share a baseline.
+  - `chat_review.py`: `Recording.variants` saves what the recorded conversation drew.
+- Added `tests/test_prompt_variants.py`: 22 tests.
+- Updated `README.md`: *Prompt Variants* section.
+
+
+### v9.11.1 - 16th September 2026
+
+- Rotated changelog: archived 13 entries to `changelog/2026.md`.
+
+
+### v9.11.0 - 15th September 2026
+
+- Updated `eval/style_history.py`: the margin from prior invocations is
+  read at the upper bound of their spread, not its point estimate:
+  - Added `SPREAD_CONFIDENCE` (0.90), exported from `agents7.eval`.
+  - `sampling_margin` / `compare_to_history`: four priors that happen to
+    agree no longer give a margin of about a point. Replayed over
+    a chat agent's gate history, false gate failures on unchanged configs
+    went from six to none; median margin went from 9.2 to 16.7 points.
+  - `detectable_shift` / `runs_for_shift`: size against the same bar.
+- Added tests in `tests/test_style_history.py`, including the
+  chi-square quantile against its closed forms.
+- Updated `.claude/rules/measurement-needs-history.md` (rule 4) and
+  `README.md`.
+
+
+### v9.10.0 - 15th September 2026
+
+- Added `aclose()` to close async HTTP clients before the event loop ends:
+  - `LLMProvider.aclose()`: closes the async client and swaps in a fresh
+    one, so the engine stays usable. Implemented for `ollama`,
+    `openai_compat` and `anthropic`.
+  - `LLMEngine.aclose()`: closes the primary provider and its fallback.
+  - `BaseAgent.aclose()`: closes every distinct engine the agent holds,
+    including a guard's and a fact extractor's.
+- Fixed "Task exception was never retrieved ... Event loop is closed"
+  after an `asyncio.run`:
+  - `run_style_contract_async`: closes every agent it built before
+    returning.
+  - `LLMEngine.check_available`: closes what its check opened inside
+    its own loop, which is what a chat agent's `--wait` tripped over.
+- Added `tests/test_engine_aclose.py` and two runner tests in
+  `tests/test_style_contract.py`.
+- Updated `README.md`: new *Closing Async Clients* section.
+
+
+### v9.9.0 - 14th September 2026
+
+- Added `Availability` and `LLMEngine.check_available()` / `check_available_async()` in `llm/base.py`: one small request with a wall-clock limit (15 s by default), sent straight to the provider with no retry, cache or fallback. Says whether the provider answered, how long the check took and, when it did not, why. Built after 14th September 2026, when DeepSeek accepted requests for hours and answered none.
+- Updated `eval/style.py`: `run_style_contract` and `run_style_contract_async` stop once the provider stops answering:
+  - New `stop_after_unavailable` argument, default 2. After that many conversations in a row are lost to a timeout or a dropped connection, no further conversation starts, and the ones in flight end before their next turn. A turn already sent is never cut off.
+  - A finished conversation, or one lost to any other error, resets the count. `None` turns stopping off.
+  - Conversations that were not played appear in `StyleReport.lost`, and the new `StyleReport.stopped_early` says the run stopped. The summary says so too.
+- Added tests:
+  - `tests/test_engine_availability.py`: 7 tests.
+  - `tests/test_style_contract.py`: 6 tests on stopping early.
+
+
+### v9.8.0 - 14th September 2026
+
+- Updated `agents/chatter.py`: `Chatter` removes empty lines from every reply before storing and returning it, so two messages separated by an empty line no longer reach a chat client with an empty message between them. Non-empty lines are kept exactly as written. `_append_assistant` does it once and returns the stored text, and every reply path uses that return value:
+  - `Chatter._respond`, `_respond_async` and the stream wrapper's `_finalize`.
+  - `GuardedChatter._respond`, `_respond_async` and both guarded stream wrappers, in `agents/guarded.py`.
+- A live stream still yields its chunks as generated; `chat_response` and the history carry the cleaned reply.
+- Added tests:
+  - `tests/test_chatter.py`: `test_chat_drops_empty_lines` (4 cases), `test_chat_async_drops_empty_lines`, `test_chat_stream_drops_empty_lines_once_finished`.
+  - `tests/test_guarded_chatter.py`: `test_chat_accepted_drops_empty_lines`, `test_chat_async_accepted_drops_empty_lines`, `test_chat_stream_guarded_drops_empty_lines`.
+
+
+### v9.7.2 - 14th September 2026
+
+- Fixed `agents/chatter.py`: `remember()` and `remember_async()` now log the fact extractor's calls. The extractor borrows the chatter's `call_logger` at call time unless it declares its own, so a logger an eval run attaches later is used too. Before, no extraction reached the call log, and an unparseable one looked the same as a conversation with no new facts.
+- Added tests in `tests/test_character_facts.py`:
+  - `test_remember_logs_the_extractor_call`
+  - `test_remember_logs_an_unparseable_extraction_as_failed`
+  - `test_remember_async_logs_the_extractor_call`
+  - `test_remember_uses_a_logger_attached_after_construction`
+  - `test_remember_keeps_the_extractor_own_logger`
+- Updated `.claude/rules/metrics-completeness.md`: instance 20 under *Known gaps*.
+
+
+### v9.7.1 - 13th September 2026
+
+- Fixed `agents/context_guard.py`: the guard no longer rejects a reply for leaving out a move a scene rule says to make, which turned a scene's rule about what to do when the chat went well into rejected goodbyes and fixes that added that move:
+  - "Only a rule the response breaks counts": a response that skips a move a rule describes has broken nothing.
+  - "A goodbye is never OFF_TOPIC", with two ACCEPT examples: a plain goodbye, and one that asks to meet again.
+  - The `fix` removes the problem and adds nothing — no invitation, question or game the response did not make.
+- Added tests in `tests/test_context_guard.py`:
+  - `test_context_guard_prompt_does_not_enforce_a_skipped_move`
+  - `test_context_guard_prompt_accepts_a_goodbye`
+- Measured on 13th September 2026, before and after:
+  - `benchmark_guarded_scene.py` on `gemma4:e4b`: 29/30 to 30/30 runs, guard rejections 10 to 17.
+- Added benchmark outputs:
+  - `benchmarks/output_guard_verdicts_2026-09-13_before.txt`, `_after.txt`, `_before_repeats6.txt`, `_after_repeats6.txt`
+  - `benchmarks/output_guarded_scene_2026-09-13_before.txt`, `_after.txt`
+  - `benchmarks/output_guard_deepseek_2026-09-13.txt`

@@ -137,13 +137,14 @@ def create_mock_engine(
     engine.model_id = f"mock::{model_name}"
     engine.retry_config = None
     engine.cost_per_1m_tokens = None
+    engine.pricing = None
     engine.llm_provider = provider
     engine._dispatcher = EngineDispatcher(
         primary=provider,
         fallback=None,
         retry_config=None,
         cache=None,
-        cost_per_1m_tokens=None,
+        pricing=None,
         model_id=f"mock::{model_name}",
     )
 

@@ -19,7 +19,7 @@ if __name__ == "__main__":
         "The new intern started today. His name is Alex.",
         "Dr. Chen has been practicing medicine in Singapore for 20 years.",
         "I bought groceries at the store.",
-        "My neighbor David, 45, works as a carpenter in Madrid.",
+        "My neighbor Javier, 45, works as a carpenter in Madrid.",
     ]
 
     print(f"Agent: {extractor.name} (v{extractor.version})")

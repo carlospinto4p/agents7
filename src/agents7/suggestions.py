@@ -12,7 +12,7 @@ Usage::
 
     from agents7.suggestions import SuggestionQueue
 
-    queue = SuggestionQueue("tagger_agent")
+    queue = SuggestionQueue("my_tagger")
     queue.add(
         input_data={"text": "moderador_sala"},
         expected={"category": "MALE"},

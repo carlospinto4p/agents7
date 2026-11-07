@@ -2,13 +2,19 @@
 
 from unittest.mock import AsyncMock, Mock, patch
 
+import httpx
 import ollama
 import pytest
 
 from agents7.agents.labeler import Labeler
 from agents7.exceptions import LLMException
+from agents7.llm import LLMEngine
+from agents7.llm.dispatcher import _dispatch_errors
 from agents7.llm.retry import (
+    DEFAULT_RETRY,
+    AttemptStats,
     RetryConfig,
+    _all_provider_errors,
     _is_retryable,
     retry_async,
     retry_sync,
@@ -270,7 +276,12 @@ def test_yaml_with_retry(tmp_path):
 
 
 def test_yaml_without_retry(tmp_path):
-    """No retry section means engine.retry_config is None."""
+    """No retry section means the default, not no retrying.
+
+    Before v5.3.0 this left `retry_config` as ``None`` and the
+    provider SDK quietly retried twice instead, uncounted. The
+    default replaces that layer with one that reports itself.
+    """
     yaml_content = (
         "name: NoRetryLabeler\n"
         "version: 1\n"
@@ -285,4 +296,347 @@ def test_yaml_without_retry(tmp_path):
 
     agent = Labeler.from_yaml(str(yaml_file))
 
-    assert agent.engine.retry_config is None
+    assert agent.engine.retry_config == DEFAULT_RETRY
+
+
+# --- A 500 is caught and retried on every provider ---
+#
+# Regression guard. Each provider raises its own unrelated error
+# hierarchy, and the retry loops build their `except` clause from
+# `_all_provider_errors()`. Anthropic was missing from that tuple
+# for as long as it had existed, so `_is_retryable` said to retry
+# an `anthropic.InternalServerError` and the call never reached it.
+# Testing only the providers that happened to work is what let a
+# whole provider go unretried, so all three are covered here.
+
+
+def _ollama_500() -> Exception:
+    """Build the 500 an Ollama call raises."""
+    err = ollama.ResponseError("internal server error")
+    err.status_code = 500
+    return err
+
+
+def _openai_500() -> Exception:
+    """Build the 500 an OpenAI-compatible call raises."""
+    import openai
+
+    return openai.InternalServerError(
+        "internal server error",
+        response=_http_500(),
+        body=None,
+    )
+
+
+def _anthropic_500() -> Exception:
+    """Build the 500 an Anthropic call raises."""
+    import anthropic
+
+    return anthropic.InternalServerError(
+        "internal server error",
+        response=_http_500(),
+        body=None,
+    )
+
+
+def _http_500() -> httpx.Response:
+    """Build the HTTP response both SDK errors are built from."""
+    return httpx.Response(
+        500,
+        request=httpx.Request("POST", "https://example.invalid/v1"),
+    )
+
+
+_PROVIDER_500 = [
+    pytest.param(_ollama_500, id="ollama"),
+    pytest.param(_openai_500, id="openai_compat"),
+    pytest.param(_anthropic_500, id="anthropic"),
+]
+
+
+@pytest.mark.parametrize("build_error", _PROVIDER_500)
+def test_provider_500_is_retryable(build_error):
+    """Every provider's 500 is classified as retryable."""
+    assert _is_retryable(build_error()) is True
+
+
+@pytest.mark.parametrize("build_error", _PROVIDER_500)
+def test_provider_500_is_caught(build_error):
+    """Every provider's 500 is in the retry loop's except clause.
+
+    `_is_retryable` returning True is worth nothing if the error
+    never reaches it, which is exactly how Anthropic failed.
+    """
+    assert isinstance(build_error(), _all_provider_errors())
+
+
+@pytest.mark.parametrize("build_error", _PROVIDER_500)
+def test_provider_500_reaches_the_dispatcher(build_error):
+    """Every provider's 500 triggers fallback rather than escaping."""
+    assert isinstance(build_error(), _dispatch_errors())
+
+
+@pytest.mark.parametrize("build_error", _PROVIDER_500)
+def test_provider_500_retried_sync(build_error):
+    """A 500 from any provider is retried, then succeeds."""
+    fn = Mock(side_effect=[build_error(), {"response": "recovered"}])
+
+    with patch("agents7.llm.retry.time.sleep"):
+        result = retry_sync(fn, RetryConfig(max_retries=3, base_delay=0.01))
+
+    assert result == {"response": "recovered"}
+    assert fn.call_count == 2
+
+
+@pytest.mark.parametrize("build_error", _PROVIDER_500)
+async def test_provider_500_retried_async(build_error):
+    """The async loop retries a 500 from any provider too."""
+    fn = AsyncMock(side_effect=[build_error(), {"response": "recovered"}])
+
+    with patch("agents7.llm.retry.asyncio.sleep", new=AsyncMock()):
+        result = await retry_async(
+            fn, RetryConfig(max_retries=3, base_delay=0.01)
+        )
+
+    assert result == {"response": "recovered"}
+    assert fn.call_count == 2
+
+
+@pytest.mark.parametrize("build_error", _PROVIDER_500)
+def test_provider_500_counted_as_a_retry(build_error):
+    """The attempt a 500 cost is recorded, not silently absorbed."""
+    stats = AttemptStats()
+    fn = Mock(side_effect=[build_error(), {"response": "recovered"}])
+
+    with patch("agents7.llm.retry.time.sleep"):
+        retry_sync(fn, RetryConfig(max_retries=3, base_delay=0.01), stats)
+
+    assert stats.retries == 1
+    assert stats.retry_duration > 0
+
+
+# --- The default retry layer ---
+#
+# Item 2 of the 4th September backlog. Both SDKs retried twice by
+# themselves and the framework only switched that off when a
+# `timeout` was declared, so a config declaring neither had three
+# attempts made for it while `LLMMetrics.retries` reported zero —
+# a measurement produced by a library and recorded by nobody. The
+# SDKs are now off in every case and `DEFAULT_RETRY` takes their
+# place, which is only worth doing if what it does is counted.
+
+
+def test_default_retry_replaces_the_sdk_attempt_count():
+    """The default makes the same three attempts the SDKs made."""
+    assert DEFAULT_RETRY.max_retries == 2
+
+
+def test_engine_without_retry_gets_the_default():
+    """An engine given no `retry` retries, rather than not."""
+    engine = LLMEngine("ollama", "test-model")
+
+    assert engine.retry_config == DEFAULT_RETRY
+    assert engine._dispatcher._retry_config == DEFAULT_RETRY
+
+
+def test_engine_retry_can_still_be_switched_off():
+    """`max_retries=0` is how a caller now asks for no retrying.
+
+    `retry=None` no longer means it, so there has to be a way to
+    say it, and the dispatcher has to receive what was asked for.
+    """
+    engine = LLMEngine(
+        "ollama", "test-model", retry=RetryConfig(max_retries=0)
+    )
+
+    assert engine.retry_config.max_retries == 0
+    assert engine._dispatcher._retry_config.max_retries == 0
+
+
+def test_a_default_retry_is_counted():
+    """An undeclared retry still reports itself.
+
+    The whole point of replacing the SDK layer: an agent whose
+    config says nothing about retrying now has its attempts on
+    the response instead of hidden inside a client.
+    """
+    provider = Mock()
+    provider.chat.side_effect = [
+        ollama.RequestError("connection refused"),
+        {"response": "recovered", "metrics": {}},
+    ]
+    engine = LLMEngine("ollama", "test-model")
+    engine._dispatcher._primary = provider
+
+    with patch("agents7.llm.retry.time.sleep"):
+        result = engine._dispatcher.execute(
+            "chat",
+            provider.chat,
+            "messages",
+            [],
+            temperature=0,
+            seed=None,
+            max_tokens=-1,
+            output_format=None,
+            think=False,
+        )
+
+    assert provider.chat.call_count == 2
+    assert result["metrics"]["retries"] == 1
+    assert result["metrics"]["retry_duration"] > 0
+
+
+# --- A connection failure is retried where the config says ---
+#
+# Regression guard for the gap found on 4th September 2026: a
+# connection failure carries no status code, because nothing
+# answered to give it one, so `_is_retryable`'s fall-through to
+# `status_code` classified `openai.APIConnectionError` and
+# `anthropic.APIConnectionError` as non-retryable while the
+# identical failure against Ollama was retried. Both are now
+# named, and `RetryConfig.retry_connection_errors` decides.
+
+
+def _ollama_connection_error() -> Exception:
+    """Build the connection failure an Ollama call raises."""
+    return ollama.RequestError("connection refused")
+
+
+def _openai_connection_error() -> Exception:
+    """Build the connection failure an OpenAI-compat call raises."""
+    import openai
+
+    return openai.APIConnectionError(
+        request=httpx.Request("POST", "https://example.invalid/v1"),
+    )
+
+
+def _anthropic_connection_error() -> Exception:
+    """Build the connection failure an Anthropic call raises."""
+    import anthropic
+
+    return anthropic.APIConnectionError(
+        request=httpx.Request("POST", "https://example.invalid/v1"),
+    )
+
+
+_PAID_CONNECTION_ERRORS = [
+    pytest.param(_openai_connection_error, id="openai_compat"),
+    pytest.param(_anthropic_connection_error, id="anthropic"),
+]
+
+_ALL_CONNECTION_ERRORS = [
+    pytest.param(_ollama_connection_error, id="ollama"),
+    *_PAID_CONNECTION_ERRORS,
+]
+
+
+@pytest.mark.parametrize("build_error", _ALL_CONNECTION_ERRORS)
+def test_connection_error_is_caught(build_error):
+    """Every provider's connection failure reaches the loop.
+
+    Classification is worth nothing if the error never gets to
+    `_is_retryable`, which is how a whole provider went
+    unretried before.
+    """
+    assert isinstance(build_error(), _all_provider_errors())
+
+
+@pytest.mark.parametrize("build_error", _ALL_CONNECTION_ERRORS)
+def test_connection_error_reaches_the_dispatcher(build_error):
+    """A connection failure triggers fallback, not an escape."""
+    assert isinstance(build_error(), _dispatch_errors())
+
+
+@pytest.mark.parametrize("build_error", _PAID_CONNECTION_ERRORS)
+def test_paid_connection_error_not_retried_by_default(build_error):
+    """Reaching for a paid endpoint is opt-in, so this is off."""
+    assert _is_retryable(build_error(), RetryConfig()) is False
+
+
+@pytest.mark.parametrize("build_error", _PAID_CONNECTION_ERRORS)
+def test_paid_connection_error_retried_when_asked(build_error):
+    """Declaring the flag makes the three providers agree."""
+    config = RetryConfig(retry_connection_errors=True)
+    assert _is_retryable(build_error(), config) is True
+
+
+def test_ollama_connection_error_retried_either_way():
+    """A local server costs nothing to reach, so it always is."""
+    error = _ollama_connection_error()
+    assert _is_retryable(error, RetryConfig()) is True
+    assert (
+        _is_retryable(error, RetryConfig(retry_connection_errors=True))
+        is True
+    )
+
+
+@pytest.mark.parametrize("build_error", _PAID_CONNECTION_ERRORS)
+def test_paid_connection_error_retried_sync(build_error):
+    """The opt-in reaches the sync loop, not just the classifier."""
+    fn = Mock(side_effect=[build_error(), {"response": "recovered"}])
+
+    with patch("agents7.llm.retry.time.sleep"):
+        result = retry_sync(
+            fn,
+            RetryConfig(
+                max_retries=3,
+                base_delay=0.01,
+                retry_connection_errors=True,
+            ),
+        )
+
+    assert result == {"response": "recovered"}
+    assert fn.call_count == 2
+
+
+@pytest.mark.parametrize("build_error", _PAID_CONNECTION_ERRORS)
+async def test_paid_connection_error_retried_async(build_error):
+    """The async loop honours the opt-in too."""
+    fn = AsyncMock(side_effect=[build_error(), {"response": "recovered"}])
+
+    with patch("agents7.llm.retry.asyncio.sleep", new=AsyncMock()):
+        result = await retry_async(
+            fn,
+            RetryConfig(
+                max_retries=3,
+                base_delay=0.01,
+                retry_connection_errors=True,
+            ),
+        )
+
+    assert result == {"response": "recovered"}
+    assert fn.call_count == 2
+
+
+@pytest.mark.parametrize("build_error", _PAID_CONNECTION_ERRORS)
+def test_paid_connection_error_raises_without_the_opt_in(build_error):
+    """Without it the caller learns immediately, as before."""
+    fn = Mock(side_effect=build_error())
+
+    with patch("agents7.llm.retry.time.sleep"):
+        with pytest.raises(type(build_error())):
+            retry_sync(fn, RetryConfig(max_retries=3, base_delay=0.01))
+
+    assert fn.call_count == 1
+
+
+@pytest.mark.parametrize("build_error", _PAID_CONNECTION_ERRORS)
+def test_timeout_stays_retryable_without_the_opt_in(build_error):
+    """Both SDKs subclass their timeout from their connection
+    error, so the flag must not switch timeouts off with them.
+    """
+    import anthropic
+    import openai
+
+    timeout = (
+        openai.APITimeoutError(
+            request=httpx.Request("POST", "https://example.invalid/v1")
+        )
+        if isinstance(build_error(), openai.APIConnectionError)
+        else anthropic.APITimeoutError(
+            request=httpx.Request("POST", "https://example.invalid/v1")
+        )
+    )
+    assert isinstance(timeout, type(build_error()))
+    assert _is_retryable(timeout, RetryConfig()) is True

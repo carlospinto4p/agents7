@@ -45,6 +45,12 @@ class AnthropicProvider(LLMProvider):
         base_url (str | None): Custom API base URL.
         default_max_tokens (int): Default max_tokens when
             not specified per call. Defaults to 4096.
+        timeout (float | None): Seconds a single HTTP request
+            may take before it is abandoned. ``None`` leaves the
+            SDK's own default in place. Applies to sync, async
+            and streaming calls alike. The SDK's own retrying is
+            off in every case, so the limit means what it says
+            and retry is the engine's `RetryConfig` alone.
     """
 
     def __init__(
@@ -53,6 +59,7 @@ class AnthropicProvider(LLMProvider):
         api_key: str | None = None,
         base_url: str | None = None,
         default_max_tokens: int = _DEFAULT_MAX_TOKENS,
+        timeout: float | None = None,
     ) -> None:
         _require_anthropic()
         super().__init__("anthropic", model_name)
@@ -62,8 +69,27 @@ class AnthropicProvider(LLMProvider):
             client_kwargs["api_key"] = api_key
         if base_url is not None:
             client_kwargs["base_url"] = base_url
+        if timeout is not None:
+            client_kwargs["timeout"] = timeout
+        # See `OpenAICompatProvider`: this SDK also retries twice
+        # on its own, which multiplied a declared timeout and hid
+        # the attempts from the metrics. Unconditional as of
+        # agents7 v5.3.0, so retry lives in one counted layer.
+        client_kwargs["max_retries"] = 0
         self._client = _anthropic.Anthropic(**client_kwargs)
+        self._async_client_kwargs = client_kwargs
         self._async_client = _anthropic.AsyncAnthropic(**client_kwargs)
+
+    async def aclose(self) -> None:
+        """Close the async client's connections and start a fresh one.
+
+        See `LLMProvider.aclose`.
+        """
+        closing = self._async_client
+        self._async_client = _anthropic.AsyncAnthropic(
+            **self._async_client_kwargs
+        )
+        await closing.close()
 
     # --- Helpers ---
 
@@ -173,10 +199,55 @@ class AnthropicProvider(LLMProvider):
             "tool_calls": tool_calls,
             "metrics": {
                 "tokens": usage.output_tokens,
-                "prompt_tokens": usage.input_tokens,
+                "prompt_tokens": AnthropicProvider._prompt_tokens(usage),
+                "cached_prompt_tokens": int(
+                    getattr(usage, "cache_read_input_tokens", 0) or 0
+                ),
                 "total_duration": elapsed,
+                "model": AnthropicProvider._model_id(response),
             },
         }
+
+    @staticmethod
+    def _model_id(response: Any) -> str | None:
+        """Name the model that answered, as ``anthropic::x``.
+
+        Read from the reply, so it reports the snapshot the API
+        actually ran and not the alias a config asked for, and so
+        a `fallback_model` answering is visible rather than
+        recorded against the primary.
+
+        :param response: The provider's message object.
+        :return: ``anthropic::<model>``, or ``None``.
+        """
+        model = getattr(response, "model", None)
+        return f"anthropic::{model}" if model else None
+
+    @staticmethod
+    def _prompt_tokens(usage) -> int:
+        """Total prompt tokens, cache reads included.
+
+        Anthropic reports ``input_tokens`` *excluding* anything
+        read from or written to the prompt cache, unlike the
+        OpenAI-compatible providers where the prompt total
+        already contains them. Both cache figures are added back
+        here so that ``cached_prompt_tokens`` is always a subset
+        of ``prompt_tokens``, which is what the cost estimate
+        assumes and what a reader comparing two providers
+        expects.
+
+        With prompt caching unused — which is the default, since
+        nothing here sends ``cache_control`` — both are zero and
+        this is just ``input_tokens``.
+
+        :param usage: The message's usage object.
+        :return: Prompt tokens including any cached ones.
+        """
+        return (
+            int(usage.input_tokens or 0)
+            + int(getattr(usage, "cache_read_input_tokens", 0) or 0)
+            + int(getattr(usage, "cache_creation_input_tokens", 0) or 0)
+        )
 
     # --- Chat (sync / async) ---
 
@@ -245,7 +316,7 @@ class AnthropicProvider(LLMProvider):
         )
         raw_stream = self._client.messages.create(**params)
         adapted = _adapt_stream_sync(raw_stream)
-        return StreamResult(adapted, "chat")
+        return StreamResult(adapted, "chat", provider="anthropic")
 
     async def chat_stream_async(
         self,
@@ -266,7 +337,7 @@ class AnthropicProvider(LLMProvider):
         )
         raw_stream = await self._async_client.messages.create(**params)
         adapted = _adapt_stream_async(raw_stream)
-        return AsyncStreamResult(adapted, "chat")
+        return AsyncStreamResult(adapted, "chat", provider="anthropic")
 
     def get_model_info(self) -> dict:
         """Return provider and model metadata."""

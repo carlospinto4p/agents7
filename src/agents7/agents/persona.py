@@ -222,12 +222,18 @@ class Scene:
     def to_summary(self) -> str:
         """Render a compact scene summary for the guard prompt.
 
-        Includes setting, situation, and rules so the guard
+        Includes setting, situation, goal, and rules so the guard
         can judge scene-specific off-topic responses and rule
         violations. Returns an empty string when none of those
         fields are set. Shared by `_derive_persona_summary`
         (YAML path) and `GuardedSceneChatter.__post_init__`
         (Python path) so both produce identical text.
+
+        **The goal is included since v9.0.1.** The character's own
+        prompt (`to_prompt`) always carried it and the guard's did
+        not, so the guard knew what was allowed but not what the
+        character was there to do, and could reject the scene's
+        own goal as off-topic.
 
         :return: Multi-line summary string, or ``""``.
         """
@@ -236,6 +242,8 @@ class Scene:
             lines.append(f"Setting: {self.setting.strip()}")
         if self.situation:
             lines.append(f"Situation: {self.situation.strip()}")
+        if self.goal:
+            lines.append(f"Goal: {self.goal.strip()}")
         if self.rules:
             lines.append("Scene rules:")
             for rule in self.rules:

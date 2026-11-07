@@ -129,6 +129,27 @@ def test_parse_accepts_dicts():
     assert calls[1].arguments is None
 
 
+def test_parse_accepts_defaults():
+    """A `defaults` key parses alongside `arguments`."""
+    calls = parse_expected_calls(
+        [
+            {
+                "name": "add",
+                "arguments": {"a": 1},
+                "defaults": {"b": 0},
+            }
+        ]
+    )
+    assert calls[0].arguments == {"a": 1}
+    assert calls[0].defaults == {"b": 0}
+
+
+def test_parse_leaves_defaults_unset_when_absent():
+    """A call with no `defaults` key pins none."""
+    calls = parse_expected_calls([{"name": "add"}])
+    assert calls[0].defaults is None
+
+
 def test_parse_accepts_bare_tool_names():
     """A list of strings names tools without pinning arguments."""
     calls = parse_expected_calls(["echo", "add"])
@@ -203,6 +224,24 @@ def test_no_calls_at_all_fails():
 def test_empty_expectation_passes_with_no_calls():
     """A row expecting no tools passes when none were called."""
     assert match_trajectory([], []).passed
+
+
+def test_empty_expectation_fails_a_call_under_in_order():
+    """A row expecting no tools fails when the agent called one.
+
+    `in_order` tolerates extras, so with nothing to miss this row
+    used to pass unconditionally — the agent could reach for any
+    tool and still score a pass.
+    """
+    result = match_trajectory([], [ToolCall("echo")])
+    assert not result.passed
+    assert [c.name for c in result.extra] == ["echo"]
+
+
+def test_empty_expectation_fails_a_call_under_exact():
+    """The same row fails under exact, as it always did."""
+    result = match_trajectory([], [ToolCall("echo")], TrajectoryMode.EXACT)
+    assert not result.passed
 
 
 # ── Matching: modes ─────────────────────────────────────────
@@ -297,6 +336,177 @@ def test_the_right_tool_with_wrong_args_can_match_a_later_call():
     assert [c.arguments for c in result.extra] == [{"a": 1}]
 
 
+# ── Matching: defaults ──────────────────────────────────────
+
+
+def test_a_default_passes_when_the_argument_is_absent():
+    """Omitting an optional argument is correct behaviour."""
+    result = match_trajectory(
+        [ExpectedCall("add", {"a": 1}, defaults={"b": 0})],
+        [ToolCall("add", {"a": 1})],
+    )
+    assert result.passed
+
+
+def test_a_default_passes_when_the_argument_equals_it():
+    """Passing the default explicitly is also correct."""
+    result = match_trajectory(
+        [ExpectedCall("add", {"a": 1}, defaults={"b": 0})],
+        [ToolCall("add", {"a": 1, "b": 0})],
+    )
+    assert result.passed
+
+
+def test_a_default_fails_when_the_argument_differs():
+    """An invented optional argument no longer matches.
+
+    Left out of `arguments` entirely it would be ignored, and
+    pinned under `arguments` it would fail a model that correctly
+    omitted it — `defaults` is what rejects only the invention.
+    """
+    result = match_trajectory(
+        [ExpectedCall("add", {"a": 1}, defaults={"b": 0})],
+        [ToolCall("add", {"a": 1, "b": 9})],
+    )
+    assert not result.passed
+
+
+def test_a_default_compares_case_insensitively_across_types():
+    """A CSV-loaded `"false"` scores like a JSON `false`."""
+    result = match_trajectory(
+        [ExpectedCall("add", defaults={"b": "false"})],
+        [ToolCall("add", {"b": False})],
+    )
+    assert result.passed
+
+
+def test_defaults_alone_still_check_the_name():
+    """A call with only defaults pinned still matches by name."""
+    result = match_trajectory(
+        [ExpectedCall("add", defaults={"b": 0})],
+        [ToolCall("echo", {})],
+    )
+    assert not result.passed
+
+
+def test_format_marks_a_default_with_a_question_mark():
+    """`k?=v` reads as "absent, or this" in a report line."""
+    expected = ExpectedCall("add", {"a": 1}, defaults={"b": 0})
+    assert expected.format() == "add(a=1, b?=0)"
+
+
+def test_format_falls_back_to_the_name_with_nothing_pinned():
+    """Neither arguments nor defaults renders as `name(…)`."""
+    assert ExpectedCall("add").format() == "add(…)"
+
+
+# ── Matching: rejected calls ────────────────────────────────
+
+
+def test_a_rejected_call_satisfies_nothing():
+    """A call the tool threw out does not count as made.
+
+    The scorer used to check which tools were called, not whether
+    the call worked, so a malformed call satisfied an expectation
+    pinned by name alone.
+    """
+    result = match_trajectory(
+        [ExpectedCall("add")],
+        [ToolCall("add", {"a": 1}, error="Invalid arguments")],
+    )
+    assert not result.passed
+    assert [e.name for e in result.missing] == ["add"]
+
+
+def test_a_rejected_call_is_reported_as_extra():
+    """It still shows in the trajectory, marked as failed."""
+    result = match_trajectory(
+        [ExpectedCall("add")],
+        [ToolCall("add", {"a": 1}, error="Invalid arguments")],
+    )
+    assert [c.name for c in result.extra] == ["add"]
+    assert result.extra[0].failed
+
+
+def test_a_later_successful_call_still_matches():
+    """Retrying the tool correctly satisfies the expectation."""
+    result = match_trajectory(
+        [ExpectedCall("add")],
+        [
+            ToolCall("add", {"a": "x"}, error="Invalid arguments"),
+            ToolCall("add", {"a": 1}, result="3"),
+        ],
+    )
+    assert result.passed
+
+
+def test_a_call_with_no_recorded_outcome_still_matches():
+    """A hand-built call carries no outcome and is not failed."""
+    assert match_trajectory([ExpectedCall("add")], [ToolCall("add")]).passed
+
+
+def test_allow_failure_accepts_a_rejected_call():
+    """A row testing the error path passes on the rejection.
+
+    `check_stock` on an unknown SKU is meant to raise, and the
+    agent is meant to relay it — the call counts as made.
+    """
+    result = match_trajectory(
+        [ExpectedCall("check_stock", {"sku": "NOPE"}, allow_failure=True)],
+        [ToolCall("check_stock", {"sku": "NOPE"}, error="Unknown SKU")],
+    )
+    assert result.passed
+    assert result.extra == []
+
+
+def test_allow_failure_still_accepts_a_call_that_returned():
+    """It tolerates a failure, it does not require one."""
+    result = match_trajectory(
+        [ExpectedCall("check_stock", allow_failure=True)],
+        [ToolCall("check_stock", result="42 units")],
+    )
+    assert result.passed
+
+
+def test_allow_failure_still_checks_the_arguments():
+    """Tolerating a failure does not loosen anything else."""
+    result = match_trajectory(
+        [ExpectedCall("check_stock", {"sku": "NOPE"}, allow_failure=True)],
+        [ToolCall("check_stock", {"sku": "OTHER"}, error="Unknown SKU")],
+    )
+    assert not result.passed
+
+
+def test_parse_reads_allow_failure():
+    """A row opts in with an `allow_failure` key."""
+    calls = parse_expected_calls(
+        [{"name": "check_stock", "allow_failure": True}, {"name": "add"}]
+    )
+    assert calls[0].allow_failure
+    assert not calls[1].allow_failure
+
+
+def test_format_marks_an_expectation_that_may_fail():
+    """`[may fail]` says the row is testing the error path."""
+    expected = ExpectedCall("check_stock", allow_failure=True)
+    assert expected.format() == "check_stock(…) [may fail]"
+
+
+def test_format_marks_a_rejected_call():
+    """`[failed]` says the tool was reached for and never ran."""
+    call = ToolCall("add", {"a": 1}, error="Invalid arguments")
+    assert call.format() == "add(a=1) [failed]"
+
+
+def test_result_format_marks_a_rejected_call():
+    """The one-line summary names the call that did not run."""
+    result = match_trajectory(
+        [ExpectedCall("add")],
+        [ToolCall("add", {"a": 1}, error="Invalid arguments")],
+    )
+    assert "add (failed)" in result.format()
+
+
 # ── collect_trajectory ──────────────────────────────────────
 
 
@@ -335,6 +545,49 @@ def test_collect_on_a_toolless_answer_is_empty(scripted_agent):
     assert response.response == "No tools needed."
 
 
+def test_collect_records_what_each_tool_returned(scripted_agent):
+    """The outcome travels with the call, not just its name."""
+    agent = scripted_agent(
+        [tool_turn([("add", {"a": 1, "b": 2})]), answer_turn("Done.")]
+    )
+    calls, _ = collect_trajectory(agent, "go")
+    assert calls[0].result == "3"
+    assert calls[0].error is None
+    assert not calls[0].failed
+
+
+def test_collect_records_a_rejected_call_as_failed(scripted_agent):
+    """A call the tool threw out is recorded as such."""
+    agent = scripted_agent(
+        [
+            tool_turn([("add", {"a": {"type": "string"}, "b": 1})]),
+            answer_turn("Sorry, I could not work that out."),
+        ]
+    )
+    calls, _ = collect_trajectory(agent, "go")
+    assert calls[0].failed
+    assert "Invalid arguments" in calls[0].error
+
+
+def test_collect_pairs_outcomes_with_parallel_calls(scripted_agent):
+    """Two calls in one turn keep their own outcomes."""
+    agent = scripted_agent(
+        [
+            tool_turn(
+                [
+                    ("add", {"a": {"type": "string"}, "b": 1}),
+                    ("add", {"a": 2, "b": 3}),
+                ]
+            ),
+            answer_turn("Done."),
+        ]
+    )
+    calls, _ = collect_trajectory(agent, "go")
+    assert calls[0].failed
+    assert not calls[1].failed
+    assert calls[1].result == "5"
+
+
 # ── run_trajectory_evaluation ───────────────────────────────
 
 
@@ -360,6 +613,28 @@ def test_run_scores_a_mismatching_row(scripted_agent):
     )
     assert not results[0].passed
     assert [e.name for e in results[0].trajectory.missing] == ["echo"]
+
+
+def test_run_fails_a_row_whose_call_the_tool_rejected(scripted_agent):
+    """The end-to-end shape of the defect this closed.
+
+    A model sends a malformed argument, the tool rejects it, and
+    the agent answers without ever getting a result — the row now
+    fails instead of passing because a call by that name was made.
+    """
+    agent = scripted_agent(
+        [
+            tool_turn([("add", {"a": {"type": "string"}, "b": 1})]),
+            answer_turn("Sorry, I could not work that out."),
+        ]
+    )
+    results = run_trajectory_evaluation(
+        agent,
+        [{"input": "go", TRAJECTORY_FIELD: [{"name": "add"}]}],
+    )
+    assert not results[0].passed
+    assert [e.name for e in results[0].trajectory.missing] == ["add"]
+    assert results[0].trajectory.extra[0].failed
 
 
 def test_run_records_the_answer_on_the_result(scripted_agent):
@@ -462,10 +737,28 @@ def test_metrics_report_per_tool_recall(scripted_agent):
     assert per_tool["add"] == {"expected": 1, "matched": 0}
 
 
+def test_metrics_count_rejected_calls(scripted_agent):
+    """A run says how many calls the tools threw out."""
+    agent = scripted_agent(
+        [
+            tool_turn([("add", {"a": {"type": "string"}, "b": 1})]),
+            answer_turn("Done."),
+        ]
+    )
+    results = run_trajectory_evaluation(
+        agent,
+        [{"input": "go", TRAJECTORY_FIELD: [{"name": "add"}]}],
+    )
+    metrics = compute_trajectory_metrics(results)
+    assert metrics["failed_calls"] == 1
+    assert metrics["matched_calls"] == 0
+
+
 def test_metrics_on_no_scored_rows_are_empty():
     """Metrics degrade cleanly when nothing was scored."""
     metrics = compute_trajectory_metrics([])
     assert metrics["expected_calls"] == 0
+    assert metrics["failed_calls"] == 0
     assert metrics["per_tool"] == {}
 
 

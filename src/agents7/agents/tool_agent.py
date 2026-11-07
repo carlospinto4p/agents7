@@ -6,11 +6,11 @@ from enum import StrEnum
 from typing import Any
 
 from agents7.agents.base import Agent, BaseAgent
-from agents7.call_log import CallRecord, generate_trace_id
+from agents7.call_log import CallRecord, generate_trace_id, now
 from agents7.exceptions import AgentConfigurationError, ToolLoopError
 from agents7.models import AgentResponse
 from agents7.models.base import LLMMetrics
-from agents7.tools.registry import ToolRegistry
+from agents7.tools.registry import ToolOutcome, ToolRegistry
 
 
 class ToolStepKind(StrEnum):
@@ -42,7 +42,13 @@ class ToolStepEvent:
     :param name: The tool name (``TOOL_CALL`` and ``TOOL_RESULT``).
     :param arguments: The tool arguments (``TOOL_CALL`` only).
     :param result: The stringified tool result (``TOOL_RESULT``
-        only).
+        only) — the text fed back to the model, which is
+        ``"Error: <message>"`` when the call failed.
+    :param error: The failure message when the tool rejected the
+        arguments or raised (``TOOL_RESULT`` only), else None. It
+        is a field of its own because a tool may legitimately
+        return text beginning with ``Error:``, so *result* cannot
+        be read to tell the two apart.
     :param text: The final answer text (``ANSWER`` only).
     :param thinking: The model's thinking tokens, if any
         (``ANSWER`` only).
@@ -53,6 +59,7 @@ class ToolStepEvent:
     name: str | None = None
     arguments: dict | None = None
     result: str | None = None
+    error: str | None = None
     text: str | None = None
     thinking: str | None = None
 
@@ -108,24 +115,24 @@ class ToolStreamResult(_ToolStreamBase):
     def _iterate(self) -> Iterator[ToolStepEvent]:
         agent = self._agent
         messages = agent._seed_messages(self._user_input)
-        totals = agent._new_totals()
+        turns = agent._new_turns()
         for iteration in range(agent.max_iterations):
             result = agent.engine.chat(
                 messages,
                 temperature=agent.temperature,
                 tools=agent._registry.schemas(),
             )
-            agent._record_turn(totals, result["metrics"])
+            agent._record_turn(turns, result["metrics"])
             calls = result.get("tool_calls") or []
             if not calls:
-                self._agent_response = agent._final(result, totals)
+                self._agent_response = agent._final(result, turns)
                 yield agent._answer_event(self._agent_response, iteration)
                 return
             yield from agent._call_events(calls, iteration)
-            results = agent._execute_calls(calls)
-            yield from agent._result_events(calls, results, iteration)
+            outcomes = agent._execute_calls(calls)
+            yield from agent._result_events(calls, outcomes, iteration)
             messages += agent.engine.build_tool_turn_messages(
-                result["response"], calls, results
+                result["response"], calls, [o.output for o in outcomes]
             )
         raise agent._loop_error()
 
@@ -151,26 +158,26 @@ class ToolAsyncStreamResult(_ToolStreamBase):
     async def _iterate(self) -> AsyncIterator[ToolStepEvent]:
         agent = self._agent
         messages = agent._seed_messages(self._user_input)
-        totals = agent._new_totals()
+        turns = agent._new_turns()
         for iteration in range(agent.max_iterations):
             result = await agent.engine.chat_async(
                 messages,
                 temperature=agent.temperature,
                 tools=agent._registry.schemas(),
             )
-            agent._record_turn(totals, result["metrics"])
+            agent._record_turn(turns, result["metrics"])
             calls = result.get("tool_calls") or []
             if not calls:
-                self._agent_response = agent._final(result, totals)
+                self._agent_response = agent._final(result, turns)
                 yield agent._answer_event(self._agent_response, iteration)
                 return
             for event in agent._call_events(calls, iteration):
                 yield event
-            results = agent._execute_calls(calls)
-            for event in agent._result_events(calls, results, iteration):
+            outcomes = agent._execute_calls(calls)
+            for event in agent._result_events(calls, outcomes, iteration):
                 yield event
             messages += agent.engine.build_tool_turn_messages(
-                result["response"], calls, results
+                result["response"], calls, [o.output for o in outcomes]
             )
         raise agent._loop_error()
 
@@ -190,12 +197,16 @@ class ToolAgent(BaseAgent):
     :param call_logger: Optional callable receiving a `CallRecord`
         per **model turn** — not per `act`, since one answer may
         take several turns and the log measures real calls.
+    :param run_id: Name of the run these calls belong to, written
+        to every `CallRecord` so a log can be grouped by run as
+        well as by turn. None means the caller named no run.
     """
 
     tools: list[Any] = field(default_factory=list, kw_only=True)
     max_iterations: int = field(default=5, kw_only=True)
     temperature: float = field(default=0.7, kw_only=True)
     call_logger: Callable | None = field(default=None, kw_only=True)
+    run_id: str | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -228,34 +239,34 @@ class ToolAgent(BaseAgent):
             ``max_iterations``.
         """
         messages = self._seed_messages(user_input)
-        totals = self._new_totals()
+        turns = self._new_turns()
         for _ in range(self.max_iterations):
             result = self.engine.chat(
                 messages,
                 temperature=self.temperature,
                 tools=self._registry.schemas(),
             )
-            self._record_turn(totals, result["metrics"])
+            self._record_turn(turns, result["metrics"])
             calls = result.get("tool_calls") or []
             if not calls:
-                return self._final(result, totals)
+                return self._final(result, turns)
             messages += self._run_tools(result, calls)
         raise self._loop_error()
 
     async def act_async(self, user_input: str) -> AgentResponse:
         """Async version of `act`."""
         messages = self._seed_messages(user_input)
-        totals = self._new_totals()
+        turns = self._new_turns()
         for _ in range(self.max_iterations):
             result = await self.engine.chat_async(
                 messages,
                 temperature=self.temperature,
                 tools=self._registry.schemas(),
             )
-            self._record_turn(totals, result["metrics"])
+            self._record_turn(turns, result["metrics"])
             calls = result.get("tool_calls") or []
             if not calls:
-                return self._final(result, totals)
+                return self._final(result, turns)
             messages += self._run_tools(result, calls)
         raise self._loop_error()
 
@@ -298,16 +309,16 @@ class ToolAgent(BaseAgent):
             {"role": "user", "content": user_input},
         ]
 
-    def _execute_calls(self, calls: list[dict]) -> list[str]:
+    def _execute_calls(self, calls: list[dict]) -> list[ToolOutcome]:
         return [
             self._registry.execute(call["name"], call["arguments"])
             for call in calls
         ]
 
     def _run_tools(self, result: dict, calls: list[dict]) -> list[dict]:
-        results = self._execute_calls(calls)
+        outcomes = self._execute_calls(calls)
         return self.engine.build_tool_turn_messages(
-            result["response"], calls, results
+            result["response"], calls, [o.output for o in outcomes]
         )
 
     @staticmethod
@@ -326,16 +337,17 @@ class ToolAgent(BaseAgent):
 
     @staticmethod
     def _result_events(
-        calls: list[dict], results: list[str], iteration: int
+        calls: list[dict], outcomes: list[ToolOutcome], iteration: int
     ) -> list[ToolStepEvent]:
         return [
             ToolStepEvent(
                 kind=ToolStepKind.TOOL_RESULT,
                 iteration=iteration,
                 name=call["name"],
-                result=result,
+                result=outcome.output,
+                error=outcome.error,
             )
-            for call, result in zip(calls, results)
+            for call, outcome in zip(calls, outcomes)
         ]
 
     @staticmethod
@@ -349,12 +361,12 @@ class ToolAgent(BaseAgent):
             thinking=response.thinking,
         )
 
-    def _final(self, result: dict, totals: dict) -> AgentResponse:
+    def _final(self, result: dict, turns: list[LLMMetrics]) -> AgentResponse:
         return AgentResponse(
             response=result["response"],
             model=None,
             thinking=result.get("thinking"),
-            metrics=LLMMetrics(**totals),
+            metrics=self._as_metrics(turns),
         )
 
     def _loop_error(self) -> ToolLoopError:
@@ -363,17 +375,17 @@ class ToolAgent(BaseAgent):
             f"{self.max_iterations} iterations."
         )
 
-    def _record_turn(self, totals: dict, metrics: dict) -> None:
-        """Fold one model turn into *totals* and log it.
+    def _record_turn(self, turns: list[LLMMetrics], metrics: dict) -> None:
+        """Keep one model turn's metrics and log it.
 
         The single choke point every loop (sync, async, and both
         streams) routes each model turn through, so accumulation
         and call logging can never diverge between them.
 
-        :param totals: The running metric totals to fold into.
+        :param turns: The loop's collected metrics.
         :param metrics: The turn's raw metrics from the engine.
         """
-        self._accumulate(totals, metrics)
+        self._accumulate(turns, metrics)
         self._emit_call_log(metrics)
 
     def _emit_call_log(self, metrics: dict) -> None:
@@ -390,25 +402,56 @@ class ToolAgent(BaseAgent):
         self.call_logger(
             CallRecord(
                 trace_id=generate_trace_id(),
+                run_id=self.run_id,
+                recorded_at=now(),
                 agent_name=self.name,
                 agent_version=self.version,
                 model_id=self.engine.model_id,
                 success=True,
                 tokens=metrics.get("tokens") or 0,
                 prompt_tokens=metrics.get("prompt_tokens") or 0,
+                cached_prompt_tokens=(
+                    metrics.get("cached_prompt_tokens") or 0
+                ),
                 total_duration=metrics.get("total_duration") or 0.0,
+                cost_cents=metrics.get("cost_cents"),
+                cached=bool(metrics.get("cached")),
+                model=metrics.get("model"),
+                retries=metrics.get("retries") or 0,
+                retry_duration=metrics.get("retry_duration") or 0.0,
             )
         )
 
     @staticmethod
-    def _new_totals() -> dict:
-        return {"tokens": 0, "prompt_tokens": 0, "total_duration": 0.0}
+    def _new_turns() -> list[LLMMetrics]:
+        """Start a loop's collection of per-turn metrics."""
+        return []
 
     @staticmethod
-    def _accumulate(totals: dict, metrics: dict) -> None:
-        totals["tokens"] += metrics.get("tokens") or 0
-        totals["prompt_tokens"] += metrics.get("prompt_tokens") or 0
-        totals["total_duration"] += metrics.get("total_duration") or 0.0
-        cost = metrics.get("cost_cents")
-        if cost is not None:
-            totals["cost_cents"] = (totals.get("cost_cents") or 0.0) + cost
+    def _accumulate(turns: list[LLMMetrics], metrics: dict) -> None:
+        """Keep one model turn's metrics for the loop's total.
+
+        The turns are kept whole rather than folded into running
+        sums, so the loop has nothing of its own to keep in step
+        with the metrics declaration — `LLMMetrics.sum` does the
+        adding for every caller that needs it.
+
+        :param turns: The loop's collected metrics.
+        :param metrics: The turn's raw metrics from the engine.
+        """
+        turns.append(LLMMetrics(**metrics))
+
+    @staticmethod
+    def _as_metrics(turns: list[LLMMetrics]) -> LLMMetrics:
+        """Add the loop's model turns into one set of metrics.
+
+        The loop counts as cached only when every model turn in
+        it was a cache hit — one live turn means the response
+        cost real time and real money. `LLMMetrics.sum` applies
+        that rule, along with the one that keeps an unpriced loop
+        reporting ``None`` rather than ``0.0``.
+
+        :param turns: The loop's collected metrics.
+        :return: The `LLMMetrics` for the whole loop.
+        """
+        return LLMMetrics.sum(turns)

@@ -18,13 +18,126 @@ class LLMMetrics(BaseModel):
     prompt_tokens: int = Field(
         description="The number of tokens in the prompt."
     )
+    cached_prompt_tokens: int = Field(
+        default=0,
+        description=(
+            "How many of `prompt_tokens` the provider served from its "
+            "own prompt cache, and so billed at its cheaper cached "
+            "rate. 0 when the provider does not report it or does not "
+            "cache prompts."
+        ),
+    )
     total_duration: float = Field(
         description="The total duration of the response, in seconds."
     )
     cost_cents: float | None = Field(
         default=None,
-        description="Estimated cost in cents, or None if cost tracking is not configured.",
+        description=(
+            "Estimated cost in cents, or None if cost tracking is "
+            "not configured."
+        ),
     )
+    cached: bool = Field(
+        default=False,
+        description=(
+            "Whether this response was served from the response "
+            "cache rather than by calling the provider. A cache "
+            "hit reports its own duration and a cost of zero, but "
+            "keeps the token counts of the call that filled the "
+            "cache — this flag is what tells a consumer those "
+            "tokens were not billed again. On a response that "
+            "aggregates several calls (a tool loop, a guarded "
+            "turn) it is True only when every one of them was a "
+            "hit."
+        ),
+    )
+    model: str | None = Field(
+        default=None,
+        description=(
+            "The `provider::model` that actually produced this "
+            "response, as the provider itself named it in its "
+            "reply — which is not always what the config asked "
+            "for. Two ways they differ: a provider may resolve an "
+            "alias (`deepseek-chat` is served by "
+            "`deepseek-v4-flash`), and an engine with a "
+            "`fallback_model` answers from the fallback when the "
+            "primary fails. Both used to be invisible: a run "
+            "reported every call against the configured name. "
+            "On a response that aggregates several calls (a "
+            "guarded turn, a tool loop) it holds only when every "
+            "one of them named the same model, the way `cached` "
+            "does — a guard usually runs a different model, and "
+            "one field cannot honestly report two. The per-call "
+            "truth is in the call log, one row per call. `None` "
+            "where a provider named nothing back, or where an "
+            "aggregate spans more than one model; never as a "
+            "stand-in for the configured value."
+        ),
+    )
+    retries: int = Field(
+        default=0,
+        description=(
+            "How many provider calls made for this response failed "
+            "and were retried. 0 is the ordinary case: every call "
+            "succeeded first time. A failed attempt raises before "
+            "the provider reports any usage, so what it cost in "
+            "money cannot be measured — that it happened, and the "
+            "time it took, can. It counts retries rather than "
+            "attempts so that it still adds up on a response that "
+            "aggregates several calls, where a total attempt count "
+            "could not be told apart from several clean calls."
+        ),
+    )
+    retry_duration: float = Field(
+        default=0.0,
+        description=(
+            "Seconds spent on attempts that failed, including the "
+            "backoff wait after each. Not part of `total_duration`, "
+            "which is the successful call's own figure — so the "
+            "wall clock a caller waited is the two added together."
+        ),
+    )
+
+    @classmethod
+    def sum(cls, parts: list["LLMMetrics"]) -> "LLMMetrics":
+        """Add up several calls' metrics into one.
+
+        The single aggregator, so a field added to the declaration
+        cannot be forgotten by one of the places that combine
+        calls — a guarded turn's reply plus its regenerations, a
+        tool loop's model turns, a pipeline's steps, the UI's
+        guard summary. Each of those summed by hand until this
+        existed, and each would have had to be found again.
+
+        Counters and durations add. `cost_cents` adds only when at
+        least one part carries it, and stays ``None`` when no
+        engine declares pricing — so an unpriced response reports
+        ``None`` rather than a misleading ``0.0``. `cached` holds
+        only when every part was a cache hit: one live call means
+        the response cost real time and real money. `model` holds
+        on the same condition — the one model every part used, or
+        ``None`` when they disagree, since a guarded turn's reply
+        and its guard usually run different models and one field
+        cannot report both.
+
+        :param parts: The calls' metrics, in the order they were
+            made. An empty list gives an all-zero, unpriced,
+            uncached total.
+        :return: Their total.
+        """
+        costs = [p.cost_cents for p in parts if p.cost_cents is not None]
+        models = {p.model for p in parts}
+        return cls(
+            tokens=sum(p.tokens for p in parts),
+            prompt_tokens=sum(p.prompt_tokens for p in parts),
+            cached_prompt_tokens=sum(p.cached_prompt_tokens for p in parts),
+            total_duration=sum(p.total_duration for p in parts),
+            cost_cents=sum(costs) if costs else None,
+            cached=bool(parts) and all(p.cached for p in parts),
+            model=models.pop() if len(models) == 1 else None,
+            retries=sum(p.retries for p in parts),
+            retry_duration=sum(p.retry_duration for p in parts),
+        )
 
 
 class AgentResponse(BaseModel):

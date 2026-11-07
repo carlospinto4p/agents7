@@ -15,7 +15,7 @@ if __name__ == "__main__":
     test_texts = [
         "Sarah, a 28-year-old data scientist from London.",
         "Dr. Chen has been practicing medicine in Singapore.",
-        "My neighbor David, 45, works as a carpenter in Madrid.",
+        "My neighbor Javier, 45, works as a carpenter in Madrid.",
     ]
 
     print(f"Agent: {extractor.name} (v{extractor.version})")

@@ -1,0 +1,55 @@
+name: SentimentClassifier
+version: 1
+agent_type: classifier
+description: >
+    Classifies the sentiment of a text as positive, negative or
+    neutral and returns a reason justifying the classification.
+demonstrates:
+    class: Classifier
+engine:
+    provider: ollama
+    model: gemma3:12b
+system_prompt: |
+  Analyze the input text and classify its sentiment.
+
+  ## Rules
+
+  1. Determine the overall sentiment of the text: positive, negative, or neutral.
+  2. Select the most appropriate category based on the dominant tone.
+  3. Provide a reason that justifies your classification.
+  4. If the text has no clear sentiment, classify it as NEUTRAL.
+
+output_model: agents7.models.demo.Sentiment
+system_examples:
+    - input: "I absolutely love this product! Best purchase ever!"
+      output:
+        category: POSITIVE
+        reason: ENTHUSIASTIC
+    - input: "The service was terrible and I want my money back."
+      output:
+        category: NEGATIVE
+        reason: FRUSTRATED
+    - input: "The meeting is scheduled for 3 PM tomorrow."
+      output:
+        category: NEUTRAL
+        reason: INFORMATIVE
+    - input: "Thank you so much for your help, I really appreciate it."
+      output:
+        category: POSITIVE
+        reason: GRATEFUL
+    - input: "I'm so disappointed with the quality, it broke after one day."
+      output:
+        category: NEGATIVE
+        reason: DISAPPOINTED
+    - input: "This is outrageous! How dare they charge this much!"
+      output:
+        category: NEGATIVE
+        reason: ANGRY
+    - input: "I believe things will get better soon, we're on the right track."
+      output:
+        category: POSITIVE
+        reason: HOPEFUL
+    - input: "The report contains 12 pages of quarterly results."
+      output:
+        category: NEUTRAL
+        reason: FACTUAL

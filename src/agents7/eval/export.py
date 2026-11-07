@@ -348,6 +348,15 @@ def _append_call_log(
     lines.append(f"| Prompt tokens | {o.prompt_tokens} |")
     lines.append(f"| Total duration | {o.total_duration:.2f}s |")
     lines.append(f"| Average duration | {o.avg_duration:.2f}s |")
+    # "unpriced" rather than 0.0000c: no record carried a cost,
+    # which is not the same as the run having been free.
+    cost = f"{o.cost_cents:.4f}c" if o.cost_cents is not None else "unpriced"
+    lines.append(f"| Cost | {cost} |")
+    if o.cached_calls:
+        lines.append(
+            f"| Served from cache | {o.cached_calls} of {o.calls} "
+            f"(tokens counted above, not billed) |"
+        )
     lines.append("")
 
     if summary.errors:
@@ -382,6 +391,7 @@ def _append_trajectory(lines: list[str], trajectory: dict) -> None:
     lines.append(f"| Expected calls | {expected} |")
     lines.append(f"| Matched calls | {matched} ({rate:.1%}) |")
     lines.append(f"| Extra calls | {trajectory.get('extra_calls', 0)} |")
+    lines.append(f"| Rejected calls | {trajectory.get('failed_calls', 0)} |")
     lines.append("")
 
     per_tool = trajectory.get("per_tool", {})

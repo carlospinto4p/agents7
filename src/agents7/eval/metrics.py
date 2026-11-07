@@ -265,24 +265,51 @@ def compute_metrics(
 def _compute_timing(results: list[EvalResult]) -> dict:
     """Extract timing statistics from evaluation results.
 
-    :param results: List of `EvalResult`.
-    :return: Dict with ``total_s``, ``avg_s``, ``min_s``,
-        ``max_s``, and ``per_case`` (list of durations).
-    """
-    durations: list[float] = []
-    for r in results:
-        if r.response is not None and hasattr(r.response, "metrics"):
-            durations.append(r.response.metrics.total_duration)
-        else:
-            durations.append(0.0)
+    The four summary figures describe the **LLM calls** the run
+    made, not its rows. `run_evaluation` batches — one call answers
+    up to ten rows, and `BatchProcessor` hands every row of a chunk
+    that one call's metrics object. Summing per row therefore
+    counted a call's seconds once for each row it answered: a
+    nine-row batch that took 36s reported 328s. Each distinct call
+    is counted once instead, so ``total_s`` is the time the run
+    actually spent in the model and ``avg_s`` is seconds per call.
 
-    total_s = sum(durations)
+    ``per_case`` stays one entry per row — the duration of the call
+    that answered it — because the report annotates rows with it.
+    Rows sharing a batched call therefore share a duration; the
+    call is what was timed, and there is no per-row figure to
+    report. A row whose call never returned has no duration at
+    all, and contributes 0.0 to keep the list aligned with
+    *results* without being counted in the summary.
+
+    :param results: List of `EvalResult`.
+    :return: Dict with ``total_s``, ``avg_s``, ``min_s`` and
+        ``max_s`` over the distinct calls, and ``per_case``, one
+        duration per row.
+    """
+    per_case: list[float] = []
+    calls: list[float] = []
+    seen: set[int] = set()
+    for r in results:
+        metrics = getattr(r.response, "metrics", None)
+        if metrics is None:
+            per_case.append(0.0)
+            continue
+        per_case.append(metrics.total_duration)
+        # Identity, not equality: two calls that happened to take
+        # the same time are two calls, while the rows of one batch
+        # literally share the object it produced.
+        if id(metrics) not in seen:
+            seen.add(id(metrics))
+            calls.append(metrics.total_duration)
+
+    total_s = sum(calls)
     return {
         "total_s": total_s,
-        "avg_s": total_s / len(durations) if durations else 0.0,
-        "min_s": min(durations) if durations else 0.0,
-        "max_s": max(durations) if durations else 0.0,
-        "per_case": durations,
+        "avg_s": total_s / len(calls) if calls else 0.0,
+        "min_s": min(calls) if calls else 0.0,
+        "max_s": max(calls) if calls else 0.0,
+        "per_case": per_case,
     }
 
 
@@ -342,3 +369,51 @@ def _compare_field(actual: object, expected: object) -> bool:
     if actual is None or expected is None:
         return actual == expected
     return str(actual).upper() == str(expected).upper()
+
+
+def resolve_category_field(fields: list[str]) -> str | None:
+    """Pick the categorical field to break a run down by.
+
+    Prefers a field literally named ``category``, which is the
+    catalog's convention for the label a row is scored on, and
+    otherwise falls back to the first scored field. Returns None
+    when nothing was scored.
+
+    :param fields: The expected field names a run compared.
+    :return: The field to group by, or None.
+    """
+    if not fields:
+        return None
+    return "category" if "category" in fields else fields[0]
+
+
+def compute_per_category(
+    results: list[EvalResult],
+    field_name: str,
+) -> dict[str, dict]:
+    """Break accuracy down by the expected value of one field.
+
+    Groups the rows by what *field_name* was expected to be — not
+    by what the agent answered — so each bucket says how well the
+    agent did on the rows that genuinely belong to that label.
+    Rows whose expectation omits the field are skipped rather than
+    collected under a placeholder.
+
+    :param results: List of `EvalResult` from `run_evaluation`.
+    :param field_name: The categorical field to group by.
+    :return: Expected value to ``{total, passed, accuracy}``.
+    """
+    buckets: dict[str, dict] = {}
+    for result in results:
+        expected = result.expected.get(field_name)
+        if expected is None:
+            continue
+        bucket = buckets.setdefault(
+            str(expected), {"total": 0, "passed": 0, "accuracy": 0.0}
+        )
+        bucket["total"] += 1
+        if result.passed:
+            bucket["passed"] += 1
+    for bucket in buckets.values():
+        bucket["accuracy"] = bucket["passed"] / bucket["total"]
+    return buckets

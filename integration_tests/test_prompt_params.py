@@ -4,12 +4,15 @@ from agents7.agents import Labeler
 from agents7.models.demo import PersonInfo
 
 from data import COMPANY_DATA
+from integration_helpers import warm_model
 
 
 @pytest.fixture
 def company_labeler():
     """Fixture to create a company-scoped person extractor."""
-    return Labeler.from_yaml("examples/configs/demo_labeler_params.yml")
+    agent = Labeler.from_yaml("examples/configs/demo_labeler_params.yml")
+    warm_model(agent.engine.model_name)
+    return agent
 
 
 # --- Prompt resolution ---

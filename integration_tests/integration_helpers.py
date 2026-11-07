@@ -1,7 +1,9 @@
 """Shared helpers for integration tests."""
 
 import subprocess
+import time
 
+import ollama
 from report_utils import write_eval_report_from_responses
 
 
@@ -22,6 +24,41 @@ def is_model_available(model_name: str) -> bool:
         return model_name in result.stdout
     except (OSError, subprocess.TimeoutExpired):
         return False
+
+
+_WARMUP_TIMEOUT = 300  # seconds, per model
+_warmup_seconds: dict[str, float] = {}
+
+
+def warm_model(model_name: str) -> None:
+    """Load an Ollama model into memory, once per session.
+
+    The first call into a model that is not loaded pays for
+    reading it from disk, which can take longer than a whole
+    test is allowed. Fixtures call this so the load happens in
+    setup, which the per-test timeout does not cover.
+
+    An empty prompt loads the model without generating:
+    https://github.com/ollama/ollama/blob/main/docs/api.md#load-a-model
+    (checked 2nd October 2026).
+
+    :param model_name: Model tag to load (e.g. ``"qwen2.5:3b"``).
+    """
+    if model_name in _warmup_seconds:
+        return
+    start = time.monotonic()
+    ollama.Client(timeout=_WARMUP_TIMEOUT).generate(
+        model=model_name, prompt=""
+    )
+    _warmup_seconds[model_name] = time.monotonic() - start
+
+
+def warmup_seconds() -> float:
+    """Total time this session has spent loading models.
+
+    :return: Seconds spent inside `warm_model`.
+    """
+    return sum(_warmup_seconds.values())
 
 
 def run_single_case(
