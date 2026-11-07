@@ -4,7 +4,7 @@
 
 Every response carries an `LLMMetrics`, and its `cost_cents` is `None` until the engine is told what the model costs. Declare `pricing` and every call estimates its own cost.
 
-Rates are **US dollars per million tokens**, which is how providers publish them — copy the published number straight in:
+Rates are **US dollars per million tokens**, which is how providers publish them. Copy the published number straight in:
 
 ```yaml
 engine:
@@ -29,17 +29,17 @@ engine = LLMEngine(
 )
 ```
 
-**`cached_input` is the one that matters for a chat agent.** A persona chatter resends its whole system prompt — persona, scene, style examples, remembered facts — on every turn, so after the first turn nearly all of it is a prompt-cache hit. Measured on a chat agent: 6,144 of 6,239 prompt tokens, 98%. At the rates above a cache hit is **31× cheaper** than a fresh read, so pricing all input at the fresh rate overstates a turn by roughly 20×. `cached_input` defaults to `input`, which is correct for a provider that does not discount repeated prompts.
+**`cached_input` is the one that matters for a chat agent.** A persona chatter resends its whole system prompt on every turn: persona, scene, style examples, remembered facts. After the first turn nearly all of it is a prompt-cache hit. Measured on a chat agent: 6,144 of 6,239 prompt tokens, 98%. At the rates above a cache hit is **31× cheaper** than a fresh read, so pricing all input at the fresh rate overstates a turn by roughly 20×. `cached_input` defaults to `input`, which is correct for a provider that does not discount repeated prompts.
 
-`cached_prompt_tokens` on the metrics reports how many prompt tokens were cache hits. It is a *subset* of `prompt_tokens`, on every provider — `openai_compat` reads OpenAI's `prompt_tokens_details.cached_tokens` or DeepSeek's `prompt_cache_hit_tokens`, and Anthropic's cache figures are added into `prompt_tokens` so the subset relationship holds there too. A provider that reports nothing gives 0, and the estimate falls back to charging everything fresh.
+`cached_prompt_tokens` on the metrics reports how many prompt tokens were cache hits. It is a *subset* of `prompt_tokens`, on every provider. `openai_compat` reads OpenAI's `prompt_tokens_details.cached_tokens` or DeepSeek's `prompt_cache_hit_tokens`, and Anthropic's cache figures are added into `prompt_tokens` so the subset relationship holds there too. A provider that reports nothing gives 0, and the estimate falls back to charging everything fresh.
 
-A rate the provider varies by time of day is not modelled — declare the rate you want the estimate against. `cost_cents` is an estimate, which is what it is named.
+A rate the provider varies by time of day is not modelled. Declare the rate you want the estimate against. `cost_cents` is an estimate, which is what it is named.
 
-**An unpriced call reports `None`, never `0.0`.** That distinction is load-bearing: a zero cost and a zero duration are what a *missing* measurement looks like, and telling the two apart is the whole point. `tests/test_metrics_completeness.py` enforces it, along with the rule that every provider and every response path fills every declared metric — see `.claude/rules/metrics-completeness.md`.
+**An unpriced call reports `None`, never `0.0`.** That distinction is load-bearing: a zero cost and a zero duration are what a *missing* measurement looks like, and telling the two apart is the whole point. `tests/test_metrics_completeness.py` enforces it, along with the rule that every provider and every response path fills every declared metric. See `.claude/rules/metrics-completeness.md`.
 
 ### Guarded agents: two calls, two costs
 
-A `GuardedChatter` reply is at least two LLM calls — the chatter writes, the guard reads it and votes — and a rejected reply is four. Both halves are reported, and adding them up is the caller's job:
+A `GuardedChatter` reply is at least two LLM calls, because the chatter writes and the guard reads it and votes. A rejected reply is four. Both halves are reported, and adding them up is the caller's job:
 
 ```python
 events = []
@@ -54,16 +54,16 @@ print(f"turn cost: {chatter + guard:.5f} cents")
 
 Two things worth knowing:
 
-- **`resp.metrics` covers every chatter call the turn made**, not just the first. When the guard rejects a reply the chatter is called again, and those retries are added in — otherwise a rejected turn, which is the expensive one, would under-report.
+- **`resp.metrics` covers every chatter call the turn made**, not just the first. When the guard rejects a reply the chatter is called again, and those retries are added in. Otherwise a rejected turn, which is the expensive one, would under-report.
 - **The guard's engine is priced separately.** A guard that declares no `engine` of its own inherits the agent's, pricing included; one that declares its own needs its own `pricing` block, since it may well run a different model.
 
-On one guarded chat agent, where both run the same model, the guard costs roughly as much as the chatter — so a guarded agent is about twice the price of an unguarded one, not a rounding error on top.
+On one guarded chat agent, where both run the same model, the guard costs roughly as much as the chatter. A guarded agent is therefore about twice the price of an unguarded one, not a rounding error on top.
 
 ### Retries
 
 Two different things can make a response take more than one LLM call, and the metrics report them differently because they cost differently.
 
-A **transport retry** is a call that never reached the model: a connection failure, a 500, a 429. `retry.py` waits and tries again. The attempt raises before the provider reports any usage, so it has no tokens and no price — what it cost is time, and that is what is measured:
+A **transport retry** is a call that never reached the model: a connection failure, a 500, a 429. `retry.py` waits and tries again. The attempt raises before the provider reports any usage, so it has no tokens and no price. What it cost is time, and that is what is measured:
 
 ```python
 resp = agent.act({"text": "..."})
@@ -72,11 +72,11 @@ resp.metrics.retries          # attempts that failed and were retried
 resp.metrics.retry_duration   # seconds they took, backoff included
 ```
 
-`retry_duration` is **not** part of `total_duration`, which is the successful attempt's own figure — the wall clock a caller waited is the two added together. A cache hit reports `0` for both: no request left the machine, so nothing could fail.
+`retry_duration` is **not** part of `total_duration`, which is the successful attempt's own figure. The wall clock a caller waited is the two added together. A cache hit reports `0` for both: no request left the machine, so nothing could fail.
 
-A **parse retry** is different: the call succeeded and the model answered, but the answer did not match the schema, so `max_parse_retries` asks again. That is a whole extra LLM call with its own tokens and its own price, and since v4.26.0 its metrics are added into the response — an agent that needed two retries used to report one call's cost while having paid for three. It is *not* counted in `retries`, which is only for attempts that produced nothing.
+A **parse retry** is different: the call succeeded and the model answered, but the answer did not match the schema, so `max_parse_retries` asks again. That is a whole extra LLM call with its own tokens and its own price, and since v4.26.0 its metrics are added into the response. An agent that needed two retries used to report one call's cost while having paid for three. It is *not* counted in `retries`, which is only for attempts that produced nothing.
 
-A retry always goes back to the **same model on the same provider**. Only a `fallback_model` changes which model answers, and it is never automatic — see below.
+A retry always goes back to the **same model on the same provider**. Only a `fallback_model` changes which model answers, and it is never automatic. The next section covers it.
 
 ### Which model answered
 
@@ -91,11 +91,11 @@ agent.engine.model_id   # 'openai_compat::deepseek-chat'
 It is a separate field from the configured `engine.model_id` because the two differ in two situations that were both invisible before v5.4.0:
 
 - **A provider resolving an alias.** Ask DeepSeek for `deepseek-chat` and `deepseek-v4-flash` answers. Only the reply knows.
-- **A fallback answering.** When the primary fails after its retries and the fallback succeeds, `metrics.model` is the fallback's — under `fallback_model` and under `fallback_engine` alike, so a fallback on another provider names itself too. Every call used to be recorded against the configured name, so a run half-answered by a fallback logged all of it against the model that had failed.
+- **A fallback answering.** When the primary fails after its retries and the fallback succeeds, `metrics.model` is the fallback's. That holds under `fallback_model` and under `fallback_engine` alike, so a fallback on another provider names itself too. Every call used to be recorded against the configured name, so a run half-answered by a fallback logged all of it against the model that had failed.
 
-The same split is in the call log: `CallRecord.model_id` is what the agent was configured with, `CallRecord.model` is what answered. A `CallStats` bucket carries `models`, the distinct names its calls were answered by — more than one entry means the bucket was not all served by the same model.
+The same split is in the call log: `CallRecord.model_id` is what the agent was configured with, `CallRecord.model` is what answered. A `CallStats` bucket carries `models`, the distinct names its calls were answered by. More than one entry means the bucket was not all served by the same model.
 
-On a response that adds several calls together, `model` holds only when every one of them named the same model, the way `cached` does — a guarded turn's reply and its guard usually run different models, and one field cannot report two. The per-call truth is in the call log, one row per call.
+On a response that adds several calls together, `model` holds only when every one of them named the same model, the way `cached` does. A guarded turn's reply and its guard usually run different models, and one field cannot report two. The per-call truth is in the call log, one row per call.
 
 ### Adding calls up
 
@@ -174,8 +174,8 @@ engine = LLMEngine(
 with numbers of its own, so it does not replay the stored ones:
 
 - `metrics.cached` is `True`. On a response that adds several
-  calls up — a `ToolAgent` loop, a `GuardedChatter` turn — it is
-  `True` only when every one of them was a hit.
+  calls up, such as a `ToolAgent` loop or a `GuardedChatter` turn,
+  it is `True` only when every one of them was a hit.
 - `metrics.total_duration` is how long the lookup took, typically
   well under a millisecond, not how long the original call took.
 - `metrics.cost_cents` is `0.0` on a priced engine, because no
@@ -183,7 +183,7 @@ with numbers of its own, so it does not replay the stored ones:
   it stays `None`, so an unpriced run keeps reading as unpriced
   rather than as free.
 - `metrics.tokens` and `metrics.prompt_tokens` are the original
-  call's — they describe the response being returned. `cached` is
+  call's, because they describe the response being returned. `cached` is
   what tells you they were not billed a second time, and
   `CallStats.cached_calls` counts them across a run.
 
@@ -193,7 +193,7 @@ take and money it did not spend.
 
 ## Structured Call Logging
 
-Optional per-call logging that captures trace ID, agent name, model, tokens, duration, cost, success/failure, and — on a call that failed — the prompt that produced it. Useful for debugging, observability, and cost tracking.
+Optional per-call logging that captures trace ID, agent name, model, tokens, duration, cost, success/failure, and the prompt behind any call that failed. Useful for debugging, observability, and cost tracking.
 
 ```python
 from agents7.call_log import JsonCallLogger
@@ -227,12 +227,12 @@ calls actually made. An `act()`, `act_async()`, `act_stream()` or
 one record. An `act()` or `act_async()` that needed **parse retries**
 (`max_parse_retries`) emits one record per attempt: a retry is a
 whole extra call to the provider, with its own tokens, its own price
-and its own messages. They share the answer's `trace_id`, only the
-last one can be a success — the retry loop stops at the first call
-that parses — and each failed attempt carries the messages *it* sent,
-which include the parse error fed back to the model. Batch runs
+and its own messages. They share the answer's `trace_id`, and only the
+last one can be a success, because the retry loop stops at the
+first call that parses. Each failed attempt carries the messages
+*it* sent, which include the parse error fed back to the model. Batch runs
 (`act_in_batch()` / `act_in_batch_async()`) emit one record per **LLM
-request** — that is, per chunk — not one per input item.
+request**. That is one per chunk, not one per input item.
 
 Each record reports its own call, never a total over several, so
 summing a log never counts the same tokens twice. The
@@ -247,9 +247,9 @@ it records nothing.
 
 **A chat turn emits one record per LLM call it makes.** `Chatter`
 takes a `call_logger` like any other agent. A plain turn is one
-call. A `GuardedChatter` turn is at least two — the reply and the
-guard's check — and each regeneration a rejection forces adds
-another pair, so a turn rejected once is four records. The guard's
+call. A `GuardedChatter` turn is at least two: the reply and the
+guard's check. Each regeneration a rejection forces adds another
+pair, so a turn rejected once is four records. The guard's
 calls get their own records, carrying the guard's name, version
 and model: a guard usually runs a different model from the
 chatter, and folding its tokens into the reply's record would
@@ -262,8 +262,8 @@ that id is unique to its record; one that needed parse retries
 shares it across the attempts.
 
 **Above the turn sits `run_id`**, shared by every call of one
-conversation or one eval run — what a log needs to answer *what
-did this conversation cost*, which grouping by turn cannot. A
+conversation or one eval run. It is what a log needs to answer
+*what did this conversation cost*, which grouping by turn cannot. A
 `Chatter` fills it from its `conversation_id` automatically.
 Every other agent takes it from the caller:
 
@@ -273,8 +273,8 @@ agent = Labeler(..., call_logger=logger, run_id="sweep-2026-08-30")
 
 `run_evaluation_suite()` sets one for you, so each eval run's
 calls group even when several runs share a log file. Left unset it
-is `null`, which means nobody named a run — not that every call
-belongs to one.
+is `null`, which means nobody named a run. It does not mean that
+every call belongs to one.
 
 ```python
 from agents7.call_log import JsonCallLogger
@@ -308,7 +308,7 @@ with JsonCallLogger("chat.jsonl") as logger:
 ```
 
 `recorded_at` is stamped by the producer when the record is
-built, immediately after the call returned — a log without it can
+built, immediately after the call returned. A log without it can
 be read in order but not against a date, so it cannot say what a
 week cost or whether a model got slower. A row read back from a
 log written before this field existed reads as `null`: unstamped,
@@ -316,7 +316,7 @@ rather than having happened at the moment it was read.
 
 **The prompt is recorded on a call that failed, and only then.**
 `prompt` holds the messages that were sent, as a JSON string, so a
-row that failed to parse can be reproduced by hand — a re-run at
+row that failed to parse can be reproduced by hand. A re-run at
 temperature would produce a different call, so a prompt not
 captured during the run is gone. A call that succeeded records
 `null`: its prompt is derivable from the agent's config, and
@@ -336,14 +336,14 @@ system prompt.
 Batch runs record the chunk's messages, not one item's.
 `ToolAgent` records no prompt: it reports no per-call failure the
 field could key off yet. Nor does a chatter's own reply, which has
-nothing to parse and so cannot fail this way — but its **guard**
-can, and an unparseable verdict records the guard input that
+nothing to parse and so cannot fail this way. Its **guard** can,
+though, and an unparseable verdict records the guard input that
 produced it.
 
 **Two sinks: a file or a database.**
 
 `JsonCallLogger` appends JSON lines. It suits one eval run and
-not months of chat turns — reading it means parsing the whole
+not months of chat turns. Reading it means parsing the whole
 file, and two processes appending at once interleave.
 `SqliteCallLogger` writes one row per call to a `calls` table
 whose columns are `CallRecord`'s fields, indexed on `run_id`,
@@ -369,7 +369,7 @@ call_log:
 ```
 
 A relative `path` is resolved against the directory holding the
-config, not the working directory — so the same agent logs to the
+config, not the working directory. That way the same agent logs to the
 same file whether it is loaded by a script or by a web backend.
 Written bare (`call_log:`) it defaults to `calls.jsonl` beside the
 config.
@@ -382,7 +382,7 @@ call_logger: mymodule.my_logger
 
 The `call_logger` value is a dotted import path to any callable
 accepting a `CallRecord`. It is an *alternative* to `call_log`,
-not an addition — declaring both raises
+not an addition. Declaring both raises
 `AgentConfigurationError`, since only one sink can be attached
 and picking one silently would leave a config that reads as
 logging to a database writing somewhere else.
@@ -440,11 +440,11 @@ before anyone did comes back empty rather than as one run called
 `retries` and `retry_duration` are what a slow run needs to
 explain itself. A run that hit rate limits and retried its way
 through used to be indistinguishable in the log from one that
-succeeded first time — same records, same tokens, same cost, and
+succeeded first time: same records, same tokens, same cost, and
 nothing to account for the wall clock. `retried_calls` separates
 one call retried five times from five calls retried once.
 
-During an evaluation you do not need to wire this up by hand — pass
+During an evaluation you do not need to wire this up by hand. Pass
 `call_log=` to [`run_eval_suite`](evaluation.md#evaluation-workflow) and the route
 attaches the logger, summarises the result, and folds it into the
 report's *Call Log* section.

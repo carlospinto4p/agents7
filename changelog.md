@@ -2,6 +2,14 @@
 ## Changelog - Agents7
 
 
+### v9.25.16 - 7th November 2026
+
+- `docs/`: removed the em dashes from the prose of the pages moved out
+  of the README in v9.25.15, by rewording each sentence (179 in all).
+  Code blocks and headings are unchanged; dashes inside code comments
+  stay.
+
+
 ### v9.25.15 - 7th November 2026
 
 - `README.md` is a short overview (86 lines, was 3,377): what agents7 is,

@@ -46,8 +46,8 @@ def get_weather(city: str) -> dict:
 ```
 
 Containers are encoded recursively, so returning a bare
-`list[Product]` of Pydantic models yields a JSON array of objects —
-no wrapper model is needed to avoid Python `repr` output.
+`list[Product]` of Pydantic models yields a JSON array of objects.
+No wrapper model is needed to avoid Python `repr` output.
 
 Arguments coming back from the model are validated against the same
 schema the tool advertised, using the Pydantic model the schema was
@@ -68,8 +68,8 @@ the same check directly. A `Tool` constructed with a hand-written
 ### Streaming the tool loop
 
 `act_stream()` / `act_stream_async()` run the same bounded loop but
-yield a `ToolStepEvent` for each step — every tool call, every tool
-result, and the final answer — so you can observe intermediate steps
+yield a `ToolStepEvent` for every tool call, every tool
+result, and the final answer, so you can observe intermediate steps
 as they happen instead of waiting for the whole loop. The parsed
 `AgentResponse` is available via `stream.agent_response` after
 iteration.
@@ -91,7 +91,7 @@ A `tool_result` event carries `event.error` as well: the failure
 message when the tool rejected the arguments or raised, and `None`
 otherwise. It is a field of its own because `event.result` holds the
 text fed back to the model, and a tool may legitimately return text
-beginning with `Error:` — so the string cannot be read to tell a
+beginning with `Error:`. Reading the string alone cannot tell a
 rejected call from a successful one. `ToolRegistry.execute` returns
 the same pair as a `ToolOutcome` (`output`, `error`, `failed`).
 
@@ -101,7 +101,7 @@ the plain strings above works as well as
 with `async for` over `await agent.act_stream_async(...)`.
 
 The final answer is delivered as a single `ANSWER` event (whole
-text), not token-by-token — streaming raw tokens through a tool loop
+text), not token-by-token. Streaming raw tokens through a tool loop
 needs provider-specific streaming tool APIs, which this method
 deliberately avoids. `ToolLoopError` is still raised during
 iteration if the loop exceeds `max_iterations`.

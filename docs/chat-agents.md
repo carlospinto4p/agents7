@@ -3,7 +3,7 @@
 ## Persona-Driven Chatter (Roleplay Agent)
 
 Give a `Chatter` a structured `Persona` for consistent character
-roleplay — the system prompt is auto-generated from biographical
+roleplay. The system prompt is auto-generated from biographical
 data. `persona` is an optional plugin on the base `Chatter` (the
 former `PersonalityChatter` subclass was removed in v4.0.0):
 
@@ -84,7 +84,7 @@ The persona includes: name, birthdate, nationality, occupation, physical traits,
 ## Scene-Driven Chatter (Contextual Roleplay Agent)
 
 Add a `Scene` alongside the persona to place the character in a
-specific **scene** — a location, situation, time period, and set
+specific **scene**: a location, situation, time period, and set
 of behavioral rules. The system prompt frames everything as a
 role-play scenario. A `scene` requires a `persona` (the former
 `SceneChatter` subclass was removed in v4.0.0):
@@ -179,7 +179,7 @@ Three rules govern the composition:
   grow quietly back into one file and the swap stops working with
   nothing failing.
 - **`extra_instructions` and `opening_instructions` accumulate**,
-  in a fixed order — character, then chat goal, then whatever the
+  in a fixed order: character, then chat goal, then whatever the
   agent config says itself. Both axes have something to say about
   how the agent writes, so neither silently replaces the other.
   Every other key is an ordinary deep merge with the agent config
@@ -194,9 +194,9 @@ Fragments are one level deep: neither may declare `base_config`,
 `character`, or `chat_goal` of its own. `base_config` inheritance
 still works on the agent config itself, and resolves first.
 
-To read the composed result without building the agent — a
-config-contract test, a catalog listing — use
-`agents7.agents.resolve_config(path)`.
+To read the composed result without building the agent, use
+`agents7.agents.resolve_config(path)`. A config-contract test or a
+catalog listing needs this.
 
 ## Opening the Conversation (Agent Speaks First)
 
@@ -229,9 +229,9 @@ agent was never given. The async and streaming siblings are
 runs through the guard like any other.
 
 [Per-conversation context](agents.md#per-conversation-context) reaches the
-opening turn like any other, which matters most here — the first
-line is written before the other person has said anything, so
-`set_context` is all the agent has to go on:
+opening turn like any other. That matters most here, because the
+first line is written before the other person has said anything,
+so `set_context` is all the agent has to go on:
 
 ```python
 agent.set_context(nick="lector42")
@@ -239,7 +239,7 @@ agent.open_chat()   # greets knowing who it is writing to
 ```
 
 The model is asked for that first message by an instruction sent
-as a user message, which is **not** stored — the transcript
+as a user message, which is **not** stored. The transcript
 begins with the agent's own line. Set `opening_prompt` to replace
 the built-in English instruction, which is what a persona writing
 in another language usually wants:
@@ -252,8 +252,9 @@ opening_prompt: "[Escribe el primer mensaje de esta conversación.]"
 ### Where the opening lines themselves go
 
 `opening_prompt` is the instruction that asks for a first message.
-Guidance on *how* the character opens — its written opening lines,
-their length, their register — goes in `opening_instructions`,
+Guidance on *how* the character opens, whether that is its written
+opening lines, their length or their register, goes in
+`opening_instructions`,
 which is appended to the system prompt on the opening turn and on
 no other:
 
@@ -271,7 +272,7 @@ does in the standing prompt, so the same lines can be written
 once and read under any character.
 
 Put those lines in `extra_instructions` instead and they are in
-front of the model on every single turn — and a bank of opening
+front of the model on every single turn. A bank of opening
 lines the model can read on every turn is a bank it can copy on
 every turn. The failure that produced this field: a character who
 had just said goodnight answered the other person's *"vale"* with
@@ -337,7 +338,7 @@ known. It ignores what the other person said, and passing states
 ("estoy cansado", the weather).
 
 **Facts are stored in the character's own language, not in
-English.** The language comes from `persona.language` — David
+English.** The language comes from `persona.language`. David
 declares `Spanish`, so his facts are stored in Spanish even when
 the other person writes in English. That keeps the system prompt
 in one language throughout, so the facts read as things David
@@ -362,14 +363,14 @@ comes out wrong can be corrected by hand:
 
 Other methods and fields:
 
-- `agent.character_facts` — the facts currently in the prompt.
-- `agent.forget()` — erase every fact for this character.
+- `agent.character_facts`: the facts currently in the prompt.
+- `agent.forget()`: erase every fact for this character.
   `reset()` clears the conversation and leaves the facts alone.
-- `store.add(character_id, ["..."])` — write a fact by hand,
+- `store.add(character_id, ["..."])`: write a fact by hand,
   without an LLM call.
 - `character_id` defaults to the agent's `name`, so several
   agents can share one character by setting it explicitly.
-- `banned_fact_phrases` — phrases the character must never say.
+- `banned_fact_phrases`: phrases the character must never say.
   A fact containing one is not written by `remember()`, and one
   already in the file is left out of the prompt with a warning
   naming it. The file itself is not edited. Matching ignores
@@ -379,7 +380,7 @@ A stored fact outlives the config it was written under. Without a
 ban list, a phrase the persona forbids today can come straight
 back from a fact recorded before the rule existed.
 
-YAML configuration — works on `Chatter`, `GuardedChatter`, and
+YAML configuration works on `Chatter`, `GuardedChatter`, and
 `GuardedSceneChatter`. The extractor reuses the agent's engine
 unless you name another:
 
@@ -404,8 +405,8 @@ same facts. Give an absolute path to put the store somewhere else.
 
 ## Scoring a Chat Agent's Style
 
-A conversational agent has neither a label nor a tool call to score
-— two good replies to "how are you" share no wording. So the only
+A conversational agent has neither a label nor a tool call to
+score. Two good replies to "how are you" share no wording. So the only
 instrument it had was a person reading a transcript, which is slow,
 subjective, and blind to the half of a persona that is a plain
 **string property of the output**: message count, line length,
@@ -413,16 +414,16 @@ forbidden words, how a reply opens, whether two replies in a row
 end on a question.
 
 A **style contract** scores that half with no model and no person.
-What is not checkable that way — is the agent good company, is the
-tone right — stays with the human reading the transcript, which is
-the point: the read gets spent on the questions only a person can
+What is not checkable that way, such as whether the agent is good
+company or the tone is right, stays with the human reading the
+transcript. That is the point: the read gets spent on the questions only a person can
 answer.
 
 A third thing comes out of that read and is neither: **the
 operator's correction of a specific line, and the rule it becomes.**
 `eval.chat_feedback` is the format for it. One entry carries a
-rewrite, a rule, or both — a real correction is usually both — and
-three things are derived from the one file: `rule_changes()` groups
+rewrite, a rule, or both, since a real correction is usually both.
+Three things are derived from the one file: `rule_changes()` groups
 the rules by the config file they land in and flags the ones that
 have not shipped, `eval_rows()` turns corrected turns into
 machine-readable targets, and `render_feedback()` writes the
@@ -434,14 +435,14 @@ Two things differ from the other scorers:
 - **The counterpart is scripted, deliberately.** Judging whether an
   agent is good company needs a *live* counterpart, since a reply
   written before the agent spoke proves nothing. Detecting that a
-  rule stopped holding needs the opposite — the same stimulus every
+  rule stopped holding needs the opposite: the same stimulus every
   time, so the only thing that changed is the config.
 - **A rule scores as a rate, not a pass.** Chat agents run at
   temperature, so one run of one script is an anecdote. Each rule
   declares the rate it tolerates via `budget`: `0.0` is a hard rule,
   `0.5` tolerates a tendency, and `None` measures without ever
-  failing — for a number worth watching that has no agreed
-  threshold yet.
+  failing. `None` is for a number worth watching that has no
+  agreed threshold yet.
 
 The contract lives beside the agent as data, like a golden set:
 
@@ -473,8 +474,8 @@ assert report.passed
 ```
 
 **A script can hand the agent context.** A rule that depends on a
-[context param](agents.md#per-conversation-context) — the other person's
-nickname, say — cannot be exercised by a script that leaves every
+[context param](agents.md#per-conversation-context), such as the other
+person's nickname, cannot be exercised by a script that leaves every
 param at its default. A script's optional `context` mapping is
 passed to `set_context` before its first turn:
 
@@ -491,9 +492,9 @@ fingerprint: changing it starts a fresh baseline. A script that
 declares none hashes exactly as it did before.
 
 **Use `run_style_contract_async` for anything real.** The
-conversations are independent — each gets its own agent from the
-factory and shares no state — so running them one after another
-costs wall clock and buys nothing. Turns *within* a conversation
+conversations are independent, because each gets its own agent
+from the factory and shares no state. Running them one after
+another costs wall clock and buys nothing. Turns *within* a conversation
 stay ordered either way, so the report is identical run for run,
 labels included:
 
@@ -508,8 +509,8 @@ report = await run_style_contract_async(
 This is what decides whether a contract gets run at all. On a
 chat agent, 20 conversations took about 17 minutes serially, which
 is too slow to put on every version. The ceiling on `concurrency`
-is the provider's rate limit, not the machine — every one of these
-is waiting on a network call.
+is the provider's rate limit, not the machine, because every one
+of these is waiting on a network call.
 
 The async runner closes every agent it built (`aclose()`, see
 [Closing Async Clients](providers.md#closing-async-clients)) before it returns,
@@ -518,9 +519,9 @@ traceback. The agents stay usable; their next async call connects
 afresh.
 
 **A conversation that raises loses only itself.** Both runners
-catch it, leave that conversation unscored, and score the rest —
-so a provider dropping one connection costs one conversation
-rather than the whole invocation. On a chat agent it used to cost
+catch it, leave that conversation unscored, and score the rest.
+A provider dropping one connection costs one conversation rather
+than the whole invocation. On a chat agent it used to cost
 about seventeen minutes and seventeen cents, with nothing
 recorded. The runs that did not finish are in `report.lost`, are
 named in the summary, and `report.complete` says whether there
@@ -540,7 +541,7 @@ other nineteen conversations.
 **A run stops when the provider stops answering.** Once two
 conversations in a row are lost to a timeout or a dropped
 connection, no further conversation starts, and the ones in flight
-end before their next turn — a turn already sent is never cut off.
+end before their next turn. A turn already sent is never cut off.
 The rest appear in `report.lost` as not played, and
 `report.stopped_early` says the run stopped. A finished
 conversation, or one lost to any other error, resets the count.
@@ -549,7 +550,8 @@ play every conversation regardless.
 
 To avoid starting a run while the provider is down at all, ask it
 first. `check_available()` sends one small request with a hard time
-limit, straight to the provider — no retry, no cache, no fallback:
+limit, straight to the provider, with no retry, no cache and no
+fallback:
 
 ```python
 check = agent.engine.check_available(timeout=15)
@@ -567,7 +569,7 @@ Style contract: 42 replies over 3 runs, 0 LLM calls
 
 **Every row carries the range across runs, not only the pooled
 rate**, because a pooled rate cannot distinguish one bad run from
-several middling ones — and those call for opposite responses. A
+several middling ones, and those call for opposite responses. A
 rule whose runs disagree by more than half is marked `!` and
 listed by `report.volatile`: its pooled figure is an average over
 runs that behaved differently, so it predicts nothing about the
@@ -588,7 +590,7 @@ reason: a regular expression the counterpart's line must match
 for the rule to apply, for a rule about how the agent answers one
 kind of question. A rule
 that no reply triggered is reported as `??` rather than passing
-silently — a script that never reaches a rule is a gap in the
+silently. A script that never reaches a rule is a gap in the
 script, not evidence about the agent.
 
 Built-in checks, all declarable by name in YAML: `forbidden_text`,
@@ -597,7 +599,7 @@ Built-in checks, all declarable by name in YAML: `forbidden_text`,
 `first_char_lowercase`, `capitalises_after_stop`, `max_emoji`,
 `greets_after_opening`, `repeats_opener`,
 `reproduces_verbatim`, `copies_example`. A rule may also be built in code with any
-callable — it takes a `ReplyContext` and returns True for a
+callable. It takes a `ReplyContext` and returns True for a
 violation, False for a clean turn, and None when the rule does not
 apply.
 
@@ -605,8 +607,8 @@ apply.
 takes no arguments and scores only each conversation's first reply:
 a violation when another conversation in the same invocation opened
 with the same line (ignoring casing and end punctuation). The rate
-is the share of conversations whose opening was not their own —
-a chat agent opened five of five with the same line while told
+is the share of conversations whose opening was not their own.
+A chat agent opened five of five with the same line while told
 to vary it. Because it needs the whole invocation, the runner binds it
 before scoring; calling it on one `ReplyContext` raises. A check of
 your own can do the same by giving its callable a `bind_runs(runs)`
@@ -630,16 +632,17 @@ is not a copied example.
 rules, and a persona usually insists on only the second.** Opening
 a chat message in lower case is a register choice. Capitalising a
 new sentence *inside* the message is not. One chat persona asks
-for both in one paragraph and calls only the second non-optional —
-and its contract read the insistence as attaching to the first, so
+for both in one paragraph and calls only the second non-optional.
+Its contract read the insistence as attaching to the first, so
 for weeks it enforced a preference at `budget: 0.25` while the
 actual rule went unmeasured. When it was finally measured, the
 first recorded read had broken it in 33% of the replies it applied
 to, including the exact sentence the persona uses as its example of
 what not to write.
 
-To score conversations that already happened — a past read, a real
-conversation — use `score_transcripts`, which makes no LLM calls:
+To score conversations that already happened, such as a past read
+or a real conversation, use `score_transcripts`, which makes no LLM
+calls:
 
 ```python
 from agents7.eval import score_transcripts
@@ -655,9 +658,9 @@ before it, so a second conversation's legitimate opening greeting
 is not read as a greeting mid-chat, and its first reply is not read
 as following the previous conversation's last.
 
-The report carries every LLM call the run made — guard checks and
-regenerations included, via the agent's `call_logger` — so a
-contract that has to be run repeatedly can say what it cost.
+The report carries every LLM call the run made, guard checks and
+regenerations included, via the agent's `call_logger`. A contract
+that has to be run repeatedly can therefore say what it cost.
 `report.cost_cents` is `None` rather than `0.0` when no call was
 priced, so an unpriced engine is never reported as a free one.
 
@@ -708,19 +711,20 @@ Six things make that trustworthy rather than merely tidy:
   the contract's rule ids and script lines. A baseline is built
   only from records sharing it, so editing a persona starts a fresh
   baseline instead of being judged against a band that described a
-  different agent. A version label would not do — it is asserted by
-  whoever types it, and a config can change without one moving.
+  different agent. A version label would not do, because it is
+  asserted by whoever types it, and a config can change without one
+  moving.
   **A rule's budget is not in the hash** (since v8.0.0): it is read
   once, against a rate that has already been measured, so it cannot
   move a number. Keying on it meant that writing down the threshold
-  a baseline had just justified discarded that baseline — the one
+  a baseline had just justified discarded that baseline. The one
   edit guaranteed to change nothing also reset every band. Adding
   or removing a rule still changes the hash, because the ids do.
 - **Each rule keeps its own history** (since v9.1.0). Comparison
   keys on `configuration_key`, the fingerprint without the rule
   ids, so adding a rule to a contract leaves every other rule's
   band in place. Each rule's band then holds only runs scored
-  under the same `definition` — the check's name and arguments,
+  under the same `definition`: the check's name and arguments,
   which `build_rule` hashes onto `StyleRule` and
   `record_style_run` stores on `RuleRecord`. Changing what a rule
   checks under an unchanged id starts that rule afresh instead of
@@ -732,8 +736,8 @@ Six things make that trustworthy rather than merely tidy:
   without one measures something else: on a chat agent, dropping
   the guard moved one rule from 50% to 56%. When a guard took part, its resolved
   prompt and configured model go into the hash, and
-  `StyleRunRecord`'s `guard_model_id` names that configured model —
-  the guard is often a different model at a different price, and on
+  `StyleRunRecord`'s `guard_model_id` names that configured model.
+  The guard is often a different model at a different price, and on
   that agent it is 59% of the bill. Since v9.3.0
   `guard_answered_by` records the model the provider says answered
   the guard, and a band only holds runs whose guard was answered by
@@ -774,8 +778,8 @@ Six things make that trustworthy rather than merely tidy:
   gate failed `no_trailing_laugh` twice at 3 of 111 replies on an
   unchanged config, with the laughs in different conversations each
   time. The price is that a quiet rule which jumps is not caught
-  either — the same agent once scored `one_message_when_dry` at 10 of 48 after
-  runs of 1, 1, 0 and 0 — so read the `rare` lines.
+  either. The same agent once scored `one_message_when_dry` at 10 of
+  48 after runs of 1, 1, 0 and 0, so read the `rare` lines.
 - **The margin is measured from the prior invocations themselves**,
   once there are four of them (`MIN_SPREAD_PRIORS`). What is being
   judged is whether the *invocation's* score moved, so the honest
@@ -783,7 +787,7 @@ Six things make that trustworthy rather than merely tidy:
   draws of exactly that quantity, with no independence assumption
   and no pooling of one script with another. Below four priors the
   margin falls back to the proxies below, and `margin_source` says
-  which of the three it came from — the summary marks the two
+  which of the three it came from. The summary marks the two
   fallbacks with `*` and `**`, because they disagree with the real
   figure by two to three times.
 
@@ -798,7 +802,7 @@ Six things make that trustworthy rather than merely tidy:
   accumulate.
 - **Fallback one, the spread across this invocation's own runs.** A
   contract plays a script, so its replies are not drawn
-  independently — every reply after the first answers an agent that
+  independently. Every reply after the first answers an agent that
   has read its own previous ones. The independent unit is the run.
   On a chat agent, `ends_on_a_question` varies barely at all between
   conversations while `one_message_when_dry` scored 42%, 82% and
@@ -808,7 +812,7 @@ Six things make that trustworthy rather than merely tidy:
   what made three invocations of one unchanged config read as two
   regressions. Each record keeps every run's label, so this spread
   is measured *within* each script and pooled across them rather
-  than taken around the grand mean — every invocation replays every
+  than taken around the grand mean. Every invocation replays every
   script in the same proportion, so the difference between two of
   them is fixed structure rather than noise.
 - **Fallback two, the binomial figure**, for a record written
@@ -822,9 +826,9 @@ Six things make that trustworthy rather than merely tidy:
   against what the within-run proxy printed:
   `two_questions_in_a_row` 20% against a real 6%,
   `ends_on_a_question` 16% against 9%, `capitalises_after_stop` 18%
-  against 11%, `one_message_when_dry` 37% against 19% — four rules
-  held to a bar two to three times too wide, where a real
-  regression passes silently. And `opens_in_lower_case` printed 12%
+  against 11%, `one_message_when_dry` 37% against 19%. Those four
+  rules were held to a bar two to three times too wide, where a
+  real regression passes silently. And `opens_in_lower_case` printed 12%
   where the real movement is 20%, so it is not wrong in one
   direction only and cannot be corrected by moving a constant.
   Reading the margin off the priors puts all five within a point or
@@ -838,9 +842,10 @@ Six things make that trustworthy rather than merely tidy:
 - **The history is append-only**, because it is the only thing that
   can say how much a figure moves when nothing changed.
 
-Each record also keeps the budget it was scored under — a threshold
-tightened later would otherwise make every earlier invocation look
-like a failure it never was — the model id, because a provider
+Each record also keeps the budget it was scored under, since a
+threshold tightened later would otherwise make every earlier
+invocation look like a failure it never was. It keeps the model
+id, because a provider
 serving a different model explains a moved number as readily as a
 config edit does, and `lost_runs`, because an invocation that
 measured fewer runs than it planned carries more uncertainty than
@@ -865,7 +870,7 @@ detectable_shift(rates, 10).rate            # what ten runs would see
 
 **Which spread it uses is the whole accuracy of the answer**, and
 both take the same three sources as `sampling_margin`, in the same
-order — earlier invocations of this configuration first, the
+order. Earlier invocations of this configuration come first, the
 labelled runs inside one invocation next, bare rates last:
 
 ```python
@@ -884,18 +889,18 @@ measured at ten runs an invocation means something different at
 twenty, so without it the figure cannot be rescaled and is
 refused. Passing `runs=` a sequence of `RunScore` instead of
 `run_rates` keeps two scripts' different true rates apart, which
-the bare rates cannot do — see `sampling_margin`.
+the bare rates cannot do. See `sampling_margin`.
 
 Measured on a chat agent's five committed invocations, the weakest
 source disagreed with the strongest by between 0.38 and 3.76
 times on the same rules. It claimed a 2.9-point move was visible
 on `no_paragraph_lines` where the real bar is 7.6, and demanded
 16.5 points on `capitalises_after_stop` where 4.6 would do. Wrong
-in both directions, so no constant corrects it — which is why the
+in both directions, so no constant corrects it. That is why the
 source is returned rather than assumed.
 
 The bar a rate has to clear is the top of the band plus the
-margin, and both shrink with the square root of the *runs* — so
+margin, and both shrink with the square root of the *runs*. So
 four times the runs sees half the move, and a longer script sees
 almost nothing extra. Asked how to make a contract more sensitive,
 the intuitive answer is to lengthen the scripts; it is the wrong
@@ -904,7 +909,7 @@ one.
 Two things the result does not say. It is a coin flip, not a
 guarantee: a move exactly that size clears the bar about half the
 time, and catching it reliably takes roughly twice the runs. And
-**more history raises the bar** — the maximum of five prior
+**more history raises the bar**. The maximum of five prior
 invocations sits further above the truth than the maximum of two,
 which is a property of a min/max band rather than a defect, so
 `prior_invocations` is part of the calculation. It also answers a
@@ -913,19 +918,19 @@ sensitivity, so the runs inside one are the only lever.
 
 Sizing a chat agent's contract this way split it in two. Eleven
 of its fifteen rules reach ten points inside the 20 runs an
-invocation already has, and `capitalises_after_stop` — the
-tightest rule that is actually broken — needs only 5. The rule
+invocation already has, and `capitalises_after_stop`, the
+tightest rule that is actually broken, needs only 5. The rule
 measuring how the agent answers a monosyllable needs 161, because
 its spread is the agent picking a rhythm per conversation and
 holding it.
 That is real behaviour rather than measurement error, so it is the
-price of the question — and worth knowing before reading a
+price of the question. It is worth knowing before reading a
 26-point move as a regression.
 
 ### Comparing two configurations against each other
 
 `compare_to_history` answers *"did this invocation leave its
-band"* — one configuration judged against its own past. It has no
+band"*, which judges one configuration against its own past. It has no
 answer for *"do these two configurations wobble by different
 amounts"*, because a band is a property of one configuration.
 `compare_arms` is that second instrument: two sets of invocations,
@@ -941,20 +946,20 @@ print(compare_arms(guarded, plain, "guarded", "unguarded").summary())
 
 It reports three things, and keeping them apart is the point:
 
-- **Level** — the mean rate each way. An apparatus that repairs
+- **Level** is the mean rate each way. An apparatus that repairs
   faults shows up here, not in the spread.
-- **Invocation spread** — how far whole-invocation scores sit from
+- **Invocation spread** is how far whole-invocation scores sit from
   one another. This is what `compare_to_history` builds a band
   from, so it is what decides whether an apparatus change affects
   a band.
-- **Conversation spread** — the wobble between individual
+- **Conversation spread** is the wobble between individual
   conversations, with binomial noise removed. Two arms at
   different mean rates carry different amounts of that noise, so
   comparing raw run spreads would report a difference in *level*
   as a difference in wobble.
 
 **Every p-value comes with the size of difference the test could
-have seen** — `RuleArms.spread_threshold` per rule and
+have seen**, given by `RuleArms.spread_threshold` per rule and
 `ArmComparison.panel_threshold` for the panel. A null result is
 unreadable without it: it is the difference between having ruled
 something out and having been unable to see it. That is the same
@@ -962,7 +967,7 @@ discipline `ShiftEstimate.source` applies to a figure's
 provenance, applied here to its power.
 
 **Significance is by exact permutation of whole invocations**,
-never of conversations — two conversations inside one invocation
+never of conversations. Two conversations inside one invocation
 are not exchangeable with two inside another, for the same reason
 `sampling_margin` takes the run rather than the reply as the
 independent unit.
@@ -993,16 +998,16 @@ variance.
 
 A contract scores a rule per invocation and per run, which cannot
 say *when* in a conversation the rule breaks. `decompose_rhythm`
-takes one 0/1 row per conversation — one column per turn the rule
-applied to — and splits the violations into three effects:
+takes one 0/1 row per conversation, with one column per turn the
+rule applied to, and splits the violations into three effects:
 
-- **Position** — the rate at each turn, and first half against
+- **Position** is the rate at each turn, and first half against
   second. A rule that holds early and decays shows up here.
-- **Conversation** — how far conversation means sit apart once the
+- **Conversation** is how far conversation means sit apart once the
   position drift is removed, against what independent coin flips
   would give. A ratio well above 1 means whole conversations run
   high or low.
-- **Momentum** — whether a broken turn still predicts the next one
+- **Momentum** is whether a broken turn still predicts the next one
   once both of the above are removed, by shuffling turns *within*
   each conversation.
 
@@ -1027,17 +1032,17 @@ spread. **Save `rows`**: a re-run is a different set of
 conversations, while re-analysing a saved matrix costs nothing and
 gives the same figures for the same `seed`.
 
-The summary ends with the uncontrolled figure — the rate after a
-violation against the rate after a clean turn — marked as not to be
-quoted alone, because most of that gap is position and conversation
-rather than memory.
+The summary ends with the uncontrolled figure, which is the rate
+after a violation against the rate after a clean turn. It is marked
+as not to be quoted alone, because most of that gap is position and
+conversation rather than memory.
 
 Run on a chat agent's `one_message_when_dry` (5th September 2026, two
 runs of ten cold conversations) it found the rule clean on the
 first dry turn in 20 of 20 conversations, the rate roughly doubling
 by the second half, and conversation means 2.6x wider than
-independence allows — a decay rather than the examples, which
-pointed the next fix somewhere else.
+independence allows. That is a decay rather than the examples,
+which pointed the next fix somewhere else.
 
 ## Feedback on a Chat Agent
 
@@ -1045,8 +1050,8 @@ A style contract says a rule stopped holding. A read says whether
 the agent is good company. Neither produces the thing that actually
 improves it: the operator's correction of a line, and the rule that
 correction becomes. That has been written by hand, in prose, in two
-shapes — a rewrite (*"this is what he should have said"*) and a
-rule (*"he is too verbose and does not mirror the user"*) — and neither
+shapes: a rewrite (*"this is what he should have said"*) and a
+rule (*"he is too verbose and does not mirror the user"*). Neither
 was machine-readable.
 
 `eval.chat_feedback` is one format for both. An entry carries a
@@ -1073,7 +1078,7 @@ entries:
 Points worth knowing:
 
 - **`turn` is optional.** Leaving it out makes the entry
-  structural — about the whole conversation. *"He writes more the
+  structural, about the whole conversation. *"He writes more the
   less the user gives him"* is the motivating case: the most useful kind
   of feedback, anchored to no single line.
 - **`right` is not the absence of criticism.** It marks a line good
@@ -1083,7 +1088,7 @@ Points worth knowing:
   pair without opening the recording, and so a rewrite cannot drift
   from the line it was correcting.
 - **`golden` names the conversations accepted whole.** The rest
-  contribute corrections only — a correction taken from a
+  contribute corrections only. A correction taken from a
   conversation nobody accepted is still binding.
 
 Three outputs, one source:

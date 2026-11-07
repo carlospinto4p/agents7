@@ -142,24 +142,24 @@ for score in result.scores:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `yaml_path` | — | Path to the agent's YAML config |
-| `test_cases` | — | List of `TestCase(input, expected)` |
+| `yaml_path` | required | Path to the agent's YAML config |
+| `test_cases` | required | List of `TestCase(input, expected)` |
 | `models` | `None` | Candidate model names (None = all local) |
 | `runs` | `1` | Runs per test case (for reliability) |
 | `include_batch` | `False` | Also test `act_in_batch` |
 | `stop_on_first` | `True` | Stop after first passing model |
 
-Models are tested smallest-first. Only the fields present in `expected` are checked — enum fields are compared by name, other fields by value.
+Models are tested smallest-first. Only the fields present in `expected` are checked. Enum fields are compared by name, other fields by value.
 
 ## Fallback Model
 
-**Retrying never changes the model.** A retry re-issues the same call to the same model on the same provider — that is all `RetryConfig` does. The only thing that puts a different model in front of a request is `fallback_model`, and it is opt-in: an engine that does not name one has no fallback, and nothing substitutes a model behind your back.
+**Retrying never changes the model.** A retry re-issues the same call to the same model on the same provider. That is all `RetryConfig` does. The only thing that puts a different model in front of a request is `fallback_model`, and it is opt-in: an engine that does not name one has no fallback, and nothing substitutes a model behind your back.
 
 When a `fallback_model` *is* named and the primary fails (after its retries), the engine tries the call again with that model. If the fallback also fails, the primary error is raised.
 
-**A fallback answer says so.** `metrics.model` carries the fallback's name rather than the configured one, and so does `CallRecord.model` in the call log — see [Which model answered](operations.md#which-model-answered). The engine's own `model_id` stays the primary's, because that is what the agent was configured with; reading only that is how a run half-served by a fallback used to be recorded entirely against the model that failed.
+**A fallback answer says so.** `metrics.model` carries the fallback's name rather than the configured one, and so does `CallRecord.model` in the call log. See [Which model answered](operations.md#which-model-answered). The engine's own `model_id` stays the primary's, because that is what the agent was configured with; reading only that is how a run half-served by a fallback used to be recorded entirely against the model that failed.
 
-`fallback_model` is a different **model**, not a different **provider**: the engine builds it on the same provider as the primary. It carries a model name and nothing else, so the call is priced at the primary's rates — right when the two models bill alike, wrong when they do not.
+`fallback_model` is a different **model**, not a different **provider**: the engine builds it on the same provider as the primary. It carries a model name and nothing else, so the call is priced at the primary's rates. That is right when the two models bill alike and wrong when they do not.
 
 **YAML configuration:**
 
@@ -184,7 +184,7 @@ engine = LLMEngine(
 
 ### Falling back to another provider
 
-`fallback_engine` names a fallback as **a whole engine of its own** — its own `provider`, `base_url`, `api_key`, `pricing`, `timeout` and `retry`. That is what moves a call from a paid endpoint to a local one, which is the case worth having: an outage or a rate limit at a paid provider is exactly when a local model rescues a run, and a same-provider fallback cannot help with either.
+`fallback_engine` names a fallback as **a whole engine of its own**, with its own `provider`, `base_url`, `api_key`, `pricing`, `timeout` and `retry`. That is what moves a call from a paid endpoint to a local one, which is the case worth having: an outage or a rate limit at a paid provider is exactly when a local model rescues a run, and a same-provider fallback cannot help with either.
 
 **YAML configuration:**
 
@@ -225,14 +225,14 @@ engine = LLMEngine(
 )
 ```
 
-**A response the fallback answered is priced at the fallback's rates.** A run rescued by a free local model reports what it actually cost, rather than what the paid primary would have charged for the same tokens. An unpriced fallback reports `cost_cents` as `None`, never as `0.0` — see [Cost Estimation](operations.md#cost-estimation).
+**A response the fallback answered is priced at the fallback's rates.** A run rescued by a free local model reports what it actually cost, rather than what the paid primary would have charged for the same tokens. An unpriced fallback reports `cost_cents` as `None`, never as `0.0`. See [Cost Estimation](operations.md#cost-estimation).
 
 **The fallback's `retry` is its own budget.** The primary's attempts and the fallback's are still counted together in `metrics.retries`, because they were all made to produce the one response.
 
 Two rules on the shape:
 
 - **`fallback_model` and `fallback_engine` are mutually exclusive.** They mean different things, so naming both raises `ValueError`.
-- **A `fallback_engine` must not declare a `cache`.** One cache covers the call whichever model answers it, and it belongs to the primary — a second one would never be read, so it is rejected rather than silently ignored.
+- **A `fallback_engine` must not declare a `cache`.** One cache covers the call whichever model answers it, and it belongs to the primary. A second one would never be read, so it is rejected rather than silently ignored.
 
 ## Thinking Mode
 
@@ -294,10 +294,10 @@ print(stream.response)
 ```
 
 After iteration, `StreamResult` / `AsyncStreamResult` expose:
-- `.response` — full accumulated text
-- `.thinking` — accumulated thinking text (not yielded as chunks), or `None`
-- `.role` — message role (chat only), or `None`
-- `.metrics` — dict carrying the same fields a non-streamed call
+- `.response`: full accumulated text
+- `.thinking`: accumulated thinking text (not yielded as chunks), or `None`
+- `.role`: message role (chat only), or `None`
+- `.metrics`: dict carrying the same fields a non-streamed call
   reports: `tokens`, `prompt_tokens`, `cached_prompt_tokens`,
   `total_duration`, `cost_cents`, `cached`, `retries` and
   `retry_duration`
@@ -363,7 +363,7 @@ output_model: mymodule.MyOutput
 
 All `retry` fields are optional and fall back to sensible defaults. An empty `retry: {}` enables retries with defaults.
 
-**Omitting the `retry` key does not disable retrying.** It selects `DEFAULT_RETRY` — two retries, three attempts in all. Before v5.3.0 it meant no framework retry, and the `openai` and `anthropic` clients then retried twice by themselves, so a config that declared neither `retry` nor `timeout` had three attempts made on its behalf while `LLMMetrics.retries` reported zero and `retry_duration` reported nothing. Both SDKs are now switched off in every case and the default takes their place, so the same attempts are made by a layer that counts and times them.
+**Omitting the `retry` key does not disable retrying.** It selects `DEFAULT_RETRY`, which makes two retries and three attempts in all. Before v5.3.0 it meant no framework retry, and the `openai` and `anthropic` clients then retried twice by themselves, so a config that declared neither `retry` nor `timeout` had three attempts made on its behalf while `LLMMetrics.retries` reported zero and `retry_duration` reported nothing. Both SDKs are now switched off in every case and the default takes their place, so the same attempts are made by a layer that counts and times them.
 
 To disable retrying, say so:
 
@@ -399,7 +399,7 @@ Delay formula: `min(base_delay * backoff_factor ^ attempt, max_delay)`.
 
 **A failure to reach the provider at all is the one transient the
 three providers treat differently, deliberately.** It carries no
-status code, because nothing answered to give it one — so until
+status code, because nothing answered to give it one. Until
 v5.5.0 the classifier's fall-through to `status_code` made
 `openai.APIConnectionError` and `anthropic.APIConnectionError`
 non-retryable, while the identical failure against Ollama was
@@ -421,7 +421,7 @@ engine:
 
 Worth knowing before setting it: a connection failure never reached
 the provider, so **no tokens were billed** for the attempt that
-failed. What a retry costs is the wait — a full backoff (1s + 2s
+failed. What a retry costs is the wait: a full backoff (1s + 2s
 under `DEFAULT_RETRY`) before you learn an endpoint is simply down,
 where today you learn immediately.
 
@@ -429,7 +429,7 @@ A **timed-out** call is retried whatever this is set to. Both SDKs
 subclass their timeout error from their connection error, and the
 classifier checks for a timeout first.
 
-Those are the defaults of a `RetryConfig` you construct yourself. An engine given no `retry` at all gets `DEFAULT_RETRY` instead, which is the same thing with `max_retries=2` — the attempt count the provider SDKs used to make on their own:
+Those are the defaults of a `RetryConfig` you construct yourself. An engine given no `retry` at all gets `DEFAULT_RETRY` instead, which is the same thing with `max_retries=2`, the attempt count the provider SDKs used to make on their own:
 
 ```python
 from agents7 import DEFAULT_RETRY
@@ -473,16 +473,16 @@ and still returns an answer; without them it raises.
 
 **The SDK's own retrying is switched off in every case.** The
 `openai` and `anthropic` clients both retry twice by default, which
-made a declared limit mean three times what it says — measured
-against a server that accepts and never answers, a 0.5s timeout took
-3.39s — and hid those attempts from `LLMMetrics.retries`. Retry
+made a declared limit mean three times what it says and hid those
+attempts from `LLMMetrics.retries`. Measured against a server that
+accepts and never answers, a 0.5s timeout took 3.39s. Retry
 belongs to `RetryConfig`, which counts what it does. Until v5.3.0 the
 switch-off rode along with `timeout`, so a config that declared no
 timeout kept the hidden layer; it is now unconditional, and
 `DEFAULT_RETRY` takes that layer's place.
 
 **Size it from measured latency, not from a guess**, and size it per
-model and per provider — which is why there is no framework-wide
+model and per provider. That is why there is no framework-wide
 default. Read the durations out of a call log (see
 [Structured Call Logging](operations.md#structured-call-logging)) and pick a figure
 above the slowest real call. Two things move that figure:
@@ -497,7 +497,7 @@ above the slowest real call. Two things move that figure:
   inside its first call, and that call is far slower than every one
   after it. Measured across `store_assistant`'s call logs, the first
   call of each run took 17–28s against a median of 0.6–1.5s once
-  loaded — so a limit sized for a hosted API would cut off the first
+  loaded, so a limit sized for a hosted API would cut off the first
   call of every local run. Either measure the loaded and unloaded
   cases separately, or set the limit above the load.
 

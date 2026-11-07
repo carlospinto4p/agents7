@@ -42,7 +42,7 @@ Pipeline (chains multiple agents sequentially)
 ### Models Layer (`agents7.models`)
 
 - `AgentResponse`: Wraps LLM response with parsed model, thinking, metrics, and index
-- `LLMMetrics`: Token counts, duration, and estimated cost — see [Cost Estimation](operations.md#cost-estimation)
+- `LLMMetrics`: Token counts, duration, and estimated cost. See [Cost Estimation](operations.md#cost-estimation)
 - `Property[T]`: Generic base for value extraction (value of type T + reason enum)
 - `ClassificationProperty`: Base for classification tasks (category enum + reason enum)
 

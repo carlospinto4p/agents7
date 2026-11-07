@@ -45,7 +45,7 @@ Pull them before running the suite:
 | `test_detector` | `demo_temperature_detector.yml` | `qwen2.5:3b` | 1.9 GB |
 | `test_regressor` | `demo_temperature_detector.yml` | `qwen2.5:3b` | 1.9 GB |
 | `test_classifier` | `demo_sentiment_classifier.yml` | `gemma3:12b` | 8.1 GB |
-| `test_async` | all three configs above | `qwen2.5:3b`, `gemma3:12b` | — |
+| `test_async` | all three configs above | `qwen2.5:3b`, `gemma3:12b` | see above |
 | `test_multi_model` | built programmatically | `qwen2.5:3b`, `qwen3:4b` | 1.9 / 2.6 GB |
 | `test_pipeline` | `demo_pipeline.yml` (chains `demo_labeler.yml` → `demo_bio_generator.yml`) | `qwen2.5:3b` | 1.9 GB |
 | `test_prompt_params` | `demo_labeler_params.yml` | `qwen3:4b` | 2.6 GB |

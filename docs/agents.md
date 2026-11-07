@@ -168,7 +168,7 @@ Unmatched `$placeholders` are left as-is (safe_substitute). Callable values are 
 
 ## Per-Conversation Context
 
-`prompt_params` holds values the config fixes once. `context_params` declares values that change per conversation — who the agent is talking to — or per message — the time of day. Both substitute the same `$variable` placeholders; only the source of the value differs.
+`prompt_params` holds values the config fixes once. `context_params` declares values that change per conversation, such as who the agent is talking to, or per message, such as the time of day. Both substitute the same `$variable` placeholders; only the source of the value differs.
 
 ```yaml
 system_prompt: |
@@ -187,9 +187,9 @@ chatter.chat("hola")
 # System prompt: "Hablas con lector42. Es por la noche."
 ```
 
-A value resolves from `set_context()` first, then the declared `callable` (run again before every message), then `default` — so a declared name never reaches the model as the literal `$name`. A keyword that matches no declaration raises `PromptParameterError` rather than being silently dropped.
+A value resolves from `set_context()` first, then the declared `callable` (run again before every message), then `default`. A declared name therefore never reaches the model as the literal `$name`. A keyword that matches no declaration raises `PromptParameterError` rather than being silently dropped.
 
-Supplied values follow a copy made with `with_overrides()`. They are not a dataclass field, so a bare `dataclasses.replace(agent, ...)` drops them and the copy answers with each default — copy an agent with `with_overrides()`.
+Supplied values follow a copy made with `with_overrides()`. They are not a dataclass field, so a bare `dataclasses.replace(agent, ...)` drops them and the copy answers with each default. Copy an agent with `with_overrides()`.
 
 A `GuardedSceneChatter`'s guard reads the same values. `agent.guard` keeps a scene's context names as placeholders, so it is identical for every conversation, and each reply is checked by `agent.current_guard()`, which fills them with what the agent's own prompt carries at that moment. To run the guard by hand, call `current_guard()` rather than `guard`.
 
@@ -213,9 +213,9 @@ chatter.set_context(nick="lector42")
 
 Supplying the source is enough, so the two cannot fall out of step; a value passed to `set_context()` for the derived name still wins. `from` must name a declared param that is not itself derived, and needs a `callable`. In Python the same declaration is `ContextParam(name=..., resolver=..., derived_from="nick")`.
 
-`resolved_context` returns what the declared params currently resolve to — the mapping the prompt itself is built from, so the two cannot drift. It exists because those values are otherwise unrecoverable: a `callable` runs inside substitution and its result is discarded, so nothing afterwards can say which time of day or which nickname a finished conversation ran with, and at temperature a re-run is a different conversation. A `ConversationRecorder` captures it once when the conversation opens and saves it in the recording, alongside the character facts the store already held; a read then shows both above the transcript. Reading it twice can give different values, since a resolver is called each time.
+`resolved_context` returns what the declared params currently resolve to. That is the mapping the prompt itself is built from, so the two cannot drift. It exists because those values are otherwise unrecoverable: a `callable` runs inside substitution and its result is discarded, so nothing afterwards can say which time of day or which nickname a finished conversation ran with, and at temperature a re-run is a different conversation. A `ConversationRecorder` captures it once when the conversation opens and saves it in the recording, alongside the character facts the store already held; a read then shows both above the transcript. Reading it twice can give different values, since a resolver is called each time.
 
-A context param's **declaration** enters `system_prompt_identity`, never its resolved value — the name, the default and where a `callable` comes from. A run's fingerprint hashes that identity, so an agent whose prompt carries the time of day keeps one measurement baseline instead of gaining a separate one for each part of the day, and a nickname a caller supplies is treated as input rather than as a different agent. Changing a `default` or swapping a `callable` does change the identity, because those are configuration.
+A context param's **declaration** enters `system_prompt_identity`, never its resolved value. The declaration is the name, the default and where a `callable` comes from. A run's fingerprint hashes that identity, so an agent whose prompt carries the time of day keeps one measurement baseline instead of gaining a separate one for each part of the day, and a nickname a caller supplies is treated as input rather than as a different agent. Changing a `default` or swapping a `callable` does change the identity, because those are configuration.
 
 ## Prompt Variants
 
@@ -237,7 +237,7 @@ Listing every alternative in a fixed prompt does not work: on a chat agent the m
 - A style contract keeps what each run picked in `StyleReport.variants`, and the history record in `run_variants`. `StyleRunRecord.by_variant(rule_id, name)` adds a rule's score up per text, to check whether a rate moved with what was shown rather than with the config.
 - A `Chatter` picks again on `reset()`. With a memory backend it picks from `conversation_id`, so an agent rebuilt for each turn keeps the same texts.
 - `draw_variants(seed=...)` repeats a pick exactly.
-- `system_prompt_identity` is the prompt with the placeholders left in and every alternative listed. The style history hashes it, so runs that picked different texts still share a baseline. `context_params` are left in and declared after it for the same reason — see [Per-Conversation Context](#per-conversation-context).
+- `system_prompt_identity` is the prompt with the placeholders left in and every alternative listed. The style history hashes it, so runs that picked different texts still share a baseline. `context_params` are left in and declared after it for the same reason. See [Per-Conversation Context](#per-conversation-context).
 - Each entry needs at least two different, non-empty texts, and a name cannot also be a `prompt_params` or `context_params` name.
 
 ## YAML Configuration
@@ -299,7 +299,7 @@ agents7 eval -c config.yml -d golden_set.csv -r report.md \
 The agent class is chosen from the config's `agent_type` field
 (`labeler`, `detector`, `classifier`, `regressor`, or `tool`),
 overridable with `--agent-type`. A `tool` agent is scored on its
-**trajectory** rather than on output fields — see
+**trajectory** rather than on output fields. See
 [Evaluating Tool Agents](evaluation.md#evaluating-tool-agents). Golden sets may be
 `.jsonl`, `.json`, or `.csv`,
 and rows may be nested (`{"input": {...}, "category": "..."}`) or flat
@@ -307,8 +307,8 @@ and rows may be nested (`{"input": {...}, "category": "..."}`) or flat
 automatically. Expected fields are derived from the golden set and the
 output model, or set explicitly with `--fields`.
 
-The whole `eval` route is importable as one call — see
-[Evaluation Workflow](evaluation.md#evaluation-workflow) — and its individual steps
+The whole `eval` route is importable as one call, which
+[Evaluation Workflow](evaluation.md#evaluation-workflow) describes. Its individual steps
 stay public for finer control:
 
 ```python
@@ -453,4 +453,4 @@ variant = agent.with_overrides(
 )
 ```
 
-The original agent is unchanged (frozen dataclass). Defined on `BaseAgent`, so it works with **every** agent type — the structured-output agents (`Labeler`, `Detector`, `Classifier`, `Regressor`), the chatters, and `ToolAgent`. Accepted keyword arguments are whatever fields the concrete class defines.
+The original agent is unchanged (frozen dataclass). Defined on `BaseAgent`, so it works with **every** agent type: the structured-output agents (`Labeler`, `Detector`, `Classifier`, `Regressor`), the chatters, and `ToolAgent`. Accepted keyword arguments are whatever fields the concrete class defines.

@@ -2,7 +2,7 @@
 
 ## Evaluation Workflow
 
-`run_eval_suite()` is the composed route from a golden set to a report — one call that loads and normalises the eval data, builds the agent from its YAML config, scores every row, aggregates metrics, summarises the calls it made, and writes a Markdown report. Reach for this first; the primitives in the next section are for when you need finer control.
+`run_eval_suite()` is the composed route from a golden set to a report. It is one call that loads and normalises the eval data, builds the agent from its YAML config, scores every row, aggregates metrics, summarises the calls it made, and writes a Markdown report. Reach for this first; the primitives in the next section are for when you need finer control.
 
 ```python
 from agents7.eval import run_eval_suite
@@ -24,9 +24,9 @@ The returned `EvalRun` carries everything the run produced: `agent_name`, `model
 **What the route resolves for you:**
 
 - **Expected fields** are derived from the golden set intersected with the config's `output_model` fields, so input columns are never mistaken for expected outputs. Pass `fields=[...]` to override.
-- **Row shape** — both nested rows (`{"input": {...}, "category": "..."}`) and flat rows (`{"text": "...", "category": "..."}`) are normalised automatically.
+- **Row shape**: both nested rows (`{"input": {...}, "category": "..."}`) and flat rows (`{"text": "...", "category": "..."}`) are normalised automatically.
 - **The confusion matrix** defaults to `category` when that field is scored, otherwise the first scored field. Override with `confusion_field=`.
-- **The call log** is written by a `JsonCallLogger` attached to a clone of the agent (the agent you passed is never mutated), then summarised into the report's *Call Log* section — one record per real LLM call, so a batched run reports the number of requests, not the number of rows.
+- **The call log** is written by a `JsonCallLogger` attached to a clone of the agent (the agent you passed is never mutated), then summarised into the report's *Call Log* section. It holds one record per real LLM call, so a batched run reports the number of requests, not the number of rows.
 - **Report notes** always cover the eval set and the accuracy. Pass `notes=[...]` to append domain caveats a reader needs to interpret the numbers (e.g. a category the output model deliberately disables).
 
 The same route backs the CLI, so `agents7 eval` and a Python caller produce identical results:
@@ -39,12 +39,12 @@ agents7 eval -c configs/sentiment.yml -d data/golden_set_40.jsonl \
 ## Evaluating Tool Agents
 
 A `ToolAgent` answers in free text, so there is no label to compare
-against — two correct answers to the same question rarely share a
+against. Two correct answers to the same question rarely share a
 wording. What *is* checkable is the **trajectory** it took: which
 tools it called, in what order, and with what arguments. Set
 `agent_type: tool` and `run_eval_suite` routes the run through the
-trajectory scorer automatically; everything else — the call log, the
-metrics, the report — is unchanged.
+trajectory scorer automatically. The call log, the metrics and the
+report are unchanged.
 
 A golden-set row pairs an input with the calls the agent should make:
 
@@ -75,19 +75,19 @@ print(run.metrics["trajectory"]["per_tool"])      # recall per tool
   **`exact`** additionally requires that no extra call was made. Set it
   per run with `trajectory_mode=` / `--trajectory-mode`, or per agent
   with a `trajectory_mode:` key in the config.
-- **Arguments match on the stated keys only** — pin the ones that
+- **Arguments match on the stated keys only.** Pin the ones that
   matter (`sku`, `quantity`) and leave the rest out rather than
   spelling out every default. Omitting `arguments` scores the call on
   its name alone, which is the right choice for an argument the model
   legitimately phrases differently (a search `query`).
-- **`defaults` pins an argument as absent, or equal to a value** —
-  `{"name": "order_total", "arguments": {"quantity": 4},
+- **`defaults` pins an argument as absent, or equal to a value.**
+  For example, `{"name": "order_total", "arguments": {"quantity": 4},
   "defaults": {"express": false}}` passes a model that omits
   `express` and fails one that invents `express=true`. Neither of the
   other two options can express that: left out entirely, an invented
   argument is ignored and the row passes; pinned under `arguments`,
   a model that correctly omits it fails.
-- **A row may expect no calls at all** (`"tools": []`) — that is how
+- **A row may expect no calls at all** (`"tools": []`). That is how
   you assert an agent *doesn't* reach for a tool it doesn't need. Such
   a row is scored under `exact` whatever mode the run is in: with no
   expectation to miss, `in_order` would tolerate every call as merely
@@ -97,11 +97,11 @@ print(run.metrics["trajectory"]["per_tool"])      # recall per tool
   whose arguments the tool threw out leaves that expectation
   unmatched; it is reported among the extras, marked `[failed]`, and
   counted in `run.metrics["trajectory"]["failed_calls"]`. This is the
-  case pinning arguments cannot cover — a row leaves the search
+  case pinning arguments cannot cover. A row leaves the search
   `query` unpinned precisely because its wording is the model's to
   choose, which is where a malformed value would otherwise slip
   through on the tool name alone.
-- **`allow_failure` is for a row that tests the error path** —
+- **`allow_failure` is for a row that tests the error path.**
   `{"name": "check_stock", "arguments": {"sku": "NOPE-99"},
   "allow_failure": true}` is a row where the tool is *meant* to
   raise and the agent is meant to relay it, so the call counts as
@@ -110,7 +110,7 @@ print(run.metrics["trajectory"]["per_tool"])      # recall per tool
 
 Alongside the usual accuracy, the report gains a **Trajectory** section
 with per-tool recall, and each failing case names exactly which calls
-were missing and which were extra. The confusion matrix is omitted — a
+were missing and which were extra. The confusion matrix is omitted, because a
 sequence of calls is not a label to cross-tabulate.
 
 The scoring primitives are public for finer control:
