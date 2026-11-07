@@ -3,6 +3,10 @@
 Project-specific performance areas to watch for when
 running `/optimize` or noticing issues during normal work.
 
+## Common Signals
+
+- Sequential LLM calls that could be batched
+
 ## What to Look For
 
 - **Memory**: unbounded growth, large object retention, unnecessary

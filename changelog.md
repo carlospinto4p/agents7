@@ -2,6 +2,18 @@
 ## Changelog - Agents7
 
 
+### v9.25.11 - 7th November 2026
+
+- `CLAUDE.md`: restored what v9.25.10 had dropped or changed from the
+  old repository's file: the Shell Commands, Project Configuration,
+  Versioning / Release and Testing sections, the "describe changes"
+  and `uv pip install -e .` steps, running the integration suite on
+  every change, and the auto-fix lint command. Removed a release-tag
+  step v9.25.10 had added on its own.
+- `.claude/rules/optimization-areas.md`: restored the "sequential LLM
+  calls that could be batched" signal, lost with a broken fragment.
+
+
 ### v9.25.10 - 7th November 2026
 
 - Added the project's Claude Code setup, carried over from the old

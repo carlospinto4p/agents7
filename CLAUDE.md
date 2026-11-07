@@ -26,6 +26,18 @@ each agent live in repositories of their own and depend on a tag of this
 one. On the owner's machine they sit side by side in one `agents7/`
 folder, this one as `framework/`.
 
+## Shell Commands
+
+Never use compound shell commands with `cd && git` or `cd &&` chaining.
+Always use separate commands or `cd` first, then run the git/shell command
+independently.
+
+## Project Configuration
+
+Store project rules and preferences in project config files (e.g.,
+`.claude/settings.json`, `CLAUDE.md`), NOT in memory files. Never save
+user instructions as memory files.
+
 ## Common Commands
 
 **IMPORTANT**: Always use `uv run` to execute Python commands. Never run
@@ -35,37 +47,55 @@ raw `python` commands.
 # Install dependencies
 uv sync --all-extras
 
-# Unit tests
+# Run unit tests
 uv run pytest tests/ -v
 
-# Integration tests (need a running LLM provider)
-uv run pytest integration_tests/ -v
-
-# Lint
+# Run linter
 uv run ruff check src/ tests/
+
+# Run linter with auto-fix
+uv run ruff check src/ tests/ --fix
 ```
 
-## After Every Change
+## Versioning / Release
 
-1. Update `README.md` if the change affects the public API.
-2. Run the unit tests (and the integration tests when a provider path
-   changed).
-3. Bump the version in `pyproject.toml` and the lock's own `version` line,
-   add a `changelog.md` entry (`scripts/changelog-add.sh`), commit, push.
-4. A release that the UI or an agent needs gets a tag: `git tag vX.Y.Z`,
-   then `git push --tags`.
+After version bumps, always stage and commit `uv.lock` along with the
+version change. Never forget the lock file.
 
-Workflow details: `.claude/rules/committing.md`, `versioning.md`,
-`testing.md`, `metrics-completeness.md`, `measurement-needs-history.md`.
+## Testing
+
+After any code change, run the full test suite and fix all failures before
+committing. Pay special attention to mock patching paths, fixture values,
+and assertion text that may need updating after refactors.
 
 ## Code Style
 
-- Line length: 78 characters (enforced by ruff, `ruff.toml`)
+- Line length: 78 characters (enforced by ruff)
+- Linter: ruff
 - Type hints required
 - Docstring style: Sphinx/reST (`:param:`, `:return:`, `:raises:`)
 - In docstrings, prefer single backticks (`` `name` ``) for inline code
   references
 - Use `@staticmethod` for methods that don't use `self`
+
+## Workflow Rules
+
+See `.claude/rules/` for detailed guidelines:
+- [Committing](.claude/rules/committing.md)
+- [Versioning](.claude/rules/versioning.md)
+- [Testing](.claude/rules/testing.md)
+- [Metrics completeness](.claude/rules/metrics-completeness.md)
+- [Measurement needs history](.claude/rules/measurement-needs-history.md)
+
+## After Every Change
+
+1. Describe changes made
+2. Update `README.md` if the change affects the public API
+3. Run `uv pip install -e .`, then `git add uv.lock`
+4. Run both test suites:
+   - Unit: `uv run pytest tests/ -v`
+   - Integration: `uv run pytest integration_tests/ -v`
+5. Commit, version (`pyproject.toml` + `changelog.md`), push
 
 ## Samples (`samples/`)
 
