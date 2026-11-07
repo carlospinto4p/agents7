@@ -2,6 +2,13 @@
 ## Changelog - Agents7
 
 
+### v9.25.17 - 7th November 2026
+
+- Removed `.gitlab-ci.yml`: it uploaded a wheel to GitLab's package
+  registry, and releases are now git tags on GitHub.
+- `.env.example`: removed `GITLAB_TOKEN`, which only that upload used.
+
+
 ### v9.25.16 - 7th November 2026
 
 - `docs/`: removed the em dashes from the prose of the pages moved out
