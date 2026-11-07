@@ -2,6 +2,24 @@
 ## Changelog - Agents7
 
 
+### v9.25.10 - 7th November 2026
+
+- Added the project's Claude Code setup, carried over from the old
+  combined repository and cleaned for a public repository:
+  - `CLAUDE.md`: written for the framework alone.
+  - `.claude/rules/`: committing, versioning, testing, the review-area
+    notes, `metrics-completeness.md` and `measurement-needs-history.md`,
+    with paths at the repository root and the UI-only Svelte notes
+    left for the UI's repository.
+  - `.claude/skills/validate-guarded-scene/` and its `.opencode/`
+    command.
+  - `.claude/settings.json`: tool permissions.
+- Added the pre-commit setup: `.pre-commit-config.yaml` (ruff pinned to
+  v0.15.9, changelog and version guards) and `.pre-commit-scripts/`.
+- Added `scripts/changelog-add.sh` and `scripts/pre-commit.sh`.
+- `.gitignore`: per-machine Claude Code files.
+
+
 ### v9.25.9 - 7th November 2026
 
 - The framework is now its own repository, cut from the monorepo with

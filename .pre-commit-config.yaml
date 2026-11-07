@@ -1,0 +1,59 @@
+# See https://pre-commit.com for more information:
+# How to use:
+#   - install pre-commit: pip install pre-commit
+#   - install hooks: pre-commit install
+#   - run hooks: pre-commit run --all-files (this is what CI does)
+repos:
+  # Ruff comes from the upstream repo with an explicit `rev`, not from a
+  # `local` hook, so pre-commit builds its own isolated env for it.
+  #
+  # The `rev` is the whole point: it pins an exact ruff. The previous
+  # `uvx ruff` resolved whatever PyPI served that day, and that had
+  # already broken this repo — measured 2026-07-24 against `ruff.toml`
+  # (`line-length = 78`, otherwise default rules):
+  #   ruff 0.15.9 -> All checks passed, 204 files already formatted
+  #   ruff 0.16.0 -> 259 errors
+  # 0.16 enabled rules this repo never opted into, so every commit
+  # staging one of those files was failing on a tree nobody had changed.
+  # Pinned to the last version this tree passes clean. Moving it is a
+  # deliberate, reviewable change — bump the `rev`, run
+  # `pre-commit run --all-files`, fix the fallout in its own commit.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.9
+    hooks:
+      - id: ruff-check
+        name: Ruff Lint Fix
+        args: [ --fix ]
+      - id: ruff-format
+        name: Ruff Format
+  - repo: local
+    hooks:
+      - id: warn-unstaged-claude
+        name: Unstaged .claude/ changes
+        entry: python .pre-commit-scripts/check_unstaged_claude.py
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: check-changelog-headers
+        name: Changelog header overwrite guard
+        entry: .pre-commit-scripts/check_changelog_headers.sh
+        language: script
+        pass_filenames: false
+        files: '(^|/)changelog\.md$|(^|/)changelog/.*\.md$'
+  - repo: local
+    hooks:
+      - id: check-version-changelog
+        name: Version bump needs a changelog entry
+        entry: .pre-commit-scripts/check_version_changelog.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+  - repo: local
+    hooks:
+      - id: check-no-nul-bytes
+        name: Reject NUL bytes in text files
+        entry: .pre-commit-scripts/check_no_nul_bytes.sh
+        language: script
+        # Only files pre-commit classifies as text — real binaries (images,
+        # fonts) legitimately contain NUL and must not be flagged.
+        types: [text]
