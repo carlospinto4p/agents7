@@ -3,7 +3,7 @@
 LLM-based labeler that extracts structured person
 information (name, age, occupation, location) from free
 text. Built with
-[agents7](../../agents7_framework); requires an
+[agents7](../..); requires an
 LLM backend (Ollama by default).
 
 Unlike `company_extractor`, this agent is unscoped — it
@@ -43,7 +43,7 @@ by dotted path from `config.yml`.
 
 ```bash
 # from this sample's directory
-uv run --project ../../agents7_framework agents7 eval \
+uv run --project ../.. agents7 eval \
     -c config.yml -d data/golden_set.jsonl -r reports/person_extractor.md
 ```
 
@@ -53,4 +53,4 @@ to `reports/` (gitignored).
 ## Tests
 
 The golden set is validated by
-`agents7_framework/tests/test_sample_golden_sets.py`.
+`tests/test_sample_golden_sets.py`.

@@ -2,7 +2,7 @@
 
 LLM-based classifier that labels text with a sentiment
 category and a justification reason. Built with
-[agents7](../../agents7_framework); requires an
+[agents7](../..); requires an
 LLM backend (Ollama by default).
 
 ## Categories
@@ -50,7 +50,7 @@ Run it against its golden set with the framework's `agents7 eval`
 command, from this sample's directory:
 
 ```bash
-uv run --project ../../agents7_framework agents7 eval \
+uv run --project ../.. agents7 eval \
     -c config.yml -d data/golden_set.jsonl -r reports/sentiment_classifier.md
 ```
 
@@ -60,5 +60,5 @@ The eval set is `data/golden_set.jsonl` (9 rows, scored on
 ## Tests
 
 The golden set is validated by
-`agents7_framework/tests/test_sample_golden_sets.py`, which checks every
+`tests/test_sample_golden_sets.py`, which checks every
 sample's rows against its declared `output_model`.

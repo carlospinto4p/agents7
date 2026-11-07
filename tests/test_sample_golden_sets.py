@@ -4,7 +4,7 @@ Walks the samples generically, so a new sample with a golden set is
 covered without a test of its own.
 
 No LLM calls — these validate the data files against each sample's
-declared `output_model`. From `agents7_framework/`::
+declared `output_model`. From the repository root::
 
     uv run pytest tests/test_sample_golden_sets.py -v
 """
@@ -15,9 +15,10 @@ from pathlib import Path
 
 import pytest
 import yaml
+
 from agents7.agents.utils import import_from_path
 
-SAMPLES_ROOT = Path(__file__).resolve().parents[2] / "samples"
+SAMPLES_ROOT = Path(__file__).resolve().parents[1] / "samples"
 
 GOLDEN_SETS = sorted(SAMPLES_ROOT.glob("*/data/golden_set.jsonl"))
 IDS = [p.parent.parent.name for p in GOLDEN_SETS]

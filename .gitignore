@@ -11,6 +11,8 @@ venv/
 
 # Environment Variables/Secrets
 .env
+.env.*
+!.env.example
 credentials/
 */credentials/
 
@@ -33,11 +35,35 @@ notebooks/
 # Data
 */data/
 
+# Character facts an agent recorded from its conversations.
+# Written beside the config that declares `character_facts`; the
+# content is whatever was said in a conversation, so it stays local.
+facts/
+
+# Large data files (suffix _all)
+*_all.*
+
 # Agent Builder workspace
 workspace/
 
 # Build artifacts
 build/
+dist/
 
 # Integration test reports (generated)
 integration_tests/reports/
+samples/*/reports/
+
+# SQLite stores — call logs, chat memory, the response cache.
+# A call log keeps the messages of any call that failed, so a
+# chat agent's holds conversation text. Never commit them.
+*.db
+*.db-wal
+*.db-shm
+
+# Ruff cache
+.ruff_cache/
+
+# Backups and logs
+*.bak.*
+logs/

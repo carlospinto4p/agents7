@@ -2,6 +2,20 @@
 ## Changelog - Agents7
 
 
+### v9.25.9 - 7th November 2026
+
+- The framework is now its own repository, cut from the monorepo with
+  its history kept: the package sits at the repository root and
+  `samples/` beside it.
+- Added `LICENSE` (MIT), `ruff.toml`, and a `.gitignore` for the new
+  layout.
+- `tests/test_sample_golden_sets.py`: finds `samples/` at the
+  repository root.
+- `README.md`: installs a tagged release instead of a subfolder.
+- The sample READMEs point at the repository root instead of
+  `agents7_framework/`.
+
+
 ### v9.25.8 - 7th November 2026
 
 - `docs/repository-split.md`: the owner agreed the design and answered

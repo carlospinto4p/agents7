@@ -1,0 +1,15 @@
+line-length = 78
+
+# `line-length` alone does not enforce the limit. Ruff's default rule set
+# is E4, E7, E9 and F — E501 (line-too-long) sits in E5 and is therefore
+# off, so `ruff check` passed lines over 78 while CLAUDE.md claimed the
+# limit as project style. The formatter does not close the gap either: it
+# reflows code but leaves comments, docstrings and long string literals
+# alone, which is where all ten violations found on 29th August 2026 were.
+#
+# `extend-select` rather than `select` on purpose — it adds E501 to the
+# defaults instead of replacing them, keeping the opted-in rule surface as
+# narrow as possible. See the ruff `rev` pin in `.pre-commit-config.yaml`
+# for why this repo is deliberate about which rules it turns on.
+[lint]
+extend-select = ["E501"]

@@ -3,7 +3,7 @@
 LLM-based labeler that extracts structured person
 information from free text, scoped to a configured
 company. Built with
-[agents7](../../agents7_framework); requires an
+[agents7](../..); requires an
 LLM backend (Ollama by default).
 
 People who are not relevant to the configured company are
@@ -60,7 +60,7 @@ prompt: this one scopes extraction to a configured company via
 
 ```bash
 # from this sample's directory
-uv run --project ../../agents7_framework agents7 eval \
+uv run --project ../.. agents7 eval \
     -c config.yml -d data/golden_set.jsonl -r reports/company_extractor.md
 ```
 
@@ -70,4 +70,4 @@ to `reports/` (gitignored).
 ## Tests
 
 The golden set is validated by
-`agents7_framework/tests/test_sample_golden_sets.py`.
+`tests/test_sample_golden_sets.py`.

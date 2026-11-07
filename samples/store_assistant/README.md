@@ -190,7 +190,7 @@ question with the calls the config's rules require:
 
 ```bash
 # from this sample's directory
-uv run --project ../../agents7_framework agents7 eval \
+uv run --project ../.. agents7 eval \
     -c config.yml -d eval_data.jsonl -r reports/store_assistant.md
 ```
 
@@ -267,7 +267,7 @@ lookup, order costing) is covered by the framework's own hermetic
 test suite — no Ollama or agent involved:
 
 ```bash
-uv run pytest agents7_framework/tests/test_tools_demo.py -v
+uv run pytest tests/test_tools_demo.py -v
 ```
 
 ## Requirements
