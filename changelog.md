@@ -2,6 +2,13 @@
 ## Changelog - Agents7
 
 
+### v9.25.7 - 7th November 2026
+
+- Added `docs/repository-split.md`: the proposed design for splitting
+  the framework, the UI and each agent into separate repositories, with
+  the owner's decisions so far and the open questions.
+
+
 ### v9.25.6 - 7th November 2026
 
 - Rotated changelog: archived 5 entries to `changelog/2026.md`.
