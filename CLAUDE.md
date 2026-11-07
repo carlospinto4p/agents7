@@ -91,7 +91,10 @@ See `.claude/rules/` for detailed guidelines:
 ## After Every Change
 
 1. Describe changes made
-2. Update `README.md` if the change affects the public API
+2. Update the `docs/` page for the feature if the change affects the
+   public API. `README.md` stays a short overview with links (owner,
+   7th November 2026: the public READMEs were too long); add to it only
+   when a new page or agent type needs a link.
 3. Run `uv pip install -e .`, then `git add uv.lock`
 4. Run both test suites:
    - Unit: `uv run pytest tests/ -v`

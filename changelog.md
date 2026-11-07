@@ -2,6 +2,23 @@
 ## Changelog - Agents7
 
 
+### v9.25.15 - 7th November 2026
+
+- `README.md` is a short overview (86 lines, was 3,377): what agents7 is,
+  the agent types, installing, one example, and links. Its reference
+  sections moved unchanged to new pages:
+  - `docs/agents.md`: building agents.
+  - `docs/providers.md`: LLM providers.
+  - `docs/operations.md`: cost, caching and logging.
+  - `docs/pipelines.md` and `docs/tools.md`.
+  - `docs/evaluation.md`.
+  - `docs/chat-agents.md`.
+  - `docs/architecture.md` and `docs/development.md`.
+- `CLAUDE.md` and `.claude/rules/committing.md`: user-facing changes are
+  documented on the `docs/` page; the README stays an overview (owner,
+  7th November 2026).
+
+
 ### v9.25.14 - 7th November 2026
 
 - Added `docs/agent-packages.md`: how an agent in its own repository
