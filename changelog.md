@@ -2,6 +2,16 @@
 ## Changelog - Agents7
 
 
+### v9.25.13 - 7th November 2026
+
+- Removed `samples/sentiment_classifier/`. It is now its own package at
+  `github.com/carlospinto4p/sentiment_classifier` (step 3 of
+  `docs/repository-split.md`), with its own output model and an
+  `agents7.agents` entry point. `agents7.models.demo.Sentiment` stays:
+  `examples/configs/demo_sentiment_classifier.yml` and the tests use it.
+- `docs/repository-split.md`: status updated to steps 1 to 3 done.
+
+
 ### v9.25.12 - 7th November 2026
 
 - `.claude/rules/testing.md`: the SQLite fixture line states the
