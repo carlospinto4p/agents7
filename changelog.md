@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v9.25.14 - 7th November 2026
+
+- Added `docs/agent-packages.md`: how an agent in its own repository
+  depends on an agents7 tag and shows up in agents7-ui. The example agent
+  is `github.com/carlospinto4p/agent-sentiment_classifier`.
+- Removed `docs/repository-split.md` and `docs/superpowers/`, internal
+  planning notes; `README.md` and `CLAUDE.md` point at the new page.
+
+
 ### v9.25.13 - 7th November 2026
 
 - Removed `samples/sentiment_classifier/`. It is now its own package at

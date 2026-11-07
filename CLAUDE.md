@@ -21,9 +21,10 @@ with code in this repository.
 return structured outputs via Pydantic models. Supports Ollama and any
 OpenAI-compatible API as LLM providers.
 
-It is one of several repositories (`docs/repository-split.md`): the UI and
+It is one of several repositories (`docs/agent-packages.md`): the UI and
 each agent live in repositories of their own and depend on a tag of this
-one. On the owner's machine they sit side by side in one `agents7/`
+one. The internal plan for the split is kept outside this public
+repository. On the owner's machine they sit side by side in one `agents7/`
 folder, this one as `framework/`.
 
 ## Shell Commands

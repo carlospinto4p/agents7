@@ -71,7 +71,7 @@ pip install "agents7 @ git+https://github.com/carlospinto4p/agents7@v9.25.9"
 ```
 
 The UI and the agents live in repositories of their own and depend on
-a tag of this one; `docs/repository-split.md` explains the layout.
+a tag of this one; `docs/agent-packages.md` explains how.
 The `samples/` folder holds example agent configs, tested by
 `tests/test_sample_golden_sets.py`.
 
