@@ -2,6 +2,13 @@
 ## Changelog - Agents7
 
 
+### v9.25.12 - 7th November 2026
+
+- `.claude/rules/testing.md`: the SQLite fixture line states the
+  session-scoped template pattern itself instead of pointing at a rule
+  that is not in this repository.
+
+
 ### v9.25.11 - 7th November 2026
 
 - `CLAUDE.md`: restored what v9.25.10 had dropped or changed from the
