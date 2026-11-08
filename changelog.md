@@ -2,6 +2,14 @@
 ## Changelog - Agents7
 
 
+### v9.25.19 - 8th November 2026
+
+- `.claude/rules/measurement-needs-history.md`: shortened from 326 to
+  about 80 lines. The nine rules and the functions and constants they
+  name are kept; the long incident accounts are gone (they stay in git
+  history).
+
+
 ### v9.25.18 - 8th November 2026
 
 - `README.md`: the opening paragraph no longer says every agent answers
