@@ -2,6 +2,14 @@
 ## Changelog - Agents7
 
 
+### v9.25.20 - 8th November 2026
+
+- Added `.gitattributes`: text files are stored with Unix line endings.
+  Four `.claude/rules/` files and
+  `.pre-commit-scripts/check_unstaged_claude.py` were converted from
+  Windows line endings; their text is unchanged.
+
+
 ### v9.25.19 - 8th November 2026
 
 - `.claude/rules/measurement-needs-history.md`: shortened from 326 to
