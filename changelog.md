@@ -2,6 +2,12 @@
 ## Changelog - Agents7
 
 
+### v9.25.21 - 8th November 2026
+
+- Updated `.claude/rules/00-rule-index.md`: regenerated, it now lists
+  `measurement-needs-history` and `metrics-completeness`.
+
+
 ### v9.25.20 - 8th November 2026
 
 - Added `.gitattributes`: text files are stored with Unix line endings.
