@@ -1,9 +1,10 @@
 # agents7
 
-A Python library for LLM agents that answer with a Pydantic model
-instead of free text. You describe the agent in a YAML file: the model,
-the prompt, the output model and a few examples. agents7 calls the
-model and checks its answer against the output model.
+A Python library for LLM agents described in YAML files. Most agent
+types answer with a Pydantic model instead of free text: you give the
+model, the prompt, the output model and a few examples, and agents7
+checks the model's answer against the output model. Chat agents and
+tool-calling agents reply in text.
 
 It runs on Ollama by default, and on any OpenAI-compatible API or on
 Anthropic's.

@@ -2,6 +2,12 @@
 ## Changelog - Agents7
 
 
+### v9.25.18 - 8th November 2026
+
+- `README.md`: the opening paragraph no longer says every agent answers
+  with a Pydantic model. `Chatter` and `ToolAgent` reply in text.
+
+
 ### v9.25.17 - 7th November 2026
 
 - Removed `.gitlab-ci.yml`: it uploaded a wheel to GitLab's package
