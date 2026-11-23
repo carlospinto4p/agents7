@@ -61,6 +61,8 @@ uncommitted edits into its unrelated commit.
 7. **Commit** with a message in the format below, **always including
    `uv.lock`** when it changed.
 8. **Push** with `git push`.
+9. **Merge into `main`** at the end of every prompt, per
+   "Merge Into `main` After Every Prompt" below.
 
 **Config/tooling changes** (anything under `.claude/` and `CLAUDE.md`)
 still take a patch bump and changelog entry with no code change; skip
@@ -91,6 +93,31 @@ the diff mixes a skippable file with anything else, run tests. When
 in doubt, run them — but not a long suite for a one-line markdown
 edit. Check `git status --porcelain` before deciding: the signal is
 the diff, not your intent.
+
+## Merge Into `main` After Every Prompt
+
+Work happens on a branch, never on `main`, but it does not stay there:
+**every prompt that changes the repository ends with its branch merged
+into `main`** (owner, 23rd November 2026). This holds in every session,
+local, on the web or in Claude Code on the phone, and in every one of
+the owner's repositories. The reason: a new session starts from `main`,
+and the UI and the agent packages pin tags made from it, so anything
+left on a branch is invisible to all of them.
+
+- **When**: at the end of every prompt that committed something, even
+  when the larger task it belongs to is not finished. Commit what is
+  done in a working state, push, then merge. Not after each commit
+  within a prompt: once, at its end.
+- **CI**: there is none here, so there is nothing to wait for. If
+  checks are ever added, merge only once they pass on the head commit.
+- **How**: open a pull request from the branch into `main` (or reuse
+  the one already open for it) and merge it straight away with a merge
+  commit, without asking: this rule is the standing permission. No
+  squash and no rebase, so the branch's commits stay as they are and
+  the next prompt continues on the same branch.
+- **After merging**, check that `main` now holds the head commit, and
+  tell the user it was merged. If GitHub refuses the merge (a conflict,
+  a protection rule), say so and why instead of working around it.
 
 ## Commit Message Format
 

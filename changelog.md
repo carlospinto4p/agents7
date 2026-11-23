@@ -2,6 +2,15 @@
 ## Changelog - Agents7
 
 
+### v9.25.23 - 23rd November 2026
+
+- Updated `.claude/rules/committing.md`: "Merge Into `main` After Every
+  Prompt": every prompt that changes the repository ends with its branch
+  merged into `main` through a merge-commit pull request, in every session
+  (local, web or the phone) and in all of the owner's repositories.
+  Added as a step of the post-change workflow too.
+
+
 ### v9.25.22 - 10th November 2026
 
 - Rotated changelog: archived 16 entries to `changelog/2026.md`.
