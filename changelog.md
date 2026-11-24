@@ -2,6 +2,18 @@
 ## Changelog - Agents7
 
 
+### v9.25.24 - 24th November 2026
+
+- Added `.claude/hooks/cloud-session.sh`, run at session start from
+  `.claude/settings.json`. In a cloud session (`CLAUDE_CODE_REMOTE` is
+  `true`) it tells Claude to push each prompt's work straight to `main`,
+  falling back to a merge-commit pull request if GitHub refuses the push.
+  Elsewhere it prints nothing.
+- Updated `.claude/rules/committing.md`: removed "Merge Into `main` After
+  Every Prompt" and its workflow step. Branch-then-merge applied to
+  every session; it was meant only for cloud sessions, which the hook now
+  covers.
+
 ### v9.25.23 - 23rd November 2026
 
 - Updated `.claude/rules/committing.md`: "Merge Into `main` After Every
