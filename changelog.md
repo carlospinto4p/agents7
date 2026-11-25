@@ -2,6 +2,11 @@
 ## Changelog - Agents7
 
 
+### v9.25.25 - 25th November 2026
+
+- Rotated changelog: archived 3 entries to `changelog/2026.md`.
+
+
 ### v9.25.24 - 24th November 2026
 
 - Added `.claude/hooks/cloud-session.sh`, run at session start from
@@ -13,6 +18,7 @@
   Every Prompt" and its workflow step. Branch-then-merge applied to
   every session; it was meant only for cloud sessions, which the hook now
   covers.
+
 
 ### v9.25.23 - 23rd November 2026
 
@@ -285,40 +291,3 @@
 - Added `when_prompt_matches` to `eval.style.forbidden_pattern`: the
   rule applies only to replies whose prompt matches the given
   regular expression, and is not applicable elsewhere.
-
-
-### v9.22.0 - 2nd October 2026
-
-- Added script context in `eval.style`:
-  - `ConversationScript.context`: values handed to `set_context`
-    before the script's first turn, in both runners.
-  - `scripts[].context` in YAML, read by `load_style_contract`.
-  - `style_history`: a script's context is part of the run's
-    fingerprint and configuration key; a script without one hashes
-    as before.
-- Added 7 tests in `tests/test_style_contract.py` and
-  `tests/test_style_history.py`.
-
-
-### v9.21.1 - 2nd October 2026
-
-- Fixed the integration suite timing out on a cold Ollama:
-  - `integration_helpers.warm_model()`: loads a model once per
-    session; every fixture that builds an agent calls it.
-  - `conftest.py`: the 60s per-test timeout covers the test body
-    only, so a model load in setup is not counted.
-  - `conftest.py`: the 300s session limit no longer counts time
-    spent loading models.
-
-
-### v9.21.0 - 2nd October 2026
-
-- Added derived context params in `agents.context`:
-  - `ContextParam.derived_from`: names another declared param; the
-    resolver is then called with that param's current value.
-  - `context_params.<name>.from` in YAML, read by
-    `parse_context_params`.
-  - `BaseAgent.resolved_context` computes a derived param after its
-    source, so supplying the source is enough.
-- Added `tests/test_context_params.py`: 13 tests for derived params.
-- Updated `README.md`: derived values under Per-Conversation Context.
